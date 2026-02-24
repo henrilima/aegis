@@ -48,7 +48,9 @@ impl ConfigManager {
     }
 
     fn get_connection(&self) -> Connection {
-        Connection::open(&self.db_path).expect("Failed to connect to config DB")
+        let conn = Connection::open(&self.db_path).expect("Failed to connect to config DB");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn
     }
 
     pub fn get_config(&self) -> AppConfig {

@@ -53,7 +53,6 @@ export default function HydrationPage() {
           user_id: String(user.id),
           reminder_type: newType,
           value: newValue,
-          // Define data de início apenas se for lembrete por intervalo
           start_time: newType === "Interval" ? newStartTime : null,
           enabled: true,
         },

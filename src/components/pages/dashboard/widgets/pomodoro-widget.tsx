@@ -1,7 +1,7 @@
 "use client";
 
 import { Timer } from "lucide-react";
-import Link from "next/link";
+import { useNavigation } from "@/context/NavigationContext";
 import type { PomodoroState } from "../types";
 import { PomodoroLive } from "./ui";
 
@@ -10,10 +10,12 @@ interface PomodoroWidgetProps {
 }
 
 export function PomodoroWidget({ pomodoro }: PomodoroWidgetProps) {
+  const { navigate } = useNavigation();
   return (
-    <Link
-      href="/dashboard/pomodoro"
-      className="group bg-neutral-900 border border-neutral-800 hover:border-red-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300"
+    <button
+      type="button"
+      onClick={() => navigate("pomodoro")}
+      className="group bg-neutral-900 border border-neutral-800 hover:border-red-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 text-left w-full cursor-pointer"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -71,6 +73,6 @@ export function PomodoroWidget({ pomodoro }: PomodoroWidgetProps) {
           {pomodoro ? (pomodoro.cycle_type === "Work" ? "Foco" : "Pausa") : "—"}
         </span>
       </div>
-    </Link>
+    </button>
   );
 }

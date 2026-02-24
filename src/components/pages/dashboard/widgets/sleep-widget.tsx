@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon } from "lucide-react";
-import Link from "next/link";
+import { useNavigation } from "@/context/NavigationContext";
 import { formatDurationMin } from "../helpers";
 import type { SleepEntry } from "../types";
 
@@ -22,10 +22,12 @@ export function SonoWidget({
   goalSleepMin,
   sleepPct,
 }: SonoWidgetProps) {
+  const { navigate } = useNavigation();
   return (
-    <Link
-      href="/dashboard/sono"
-      className="group bg-neutral-900 border border-neutral-800 hover:border-blue-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300"
+    <button
+      type="button"
+      onClick={() => navigate("sleep")}
+      className="group bg-neutral-900 border border-neutral-800 hover:border-blue-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 text-left w-full cursor-pointer"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -137,6 +139,6 @@ export function SonoWidget({
           <p className="text-xs text-neutral-700">Nenhum registro de sono</p>
         )}
       </div>
-    </Link>
+    </button>
   );
 }

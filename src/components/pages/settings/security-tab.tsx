@@ -83,7 +83,9 @@ export function SecurityTab() {
         userId: user.id,
       });
       setHasVaultPwd(has);
-    } catch {}
+    } catch (err) {
+      console.error("[SECURITY] Erro ao carregar status do cofre:", err);
+    }
   }, [user?.id]);
 
   useEffect(() => {

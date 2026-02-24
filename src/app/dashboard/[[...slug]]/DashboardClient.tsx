@@ -1,10 +1,9 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Loading from "@/components/Loading";
 import Currency from "@/components/pages/currency";
-
 import Dashboard from "@/components/pages/dashboard";
 import Habits from "@/components/pages/habits";
 import Hydration from "@/components/pages/hydration";
@@ -12,15 +11,15 @@ import Notes from "@/components/pages/notes";
 import Passwords from "@/components/pages/passwords";
 import Pomodoro from "@/components/pages/pomodoro";
 import Settings from "@/components/pages/settings";
-import Sono from "@/components/pages/sleep";
+import Sleep from "@/components/pages/sleep";
 import Speedtest from "@/components/pages/speedtest";
-import Estudos from "@/components/pages/studies";
+import Studies from "@/components/pages/studies";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigation } from "@/context/NavigationContext";
 
 export default function DashboardClient() {
-  const pathname = usePathname();
-
   const router = useRouter();
+  const { route } = useNavigation();
   const { user, loading, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -33,33 +32,40 @@ export default function DashboardClient() {
     return <Loading />;
   }
 
-  var page: React.ReactNode;
+  const renderContent = () => {
+    switch (route) {
+      case "dashboard":
+        return <Dashboard />;
+      case "currency":
+        return <Currency />;
+      case "passwords":
+        return <Passwords />;
+      case "habits":
+        return <Habits />;
+      case "hydration":
+        return <Hydration />;
+      case "notes":
+        return <Notes />;
+      case "pomodoro":
+        return <Pomodoro />;
+      case "studies":
+        return <Studies />;
+      case "sleep":
+        return <Sleep />;
+      case "settings":
+        return <Settings />;
+      case "speedtest":
+        return <Speedtest />;
+      default:
+        return <Dashboard />;
+    }
+  };
 
-  if (pathname === "/dashboard") {
-    page = <Dashboard />;
-  } else if (pathname?.startsWith("/dashboard/passwords")) {
-    page = <Passwords />;
-  } else if (pathname?.startsWith("/dashboard/speedtest")) {
-    page = <Speedtest />;
-  } else if (pathname?.startsWith("/dashboard/settings")) {
-    page = <Settings />;
-  } else if (pathname?.startsWith("/dashboard/habits")) {
-    page = <Habits />;
-  } else if (pathname?.startsWith("/dashboard/pomodoro")) {
-    page = <Pomodoro />;
-  } else if (pathname?.startsWith("/dashboard/currency")) {
-    page = <Currency />;
-  } else if (pathname?.startsWith("/dashboard/hydration")) {
-    page = <Hydration />;
-  } else if (pathname?.startsWith("/dashboard/notes")) {
-    page = <Notes />;
-  } else if (pathname?.startsWith("/dashboard/estudos")) {
-    page = <Estudos />;
-  } else if (pathname?.startsWith("/dashboard/sono")) {
-    page = <Sono />;
-  } else {
-    page = <Dashboard />;
-  }
-
-  return <div className="w-full h-full">{page}</div>;
+  return (
+    <div className="flex-1 flex flex-col min-h-0 bg-[#0A0A0B]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="w-full h-full">{renderContent()}</div>
+      </div>
+    </div>
+  );
 }

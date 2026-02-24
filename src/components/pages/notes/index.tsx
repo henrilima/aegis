@@ -37,7 +37,8 @@ export default function NotesPage() {
         userId: String(user.id),
       });
       setNotes(res);
-    } catch {
+    } catch (err) {
+      console.error("[NOTES] Erro ao carregar notas:", err);
       toast.error("Erro ao carregar notas");
     } finally {
       setLoading(false);
@@ -64,7 +65,8 @@ export default function NotesPage() {
       setIsNoteModalOpen(false);
       fetchNotes();
       toast.success("Nota salva!");
-    } catch {
+    } catch (err) {
+      console.error("[NOTES] Erro ao salvar nota:", err);
       toast.error("Erro ao salvar nota");
     }
   };
@@ -74,7 +76,8 @@ export default function NotesPage() {
       await invoke("delete_note", { id });
       fetchNotes();
       toast.success("Nota removida");
-    } catch {
+    } catch (err) {
+      console.error("[NOTES] Erro ao remover nota:", err);
       toast.error("Erro ao remover");
     } finally {
       setDeletingId(null);
@@ -88,7 +91,8 @@ export default function NotesPage() {
       // Alterna o status da nota entre pendente e concluída
       await invoke("update_note_status", { id: note.id, status: newStatus });
       fetchNotes();
-    } catch {
+    } catch (err) {
+      console.error("[NOTES] Erro ao atualizar status:", err);
       toast.error("Erro ao atualizar status");
     }
   };
@@ -104,7 +108,8 @@ export default function NotesPage() {
       // Alterna o estado de fixação da nota no topo da página
       await invoke("update_note_pinned", { id: note.id, pinned: !note.pinned });
       fetchNotes();
-    } catch {
+    } catch (err) {
+      console.error("[NOTES] Erro ao fixar nota:", err);
       toast.error("Erro ao fixar nota");
     }
   };

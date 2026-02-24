@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import type { Habit } from "@/components/pages/habits/types";
 import type { Note } from "@/components/pages/notes/types";
 import { useAuth } from "@/context/AuthContext";
+import type { AppRoute } from "@/context/NavigationContext";
 import { DashboardHeader } from "./dashboard-header";
 
 import { formatDurationMin, isToday, startOfWeekIso } from "./helpers";
@@ -76,7 +77,10 @@ export default function DashboardPage() {
         monthsBack: 1,
       }),
       invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
-      invoke<SleepEntry[]>("sono_list_entries", { userId: uid, monthsBack: 1 }),
+      invoke<SleepEntry[]>("sono_list_entries", {
+        userId: uid,
+        monthsBack: 1,
+      }),
       invoke<SleepGoal>("sono_get_goal", { userId: uid }),
     ]);
     // Atualiza os estados apenas se a promessa foi cumprida (fulfilled)
@@ -183,7 +187,7 @@ export default function DashboardPage() {
     {
       label: "Hábitos",
       icon: Activity,
-      href: "/dashboard/habits",
+      route: "habits" as AppRoute,
       color: "teal",
       count: positiveHabits.length,
       sub: `${doneToday.length} feitos hoje`,
@@ -191,7 +195,7 @@ export default function DashboardPage() {
     {
       label: "Pomodoro",
       icon: Timer,
-      href: "/dashboard/pomodoro",
+      route: "pomodoro" as AppRoute,
       color: "red",
       count: pomodoro?.cycles_completed ?? 0,
       sub: pomodoro?.is_running ? "Em andamento" : "Parado",
@@ -199,7 +203,7 @@ export default function DashboardPage() {
     {
       label: "Notas",
       icon: FileText,
-      href: "/dashboard/notes",
+      route: "notes" as AppRoute,
       color: "orange",
       count: pendingNotes.length,
       sub: `${doneNotes.length} concluídas`,
@@ -207,7 +211,7 @@ export default function DashboardPage() {
     {
       label: "Senhas",
       icon: Lock,
-      href: "/dashboard/passwords",
+      route: "passwords" as AppRoute,
       color: "amber",
       count: passwords.length,
       sub: "Cofre seguro",
@@ -215,7 +219,7 @@ export default function DashboardPage() {
     {
       label: "Estudos",
       icon: BookOpen,
-      href: "/dashboard/estudos",
+      route: "studies" as AppRoute,
       color: "violet",
       count: totalSessions,
       sub: `${weekHours.toFixed(1)}h esta semana`,
@@ -223,7 +227,7 @@ export default function DashboardPage() {
     {
       label: "Sono",
       icon: Moon,
-      href: "/dashboard/sono",
+      route: "sleep" as AppRoute,
       color: "blue",
       count: sleepEntries.length,
       sub:
@@ -234,7 +238,7 @@ export default function DashboardPage() {
     {
       label: "Câmbio",
       icon: Banknote,
-      href: "/dashboard/currency",
+      route: "currency" as AppRoute,
       color: "green",
       count: null,
       sub: "Cotações",
@@ -242,7 +246,7 @@ export default function DashboardPage() {
     {
       label: "Hidratação",
       icon: Droplet,
-      href: "/dashboard/hydration",
+      route: "hydration" as AppRoute,
       color: "sky",
       count: hydration.length,
       sub: "Lembretes",
@@ -250,7 +254,7 @@ export default function DashboardPage() {
     {
       label: "Internet",
       icon: Wifi,
-      href: "/dashboard/speedtest",
+      route: "speedtest" as AppRoute,
       color: "red",
       count: null,
       sub: "Speedtest",

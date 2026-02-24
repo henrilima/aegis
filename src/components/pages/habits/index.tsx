@@ -23,6 +23,7 @@ export default function HabitsPage() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [resetId, setResetId] = useState<number | null>(null);
   const [hardResetId, setHardResetId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fetchHabits = useCallback(async () => {
     if (!user) return;
@@ -115,6 +116,18 @@ export default function HabitsPage() {
       toast.info("Hábito reiniciado do zero.");
     } catch {
       toast.error("Erro ao reiniciar hábito");
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await invoke("delete_habit", { id: deleteId });
+      setDeleteId(null);
+      fetchHabits();
+      toast.success("Hábito removido");
+    } catch {
+      toast.error("Erro ao deletar");
     }
   };
 
@@ -230,6 +243,7 @@ export default function HabitsPage() {
                 onEdit={setEditingHabit}
                 onOpenResetDialog={setResetId}
                 onOpenHardResetDialog={setHardResetId}
+                onDelete={setDeleteId}
               />
             ))}
           </div>
@@ -261,6 +275,13 @@ export default function HabitsPage() {
           {...CONFIRM_PRESETS.hardReset}
           onConfirm={confirmHardReset}
           onCancel={() => setHardResetId(null)}
+        />
+      )}
+      {deleteId !== null && (
+        <ConfirmModal
+          {...CONFIRM_PRESETS.deleteHabit}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteId(null)}
         />
       )}
     </>

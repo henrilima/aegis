@@ -12,8 +12,8 @@ export async function generateStaticParams() {
     { slug: ["speedtest"] },
     { slug: ["hydration"] },
     { slug: ["settings"] },
-    { slug: ["estudos"] },
-    { slug: ["sono"] },
+    { slug: ["studies"] },
+    { slug: ["sleep"] },
   ];
 }
 

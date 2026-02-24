@@ -6,9 +6,12 @@
   "permissions": [
     "core:default",
     "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
     "allow-run-speedtest",
     "allow-password-management",
     "allow-feature-management",
+    "autostart:default",
     "notification:default",
     "dialog:default",
     "shell:allow-open"

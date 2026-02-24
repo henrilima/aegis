@@ -68,10 +68,15 @@ export default function LoginComponent() {
 
   const confirmDeleteAccount = async (password: string) => {
     if (!deleteTarget) return;
-    await invoke("delete_account", { userId: deleteTarget.id, password });
-    toast.success(`Conta "${deleteTarget.username}" removida.`);
-    setDeleteTarget(null);
-    await loadUsers();
+    try {
+      await invoke("delete_account", { userId: deleteTarget.id, password });
+      toast.success(`Conta "${deleteTarget.username}" removida.`);
+      setDeleteTarget(null);
+      await loadUsers();
+    } catch (err) {
+      console.error("[LOGIN] Erro ao deletar conta:", err);
+      toast.error(String(err));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

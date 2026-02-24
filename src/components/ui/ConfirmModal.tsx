@@ -1,3 +1,5 @@
+"use client";
+
 import {
   AlertTriangle,
   HelpCircle,
@@ -5,7 +7,6 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export type ConfirmVariant = "danger" | "warning" | "default";
 
@@ -25,31 +26,23 @@ const VARIANT_CONFIG: Record<
   {
     icon: LucideIcon;
     iconColor: string;
-    bgColor: string;
-    borderColor: string;
     btnColor: string;
   }
 > = {
   danger: {
     icon: Trash2,
     iconColor: "text-red-400",
-    bgColor: "bg-red-500/10",
-    borderColor: "border-red-500/20",
-    btnColor: "bg-red-600 hover:bg-red-500 text-white",
+    btnColor: "bg-red-600 hover:bg-red-500",
   },
   warning: {
     icon: AlertTriangle,
     iconColor: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-    borderColor: "border-amber-500/20",
-    btnColor: "bg-amber-600 hover:bg-amber-500 text-white",
+    btnColor: "bg-amber-600 hover:bg-amber-500",
   },
   default: {
     icon: HelpCircle,
-    iconColor: "text-neutral-400",
-    bgColor: "bg-neutral-800",
-    borderColor: "border-neutral-700",
-    btnColor: "bg-neutral-700 hover:bg-neutral-600 text-white",
+    iconColor: "text-blue-400",
+    btnColor: "bg-blue-600 hover:bg-blue-500",
   },
 };
 
@@ -67,56 +60,28 @@ export function ConfirmModal({
   const Icon = icon ?? cfg.icon;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-    >
-      <button
-        type="button"
-        aria-label="Fechar"
-        onClick={onCancel}
-        className="absolute inset-0 w-full h-full cursor-default"
-      />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+      <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl text-center flex flex-col items-center">
+        <Icon className={`w-10 h-10 ${cfg.iconColor} mb-4`} />
 
-      <div
-        className={`relative w-full max-w-sm bg-neutral-950 border ${cfg.borderColor} rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200`}
-      >
-        <div className="flex items-center gap-3 p-5 border-b border-neutral-800">
-          <div
-            className={`p-2 rounded-xl ${cfg.bgColor} border ${cfg.borderColor}`}
+        <h3 className="font-bold text-lg text-white mb-1">{title}</h3>
+        <p className="text-sm text-neutral-500 mb-6">{description}</p>
+
+        <div className="flex gap-2 w-full">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer ${cfg.btnColor}`}
           >
-            <Icon className={`w-4 h-4 ${cfg.iconColor}`} />
-          </div>
-          <h2 className="text-base font-bold text-white">{title}</h2>
-        </div>
-
-        <div className="p-5 space-y-5">
-          <p className="text-sm text-neutral-400 leading-relaxed">
-            {description}
-          </p>
-
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              onClick={onConfirm}
-              className={`w-full font-bold cursor-pointer ${cfg.btnColor}`}
-            >
-              {confirmLabel}
-            </Button>
-            <Button
-              onClick={() => {
-                // Executa a confirmação e fecha o modal
-                onConfirm();
-                onCancel();
-              }}
-              type="button"
-              variant="ghost"
-              className="w-full text-neutral-500 hover:text-white hover:bg-neutral-800 cursor-pointer"
-            >
-              {cancelLabel}
-            </Button>
-          </div>
+            {confirmLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-sm font-bold transition-all cursor-pointer border border-neutral-700/50"
+          >
+            {cancelLabel}
+          </button>
         </div>
       </div>
     </div>
@@ -127,22 +92,21 @@ export const CONFIRM_PRESETS = {
   resetStreak: {
     title: "Resetar Sequência?",
     description:
-      "Você está prestes a registrar um deslize. Sua sequência atual será zerada e o contador de deslizes totais será incrementado.",
-    confirmLabel: "Sim, Resetar Sequência",
+      "Você está prestes a registrar um deslize. Sua sequência atual será zerada.",
+    confirmLabel: "Sim, Resetar",
     variant: "warning" as ConfirmVariant,
     icon: RotateCcw,
   },
   hardReset: {
     title: "Zerar Tudo?",
     description:
-      "Esta ação é irreversível. Você irá zerar suas conclusões totais, sequência atual e todos os seus recordes deste hábito.",
-    confirmLabel: "Sim, Zerar Hábito",
+      "Esta ação é irreversível. Você irá zerar recordes deste hábito.",
+    confirmLabel: "Sim, Zerar",
     variant: "danger" as ConfirmVariant,
   },
   deleteHabit: {
     title: "Excluir Hábito?",
-    description:
-      "Este hábito e todo o seu histórico serão removidos permanentemente.",
+    description: "Este hábito será removido permanentemente.",
     confirmLabel: "Excluir",
     variant: "danger" as ConfirmVariant,
   },
@@ -154,8 +118,7 @@ export const CONFIRM_PRESETS = {
   },
   deletePassword: {
     title: "Excluir Credencial?",
-    description:
-      "Esta senha e todos os seus dados serão removidos permanentemente.",
+    description: "Esta senha será removida permanentemente.",
     confirmLabel: "Excluir",
     variant: "danger" as ConfirmVariant,
   },

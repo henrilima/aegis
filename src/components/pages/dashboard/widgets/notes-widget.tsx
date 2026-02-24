@@ -1,10 +1,10 @@
 "use client";
 
 import { Circle, Pin, Plus, StickyNote } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 import { NoteCreateModal } from "@/components/pages/notes/note-create-modal";
 import type { Note } from "@/components/pages/notes/types";
+import { useNavigation } from "@/context/NavigationContext";
 
 interface NotesWidgetProps {
   notes: Note[];
@@ -21,22 +21,22 @@ export function NotesWidget({
   doneNotes,
   onCreateNote,
 }: NotesWidgetProps) {
+  const { navigate } = useNavigation();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <>
-      <div className="relative group bg-neutral-900 border border-neutral-800 hover:border-orange-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300">
+      <button
+        type="button"
+        onClick={() => navigate("notes")}
+        className="relative group bg-neutral-900 border border-neutral-800 hover:border-orange-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 text-left w-full cursor-pointer"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20">
               <StickyNote className="w-4 h-4 text-orange-400" />
             </div>
-            <Link
-              href="/dashboard/notes"
-              className="text-sm font-bold text-neutral-200 outline-none after:absolute after:inset-0 after:z-0"
-            >
-              Notas
-            </Link>
+            <div className="text-sm font-bold text-neutral-200">Notas</div>
           </div>
           <button
             type="button"
@@ -81,23 +81,21 @@ export function NotesWidget({
           {(pinnedNotes.length > 0 ? pinnedNotes : pendingNotes)
             .slice(0, 4)
             .map((n) => (
-              <Link
+              <div
                 key={n.id}
-                href="/dashboard/notes"
-                onClick={(e) => e.stopPropagation()}
                 className="flex items-start gap-2 py-1.5 border-b border-neutral-800/60 last:border-0 hover:text-neutral-200 transition-colors group/note"
               >
                 <Circle className="w-3 h-3 text-neutral-700 shrink-0 mt-0.5" />
                 <span className="text-xs text-neutral-400 line-clamp-1 flex-1 group-hover/note:text-neutral-200">
                   {n.title}
                 </span>
-              </Link>
+              </div>
             ))}
           {notes.length === 0 && (
             <p className="text-xs text-neutral-700">Nenhuma nota ainda</p>
           )}
         </div>
-      </div>
+      </button>
 
       {isModalOpen && (
         <NoteCreateModal

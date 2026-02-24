@@ -14,6 +14,8 @@ export function useSettingsLogic() {
   const { user, logout } = useAuth();
   const [minimizeOnClose, setMinimizeOnClose] = useState(true);
   const [startAtLogin, setStartAtLogin] = useState(false);
+  const [highPriorityNotifications, setHighPriorityNotifications] =
+    useState(false);
   const username = user?.username || "Usuário";
   const email = user?.email || "sem-email@aegis.local";
 
@@ -26,6 +28,7 @@ export function useSettingsLogic() {
       }>("get_app_config");
       setMinimizeOnClose(config.minimize_on_close);
       setStartAtLogin(config.start_at_login);
+      setHighPriorityNotifications(config.high_priority_notifications);
     } catch (err) {
       console.error("Failed to load config:", err);
     }
@@ -42,6 +45,7 @@ export function useSettingsLogic() {
     const newConfig = {
       minimize_on_close: key === "minimize" ? value : minimizeOnClose,
       start_at_login: key === "autostart" ? value : startAtLogin,
+      high_priority_notifications: highPriorityNotifications,
     };
 
     try {
@@ -73,9 +77,14 @@ export function useSettingsLogic() {
     handleTestNotification,
     handleDeleteAccount: async (password: string) => {
       if (!user?.id) return;
-      await invoke("delete_account", { userId: user.id, password });
-      toast.success("Conta deletada permanentemente");
-      logout();
+      try {
+        await invoke("delete_account", { userId: user.id, password });
+        toast.success("Conta deletada permanentemente");
+        logout();
+      } catch (err) {
+        console.error("[SETTINGS] Erro ao deletar conta:", err);
+        throw err;
+      }
     },
     user,
   };

@@ -1,5 +1,7 @@
-import Link from "next/link";
+"use client";
+
 import type { ElementType } from "react";
+import { type AppRoute, useNavigation } from "@/context/NavigationContext";
 
 interface QuickStat {
   icon: ElementType;
@@ -44,7 +46,7 @@ export function QuickStatsBar({ stats }: QuickStatsBarProps) {
 interface ModuleItem {
   label: string;
   icon: ElementType;
-  href: string;
+  route: AppRoute;
   color: string;
   count: number | null;
   sub: string;
@@ -56,6 +58,7 @@ interface ModuleGridProps {
 }
 
 export function ModuleGrid({ modules, colorConfig }: ModuleGridProps) {
+  const { navigate } = useNavigation();
   return (
     <div>
       <p className="text-[11px] font-black uppercase  text-neutral-600 mb-3">
@@ -65,10 +68,11 @@ export function ModuleGrid({ modules, colorConfig }: ModuleGridProps) {
         {modules.map((m) => {
           const c = colorConfig[m.color];
           return (
-            <Link
+            <button
               key={m.label}
-              href={m.href}
-              className={`group flex flex-col gap-3 p-4 bg-neutral-900 border border-neutral-800 hover:${c.border} rounded-2xl transition-all duration-300 hover:bg-neutral-800/60`}
+              type="button"
+              onClick={() => navigate(m.route)}
+              className={`group flex flex-col gap-3 p-4 bg-neutral-900 border border-neutral-800 hover:${c.border} rounded-2xl transition-all duration-300 hover:bg-neutral-800/60 text-left cursor-pointer w-full`}
             >
               <div
                 className={`w-9 h-9 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center group-hover:scale-110 transition-transform`}
@@ -90,7 +94,7 @@ export function ModuleGrid({ modules, colorConfig }: ModuleGridProps) {
                   {m.count}
                 </div>
               )}
-            </Link>
+            </button>
           );
         })}
       </div>

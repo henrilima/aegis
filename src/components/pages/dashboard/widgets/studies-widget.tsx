@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpen } from "lucide-react";
-import Link from "next/link";
+import { useNavigation } from "@/context/NavigationContext";
 import type { StudySession } from "../types";
 
 interface EstudosWidgetProps {
@@ -21,10 +21,12 @@ export function EstudosWidget({
   goalWeekHours,
   goalWeekQuestions,
 }: EstudosWidgetProps) {
+  const { navigate } = useNavigation();
   return (
-    <Link
-      href="/dashboard/estudos"
-      className="group bg-neutral-900 border border-neutral-800 hover:border-violet-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300"
+    <button
+      type="button"
+      onClick={() => navigate("studies")}
+      className="group bg-neutral-900 border border-neutral-800 hover:border-violet-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 text-left w-full cursor-pointer"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -128,6 +130,6 @@ export function EstudosWidget({
           <p className="text-xs text-neutral-700">Nenhuma sessão esta semana</p>
         )}
       </div>
-    </Link>
+    </button>
   );
 }

@@ -68,7 +68,9 @@ impl EstudosManager {
     }
 
     fn conn(&self) -> Connection {
-        Connection::open(&self.db_path).expect("open db")
+        let conn = Connection::open(&self.db_path).expect("open db");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn
     }
 
     
@@ -164,7 +166,7 @@ impl EstudosManager {
 
     
 
-    pub fn export_csv(&self, user_id: &str) -> String {
+    pub fn export_csv(&self, user_id: &str, dest_path: &str) -> Result<(), String> {
         let sessions = self.list_sessions(user_id, 3);
         let mut out = String::from(
             "data,materia,horas,questoes_ineditas,questoes_refeitas,acertos_ineditas,acertos_refeitas,nota\n"
@@ -182,12 +184,12 @@ impl EstudosManager {
                 s.note.unwrap_or_default().replace(',', ";").replace('\n', " ")
             ));
         }
-        out
+        std::fs::write(dest_path, out).map_err(|e| e.to_string())?;
+        Ok(())
     }
 
-    
-
-    pub fn import_csv(&self, user_id: &str, csv: &str) -> Result<usize, String> {
+    pub fn import_csv(&self, user_id: &str, file_path: &str) -> Result<usize, String> {
+        let csv = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
         let mut count = 0usize;
         for (i, line) in csv.lines().enumerate() {
             if i == 0 { continue; } 

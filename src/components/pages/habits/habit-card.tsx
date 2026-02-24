@@ -18,6 +18,7 @@ interface HabitCardProps {
   onEdit: (habit: Habit) => void;
   onOpenResetDialog: (id: number) => void;
   onOpenHardResetDialog: (id: number) => void;
+  onDelete: (id: number) => void;
 }
 
 export function HabitCard({
@@ -26,6 +27,7 @@ export function HabitCard({
   onEdit,
   onOpenResetDialog,
   onOpenHardResetDialog,
+  onDelete,
 }: HabitCardProps) {
   const {
     name,
@@ -75,7 +77,7 @@ export function HabitCard({
             <RotateCcw className="w-4 h-4" />
           </IconBtn>
           <IconBtn
-            onClick={() => habit.id && actions.deleteHabit()}
+            onClick={() => habit.id && onDelete(habit.id)}
             title="Deletar"
             danger
           >

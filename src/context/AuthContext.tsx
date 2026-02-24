@@ -34,12 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchUser = useCallback(async (userId: string) => {
+    console.log(`[AUTH] Buscando dados para userId: ${userId}`);
     try {
       // Busca os dados do usuário no backend pelo ID
       const userData = await invoke<User>("get_local_user", { userId });
 
       // Atualiza o estado global se o usuário for encontrado
       if (userData?.id) {
+        console.log(`[AUTH] Usuário encontrado: ${userData.username}`);
         setUser(userData);
         setIsAuthenticated(true);
       } else {
@@ -71,6 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
+    console.log(
+      `[AUTH] Verificando token salvo: ${storedToken ? "Encontrado" : "Não encontrado"}`,
+    );
     // Tenta restaurar a sessão se houver um token salvo
     if (storedToken) {
       fetchUser(storedToken);

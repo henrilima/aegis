@@ -60,6 +60,9 @@ impl PasswordManager {
         let db_path = app_dir.join("passwords.db");
         let conn = Connection::open(&db_path).expect("Failed to open database");
         
+        let _ = conn.execute("PRAGMA journal_mode=WAL", []);
+        let _ = conn.busy_timeout(std::time::Duration::from_millis(5000));
+
         conn.execute(
             "CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
@@ -102,7 +105,9 @@ impl PasswordManager {
     }
 
     fn get_connection(&self) -> Connection {
-        Connection::open(&self.db_path).expect("Failed to connect to DB")
+        let conn = Connection::open(&self.db_path).expect("Failed to connect to DB");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn
     }
 
     

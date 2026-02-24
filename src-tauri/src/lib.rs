@@ -405,13 +405,13 @@ async fn estudos_list_goals(state: State<'_, AppState>, user_id: String) -> Resu
 }
 
 #[tauri::command]
-async fn estudos_export_csv(state: State<'_, AppState>, user_id: String) -> Result<String, String> {
-    Ok(state.estudos.export_csv(&user_id))
+async fn estudos_export_csv(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
+    state.estudos.export_csv(&user_id, &dest_path)
 }
 
 #[tauri::command]
-async fn estudos_import_csv(state: State<'_, AppState>, user_id: String, csv: String) -> Result<usize, String> {
-    state.estudos.import_csv(&user_id, &csv)
+async fn estudos_import_csv(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
+    state.estudos.import_csv(&user_id, &file_path)
 }
 
 

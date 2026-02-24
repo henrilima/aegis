@@ -32,7 +32,7 @@ import type { SleepEntry, SleepGoal } from "./types";
 
 type TabId = "semana" | "historico" | "metas";
 
-export default function SonoPage() {
+export default function SleepPage() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<SleepEntry[]>([]);
   const [goal, setGoal] = useState<SleepGoal>({

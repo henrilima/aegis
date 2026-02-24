@@ -16,17 +16,21 @@ import {
   Wifi,
   X,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { type AppRoute, useNavigation } from "@/context/NavigationContext";
 import { cn } from "@/lib/utils";
 
 const NAV_GROUPS = [
   {
     label: null,
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: Home, color: "amber" },
+      {
+        title: "Dashboard",
+        route: "dashboard" as AppRoute,
+        icon: Home,
+        color: "amber",
+      },
     ],
   },
   {
@@ -34,7 +38,7 @@ const NAV_GROUPS = [
     items: [
       {
         title: "Senhas",
-        url: "/dashboard/passwords",
+        route: "passwords" as AppRoute,
         icon: Lock,
         color: "amber",
       },
@@ -45,19 +49,19 @@ const NAV_GROUPS = [
     items: [
       {
         title: "Hábitos",
-        url: "/dashboard/habits",
+        route: "habits" as AppRoute,
         icon: Activity,
         color: "teal",
       },
       {
         title: "Pomodoro",
-        url: "/dashboard/pomodoro",
+        route: "pomodoro" as AppRoute,
         icon: Timer,
         color: "red",
       },
       {
         title: "Notas",
-        url: "/dashboard/notes",
+        route: "notes" as AppRoute,
         icon: FileText,
         color: "orange",
       },
@@ -68,13 +72,13 @@ const NAV_GROUPS = [
     items: [
       {
         title: "Estudos",
-        url: "/dashboard/estudos",
+        route: "studies" as AppRoute,
         icon: BookOpen,
         color: "violet",
       },
       {
         title: "Sono",
-        url: "/dashboard/sono",
+        route: "sleep" as AppRoute,
         icon: Moon,
         color: "blue",
       },
@@ -85,19 +89,19 @@ const NAV_GROUPS = [
     items: [
       {
         title: "Câmbio",
-        url: "/dashboard/currency",
+        route: "currency" as AppRoute,
         icon: Banknote,
         color: "green",
       },
       {
         title: "Internet",
-        url: "/dashboard/speedtest",
+        route: "speedtest" as AppRoute,
         icon: Wifi,
         color: "red",
       },
       {
         title: "Hidratação",
-        url: "/dashboard/hydration",
+        route: "hydration" as AppRoute,
         icon: Droplet,
         color: "blue",
       },
@@ -111,10 +115,10 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
-  const pathname = usePathname();
+  const { route, navigate } = useNavigation();
   const { user, logout } = useAuth();
 
-  const isActive = (url: string) => pathname === url;
+  const isActive = (r: AppRoute) => route === r;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -158,15 +162,16 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
               </p>
             )}
             {group.items.map((item) => {
-              const active = isActive(item.url);
+              const active = isActive(item.route);
               const colorClass = item.color;
 
               return (
-                <Link
-                  key={item.url}
-                  href={item.url}
+                <button
+                  key={item.route}
+                  type="button"
+                  onClick={() => navigate(item.route)}
                   className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all group",
+                    "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all group cursor-pointer",
                     active
                       ? {
                           "bg-amber-500/12 text-amber-500 font-semibold":
@@ -220,7 +225,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
                       )}
                     />
                   )}
-                </Link>
+                </button>
               );
             })}
           </div>
@@ -228,18 +233,19 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
       </nav>
 
       <div className="border-t border-neutral-800/70 px-3 py-3 space-y-1">
-        <Link
-          href="/dashboard/settings"
+        <button
+          type="button"
+          onClick={() => navigate("settings")}
           className={cn(
-            "flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all",
-            isActive("/dashboard/settings")
+            "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer",
+            isActive("settings")
               ? "bg-amber-500/12 text-amber-500 font-semibold"
               : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/70",
           )}
         >
           <Settings className="w-4 h-4 shrink-0 text-neutral-600" />
           Configurações
-        </Link>
+        </button>
 
         <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-neutral-900 border border-neutral-800 mt-1">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-black uppercase">

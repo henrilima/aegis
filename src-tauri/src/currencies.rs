@@ -34,7 +34,9 @@ impl CurrencyManager {
     }
 
     fn get_connection(&self) -> Connection {
-        Connection::open(&self.db_path).expect("Failed to connect to DB")
+        let conn = Connection::open(&self.db_path).expect("Failed to connect to currency DB");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn
     }
 
     pub fn get_rates(&self) -> Vec<CurrencyRate> {

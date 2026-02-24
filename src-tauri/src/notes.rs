@@ -26,8 +26,11 @@ impl NoteManager {
         let db_path = app_dir.join("passwords.db");
 
         let conn = Connection::open(&db_path).expect("Failed to open database");
-
         
+        // Otimização de concorrência: WAL mode permite leitura e escrita simultâneas
+        let _ = conn.execute("PRAGMA journal_mode=WAL", []);
+        let _ = conn.busy_timeout(std::time::Duration::from_millis(5000));
+
         conn.execute(
             "CREATE TABLE IF NOT EXISTS notes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +52,9 @@ impl NoteManager {
     }
 
     fn get_connection(&self) -> Connection {
-        Connection::open(&self.db_path).expect("Failed to connect to DB")
+        let conn = Connection::open(&self.db_path).expect("Failed to connect to DB");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn
     }
 
     pub fn list_notes(&self, user_id: &str) -> Vec<Note> {

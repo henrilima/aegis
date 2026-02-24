@@ -56,7 +56,9 @@ impl HabitManager {
     }
 
     fn get_connection(&self) -> Connection {
-        Connection::open(&self.db_path).expect("Failed to connect to DB")
+        let conn = Connection::open(&self.db_path).expect("Failed to connect to habit DB");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn
     }
 
     pub fn list_habits(&self, user_id: &str) -> Vec<Habit> {

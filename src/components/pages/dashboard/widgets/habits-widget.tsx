@@ -1,8 +1,8 @@
 "use client";
 
 import { Activity, CheckCircle2, Circle, Flame } from "lucide-react";
-import Link from "next/link";
 import type { Habit } from "@/components/pages/habits/types";
+import { useNavigation } from "@/context/NavigationContext";
 import { Ring } from "./ui";
 
 interface HabitsWidgetProps {
@@ -20,10 +20,12 @@ export function HabitsWidget({
   maxStreak,
   isToday,
 }: HabitsWidgetProps) {
+  const { navigate } = useNavigation();
   return (
-    <Link
-      href="/dashboard/habits"
-      className="group bg-neutral-900 border border-neutral-800 hover:border-teal-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300"
+    <button
+      type="button"
+      onClick={() => navigate("habits")}
+      className="group bg-neutral-900 border border-neutral-800 hover:border-teal-500/30 rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 text-left w-full cursor-pointer"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -99,6 +101,6 @@ export function HabitsWidget({
           </p>
         )}
       </div>
-    </Link>
+    </button>
   );
 }

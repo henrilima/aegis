@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -20,7 +20,8 @@
         "minHeight": 700,
         "resizable": true,
         "fullscreen": false,
-        "focus": true
+        "focus": true,
+        "devtools": true
       }
     ],
     "security": {

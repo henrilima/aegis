@@ -1,6 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   BarChart3,
   BookOpen,
@@ -37,7 +38,7 @@ import type { StudyGoal, StudySession } from "./types";
 
 type TabId = "visao-geral" | "historico" | "metas" | "relatorio";
 
-export default function EstudosPage() {
+export default function StudiesPage() {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
@@ -125,25 +126,37 @@ export default function EstudosPage() {
 
   const handleExportCSV = async () => {
     try {
-      const csv = await invoke<string>("estudos_export_csv", { userId: uid });
-      await navigator.clipboard.writeText(csv);
-      toast.success("CSV copiado para a área de transferência!");
-    } catch {
+      const path = await save({
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+        defaultPath: "meus_estudos.csv",
+      });
+      if (path) {
+        await invoke("estudos_export_csv", { userId: uid, destPath: path });
+        toast.success("CSV exportado com sucesso!");
+      }
+    } catch (err) {
+      console.error(err);
       toast.error("Erro ao exportar");
     }
   };
 
   const handleImportCSV = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      const count = await invoke<number>("estudos_import_csv", {
-        userId: uid,
-        csv: text,
+      const path = await openDialog({
+        multiple: false,
+        filters: [{ name: "CSV", extensions: ["csv"] }],
       });
-      toast.success(`${count} sessões importadas!`);
-      await load();
-    } catch {
-      toast.error("Erro ao importar CSV da área de transferência");
+      if (path && typeof path === "string") {
+        const count = await invoke<number>("estudos_import_csv", {
+          userId: uid,
+          filePath: path,
+        });
+        toast.success(`${count} sessões importadas!`);
+        await load();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao importar CSV");
     }
   };
 
