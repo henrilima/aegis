@@ -33,8 +33,6 @@ O projeto utiliza tecnologias de ponta para garantir performance e estética pre
 
 ---
 
----
-
 ## 📜 Licença
 
 Este projeto está sob a licença **MIT**. Isso significa que ele é um software aberto e permissivo, permitindo o uso e estudo do código, desde que os créditos e direitos autorais sejam mantidos ao autor original.
