@@ -1,0 +1,82 @@
+import { invoke } from "@tauri-apps/api/core";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+
+export type Tab =
+  | "profile"
+  | "system"
+  | "security"
+  | "notifications"
+  | "danger";
+
+export function useSettingsLogic() {
+  const { user, logout } = useAuth();
+  const [minimizeOnClose, setMinimizeOnClose] = useState(true);
+  const [startAtLogin, setStartAtLogin] = useState(false);
+  const username = user?.username || "Usuário";
+  const email = user?.email || "sem-email@aegis.local";
+
+  const loadConfig = useCallback(async () => {
+    try {
+      const config = await invoke<{
+        minimize_on_close: boolean;
+        start_at_login: boolean;
+        high_priority_notifications: boolean;
+      }>("get_app_config");
+      setMinimizeOnClose(config.minimize_on_close);
+      setStartAtLogin(config.start_at_login);
+    } catch (err) {
+      console.error("Failed to load config:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
+
+  const updateSystemConfig = async (
+    key: "minimize" | "autostart",
+    value: boolean,
+  ) => {
+    const newConfig = {
+      minimize_on_close: key === "minimize" ? value : minimizeOnClose,
+      start_at_login: key === "autostart" ? value : startAtLogin,
+    };
+
+    try {
+      await invoke("set_app_config", { config: newConfig });
+      if (key === "minimize") setMinimizeOnClose(value);
+      if (key === "autostart") setStartAtLogin(value);
+      toast.success("Configuração salva");
+    } catch (err) {
+      console.error("Failed to save config:", err);
+      toast.error("Erro ao salvar configuração");
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      await invoke("test_notification");
+      toast.info("Comando de teste enviado ao Windows");
+    } catch (e) {
+      toast.error(`Erro ao testar: ${e}`);
+    }
+  };
+
+  return {
+    minimizeOnClose,
+    startAtLogin,
+    username,
+    email,
+    updateSystemConfig,
+    handleTestNotification,
+    handleDeleteAccount: async (password: string) => {
+      if (!user?.id) return;
+      await invoke("delete_account", { userId: user.id, password });
+      toast.success("Conta deletada permanentemente");
+      logout();
+    },
+    user,
+  };
+}

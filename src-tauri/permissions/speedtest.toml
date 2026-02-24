@@ -1,0 +1,24 @@
+# src-tauri/permissions/speedtest.toml
+
+[[permission]]
+identifier = "allow-run-speedtest"
+description = "Permite a execução do teste de velocidade de rede"
+commands.allow = [
+    "teste_velocidade_aegis"
+]
+
+[[permission]]
+identifier = "allow-password-management"
+description = "Permite gerenciar senhas e o cofre"
+commands.allow = [
+    "verify_master",
+    "add_password",
+    "update_password",
+    "list_passwords",
+    "decrypt_entry",
+    "import_passwords",
+    "export_passwords",
+    "delete_password",
+    "check_vault",
+    "reset_vault"
+]

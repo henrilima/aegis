@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "enables the default permissions",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "allow-run-speedtest",
+    "allow-password-management",
+    "allow-feature-management",
+    "notification:default",
+    "dialog:default",
+    "shell:allow-open"
+  ]
+}
