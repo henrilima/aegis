@@ -22,6 +22,7 @@ use std::thread;
 use std::time::Duration;
 use chrono::{Local, Timelike, Utc};
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_autostart::ManagerExt as AutoStartManagerExt;
 
 
 
@@ -367,8 +368,21 @@ async fn get_app_config(state: State<'_, AppState>) -> Result<AppConfig, String>
 }
 
 #[tauri::command]
-async fn set_app_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
+async fn set_app_config(state: State<'_, AppState>, app_handle: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
     state.config.set_config(config.clone())?;
+
+    if config.start_at_login {
+        app_handle
+            .autolaunch()
+            .enable()
+            .map_err(|e| format!("Falha ao ativar inicialização automática: {e}"))?;
+    } else {
+        app_handle
+            .autolaunch()
+            .disable()
+            .map_err(|e| format!("Falha ao desativar inicialização automática: {e}"))?;
+    }
+
     Ok(())
 }
 
@@ -508,6 +522,13 @@ pub fn run() {
             let config = ConfigManager::new(app.handle());
             let estudos = EstudosManager::new(app.handle());
             let sono = SonoManager::new(app.handle());
+
+            let initial_config = config.get_config();
+            if initial_config.start_at_login {
+                let _ = app.autolaunch().enable();
+            } else {
+                let _ = app.autolaunch().disable();
+            }
             
 
             
