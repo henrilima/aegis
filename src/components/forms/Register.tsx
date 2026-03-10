@@ -141,22 +141,22 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 </Label>
               </div>
 
-              <div className="flex gap-3 mt-2">
+              <div className="flex gap-4 mt-2">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setShowTermsModal(false)}
-                  className="flex-1 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 font-bold cursor-pointer"
+                  className="flex-1 py-6 rounded-2xl text-[10px] font-black uppercase text-neutral-600 hover:text-white hover:bg-neutral-900 transition-all border-none"
                 >
-                  Cancelar
+                  Abortar
                 </Button>
                 <Button
                   type="button"
                   onClick={handleConfirmRegister}
-                  className="flex-1 bg-amber-500 hover:bg-amber-500 text-black font-bold h-10 rounded-lg shadow-lg shadow-amber-500/10 disabled:opacity-50 cursor-pointer"
+                  className="flex-2 py-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[10px] uppercase shadow-xl shadow-amber-500/10 active:scale-[0.98] transition-all border-none disabled:opacity-30"
                   disabled={!acceptedTerms}
                 >
-                  Criar Conta
+                  Consolidar Identidade
                 </Button>
               </div>
             </div>
@@ -164,63 +164,64 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
         </div>
       )}
 
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-amber-500">
-            Criar Conta Local
+      <Card className="w-full bg-neutral-900 border-neutral-800 shadow-2xl shadow-black/60 rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+        <CardHeader className="space-y-1 pb-8">
+          <CardTitle className="text-3xl font-black text-amber-500">
+            Nova Matriz Local
           </CardTitle>
-          <CardDescription className="text-md mt-[-4] text-neutral-300">
-            Cadastre-se para acessar o Aegis de forma offline e segura.
+          <CardDescription className="text-neutral-500 font-bold uppercase text-[10px]">
+            Provisione uma nova credencial de segurança para o seu ecossistema
+            Aegis
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreateClick}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
+          <form onSubmit={handleCreateClick} className="space-y-6">
+            <div className="grid gap-5">
+              <div className="grid gap-2.5">
                 <Label
                   htmlFor="username"
-                  className="text-neutral-300 text-sm font-bold"
+                  className="text-[10px] font-black uppercase text-neutral-600 ml-1"
                 >
-                  Nome de Usuário
+                  Identidade do Operador
                 </Label>
                 <Input
                   id="username"
-                  placeholder="Digite seu nome de usuário"
-                  className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500"
+                  placeholder="Nome de usuário para o cofre"
+                  className="bg-neutral-950 border-neutral-800 h-12 rounded-2xl text-white placeholder:text-neutral-800 font-bold focus:border-amber-500/50 shadow-inner"
                   value={formData.username}
                   onChange={handleChange}
                   required
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2.5">
                 <Label
                   htmlFor="email"
-                  className="text-neutral-300 text-sm font-bold"
+                  className="text-[10px] font-black uppercase text-neutral-600 ml-1"
                 >
-                  E-mail
+                  Ponto de Contato (E-mail)
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Digite seu e-mail"
-                  className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500"
+                  placeholder="Seu endereço de e-mail institucional"
+                  className="bg-neutral-950 border-neutral-800 h-12 rounded-2xl text-white placeholder:text-neutral-800 font-bold focus:border-amber-500/50 shadow-inner"
                   value={formData.email}
                   onChange={handleChange}
                   required
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2.5">
                 <Label
                   htmlFor="password"
-                  className="text-neutral-300 text-sm font-bold"
+                  className="text-[10px] font-black uppercase text-neutral-600 ml-1"
                 >
-                  Senha
+                  Chave de Criptografia Base
                 </Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Digite sua senha local"
-                  className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500"
+                  placeholder="Defina uma senha robusta"
+                  className="bg-neutral-950 border-neutral-800 h-12 rounded-2xl text-white placeholder:text-neutral-800 font-bold focus:border-amber-500/50 shadow-inner"
                   value={formData.password}
                   onChange={handleChange}
                   required
@@ -228,32 +229,35 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
               </div>
 
               {error && (
-                <p className="text-red-500 text-sm font-medium">{error}</p>
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-500 text-[10px] font-black uppercase text-center">
+                    {error}
+                  </p>
+                </div>
               )}
             </div>
             <Button
               type="submit"
-              variant="secondary"
-              className="bg-amber-500 text-black hover:bg-amber-500 cursor-pointer w-full font-bold mt-6 h-12"
+              className="w-full py-7 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase shadow-xl shadow-amber-500/10 active:scale-[0.98] transition-all border-none mt-4"
               disabled={loading || checking}
             >
-              {loading || checking ? "Processando..." : "Criar Conta"}
+              {loading || checking
+                ? "Validando Parâmetros..."
+                : "Sincronizar Nova Identidade"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter>
-          <div className="text-center w-full text-neutral-400">
-            <p className="text-sm">
-              Já tem uma conta local?{" "}
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="text-amber-500 hover:text-amber-500 underline cursor-pointer font-bold"
-              >
-                Fazer Login
-              </button>
-            </p>
-          </div>
+        <CardFooter className="flex flex-col gap-4 text-center pt-8 border-t border-neutral-800/50 pb-8">
+          <p className="text-[10px] font-black uppercase text-neutral-600 leading-relaxed">
+            Já possui uma interface de acesso?{" "}
+            <button
+              type="button"
+              onClick={onSwitchToLogin}
+              className="text-amber-500 hover:text-amber-400 underline cursor-pointer"
+            >
+              Autenticar-se
+            </button>
+          </p>
         </CardFooter>
       </Card>
     </>

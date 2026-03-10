@@ -185,7 +185,7 @@ export function Widget({
             <Icon className={`w-5 h-5 ${c.text}`} />
           </div>
           <div>
-            <h3 className="font-black text-sm text-neutral-100 uppercase tracking-tight">
+            <h3 className="font-black text-sm text-neutral-100 uppercase">
               {title}
             </h3>
             {description && (

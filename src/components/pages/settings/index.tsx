@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { DangerTab } from "./danger-tab";
-import { NotificationsTab } from "./notifications-tab";
-import { ProfileTab } from "./profile-tab";
-import { SecurityTab } from "./security-tab";
-import { SystemTab } from "./system-tab";
-import { useSettingsLogic } from "./use-settings-logic";
+import { DangerTab } from "./dangerTab";
+import { NotificationsTab } from "./notificationsTab";
+import { ProfileTab } from "./profileTab";
+import { SecurityTab } from "./securityTab";
+import { SystemTab } from "./systemTab";
+import { useSettingsLogic } from "./useSettingsLogic";
 
 const TABS = [
   { id: "profile", label: "Perfil", icon: User },
@@ -31,6 +31,7 @@ export default function Settings() {
   const {
     minimizeOnClose,
     startAtLogin,
+    startMinimized,
     username,
     email,
     updateSystemConfig,
@@ -62,7 +63,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 bg-neutral-900 border border-neutral-800 rounded-2xl w-fit">
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -70,8 +71,8 @@ export default function Settings() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
               activeTab === tab.id
-                ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
-                : "text-neutral-500 hover:text-neutral-200"
+                ? "bg-amber-500/25 text-amber-400 border border-amber-500/40 shadow-md shadow-amber-500/10"
+                : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/60"
             }`}
           >
             <tab.icon className="w-3.5 h-3.5" />
@@ -93,6 +94,7 @@ export default function Settings() {
             <SystemTab
               startAtLogin={startAtLogin}
               minimizeOnClose={minimizeOnClose}
+              startMinimized={startMinimized}
               updateSystemConfig={updateSystemConfig}
             />
           </div>

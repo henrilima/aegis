@@ -1,3 +1,4 @@
+import type { Habit } from "@/components/pages/habits/types";
 import type { PomodoroState } from "./types";
 
 export function pomodoroClock(p: PomodoroState): number {
@@ -27,17 +28,42 @@ export function isToday(iso: string) {
   );
 }
 
+export function isHabitDueToday(habit: Habit) {
+  // using any or importing Habit
+  if (!habit.last_done) return true;
+  if (isToday(habit.last_done)) return true;
+
+  const lastDate = new Date(habit.last_done);
+  const effectiveInterval = Math.max(1, habit.cooldown_days);
+  const nextDate = new Date(lastDate);
+  nextDate.setDate(nextDate.getDate() + effectiveInterval);
+  nextDate.setHours(0, 0, 0, 0);
+
+  return nextDate.getTime() <= Date.now();
+}
+
 export function startOfWeekIso() {
   const now = new Date();
   const day = now.getDay();
   // Calcula a diferença para chegar na segunda-feira (ajusta se for domingo)
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
   const s = new Date(now.getFullYear(), now.getMonth(), diff);
-  return s.toISOString().split("T")[0];
+  const y = s.getFullYear();
+  const m = String(s.getMonth() + 1).padStart(2, "0");
+  const d = String(s.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 export function formatDurationMin(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+export function getHabitStreak(habit: Habit) {
+  if (!habit.last_slip) return 0;
+  const slip = new Date(habit.last_slip);
+  const now = new Date();
+  const diff = now.getTime() - slip.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
 }

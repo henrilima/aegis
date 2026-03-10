@@ -2,42 +2,31 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
-import {
-  BarChart3,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  Copy,
-  Download,
-  Flame,
-  Pencil,
-  Plus,
-  Search,
-  Target,
-  Trash2,
-  TrendingUp,
-  Upload,
-  X,
-} from "lucide-react";
+import { BookOpen, Plus, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { GOAL_LABELS, GoalPanel } from "./goal-panel";
+import { HistoryTab } from "./components/historyTab";
+import { MetasTab } from "./components/metasTab";
+import { OverviewTab } from "./components/overviewTab";
+import { DesempenhoTab, RelatorioTab } from "./components/reportTab";
+import { StudiesHeader } from "./components/studiesHeader";
+import { DeleteModal, SessionModal } from "./components/studiesModals";
+import { StudiesTabs } from "./components/studiesTabs";
+import { StudiesHeatmap } from "./heatmap";
+import type { StudyGoal, StudySession, TabId } from "./types";
 import {
-  formatHours,
-  hitRate,
+  computeStats,
+  computeSubjectMap,
+  generateReport,
   isoDate,
-  parseDate,
-  SessionForm,
   startOfMonth,
   startOfWeek,
-} from "./session-form";
-import type { StudyGoal, StudySession } from "./types";
+} from "./utils";
 
-type TabId = "visao-geral" | "historico" | "metas" | "relatorio";
-
+/**
+ * Módulo de Estudos: Gerencia sessões de estudo, metas e análise de performance
+ */
 export default function StudiesPage() {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<StudySession[]>([]);
@@ -49,16 +38,18 @@ export default function StudiesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
+  const [showSettings, setShowSettings] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
+  // Carregamento inicial de dados brutos e configurações
   const load = useCallback(async () => {
     if (!uid) return;
     try {
       const results = await Promise.allSettled([
         invoke<StudySession[]>("estudos_list_sessions", {
           userId: uid,
-          monthsBack: 3,
+          monthsBack: 5,
         }),
         invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
       ]);
@@ -66,14 +57,11 @@ export default function StudiesPage() {
       if (results[0].status === "fulfilled") {
         setSessions(results[0].value);
       } else {
-        console.error("[estudos] list_sessions error:", results[0].reason);
-        toast.error(`Erro ao carregar sessões: ${results[0].reason}`);
+        toast.error(`Erro ao carregar sessões.`);
       }
 
       if (results[1].status === "fulfilled") {
         setGoals(results[1].value);
-      } else {
-        console.error("[estudos] list_goals error:", results[1].reason);
       }
     } finally {
       setLoading(false);
@@ -97,8 +85,7 @@ export default function StudiesPage() {
       setEditSession(undefined);
       await load();
     } catch (err) {
-      console.error("[estudos] save error:", err);
-      toast.error(`Erro ao salvar sessão: ${err}`);
+      toast.error(`Erro ao salvar: ${err}`);
     }
   };
 
@@ -108,9 +95,8 @@ export default function StudiesPage() {
       toast.success("Sessão removida");
       setDeleteConfirm(null);
       await load();
-    } catch (err) {
-      console.error("[estudos] delete error:", err);
-      toast.error(`Erro ao remover: ${err}`);
+    } catch {
+      toast.error("Erro ao remover");
     }
   };
 
@@ -132,10 +118,9 @@ export default function StudiesPage() {
       });
       if (path) {
         await invoke("estudos_export_csv", { userId: uid, destPath: path });
-        toast.success("CSV exportado com sucesso!");
+        toast.success("CSV exportado!");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Erro ao exportar");
     }
   };
@@ -154,30 +139,15 @@ export default function StudiesPage() {
         toast.success(`${count} sessões importadas!`);
         await load();
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Erro ao importar CSV");
     }
   };
 
+  // Cálculo de janelas temporais e estatísticas agregadas
   const now = new Date();
   const weekStart = isoDate(startOfWeek(now));
   const monthStart = isoDate(startOfMonth(now));
-
-  const computeStats = useCallback(
-    (arr: StudySession[]) => ({
-      hours: arr.reduce((a, s) => a + s.hours, 0),
-      questions: arr.reduce(
-        (a, s) => a + s.questions_new + s.questions_review,
-        0,
-      ),
-      questionsNew: arr.reduce((a, s) => a + s.questions_new, 0),
-      correctNew: arr.reduce((a, s) => a + s.correct_new, 0),
-      questionsReview: arr.reduce((a, s) => a + s.questions_review, 0),
-      correctReview: arr.reduce((a, s) => a + s.correct_review, 0),
-    }),
-    [],
-  );
 
   const weekSessions = useMemo(
     () => sessions.filter((s) => s.date >= weekStart),
@@ -188,18 +158,12 @@ export default function StudiesPage() {
     [sessions, monthStart],
   );
 
-  const weekStats = useMemo(
-    () => computeStats(weekSessions),
-    [weekSessions, computeStats],
-  );
+  const weekStats = useMemo(() => computeStats(weekSessions), [weekSessions]);
   const monthStats = useMemo(
     () => computeStats(monthSessions),
-    [monthSessions, computeStats],
+    [monthSessions],
   );
-  const allStats = useMemo(
-    () => computeStats(sessions),
-    [sessions, computeStats],
-  );
+  const allStats = useMemo(() => computeStats(sessions), [sessions]);
 
   const goalValue = useCallback(
     (type: string) =>
@@ -216,21 +180,12 @@ export default function StudiesPage() {
     [goalValue],
   );
 
-  const subjectMap = useMemo(() => {
-    const m: Record<
-      string,
-      { hours: number; qNew: number; cNew: number; qRev: number; cRev: number }
-    > = {};
-    for (const s of sessions) {
-      if (!m[s.subject])
-        m[s.subject] = { hours: 0, qNew: 0, cNew: 0, qRev: 0, cRev: 0 };
-      m[s.subject].hours += s.hours;
-      m[s.subject].qNew += s.questions_new;
-      m[s.subject].cNew += s.correct_new;
-      m[s.subject].qRev += s.questions_review;
-      m[s.subject].cRev += s.correct_review;
-    }
-    return m;
+  const subjectMap = useMemo(() => computeSubjectMap(sessions), [sessions]);
+
+  const existingSubjects = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of sessions) set.add(s.subject);
+    return Array.from(set).sort();
   }, [sessions]);
 
   const months = useMemo(() => {
@@ -254,483 +209,133 @@ export default function StudiesPage() {
     [sessions, search, filterMonth],
   );
 
-  const generateReport = useCallback(() => {
-    const lines = [
-      `📊 RELATÓRIO DE ESTUDOS — ${new Date().toLocaleDateString("pt-BR")}`,
-      ``,
-      `📅 SEMANA ATUAL`,
-      `  ⏱ Horas: ${formatHours(weekStats.hours)} / ${goalValue("weekly_hours") ? formatHours(goalValue("weekly_hours")) : "—"}`,
-      `  📝 Questões: ${weekStats.questions} / ${goalValue("weekly_questions") || "—"}`,
-      `  ✅ Acerto Inéditas: ${hitRate(weekStats.correctNew, weekStats.questionsNew)}%`,
-      `  🔄 Acerto Refeitas: ${hitRate(weekStats.correctReview, weekStats.questionsReview)}%`,
-      ``,
-      `📆 MÊS ATUAL`,
-      `  ⏱ Horas: ${formatHours(monthStats.hours)} / ${goalValue("monthly_hours") ? formatHours(goalValue("monthly_hours")) : "—"}`,
-      `  📝 Questões: ${monthStats.questions} / ${goalValue("monthly_questions") || "—"}`,
-    ];
-    return lines.join("\n");
-  }, [weekStats, monthStats, goalValue]);
-
   const copyReport = async () => {
     try {
-      await navigator.clipboard.writeText(generateReport());
+      const text = generateReport({
+        weekStats,
+        monthStats,
+        allStats,
+        goalValue,
+      });
+      await navigator.clipboard.writeText(text);
       toast.success("Relatório copiado!");
     } catch {
       toast.error("Erro ao copiar");
     }
   };
 
-  const TABS: { id: TabId; label: string; icon: typeof BarChart3 }[] = [
-    { id: "visao-geral", label: "Visão Geral", icon: BarChart3 },
-    { id: "historico", label: "Histórico", icon: Calendar },
-    { id: "metas", label: "Metas", icon: Target },
-    { id: "relatorio", label: "Relatório", icon: Copy },
-  ];
-
   if (loading)
     return (
       <div className="h-full flex items-center justify-center">
         <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
-          <BookOpen className="w-4 h-4" /> Carregando...
+          <BookOpen className="w-4 h-4" />
+          <span className="font-bold">Sincronizando estudos...</span>
         </div>
       </div>
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-10 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20">
-            <BookOpen className="w-5 h-5 text-violet-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold leading-none">
-              Estudos &amp; Desempenho
-            </h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Centro de comando acadêmico
-            </p>
-          </div>
-        </div>
+    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-10 animate-in fade-in duration-500 text-white">
+      <StudiesHeader
+        onImportCSV={handleImportCSV}
+        onExportCSV={handleExportCSV}
+        onOpenSettings={() => setShowSettings(true)}
+        onNewSession={() => {
+          setEditSession(undefined);
+          setShowForm(true);
+        }}
+      />
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-violet-400 border border-neutral-700 transition-all cursor-pointer text-xs font-bold"
-          >
-            <Download className="w-4 h-4" />
-            Exportar
-          </button>
-          <button
-            type="button"
-            onClick={handleImportCSV}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-violet-400 border border-neutral-700 transition-all cursor-pointer text-xs font-bold"
-          >
-            <Upload className="w-4 h-4" />
-            Importar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEditSession(undefined);
-              setShowForm(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Nova Sessão
-          </button>
-        </div>
-      </div>
+      <SessionModal
+        show={showForm}
+        userId={uid}
+        editSession={editSession}
+        existingSubjects={existingSubjects}
+        onSave={handleSave}
+        onClose={() => {
+          setShowForm(false);
+          setEditSession(undefined);
+        }}
+      />
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">
-                {editSession ? "Editar Sessão" : "Nova Sessão de Estudo"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditSession(undefined);
-                }}
-                className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <SessionForm
-              userId={uid}
-              initial={editSession}
-              onSave={handleSave}
-              onCancel={() => {
-                setShowForm(false);
-                setEditSession(undefined);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <DeleteModal
+        id={deleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
-      {deleteConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl text-center">
-            <Trash2 className="w-8 h-8 text-red-400 mx-auto mb-3" />
-            <h3 className="font-bold text-lg mb-1">Remover sessão?</h3>
-            <p className="text-sm text-neutral-500 mb-5">
-              Essa ação é irreversível.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  void handleDelete(deleteConfirm);
-                }}
-                className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors cursor-pointer"
-              >
-                Remover
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-sm font-bold transition-colors cursor-pointer"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StudiesTabs activeTab={tab} onTabChange={setTab} />
 
-      <div className="flex gap-1 p-1 bg-neutral-900 border border-neutral-800 rounded-2xl w-fit">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              tab === t.id
-                ? "bg-violet-600/20 text-violet-400 border border-violet-600/30"
-                : "text-neutral-500 hover:text-neutral-200"
-            }`}
-          >
-            <t.icon className="w-3.5 h-3.5" />
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+      {/* Renderização condicional das abas */}
       {tab === "visao-geral" && (
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              {
-                label: "Horas esta semana",
-                value: formatHours(weekStats.hours),
-                icon: Clock,
-                sub: `Meta: ${goalValue("weekly_hours") ? formatHours(goalValue("weekly_hours")) : "—"}`,
-                progress: goalProgress(weekStats.hours, "weekly_hours"),
-              },
-              {
-                label: "Questões esta semana",
-                value: weekStats.questions,
-                icon: CheckCircle,
-                sub: `Meta: ${goalValue("weekly_questions") || "—"}`,
-                progress: goalProgress(weekStats.questions, "weekly_questions"),
-              },
-              {
-                label: "Acerto (inéditas)",
-                value: `${hitRate(allStats.correctNew, allStats.questionsNew)}%`,
-                icon: TrendingUp,
-                sub: `${allStats.correctNew}/${allStats.questionsNew} certas`,
-                progress: hitRate(allStats.correctNew, allStats.questionsNew),
-              },
-              {
-                label: "Acerto (refeitas)",
-                value: `${hitRate(allStats.correctReview, allStats.questionsReview)}%`,
-                icon: Flame,
-                sub: `${allStats.correctReview}/${allStats.questionsReview} certas`,
-                progress: hitRate(
-                  allStats.correctReview,
-                  allStats.questionsReview,
-                ),
-              },
-            ].map((c) => (
-              <div
-                key={c.label}
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col gap-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase  text-neutral-500">
-                    {c.label}
-                  </span>
-                  <c.icon className="w-3.5 h-3.5 text-violet-500" />
-                </div>
-                <span className="text-2xl font-black text-white leading-none">
-                  {c.value}
-                </span>
-                <div className="h-1 bg-neutral-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-violet-500 rounded-full transition-all"
-                    style={{ width: `${c.progress}%` }}
-                  />
-                </div>
-                <span className="text-[10px] text-neutral-600">{c.sub}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-            <h2 className="text-sm font-black uppercase  text-neutral-400 mb-4">
-              Progresso das Metas
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                {
-                  type: "weekly_hours",
-                  current: weekStats.hours,
-                  fmt: (v: number) => formatHours(v),
-                },
-                {
-                  type: "monthly_hours",
-                  current: monthStats.hours,
-                  fmt: (v: number) => formatHours(v),
-                },
-                {
-                  type: "weekly_questions",
-                  current: weekStats.questions,
-                  fmt: (v: number) => String(v),
-                },
-                {
-                  type: "monthly_questions",
-                  current: monthStats.questions,
-                  fmt: (v: number) => String(v),
-                },
-              ].map(({ type, current, fmt }) => {
-                const target = goalValue(type);
-                const pct = target
-                  ? Math.min(100, Math.round((current / target) * 100))
-                  : 0;
-                return (
-                  <div key={type} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-neutral-400">
-                        {GOAL_LABELS[type]}
-                      </span>
-                      <span className="text-xs font-bold text-violet-400">
-                        {fmt(current)} / {target ? fmt(target) : "—"}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-green-500" : "bg-violet-500"}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-neutral-600">
-                      {target ? `${pct}% concluído` : "Meta não definida"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-            <h2 className="text-sm font-black uppercase  text-neutral-400 mb-4">
-              Desempenho por Matéria (3 meses)
-            </h2>
-            {Object.keys(subjectMap).length === 0 ? (
-              <p className="text-sm text-neutral-600 text-center py-6">
-                Nenhuma sessão registrada ainda.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {Object.entries(subjectMap)
-                  .sort((a, b) => b[1].hours - a[1].hours)
-                  .map(([subj, d]) => {
-                    const totalQ = d.qNew + d.qRev;
-                    const totalC = d.cNew + d.cRev;
-                    const rate = hitRate(totalC, totalQ);
-                    return (
-                      <div
-                        key={subj}
-                        className="flex items-center gap-4 py-2 border-b border-neutral-800 last:border-0"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-semibold text-white truncate block">
-                            {subj}
-                          </span>
-                          <span className="text-[11px] text-neutral-500">
-                            {formatHours(d.hours)} · {totalQ} questões
-                          </span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span
-                            className={`text-sm font-black ${rate >= 70 ? "text-green-400" : rate >= 50 ? "text-yellow-400" : "text-red-400"}`}
-                          >
-                            {rate}%
-                          </span>
-                          <p className="text-[10px] text-neutral-600">acerto</p>
-                        </div>
-                        <div className="w-16">
-                          <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${rate >= 70 ? "bg-green-500" : rate >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
-                              style={{ width: `${rate}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-        </div>
+        <OverviewTab
+          weekStats={weekStats}
+          monthStats={monthStats}
+          allStats={allStats}
+          goalValue={goalValue}
+          goalProgress={goalProgress}
+          subjectMap={subjectMap}
+        />
       )}
 
       {tab === "historico" && (
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
-              <input
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition-colors"
-                placeholder="Buscar por matéria, data ou anotação..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="relative">
-              <select
-                className="appearance-none bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-              >
-                <option value="all">Todos os meses</option>
-                {months.map((m) => (
-                  <option key={m} value={m}>
-                    {new Date(`${m}-01`).toLocaleDateString("pt-BR", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600 pointer-events-none" />
-            </div>
-          </div>
-
-          {filteredSessions.length === 0 ? (
-            <div className="text-center py-16 text-neutral-600">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Nenhuma sessão encontrada</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {filteredSessions.map((s) => {
-                const totalQ = s.questions_new + s.questions_review;
-                const totalC = s.correct_new + s.correct_review;
-                return (
-                  <div
-                    key={s.id}
-                    className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-white">
-                            {s.subject}
-                          </span>
-                          <span className="text-[10px] font-black uppercase  text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">
-                            {parseDate(s.date).toLocaleDateString("pt-BR", {
-                              weekday: "short",
-                              day: "2-digit",
-                              month: "short",
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 mt-1.5 flex-wrap">
-                          <span className="text-xs text-neutral-500">
-                            <Clock className="inline w-3 h-3 mr-1" />
-                            {formatHours(s.hours)}
-                          </span>
-                          {totalQ > 0 && (
-                            <>
-                              <span className="text-xs text-neutral-500">
-                                {totalQ} questões
-                              </span>
-                              <span
-                                className={`text-xs font-bold ${hitRate(totalC, totalQ) >= 70 ? "text-green-400" : hitRate(totalC, totalQ) >= 50 ? "text-yellow-400" : "text-red-400"}`}
-                              >
-                                {hitRate(totalC, totalQ)}% acerto
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        {s.note && (
-                          <p className="text-[11px] text-neutral-500 mt-1.5 line-clamp-2">
-                            {s.note}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditSession(s);
-                            setShowForm(true);
-                          }}
-                          className="p-1.5 rounded-lg text-neutral-600 hover:text-violet-400 hover:bg-violet-500/10 transition-all cursor-pointer"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteConfirm(s.id ?? null)}
-                          className="p-1.5 rounded-lg text-neutral-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <HistoryTab
+          sessions={filteredSessions}
+          search={search}
+          onSearchChange={setSearch}
+          filterMonth={filterMonth}
+          onFilterMonthChange={setFilterMonth}
+          months={months}
+          onEdit={(s) => {
+            setEditSession(s);
+            setShowForm(true);
+          }}
+          onDelete={setDeleteConfirm}
+        />
       )}
 
-      {tab === "metas" && (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <Target className="w-4 h-4 text-violet-400" />
-            <h2 className="font-bold text-white">Definir Metas</h2>
-          </div>
-          <GoalPanel goals={goals} userId={uid} onSave={handleGoalSave} />
-        </div>
+      {tab === "heatmap" && <StudiesHeatmap sessions={sessions} />}
+
+      {tab === "desempenho" && (
+        <DesempenhoTab allStats={allStats} subjectMap={subjectMap} />
       )}
 
       {tab === "relatorio" && (
-        <div className="flex flex-col gap-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-white">Relatório de Desempenho</h2>
+        <RelatorioTab
+          reportText={generateReport({
+            weekStats,
+            monthStats,
+            allStats,
+            goalValue,
+          })}
+          onCopy={copyReport}
+          weekStats={weekStats}
+          allStats={allStats}
+        />
+      )}
+
+      {/* Interface flutuante para configurações do módulo */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-neutral-800 flex items-center justify-between sticky top-0 bg-neutral-900 z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-violet-600/10 border border-violet-600/20">
+                  <Settings className="w-5 h-5 text-violet-400" />
+                </div>
+                <h2 className="text-xl font-bold">Metas e Preferências</h2>
+              </div>
               <button
                 type="button"
-                onClick={copyReport}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors cursor-pointer"
+                onClick={() => setShowSettings(false)}
+                className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
               >
-                <Copy className="w-3.5 h-3.5" /> Copiar
+                <Plus className="w-6 h-6 rotate-45" />
               </button>
             </div>
-            <pre className="text-xs text-neutral-400 font-mono whitespace-pre-wrap bg-neutral-950 border border-neutral-800 rounded-xl p-4 leading-relaxed">
-              {generateReport()}
-            </pre>
+            <div className="p-6">
+              <MetasTab goals={goals} userId={uid} onSave={handleGoalSave} />
+            </div>
           </div>
         </div>
       )}

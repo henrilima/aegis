@@ -1,16 +1,19 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { ArrowRightLeft, Clock, RefreshCw } from "lucide-react";
+import { ArrowRightLeft, Clock, Coins, RefreshCw, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CurrencyHeader } from "./currency-header";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { CurrencyRate } from "./types";
 
 const CURRENCY_API = "https://open.er-api.com/v6/latest/USD";
-
 const FAVORITES = [
   "USD",
   "BRL",
@@ -24,6 +27,9 @@ const FAVORITES = [
   "ARS",
 ];
 
+/**
+ * Módulo de Câmbio: Conversão de moedas em tempo real com suporte offline
+ */
 export default function CurrencyPage() {
   const [rates, setRates] = useState<Record<string, number>>({});
   const [baseCurrency, setBaseCurrency] = useState("USD");
@@ -35,11 +41,12 @@ export default function CurrencyPage() {
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Sincronização de taxas via API ou Cache Local
   const fetchRates = useCallback(async (forceReload = false) => {
     setLoading(true);
     try {
       const response = await fetch(CURRENCY_API);
-      if (!response.ok) throw new Error("Offline");
+      if (!response.ok) throw new Error("Connection Error");
 
       const data = await response.json();
       const erRates = data.rates;
@@ -56,7 +63,7 @@ export default function CurrencyPage() {
       setLastUpdated(data.time_last_update_utc);
       setNextUpdate(data.time_next_update_utc);
       setIsOffline(false);
-      if (forceReload) toast.success("Cotações atualizadas!");
+      if (forceReload) toast.success("Mercado atualizado com sucesso!");
     } catch {
       const dbRates = await invoke<CurrencyRate[]>("get_currency_rates");
       if (dbRates.length > 0) {
@@ -65,9 +72,9 @@ export default function CurrencyPage() {
         setRates(ratesMap);
         setLastUpdated(dbRates[0].last_updated);
         setIsOffline(true);
-        if (forceReload) toast.info("Usando cache local (Offline)");
+        if (forceReload) toast.info("Operando em Modo Offline (Cache)");
       } else {
-        toast.error("Sem dados e sem conexão.");
+        toast.error("Sem conexão e sem cache disponível.");
       }
     } finally {
       setLoading(false);
@@ -78,6 +85,7 @@ export default function CurrencyPage() {
     fetchRates();
   }, [fetchRates]);
 
+  // Agendamento da próxima atualização automática
   useEffect(() => {
     if (!nextUpdate) return;
     const ms = new Date(nextUpdate).getTime() - Date.now();
@@ -86,6 +94,7 @@ export default function CurrencyPage() {
     return () => clearTimeout(t);
   }, [nextUpdate, fetchRates]);
 
+  // Cálculo reativo da conversão
   useEffect(() => {
     if (rates[targetCurrency] && rates[baseCurrency]) {
       const inUsd = amount / (rates[baseCurrency] || 1);
@@ -118,114 +127,150 @@ export default function CurrencyPage() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center">
-      <div className="w-full max-w-sm space-y-4">
-        <CurrencyHeader isOffline={isOffline} loading={loading} />
+    <div className="h-full w-full flex flex-col items-center justify-center animate-in fade-in duration-700 p-4">
+      <div className="w-full max-w-sm space-y-5">
+        {/* Cabeçalho */}
+        <div className="text-center space-y-1">
+          <div className="mx-auto mb-3 p-3 bg-green-500/10 rounded-3xl w-fit border border-green-500/20">
+            <Coins
+              className={`w-7 h-7 text-green-500 ${loading ? "animate-pulse" : ""}`}
+            />
+          </div>
+          <h1 className="text-2xl font-bold">Câmbio</h1>
+          {isOffline ? (
+            <span className="inline-flex items-center gap-1 text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full font-semibold">
+              <WifiOff className="w-3 h-3" /> Offline — dados em cache
+            </span>
+          ) : (
+            <p className="text-xs text-neutral-500">Taxas em relação ao USD</p>
+          )}
+        </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3">
+        {/* Console de Conversão */}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 space-y-4 shadow-2xl shadow-black/40">
+          {/* Campo de Origem */}
           <div className="space-y-1.5">
-            <p className="text-[10px] font-black uppercase  text-neutral-500">
-              De
-            </p>
+            <label
+              htmlFor="currency-amount"
+              className="text-xs font-bold text-neutral-500 ml-1 uppercase block"
+            >
+              Moeda Base
+            </label>
             <div className="flex gap-2">
-              <CurrencySelect
-                value={baseCurrency}
-                onChange={setBaseCurrency}
-                currencies={sortedCurrencies}
-              />
-              <Input
+              <Select value={baseCurrency} onValueChange={setBaseCurrency}>
+                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-2xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-neutral-900 border-neutral-800 max-h-60">
+                  {sortedCurrencies.map((c) => (
+                    <SelectItem
+                      key={c}
+                      value={c}
+                      className="text-xs font-bold py-2"
+                    >
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input
+                id="currency-amount"
                 type="number"
                 min={0}
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
-                className="flex-1 bg-neutral-950 border-neutral-700 font-mono text-right"
+                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-2xl px-4 py-3 font-mono font-black text-right text-white outline-none focus:border-green-500/30 transition-all shadow-inner"
               />
             </div>
           </div>
 
-          <div className="flex justify-center">
+          {/* Botão de Inversão */}
+          <div className="flex justify-center -my-2 relative z-10">
             <button
               type="button"
               onClick={handleSwap}
-              className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-400 hover:text-white transition-all cursor-pointer"
+              className="p-3 rounded-2xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-400 hover:text-white transition-all cursor-pointer shadow-lg active:scale-90"
+              title="Inverter Moedas"
             >
               <ArrowRightLeft className="w-4 h-4" />
             </button>
           </div>
 
+          {/* Campo de Destino */}
           <div className="space-y-1.5">
-            <p className="text-[10px] font-black uppercase  text-neutral-500">
-              Para
-            </p>
+            <label
+              htmlFor="currency-target"
+              className="text-xs font-bold text-neutral-500 ml-1 uppercase block"
+            >
+              Resultado
+            </label>
             <div className="flex gap-2">
-              <CurrencySelect
-                value={targetCurrency}
-                onChange={setTargetCurrency}
-                currencies={sortedCurrencies}
-              />
-              <div className="flex-1 h-10 px-3 rounded-lg bg-neutral-950 border border-neutral-700 font-mono font-bold text-right flex items-center justify-end text-green-500 text-lg">
+              <Select value={targetCurrency} onValueChange={setTargetCurrency}>
+                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-2xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-neutral-900 border-neutral-800 max-h-60">
+                  {sortedCurrencies.map((c) => (
+                    <SelectItem
+                      key={c}
+                      value={c}
+                      className="text-xs font-bold py-2"
+                    >
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div
+                id="currency-target"
+                className="flex-1 h-[46px] px-4 rounded-2xl bg-neutral-950/50 border border-neutral-800 font-mono font-black text-right flex items-center justify-end text-green-400 text-xl shadow-inner"
+              >
                 {result.toFixed(2)}
               </div>
             </div>
           </div>
 
+          {/* Taxa Informativa */}
           {rates[baseCurrency] && rates[targetCurrency] && (
-            <p className="text-center text-xs text-neutral-600 pt-1">
-              1 {baseCurrency} ={" "}
-              {(rates[targetCurrency] / rates[baseCurrency]).toFixed(4)}{" "}
-              {targetCurrency}
-            </p>
+            <div className="text-center pt-2">
+              <p className="text-xs text-neutral-600 font-bold">
+                1 {baseCurrency} ≈{" "}
+                {(rates[targetCurrency] / rates[baseCurrency]).toFixed(4)}{" "}
+                {targetCurrency}
+              </p>
+            </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-neutral-600 px-1">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Atualizado: {fmtDate(lastUpdated)}
+        {/* Rodapé e Sincronização */}
+        <div className="flex items-center justify-between text-[10px] text-neutral-600 font-bold px-1">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-neutral-700" />
+            Atualizado em: {fmtDate(lastUpdated)}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             onClick={() => fetchRates(true)}
             disabled={loading}
-            className="text-xs text-neutral-500 hover:text-white cursor-pointer h-7 px-2"
+            className="flex items-center gap-2 text-neutral-500 hover:text-white transition-colors cursor-pointer disabled:opacity-30"
           >
-            <RefreshCw
-              className={`w-3 h-3 mr-1 ${loading ? "animate-spin" : ""}`}
-            />
-            Atualizar
-          </Button>
+            <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+            Sincronizar
+          </button>
         </div>
 
-        <p className="text-center text-[10px] text-neutral-700">
-          OpenER API · atualiza ~1×/dia (plano gratuito)
-          {nextUpdate && ` · próxima: ${fmtDate(nextUpdate)}`}
-        </p>
+        {/* API Info */}
+        <div className="text-center opacity-20 hover:opacity-100 transition-opacity">
+          <p className="text-[9px] font-bold uppercase text-neutral-700">
+            Open Exchange Rates API
+          </p>
+          {nextUpdate && (
+            <p className="text-[8px] font-bold uppercase text-neutral-800 mt-0.5">
+              Próxima sync: {fmtDate(nextUpdate)}
+            </p>
+          )}
+        </div>
       </div>
     </div>
-  );
-}
-
-function CurrencySelect({
-  value,
-  onChange,
-  currencies,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  currencies: string[];
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-24 h-10 rounded-lg border border-neutral-700 bg-neutral-950 px-2 text-sm font-bold text-white focus:outline-none focus:border-green-500/50 cursor-pointer"
-    >
-      {currencies.map((c) => (
-        <option key={c} value={c}>
-          {c}
-        </option>
-      ))}
-    </select>
   );
 }

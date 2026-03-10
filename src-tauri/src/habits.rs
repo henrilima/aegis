@@ -18,6 +18,11 @@ pub struct Habit {
     pub cooldown_days: i32,
     pub last_done: Option<String>,
     pub charges_used: i32,
+    pub charges_amount: i32,
+    pub charges_interval_days: i32,
+    pub accumulates: bool,
+    pub last_charge_refill: String,
+    pub current_charges: i32,
 }
 
 pub struct HabitManager {
@@ -41,7 +46,12 @@ impl HabitManager {
                 max_streak INTEGER NOT NULL DEFAULT 0,
                 cooldown_days INTEGER NOT NULL DEFAULT 0,
                 last_done TEXT,
-                charges_used INTEGER NOT NULL DEFAULT 0
+                charges_used INTEGER NOT NULL DEFAULT 0,
+                charges_amount INTEGER NOT NULL DEFAULT 0,
+                charges_interval_days INTEGER NOT NULL DEFAULT 0,
+                accumulates INTEGER NOT NULL DEFAULT 0,
+                last_charge_refill TEXT NOT NULL DEFAULT '',
+                current_charges INTEGER NOT NULL DEFAULT 0
             )",
             [],
         ).ok();
@@ -51,6 +61,11 @@ impl HabitManager {
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN cooldown_days INTEGER NOT NULL DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN last_done TEXT", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN charges_used INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE habits ADD COLUMN charges_amount INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE habits ADD COLUMN charges_interval_days INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE habits ADD COLUMN accumulates INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE habits ADD COLUMN last_charge_refill TEXT NOT NULL DEFAULT ''", []);
+        let _ = conn.execute("ALTER TABLE habits ADD COLUMN current_charges INTEGER NOT NULL DEFAULT 0", []);
 
         Self { db_path }
     }
@@ -61,9 +76,83 @@ impl HabitManager {
         conn
     }
 
+
+    fn sync_habit_logic(&self, conn: &Connection, mut habit: Habit) -> Habit {
+        let now = Utc::now();
+        let mut changed = false;
+
+        // 1. Refill charges
+        if habit.charges_amount > 0 && habit.charges_interval_days > 0 {
+            let last_refill = DateTime::parse_from_rfc3339(&habit.last_charge_refill)
+                .unwrap_or_else(|_| DateTime::parse_from_rfc3339(&habit.created_at).unwrap())
+                .with_timezone(&Utc);
+            
+            let days_passed = (now - last_refill).num_days() as i32;
+            if days_passed >= habit.charges_interval_days {
+                let times = days_passed / habit.charges_interval_days;
+                if habit.accumulates {
+                    habit.current_charges += habit.charges_amount * times;
+                } else {
+                    habit.current_charges = habit.charges_amount;
+                }
+                let next_refill = last_refill + chrono::Duration::days((times * habit.charges_interval_days) as i64);
+                habit.last_charge_refill = next_refill.to_rfc3339();
+                changed = true;
+            }
+        }
+
+        // 2. Auto-consume charges for Positive habits if missed
+        if habit.habit_type == "Positive" {
+            let cooldown = if habit.cooldown_days > 0 { habit.cooldown_days } else { 1 };
+            
+            loop {
+                let last_done_dt = match &habit.last_done {
+                    Some(ld) => DateTime::parse_from_rfc3339(ld).unwrap_or_else(|_| DateTime::parse_from_rfc3339(&habit.last_slip).unwrap()).with_timezone(&Utc),
+                    None => DateTime::parse_from_rfc3339(&habit.last_slip).unwrap().with_timezone(&Utc),
+                };
+
+                // Se passou do tempo (cooldown + 1 dia de margem)
+                if (now - last_done_dt).num_days() as i32 > cooldown {
+                    if habit.current_charges > 0 {
+                        habit.current_charges -= 1;
+                        // Simulamos que foi feito no dia esperado para manter a sequência
+                        let next_done = last_done_dt + chrono::Duration::days(cooldown as i64);
+                        habit.last_done = Some(next_done.to_rfc3339());
+                        changed = true;
+                    } else {
+                        // Perdeu a sequência
+                        habit.last_slip = now.to_rfc3339();
+                        habit.last_done = None;
+                        changed = true;
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // 3. Update Max Streak
+        let last_slip_dt = DateTime::parse_from_rfc3339(&habit.last_slip).unwrap().with_timezone(&Utc);
+        let current_streak = (now - last_slip_dt).num_days() as i32;
+        if current_streak > habit.max_streak {
+            habit.max_streak = current_streak;
+            changed = true;
+        }
+
+        if changed {
+            conn.execute(
+                "UPDATE habits SET last_slip = ?1, last_done = ?2, charges_used = ?3, last_charge_refill = ?4, current_charges = ?5, max_streak = ?6 WHERE id = ?7",
+                params![habit.last_slip, habit.last_done, habit.charges_used, habit.last_charge_refill, habit.current_charges, habit.max_streak, habit.id],
+            ).ok();
+        }
+
+        habit
+    }
+
     pub fn list_habits(&self, user_id: &str) -> Vec<Habit> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used FROM habits WHERE user_id = ?1").unwrap();
+        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges FROM habits WHERE user_id = ?1").unwrap();
         let rows = stmt.query_map(params![user_id], |row| {
             Ok(Habit {
                 id: Some(row.get(0)?),
@@ -76,17 +165,40 @@ impl HabitManager {
                 cooldown_days: row.get(7)?,
                 last_done: row.get(8)?,
                 charges_used: row.get(9)?,
+                charges_amount: row.get(10)?,
+                charges_interval_days: row.get(11)?,
+                accumulates: row.get::<_, i32>(12)? != 0,
+                last_charge_refill: row.get(13)?,
+                current_charges: row.get(14)?,
             })
         }).unwrap();
 
-        rows.map(|r| r.unwrap()).collect()
+        rows.map(|r| {
+            let h = r.unwrap();
+            self.sync_habit_logic(&conn, h)
+        }).collect()
     }
 
     pub fn add_habit(&self, habit: Habit) -> Result<(), String> {
         let conn = self.get_connection();
         conn.execute(
-            "INSERT INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            params![habit.user_id, habit.name, habit.habit_type, habit.last_slip, habit.created_at, habit.max_streak, habit.cooldown_days, habit.last_done, habit.charges_used],
+            "INSERT INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+            params![
+                habit.user_id, 
+                habit.name, 
+                habit.habit_type, 
+                habit.last_slip, 
+                habit.created_at, 
+                habit.max_streak, 
+                habit.cooldown_days, 
+                habit.last_done, 
+                habit.charges_used,
+                habit.charges_amount,
+                habit.charges_interval_days,
+                if habit.accumulates { 1 } else { 0 },
+                habit.last_charge_refill,
+                habit.current_charges
+            ],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -94,17 +206,23 @@ impl HabitManager {
     pub fn update_habit(&self, habit: Habit) -> Result<(), String> {
         let conn = self.get_connection();
         conn.execute(
-            "UPDATE habits SET name = ?1, habit_type = ?2, cooldown_days = ?3 WHERE id = ?4",
-            params![habit.name, habit.habit_type, habit.cooldown_days, habit.id],
+            "UPDATE habits SET name = ?1, habit_type = ?2, cooldown_days = ?3, charges_amount = ?4, charges_interval_days = ?5, accumulates = ?6 WHERE id = ?7",
+            params![
+                habit.name, 
+                habit.habit_type, 
+                habit.cooldown_days, 
+                habit.charges_amount,
+                habit.charges_interval_days,
+                if habit.accumulates { 1 } else { 0 },
+                habit.id
+            ],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
 
-    pub fn reset_habit(&self, id: i32, timestamp: &str) -> Result<(), String> {
-        let conn = self.get_connection();
-        
-        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used FROM habits WHERE id = ?1").map_err(|e| e.to_string())?;
-        let habit: Habit = stmt.query_row(params![id], |row| {
+    fn get_habit_by_id(&self, conn: &Connection, id: i32) -> Result<Habit, String> {
+        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges FROM habits WHERE id = ?1").map_err(|e| e.to_string())?;
+        stmt.query_row(params![id], |row| {
             Ok(Habit {
                 id: Some(row.get(0)?),
                 user_id: row.get(1)?,
@@ -116,36 +234,33 @@ impl HabitManager {
                 cooldown_days: row.get(7)?,
                 last_done: row.get(8)?,
                 charges_used: row.get(9)?,
+                charges_amount: row.get(10)?,
+                charges_interval_days: row.get(11)?,
+                accumulates: row.get::<_, i32>(12)? != 0,
+                last_charge_refill: row.get(13)?,
+                current_charges: row.get(14)?,
             })
-        }).map_err(|e| e.to_string())?;
+        }).map_err(|e| e.to_string())
+    }
 
-        let last_slip = DateTime::parse_from_rfc3339(&habit.last_slip).map_err(|e| e.to_string())?.with_timezone(&Utc);
-        let now = Utc::now();
-        let current_streak = (now - last_slip).num_days() as i32;
-        let new_max = if current_streak > habit.max_streak { current_streak } else { habit.max_streak };
+    pub fn reset_habit(&self, id: i32, timestamp: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        let habit = self.get_habit_by_id(&conn, id)?;
+        let synced_habit = self.sync_habit_logic(&conn, habit);
 
-        if habit.habit_type == "Positive" {
-            
-            conn.execute(
-                "UPDATE habits SET last_slip = ?1, last_done = NULL, max_streak = ?2, charges_used = 0 WHERE id = ?3",
-                params![timestamp, new_max, id],
-            ).map_err(|e| e.to_string())?;
-        } else {
-            
-            conn.execute(
-                "UPDATE habits SET last_slip = ?1, last_done = ?1, max_streak = ?2, charges_used = ?3 WHERE id = ?4",
-                params![timestamp, new_max, habit.charges_used + 1, id],
-            ).map_err(|e| e.to_string())?;
-        }
+        // Reset sempre quebra a sequência (last_slip = agora)
+        conn.execute(
+            "UPDATE habits SET last_slip = ?1, last_done = ?2, charges_used = ?3 WHERE id = ?4",
+            params![timestamp, None::<String>, synced_habit.charges_used + 1, id],
+        ).map_err(|e| e.to_string())?;
         
         Ok(())
     }
 
     pub fn hard_reset_habit(&self, id: i32, timestamp: &str) -> Result<(), String> {
         let conn = self.get_connection();
-        
         conn.execute(
-            "UPDATE habits SET last_slip = ?1, last_done = NULL, max_streak = 0, charges_used = 0 WHERE id = ?2",
+            "UPDATE habits SET last_slip = ?1, last_done = NULL, max_streak = 0, charges_used = 0, current_charges = charges_amount, last_charge_refill = ?1 WHERE id = ?2",
             params![timestamp, id],
         ).map_err(|e| e.to_string())?;
         Ok(())
@@ -153,84 +268,32 @@ impl HabitManager {
 
     pub fn mark_done(&self, id: i32, timestamp: &str) -> Result<(), String> {
         let conn = self.get_connection();
-        let now = Utc::now();
-        
-        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used FROM habits WHERE id = ?1").map_err(|e| e.to_string())?;
-        let habit: Habit = stmt.query_row(params![id], |row| {
-            Ok(Habit {
-                id: Some(row.get(0)?),
-                user_id: row.get(1)?,
-                name: row.get(2)?,
-                habit_type: row.get(3)?,
-                last_slip: row.get(4)?,
-                created_at: row.get(5)?,
-                max_streak: row.get(6)?,
-                cooldown_days: row.get(7)?,
-                last_done: row.get(8)?,
-                charges_used: row.get(9)?,
-            })
-        }).map_err(|e| e.to_string())?;
-
-        let mut current_charges = habit.charges_used;
-
-        
-        if habit.habit_type == "Positive" {
-            if let Some(ld_str) = habit.last_done {
-                let ld = DateTime::parse_from_rfc3339(&ld_str).map_err(|e| e.to_string())?.with_timezone(&Utc);
-                let diff_days = (now - ld).num_days() as i32;
-                if diff_days > (habit.cooldown_days + 1) {
-                    current_charges = 0;
-                    conn.execute("UPDATE habits SET last_slip = ?1 WHERE id = ?2", params![timestamp, id]).ok();
-                }
-            }
-        }
-
-        let new_charges = current_charges + 1;
-        let mut final_max = habit.max_streak;
-        if habit.habit_type == "Positive" {
-             if new_charges > habit.max_streak { final_max = new_charges; }
-        } else {
-            let ls = DateTime::parse_from_rfc3339(&habit.last_slip).map_err(|e| e.to_string())?.with_timezone(&Utc);
-            let current_days = (now - ls).num_days() as i32;
-            if current_days > habit.max_streak { final_max = current_days; }
-        }
+        let habit = self.get_habit_by_id(&conn, id)?;
+        let synced_habit = self.sync_habit_logic(&conn, habit);
 
         conn.execute(
-            "UPDATE habits SET last_done = ?1, charges_used = ?2, max_streak = ?3 WHERE id = ?4",
-            params![timestamp, new_charges, final_max, id],
+            "UPDATE habits SET last_done = ?1, charges_used = ?2 WHERE id = ?3",
+            params![timestamp, synced_habit.charges_used + 1, id],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn use_charge(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
-        let now = Utc::now();
-        let now_iso = now.to_rfc3339();
+        let habit = self.get_habit_by_id(&conn, id)?;
+        let mut habit = self.sync_habit_logic(&conn, habit);
 
-        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used FROM habits WHERE id = ?1").map_err(|e| e.to_string())?;
-        let habit: Habit = stmt.query_row(params![id], |row| {
-            Ok(Habit {
-                id: Some(row.get(0)?),
-                user_id: row.get(1)?,
-                name: row.get(2)?,
-                habit_type: row.get(3)?,
-                last_slip: row.get(4)?,
-                created_at: row.get(5)?,
-                max_streak: row.get(6)?,
-                cooldown_days: row.get(7)?,
-                last_done: row.get(8)?,
-                charges_used: row.get(9)?,
-            })
-        }).map_err(|e| e.to_string())?;
+        if habit.current_charges > 0 {
+            habit.current_charges -= 1;
+            habit.charges_used += 1;
+            let now_iso = Utc::now().to_rfc3339();
+            
+            conn.execute(
+                "UPDATE habits SET current_charges = ?1, charges_used = ?2, last_done = ?3 WHERE id = ?4",
+                params![habit.current_charges, habit.charges_used, now_iso, id],
+            ).map_err(|e| e.to_string())?;
+        }
 
-        let last_slip = DateTime::parse_from_rfc3339(&habit.last_slip).map_err(|e| e.to_string())?.with_timezone(&Utc);
-        let current_streak = (now - last_slip).num_days() as i32;
-        let new_max = if current_streak > habit.max_streak { current_streak } else { habit.max_streak };
-
-        conn.execute(
-            "UPDATE habits SET charges_used = ?1, last_done = ?2, max_streak = ?3 WHERE id = ?4",
-            params![habit.charges_used + 1, now_iso, new_max, id],
-        ).map_err(|e| e.to_string())?;
         Ok(())
     }
 

@@ -6,13 +6,17 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
-import { EditHabitDialog } from "./edit-dialog";
-import { HabitCard } from "./habit-card";
-import { HabitCreateModal } from "./habit-create-modal";
+
+import { EditHabitDialog } from "./editDialog";
+import { HabitCard } from "./habitCard";
+import { HabitCreateModal } from "./habitCreateModal";
 import type { Habit } from "./types";
 
 type TabId = "all" | "positive" | "negative";
 
+/**
+ * Módulo de Hábitos: Monitoramento de comportamentos positivos e controle de vícios
+ */
 export default function HabitsPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -25,19 +29,20 @@ export default function HabitsPage() {
   const [hardResetId, setHardResetId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  const uid = user ? String(user.id) : "";
+
+  // Busca lista de hábitos do usuário
   const fetchHabits = useCallback(async () => {
-    if (!user) return;
+    if (!uid) return;
     try {
-      const res = await invoke<Habit[]>("list_habits", {
-        userId: String(user.id),
-      });
+      const res = await invoke<Habit[]>("list_habits", { userId: uid });
       setHabits(res);
     } catch {
-      toast.error("Erro ao carregar hábitos");
+      toast.error("Erro ao sincronizar hábitos");
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [uid]);
 
   useEffect(() => {
     fetchHabits();
@@ -47,28 +52,36 @@ export default function HabitsPage() {
     name: string,
     cooldown: number,
     type: "Positive" | "Negative",
+    chargesAmount: number,
+    chargesInterval: number,
+    accumulates: boolean,
   ) => {
-    if (!user) return;
-    const minCooldown = type === "Negative" ? 2 : 1;
+    if (!uid) return;
+    const now = new Date().toISOString();
     try {
       await invoke("add_habit", {
         habit: {
-          user_id: String(user.id),
+          user_id: uid,
           name,
           habit_type: type,
-          last_slip: new Date().toISOString(),
-          created_at: new Date().toISOString(),
+          last_slip: now,
+          created_at: now,
           max_streak: 0,
-          cooldown_days: Math.max(minCooldown, cooldown),
+          cooldown_days: Math.max(1, cooldown),
           last_done: null,
           charges_used: 0,
+          charges_amount: chargesAmount,
+          charges_interval_days: chargesInterval,
+          accumulates: accumulates,
+          last_charge_refill: now,
+          current_charges: chargesAmount,
         },
       });
       fetchHabits();
       setCreateOpen(false);
       toast.success("Novo hábito rastreado!");
     } catch {
-      toast.error("Erro ao adicionar");
+      toast.error("Não foi possível salvar o hábito");
     }
   };
 
@@ -85,7 +98,7 @@ export default function HabitsPage() {
       fetchHabits();
       toast.success("Hábito atualizado");
     } catch {
-      toast.error("Erro ao atualizar");
+      toast.error("Erro na atualização");
     }
   };
 
@@ -98,7 +111,7 @@ export default function HabitsPage() {
       });
       setResetId(null);
       fetchHabits();
-      toast.error("Sequência reiniciada.");
+      toast.error("Reiniciado! Começando de novo...");
     } catch {
       toast.error("Erro ao reiniciar");
     }
@@ -113,9 +126,9 @@ export default function HabitsPage() {
       });
       setHardResetId(null);
       fetchHabits();
-      toast.info("Hábito reiniciado do zero.");
+      toast.info("Dados limpos com sucesso.");
     } catch {
-      toast.error("Erro ao reiniciar hábito");
+      toast.error("Erro ao limpar dados");
     }
   };
 
@@ -125,12 +138,13 @@ export default function HabitsPage() {
       await invoke("delete_habit", { id: deleteId });
       setDeleteId(null);
       fetchHabits();
-      toast.success("Hábito removido");
+      toast.success("Hábito removido da lista");
     } catch {
-      toast.error("Erro ao deletar");
+      toast.error("Erro ao excluir");
     }
   };
 
+  // Filtragem de listas para navegação inteligente
   const positive = habits.filter((h) => h.habit_type === "Positive");
   const negative = habits.filter(
     (h) => h.habit_type === "Negative" || h.habit_type === "Bad",
@@ -139,123 +153,132 @@ export default function HabitsPage() {
   if (loading)
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
+        <div className="flex items-center gap-2 text-neutral-500 animate-pulse font-bold">
           <Activity className="w-4 h-4" /> Sincronizando hábitos...
         </div>
       </div>
     );
 
-  const TABS: {
-    id: TabId;
-    label: string;
-    icon: typeof LayoutGrid;
-    count: number;
-    activeColor: string;
-  }[] = [
+  const TABS = [
     {
-      id: "all",
+      id: "all" as const,
       label: "Todos",
       icon: LayoutGrid,
       count: habits.length,
-      activeColor: "bg-teal-600/20 text-teal-400 border-teal-600/30",
+      color: "teal",
     },
     {
-      id: "positive",
-      label: "Positivos",
+      id: "positive" as const,
+      label: "Foco",
       icon: Zap,
       count: positive.length,
-      activeColor: "bg-teal-600/20 text-teal-400 border-teal-600/30",
+      color: "teal",
     },
     {
-      id: "negative",
-      label: "Vícios",
+      id: "negative" as const,
+      label: "Controle",
       icon: ShieldOff,
       count: negative.length,
-      activeColor: "bg-red-600/20 text-red-400 border-red-600/30",
+      color: "red",
     },
   ];
 
-  const listMap: Record<TabId, Habit[]> = { all: habits, positive, negative };
-  const list = listMap[tab];
+  const currentList =
+    tab === "all" ? habits : tab === "positive" ? positive : negative;
 
   return (
-    <>
-      <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
-              <Activity className="w-5 h-5 text-teal-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold leading-none">Hábitos</h1>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                {habits.length} hábito{habits.length !== 1 ? "s" : ""} ·{" "}
-                {positive.length} positivo{positive.length !== 1 ? "s" : ""} ·{" "}
-                {negative.length} vício{negative.length !== 1 ? "s" : ""}{" "}
-                controlado{negative.length !== 1 ? "s" : ""}
-              </p>
-            </div>
+    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12 animate-in fade-in duration-500 text-white">
+      {/* Cabeçalho do Módulo */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
+            <Activity className="w-5 h-5 text-teal-400" />
           </div>
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold transition-colors cursor-pointer shadow-lg shadow-teal-500/20"
-          >
-            <Plus className="w-4 h-4" /> Novo Hábito
-          </button>
+          <div>
+            <h1 className="text-xl font-bold leading-none">
+              Hábitos & Disciplina
+            </h1>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {habits.length} ativos · {positive.length} positivos ·{" "}
+              {negative.length} controle
+            </p>
+          </div>
         </div>
-
-        <div className="flex gap-1 p-1 bg-neutral-900 border border-neutral-800 rounded-2xl w-fit">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                tab === t.id
-                  ? `${t.activeColor} border`
-                  : "text-neutral-500 hover:text-neutral-200"
-              }`}
-            >
-              <t.icon className="w-3.5 h-3.5" />
-              {t.label}
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${tab === t.id ? "bg-neutral-900/60" : "bg-neutral-800 text-neutral-500"}`}
-              >
-                {t.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {list.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-16 text-neutral-700">
-            <Activity className="w-8 h-8 opacity-20" />
-            <p className="text-sm">Nenhum hábito nesta categoria</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {list.map((h) => (
-              <HabitCard
-                key={h.id}
-                habit={h}
-                onRefresh={fetchHabits}
-                onEdit={setEditingHabit}
-                onOpenResetDialog={setResetId}
-                onOpenHardResetDialog={setHardResetId}
-                onDelete={setDeleteId}
-              />
-            ))}
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold transition-colors cursor-pointer"
+        >
+          <Plus className="w-4 h-4" /> Novo Hábito
+        </button>
       </div>
 
+      {/* Navegação por Categoria */}
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              tab === t.id
+                ? t.color === "teal"
+                  ? "bg-teal-500/25 text-teal-300 border border-teal-500/40 shadow-sm shadow-teal-500/10"
+                  : "bg-red-500/25 text-red-300 border border-red-500/40 shadow-sm shadow-red-500/10"
+                : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5"
+            }`}
+          >
+            <t.icon className="w-4 h-4" />
+            {t.label}
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                tab === t.id
+                  ? t.color === "teal"
+                    ? "bg-teal-500/20 text-teal-300"
+                    : "bg-red-500/20 text-red-300"
+                  : "bg-neutral-800 text-neutral-600"
+              }`}
+            >
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Listagem de Hábitos */}
+      {currentList.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-neutral-800">
+          <div className="p-4 rounded-full bg-neutral-900/50">
+            <Activity className="w-10 h-10 opacity-10" />
+          </div>
+          <p className="text-sm font-bold uppercase opacity-30">
+            Nenhum hábito rastreado aqui
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {currentList.map((h) => (
+            <HabitCard
+              key={h.id}
+              habit={h}
+              onRefresh={fetchHabits}
+              onEdit={setEditingHabit}
+              onOpenResetDialog={setResetId}
+              onOpenHardResetDialog={setHardResetId}
+              onDelete={setDeleteId}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modais de Fluxo */}
       {createOpen && (
         <HabitCreateModal
           onAdd={handleAdd}
           onClose={() => setCreateOpen(false)}
         />
       )}
+
       {editingHabit && (
         <EditHabitDialog
           habit={editingHabit}
@@ -263,6 +286,8 @@ export default function HabitsPage() {
           onUpdate={handleUpdate}
         />
       )}
+
+      {/* Diálogos de Confirmação */}
       {resetId !== null && (
         <ConfirmModal
           {...CONFIRM_PRESETS.resetStreak}
@@ -284,6 +309,6 @@ export default function HabitsPage() {
           onCancel={() => setDeleteId(null)}
         />
       )}
-    </>
+    </div>
   );
 }

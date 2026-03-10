@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub minimize_on_close: bool,
     pub start_at_login: bool,
     pub high_priority_notifications: bool,
+    pub start_minimized: bool,
 }
 
 pub struct ConfigManager {
@@ -35,6 +36,7 @@ impl ConfigManager {
             ("minimize_on_close", "true"),
             ("start_at_login", "false"),
             ("high_priority_notifications", "false"),
+            ("start_minimized", "false"),
         ];
 
         for (key, val) in defaults {
@@ -82,10 +84,20 @@ impl ConfigManager {
             }
         ).unwrap_or(false);
 
+        let start_minimized: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'start_minimized'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(false);
+
         AppConfig {
             minimize_on_close,
             start_at_login,
             high_priority_notifications,
+            start_minimized,
         }
     }
 
@@ -104,6 +116,11 @@ impl ConfigManager {
         conn.execute(
             "UPDATE settings SET value = ?1 WHERE key = 'high_priority_notifications'",
             params![if config.high_priority_notifications { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('start_minimized', ?1)",
+            params![if config.start_minimized { "true" } else { "false" }],
         ).map_err(|e| e.to_string())?;
 
         Ok(())

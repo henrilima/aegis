@@ -4,7 +4,9 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   Activity,
   Banknote,
+  BarChart3,
   BookOpen,
+  CalendarDays,
   Droplet,
   FileText,
   Flame,
@@ -21,9 +23,15 @@ import type { Habit } from "@/components/pages/habits/types";
 import type { Note } from "@/components/pages/notes/types";
 import { useAuth } from "@/context/AuthContext";
 import type { AppRoute } from "@/context/NavigationContext";
-import { DashboardHeader } from "./dashboard-header";
+import { DashboardHeader } from "./dashboardHeader";
 
-import { formatDurationMin, isToday, startOfWeekIso } from "./helpers";
+import {
+  formatDurationMin,
+  getHabitStreak,
+  isHabitDueToday,
+  isToday,
+  startOfWeekIso,
+} from "./helpers";
 import type {
   HydrationReminder,
   PasswordEntry,
@@ -34,6 +42,8 @@ import type {
   StudySession,
 } from "./types";
 import {
+  CalendarWidget,
+  DeadlinesWidget,
   EstudosWidget,
   HabitsWidget,
   ModuleGrid,
@@ -43,6 +53,9 @@ import {
   SonoWidget,
 } from "./widgets";
 
+/**
+ * Dashboard principal: O hub central do sistema Aegis
+ */
 export default function DashboardPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -56,16 +69,16 @@ export default function DashboardPage() {
   const [sleepGoal, setSleepGoal] = useState<SleepGoal | null>(null);
   const [time, setTime] = useState(new Date());
 
+  // Atualização do relógio e saudação
   useEffect(() => {
-    // Atualiza o relógio a cada segundo para o Pomodoro e saudação
     const id = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
+  // Busca centralizada de todos os dados dos módulos ativos
   const fetchAll = useCallback(async () => {
     if (!user) return;
     const uid = String(user.id);
-    // Busca todos os dados necessários de forma assíncrona e paralela
     const results = await Promise.allSettled([
       invoke<Habit[]>("list_habits", { userId: uid }),
       invoke<Note[]>("list_notes", { userId: uid }),
@@ -83,7 +96,7 @@ export default function DashboardPage() {
       }),
       invoke<SleepGoal>("sono_get_goal", { userId: uid }),
     ]);
-    // Atualiza os estados apenas se a promessa foi cumprida (fulfilled)
+
     if (results[0].status === "fulfilled") setHabits(results[0].value);
     if (results[1].status === "fulfilled") setNotes(results[1].value);
     if (results[2].status === "fulfilled") setPasswords(results[2].value);
@@ -105,16 +118,17 @@ export default function DashboardPage() {
       await invoke("add_note", {
         note: {
           user_id: String(user.id),
-          title,
-          content,
+          title: title.trim(),
+          content: content.trim(),
+          created_at: new Date().toISOString(),
           pinned: false,
           status: "pending",
-        },
+        } satisfies Omit<Note, "id">,
       });
       fetchAll();
-      toast.success("Nota criada!");
+      toast.success("Nota rápida criada!");
     } catch {
-      toast.error("Erro ao criar nota");
+      toast.error("Falha ao criar nota");
     }
   };
 
@@ -124,20 +138,25 @@ export default function DashboardPage() {
     [hour],
   );
 
-  const positiveHabits = habits.filter((h) => h.habit_type === "Positive");
+  // Lógica de Processamento de Dados para Widgets
+  const allPositiveHabits = habits.filter((h) => h.habit_type === "Positive");
+  const duePositiveHabits = allPositiveHabits.filter(isHabitDueToday);
+
   const negativeHabits = habits.filter(
     (h) => h.habit_type === "Negative" || h.habit_type === "Bad",
   );
-  // Calcula métricas de hábitos positivos para o progresso diário
-  const doneToday = positiveHabits.filter(
+
+  const doneToday = duePositiveHabits.filter(
     (h) => h.last_done && isToday(h.last_done),
   );
+
   const progressPct =
-    positiveHabits.length > 0
-      ? Math.round((doneToday.length / positiveHabits.length) * 100)
+    duePositiveHabits.length > 0
+      ? Math.round((doneToday.length / duePositiveHabits.length) * 100)
       : 0;
-  const maxStreak = positiveHabits.reduce(
-    (m, h) => Math.max(m, h.max_streak ?? 0),
+
+  const maxStreak = allPositiveHabits.reduce(
+    (m, h) => Math.max(m, getHabitStreak(h)),
     0,
   );
 
@@ -145,7 +164,6 @@ export default function DashboardPage() {
   const pinnedNotes = notes.filter((n) => n.pinned);
   const doneNotes = notes.filter((n) => n.status === "done");
 
-  // Agrega estatísticas de estudos da semana corrente
   const weekStart = startOfWeekIso();
   const weekSessions = studySessions.filter((s) => s.date >= weekStart);
   const weekHours = weekSessions.reduce((a, s) => a + s.hours, 0);
@@ -153,6 +171,7 @@ export default function DashboardPage() {
     (a, s) => a + s.questions_new + s.questions_review,
     0,
   );
+
   const totalSessions = studySessions.length;
   const goalWeekHours =
     studyGoals.find((g) => g.goal_type === "weekly_hours")?.target_value ??
@@ -161,8 +180,7 @@ export default function DashboardPage() {
     studyGoals.find((g) => g.goal_type === "weekly_questions")?.target_value ??
     null;
 
-  // Calcula média de sono e porcentagem em relação à meta
-  const recentSleep = sleepEntries.slice(0, 7);
+  const recentSleep = sleepEntries.filter((e) => e.date >= weekStart);
   const avgSleepMin =
     recentSleep.length > 0
       ? Math.round(
@@ -170,26 +188,29 @@ export default function DashboardPage() {
             recentSleep.length,
         )
       : 0;
+
   const avgQuality =
     recentSleep.length > 0
       ? (
           recentSleep.reduce((a, e) => a + e.quality, 0) / recentSleep.length
         ).toFixed(1)
       : "—";
+
   const todaySleep = sleepEntries.find((e) => isToday(e.date));
   const goalSleepMin = sleepGoal ? sleepGoal.target_hours * 60 : null;
-  const sleepPct =
+  const sleepPctTarget =
     goalSleepMin && avgSleepMin > 0
       ? Math.min(100, Math.round((avgSleepMin / goalSleepMin) * 100))
       : 0;
 
+  // Configuração rápida dos módulos para o ModuleGrid
   const MODULES = [
     {
       label: "Hábitos",
       icon: Activity,
       route: "habits" as AppRoute,
       color: "teal",
-      count: positiveHabits.length,
+      count: allPositiveHabits.length,
       sub: `${doneToday.length} feitos hoje`,
     },
     {
@@ -259,22 +280,25 @@ export default function DashboardPage() {
       count: null,
       sub: "Speedtest",
     },
+    {
+      label: "Calendário",
+      icon: CalendarDays,
+      route: "calendar" as AppRoute,
+      color: "green",
+      count: null,
+      sub: "Eventos & Datas",
+    },
+    {
+      label: "Estatísticas",
+      icon: BarChart3,
+      route: "statistics" as AppRoute,
+      color: "red",
+      count: null,
+      sub: "Dados Cruzados",
+    },
   ] as const;
 
-  type ModColor =
-    | "teal"
-    | "red"
-    | "orange"
-    | "amber"
-    | "violet"
-    | "blue"
-    | "green"
-    | "sky";
-
-  const COLOR: Record<
-    ModColor,
-    { text: string; bg: string; border: string; ring: string }
-  > = {
+  const COLOR: Record<string, any> = {
     teal: {
       text: "text-teal-400",
       bg: "bg-teal-500/10",
@@ -326,25 +350,24 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-500">
+    <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-500 text-white">
       <DashboardHeader
         time={time}
         greeting={greeting}
         user={user}
         doneTodayCount={doneToday.length}
-        positiveHabitsCount={positiveHabits.length}
+        positiveHabitsCount={allPositiveHabits.length}
         pendingNotesCount={pendingNotes.length}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <HabitsWidget
-          positiveHabits={positiveHabits}
+          positiveHabits={duePositiveHabits}
           doneToday={doneToday}
           progressPct={progressPct}
           maxStreak={maxStreak}
           isToday={isToday}
         />
-
         <NotesWidget
           notes={notes}
           pendingNotes={pendingNotes}
@@ -352,7 +375,6 @@ export default function DashboardPage() {
           doneNotes={doneNotes}
           onCreateNote={handleCreateNote}
         />
-
         <PomodoroWidget pomodoro={pomodoro} />
       </div>
 
@@ -365,22 +387,27 @@ export default function DashboardPage() {
           weekSessions={weekSessions}
           totalSessions={totalSessions}
         />
-
         <SonoWidget
           recentSleep={recentSleep}
           avgSleepMin={avgSleepMin}
           goalSleepMin={goalSleepMin}
           avgQuality={avgQuality}
-          sleepPct={sleepPct}
+          sleepPct={sleepPctTarget}
           todaySleep={todaySleep}
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CalendarWidget />
+        <DeadlinesWidget />
+      </div>
+
+      {/* Barra rápida de estatísticas consolidadas */}
       <QuickStatsBar
         stats={[
           {
             icon: Lock,
-            label: "Senhas salvas",
+            label: "Senhas no cofre",
             value: passwords.length,
             color: "text-amber-500",
             bg: "bg-amber-500/10",
@@ -388,7 +415,7 @@ export default function DashboardPage() {
           },
           {
             icon: Flame,
-            label: "Maior sequência",
+            label: "Recorde Habit",
             value: `${maxStreak}d`,
             color: "text-orange-400",
             bg: "bg-orange-500/10",
@@ -396,15 +423,15 @@ export default function DashboardPage() {
           },
           {
             icon: TrendingUp,
-            label: "Hábitos positivos",
-            value: positiveHabits.length,
+            label: "Metas Positivas",
+            value: allPositiveHabits.length,
             color: "text-teal-400",
             bg: "bg-teal-500/10",
             border: "border-teal-500/20",
           },
           {
             icon: ShieldOff,
-            label: "Vícios controlad.",
+            label: "Controle Vícios",
             value: negativeHabits.length,
             color: "text-red-400",
             bg: "bg-red-500/10",
@@ -413,6 +440,7 @@ export default function DashboardPage() {
         ]}
       />
 
+      {/* Grade de atalhos rápidos para módulos */}
       <ModuleGrid modules={MODULES} colorConfig={COLOR} />
     </div>
   );

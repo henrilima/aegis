@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { useState } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/appSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProvider } from "@/context/NavigationContext";
 import { cn } from "@/lib/utils";

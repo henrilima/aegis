@@ -1,37 +1,25 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import {
-  BarChart3,
-  Calendar,
-  Clock,
-  Moon,
-  Pencil,
-  Plus,
-  Star,
-  Target,
-  Trash2,
-  TrendingUp,
-  X,
-  Zap,
-} from "lucide-react";
+import { BarChart3, Calendar, Moon, Target } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import {
-  EntryForm,
-  formatDuration,
-  isoDate,
-  parseDate,
-  qualityColor,
-  qualityLabel,
-  Stars,
-  weekRange,
-} from "./entry-form";
+import { SleepChart } from "./components/sleepChart";
+import { SleepGoalTab } from "./components/sleepGoalTab";
+
+import { SleepHeader } from "./components/sleepHeader";
+import { SleepHistory } from "./components/sleepHistory";
+import { SleepStatsBanner } from "./components/sleepStatsBanner";
+import { DeleteSleepModal, SleepEntryModal } from "./modal/sleepModals";
+import { isoDate, weekRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
 type TabId = "semana" | "historico" | "metas";
 
+/**
+ * Módulo de Sono: Monitoramento de ciclos de descanso, qualidade e metas de repouso
+ */
 export default function SleepPage() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<SleepEntry[]>([]);
@@ -50,7 +38,8 @@ export default function SleepPage() {
 
   const uid = user ? String(user.id) : "";
 
-  const load = useCallback(async () => {
+  // Carrega sincronizadamente os registros e as metas do usuário
+  const loadData = useCallback(async () => {
     if (!uid) return;
     try {
       const results = await Promise.allSettled([
@@ -64,8 +53,7 @@ export default function SleepPage() {
       if (results[0].status === "fulfilled") {
         setEntries(results[0].value);
       } else {
-        console.error("[sono] list_entries error:", results[0].reason);
-        toast.error(`Erro ao carregar registros: ${results[0].reason}`);
+        toast.error("Erro ao sincronizar histórico de sono.");
       }
 
       if (results[1].status === "fulfilled") {
@@ -73,8 +61,6 @@ export default function SleepPage() {
         setGoal(g);
         setGoalHours(String(g.target_hours));
         setGoalBedtime(g.target_bedtime);
-      } else {
-        console.error("[sono] get_goal error:", results[1].reason);
       }
     } finally {
       setLoading(false);
@@ -82,19 +68,20 @@ export default function SleepPage() {
   }, [uid]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    loadData();
+  }, [loadData]);
 
   const handleSave = async (e: SleepEntry) => {
     try {
       await invoke<number>("sono_upsert_entry", { entry: e });
-      toast.success(editEntry ? "Atualizado!" : "Sono registrado!");
+      toast.success(
+        editEntry ? "Dados atualizados!" : "Ciclo registrado com sucesso!",
+      );
       setShowForm(false);
       setEditEntry(undefined);
-      await load();
-    } catch (err) {
-      console.error("[sono] upsert_entry error:", err);
-      toast.error(`Erro ao salvar: ${err}`);
+      await loadData();
+    } catch {
+      toast.error("Falha ao salvar registro de sono.");
     }
   };
 
@@ -103,31 +90,33 @@ export default function SleepPage() {
       await invoke("sono_delete_entry", { id, userId: uid });
       toast.success("Registro removido");
       setDeleteConfirm(null);
-      await load();
-    } catch (err) {
-      console.error("[sono] delete error:", err);
-      toast.error(`Erro ao remover: ${err}`);
+      await loadData();
+    } catch {
+      toast.error("Erro ao excluir registro.");
     }
   };
 
   const handleGoalSave = async () => {
     const h = parseFloat(goalHours);
     if (Number.isNaN(h) || h <= 0) {
-      toast.error("Horas inválidas");
+      toast.error("Defina um valor de horas válido.");
       return;
     }
     try {
       await invoke("sono_upsert_goal", {
         goal: { user_id: uid, target_hours: h, target_bedtime: goalBedtime },
       });
-      toast.success("Meta salva!");
-      await load();
+      toast.success("Novas metas estabelecidas!");
+      await loadData();
     } catch {
-      toast.error("Erro ao salvar meta");
+      toast.error("Falha ao atualizar metas.");
     }
   };
 
+  // ─── Processamento de Métricas ───────────────────────────────────────────
+
   const { start: weekStart, end: weekEnd } = weekRange();
+
   const weekEntries = useMemo(
     () => entries.filter((e) => e.date >= weekStart && e.date <= weekEnd),
     [entries, weekStart, weekEnd],
@@ -153,7 +142,7 @@ export default function SleepPage() {
     [weekEntries],
   );
 
-  const targetMinutes = goal.target_hours * 60;
+  const targetMinutes = (goal.target_hours || 8) * 60;
   const avgVsTarget = weekAvgDuration - targetMinutes;
 
   const weekDays = useMemo(() => {
@@ -174,412 +163,117 @@ export default function SleepPage() {
     return days;
   }, [weekStart, weekEntries]);
 
-  const TABS: { id: TabId; label: string; icon: typeof BarChart3 }[] = [
-    { id: "semana", label: "Esta Semana", icon: BarChart3 },
-    { id: "historico", label: "Histórico", icon: Calendar },
-    { id: "metas", label: "Metas", icon: Target },
+  const TABS = [
+    { id: "semana", label: "Visão Semanal", icon: BarChart3 },
+    { id: "historico", label: "Relatórios", icon: Calendar },
+    { id: "metas", label: "Objetivos", icon: Target },
   ];
 
   if (loading)
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex items-center justify-center font-bold">
         <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
-          <Moon className="w-4 h-4" /> Carregando...
+          <Moon className="w-5 h-5 text-blue-400" />
+          <span>Sincronizando ciclos de sono...</span>
         </div>
       </div>
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-10 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <Moon className="w-5 h-5 text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold leading-none">Análise de Sono</h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Monitore e otimize seu descanso
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditEntry(undefined);
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Registrar Sono
-        </button>
-      </div>
+    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white">
+      {/* Cabeçalho de Ações Primárias */}
+      <SleepHeader
+        onNew={() => {
+          setEditEntry(undefined);
+          setShowForm(true);
+        }}
+      />
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">
-                {editEntry ? "Editar Registro" : "Registrar Sono"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditEntry(undefined);
-                }}
-                className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <EntryForm
-              userId={uid}
-              initial={editEntry}
-              onSave={handleSave}
-              onCancel={() => {
-                setShowForm(false);
-                setEditEntry(undefined);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Camada de Modais */}
+      <SleepEntryModal
+        show={showForm}
+        userId={uid}
+        editEntry={editEntry}
+        onSave={handleSave}
+        onClose={() => {
+          setShowForm(false);
+          setEditEntry(undefined);
+        }}
+      />
 
-      {deleteConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl text-center">
-            <Trash2 className="w-8 h-8 text-red-400 mx-auto mb-3" />
-            <h3 className="font-bold text-lg mb-1">Remover registro?</h3>
-            <p className="text-sm text-neutral-500 mb-5">
-              Essa ação é irreversível.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  void handleDelete(deleteConfirm);
-                }}
-                className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors cursor-pointer"
-              >
-                Remover
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-sm font-bold transition-colors cursor-pointer"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteSleepModal
+        id={deleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
-      <div className="flex gap-1 p-1 bg-neutral-900 border border-neutral-800 rounded-2xl w-fit">
+      {/* Navegação entre Visões */}
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+            onClick={() => setTab(t.id as TabId)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               tab === t.id
-                ? "bg-blue-600/20 text-blue-400 border border-blue-600/30"
-                : "text-neutral-500 hover:text-neutral-200"
+                ? "bg-blue-500/25 text-blue-300 border border-blue-500/40 shadow-sm shadow-blue-500/10"
+                : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5"
             }`}
           >
-            <t.icon className="w-3.5 h-3.5" />
+            <t.icon className="w-4 h-4" />
             {t.label}
           </button>
         ))}
       </div>
 
       {tab === "semana" && (
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              {
-                label: "Média de sono",
-                value: weekAvgDuration ? formatDuration(weekAvgDuration) : "—",
-                icon: Clock,
-                sub: `Meta: ${formatDuration(targetMinutes)}`,
-                colorClass: "text-blue-400",
-              },
-              {
-                label: "Qualidade média",
-                value: weekAvgQuality ? `${weekAvgQuality}/5` : "—",
-                icon: Star,
-                sub: weekAvgQuality
-                  ? qualityLabel(Math.round(weekAvgQuality))
-                  : "Sem dados",
-                colorClass: "text-yellow-400",
-              },
-              {
-                label: "Consistência",
-                value: `${consistency}%`,
-                icon: TrendingUp,
-                sub: `${weekEntries.length}/7 noites`,
-                colorClass: "text-teal-400",
-              },
-              {
-                label: "vs. Meta",
-                value:
-                  weekAvgDuration === 0
-                    ? "—"
-                    : `${avgVsTarget > 0 ? "+" : ""}${Math.round(avgVsTarget)}min`,
-                icon: Zap,
-                sub: avgVsTarget >= 0 ? "acima da meta" : "abaixo da meta",
-                colorClass:
-                  avgVsTarget >= 0 ? "text-green-400" : "text-red-400",
-              },
-            ].map((c) => (
-              <div
-                key={c.label}
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col gap-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase  text-neutral-500">
-                    {c.label}
-                  </span>
-                  <c.icon className="w-3.5 h-3.5 text-blue-500" />
-                </div>
-                <span
-                  className={`text-2xl font-black leading-none ${c.colorClass}`}
-                >
-                  {c.value}
-                </span>
-                <span className="text-[10px] text-neutral-600">{c.sub}</span>
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-2 duration-500">
+          <SleepStatsBanner
+            weekAvgDuration={weekAvgDuration}
+            targetMinutes={targetMinutes}
+            weekAvgQuality={weekAvgQuality}
+            consistency={consistency}
+            avgVsTarget={avgVsTarget}
+          />
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-            <h2 className="text-sm font-black uppercase  text-neutral-400 mb-4">
-              Sono por Dia
-            </h2>
-            <div className="flex items-end gap-2 h-32">
-              {weekDays.map(({ label, entry }) => {
-                const dur = entry?.duration_minutes ?? 0;
-                const maxH = Math.max(
-                  targetMinutes * 1.5,
-                  ...weekEntries.map((e) => e.duration_minutes),
-                  1,
-                );
-                const pct = (dur / maxH) * 100;
-                const targetPct = (targetMinutes / maxH) * 100;
-                return (
-                  <div
-                    key={label}
-                    className="flex-1 flex flex-col items-center gap-1 h-full justify-end"
-                  >
-                    <div
-                      className="w-full flex flex-col justify-end relative"
-                      style={{ height: "90%" }}
-                    >
-                      <div
-                        className="absolute w-full border-t border-dashed border-blue-500/30"
-                        style={{ bottom: `${targetPct}%` }}
-                      />
-                      {dur > 0 && entry ? (
-                        <div
-                          className={`w-full rounded-t-lg transition-all ${entry.quality >= 4 ? "bg-blue-500" : entry.quality === 3 ? "bg-blue-400/60" : "bg-blue-300/40"}`}
-                          style={{ height: `${pct}%` }}
-                          title={`${formatDuration(dur)} · ${qualityLabel(entry.quality)}`}
-                        />
-                      ) : (
-                        <div className="w-full h-1 rounded-full bg-neutral-800" />
-                      )}
-                    </div>
-                    <span className="text-[10px] text-neutral-600 font-bold">
-                      {label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-2 mt-3">
-              <div className="w-4 border-t border-dashed border-blue-500/50" />
-              <span className="text-[10px] text-blue-400/60">
-                Meta ({formatDuration(targetMinutes)})
-              </span>
-            </div>
-          </div>
+          <SleepChart weekDays={weekDays} targetMinutes={targetMinutes} />
 
-          {weekEntries.length > 0 && (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-              <h2 className="text-sm font-black uppercase  text-neutral-400 mb-3">
-                Registros desta semana
-              </h2>
-              <div className="flex flex-col gap-2">
-                {weekEntries.map((e) => (
-                  <div
-                    key={e.id}
-                    className="flex items-center gap-3 py-2 border-b border-neutral-800 last:border-0"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white">
-                          {parseDate(e.date).toLocaleDateString("pt-BR", {
-                            weekday: "short",
-                            day: "2-digit",
-                            month: "short",
-                          })}
-                        </span>
-                        <span className="text-[10px] text-neutral-500">
-                          {e.bedtime} → {e.wake_time}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-xs text-blue-400 font-bold">
-                          {formatDuration(e.duration_minutes)}
-                        </span>
-                        <Stars q={e.quality} />
-                        {e.note && (
-                          <span className="text-[11px] text-neutral-600 truncate">
-                            {e.note}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditEntry(e);
-                        setShowForm(true);
-                      }}
-                      className="p-1.5 rounded-lg text-neutral-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <SleepHistory
+            title="Detalhamento da Semana"
+            entries={weekEntries}
+            targetMinutes={targetMinutes}
+            onEdit={(e) => {
+              setEditEntry(e);
+              setShowForm(true);
+            }}
+            onDelete={(id) => setDeleteConfirm(id)}
+          />
         </div>
       )}
 
       {tab === "historico" && (
-        <div className="flex flex-col gap-3">
-          {entries.length === 0 ? (
-            <div className="text-center py-16 text-neutral-600">
-              <Moon className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Nenhum registro de sono ainda</p>
-            </div>
-          ) : (
-            entries.map((e) => (
-              <div
-                key={e.id}
-                className="bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-4 transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`w-1 self-stretch rounded-full ${e.duration_minutes >= targetMinutes ? "bg-blue-500" : "bg-orange-500"}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-white">
-                        {parseDate(e.date).toLocaleDateString("pt-BR", {
-                          weekday: "long",
-                          day: "2-digit",
-                          month: "long",
-                        })}
-                      </span>
-                      <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
-                        {formatDuration(e.duration_minutes)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                      <span className="text-xs text-neutral-500">
-                        {e.bedtime} → {e.wake_time}
-                      </span>
-                      <Stars q={e.quality} />
-                      <span
-                        className={`text-xs font-semibold ${qualityColor(e.quality)}`}
-                      >
-                        {qualityLabel(e.quality)}
-                      </span>
-                    </div>
-                    {e.note && (
-                      <p className="text-[11px] text-neutral-500 mt-1.5">
-                        {e.note}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditEntry(e);
-                        setShowForm(true);
-                      }}
-                      className="p-1.5 rounded-lg text-neutral-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteConfirm(e.id ?? null)}
-                      className="p-1.5 rounded-lg text-neutral-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+        <div className="animate-in fade-in duration-500">
+          <SleepHistory
+            entries={entries}
+            targetMinutes={targetMinutes}
+            onEdit={(e) => {
+              setEditEntry(e);
+              setShowForm(true);
+            }}
+            onDelete={(id) => setDeleteConfirm(id)}
+          />
         </div>
       )}
 
       {tab === "metas" && (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <Target className="w-4 h-4 text-blue-400" />
-            <h2 className="font-bold text-white">Metas de Sono</h2>
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="sg-hours"
-                className="text-[10px] font-black uppercase  text-neutral-500"
-              >
-                Horas por noite (meta)
-              </label>
-              <input
-                id="sg-hours"
-                type="number"
-                min="1"
-                max="14"
-                step="0.5"
-                className="w-full bg-neutral-800/60 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-                value={goalHours}
-                onChange={(e) => setGoalHours(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="sg-bedtime"
-                className="text-[10px] font-black uppercase  text-neutral-500"
-              >
-                Horário ideal para dormir
-              </label>
-              <input
-                id="sg-bedtime"
-                type="time"
-                className="w-full bg-neutral-800/60 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-                value={goalBedtime}
-                onChange={(e) => setGoalBedtime(e.target.value)}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleGoalSave}
-              className="py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors cursor-pointer"
-            >
-              Salvar Meta
-            </button>
-          </div>
+        <div className="animate-in zoom-in-95 duration-500">
+          <SleepGoalTab
+            goalHours={goalHours}
+            setGoalHours={setGoalHours}
+            goalBedtime={goalBedtime}
+            setGoalBedtime={setGoalBedtime}
+            onSave={handleGoalSave}
+          />
         </div>
       )}
     </div>

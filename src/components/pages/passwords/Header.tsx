@@ -35,7 +35,7 @@ export function Header({
           onClick={handleImport}
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-amber-500 border border-neutral-700 transition-all cursor-pointer text-xs font-bold"
         >
-          <Upload className="w-4 h-4" />
+          <Download className="w-4 h-4" />
           Importar
         </button>
         <button
@@ -43,7 +43,7 @@ export function Header({
           onClick={handleExport}
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-amber-500 border border-neutral-700 transition-all cursor-pointer text-xs font-bold"
         >
-          <Download className="w-4 h-4" />
+          <Upload className="w-4 h-4" />
           Exportar
         </button>
         <button

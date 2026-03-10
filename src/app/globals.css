@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -133,5 +134,53 @@
   * {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  .markdown-preview h1 {
+    @apply text-3xl md:text-4xl font-black mb-4 text-orange-400;
+  }
+  .markdown-preview h2 {
+    @apply text-2xl md:text-3xl font-bold mt-6 mb-4 text-orange-400;
+  }
+  .markdown-preview h3 {
+    @apply text-xl md:text-2xl font-bold mt-4 mb-2;
+  }
+  .markdown-preview h4 {
+    @apply text-lg md:text-xl font-bold mt-4 mb-2;
+  }
+  .markdown-preview p {
+    @apply mb-4 leading-relaxed;
+  }
+  .markdown-preview ul {
+    @apply list-disc list-inside mb-4 space-y-1 pl-2 md:pl-4;
+  }
+  .markdown-preview ol {
+    @apply list-decimal list-inside mb-4 space-y-1 pl-2 md:pl-4;
+  }
+  .markdown-preview blockquote {
+    @apply border-l-4 border-orange-500 pl-4 py-1 italic text-neutral-400 my-4 bg-orange-500/5 rounded-r-lg;
+  }
+  .markdown-preview a {
+    @apply text-orange-400 underline hover:text-orange-300 transition-colors;
+  }
+  .markdown-preview strong {
+    @apply text-orange-500 font-bold;
+  }
+  .markdown-preview em {
+    @apply italic text-neutral-300;
+  }
+  .markdown-preview code {
+    @apply bg-neutral-800 text-orange-200 px-1.5 py-0.5 rounded font-mono text-xs md:text-sm;
+  }
+  .markdown-preview pre {
+    @apply bg-neutral-950 p-4 rounded-xl overflow-x-auto border border-neutral-800 mb-4;
+  }
+  .markdown-preview pre code {
+    @apply bg-transparent text-neutral-300 p-0 text-xs md:text-sm;
+  }
+  .markdown-preview hr {
+    @apply border-neutral-800 my-6;
   }
 }

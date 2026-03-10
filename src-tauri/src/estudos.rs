@@ -3,8 +3,6 @@ use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
-
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StudySession {
     pub id: Option<i64>,
@@ -18,6 +16,10 @@ pub struct StudySession {
     pub correct_review: i32,
     pub note: Option<String>,
     pub created_at: Option<String>,
+    // Campos multidisciplinares opcionais
+    pub pages_read: Option<i32>,
+    pub custom_metric_label: Option<String>,
+    pub custom_metric_value: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -27,8 +29,6 @@ pub struct StudyGoal {
     pub goal_type: String,        
     pub target_value: f64,
 }
-
-
 
 pub struct EstudosManager {
     db_path: PathBuf,
@@ -41,7 +41,7 @@ impl EstudosManager {
 
         let conn = Connection::open(&db_path).expect("open db");
 
-        conn.execute_batch(
+        let _ = conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS study_sessions (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id      TEXT NOT NULL,
@@ -53,7 +53,10 @@ impl EstudosManager {
                 correct_new       INTEGER NOT NULL DEFAULT 0,
                 correct_review    INTEGER NOT NULL DEFAULT 0,
                 note         TEXT,
-                created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+                created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+                pages_read        INTEGER,
+                custom_metric_label TEXT,
+                custom_metric_value REAL
             );
             CREATE TABLE IF NOT EXISTS study_goals (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,8 +64,14 @@ impl EstudosManager {
                 goal_type    TEXT NOT NULL,
                 target_value REAL NOT NULL DEFAULT 0,
                 UNIQUE(user_id, goal_type)
-            );",
-        ).ok();
+            );"
+        );
+
+        // Migração manual: SQLite não suporta "IF NOT EXISTS" no ALTER TABLE.
+        // Tentamos adicionar cada coluna individualmente e ignoramos o erro caso já existam.
+        let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN pages_read INTEGER", []);
+        let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN custom_metric_label TEXT", []);
+        let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN custom_metric_value REAL", []);
 
         Self { db_path }
     }
@@ -73,17 +82,16 @@ impl EstudosManager {
         conn
     }
 
-    
-
     pub fn add_session(&self, s: StudySession) -> Result<i64, String> {
         let conn = self.conn();
         conn.execute(
             "INSERT INTO study_sessions
-             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
             params![s.user_id, s.date, s.subject, s.hours,
                     s.questions_new, s.questions_review,
-                    s.correct_new, s.correct_review, s.note],
+                    s.correct_new, s.correct_review, s.note,
+                    s.pages_read, s.custom_metric_label, s.custom_metric_value],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
     }
@@ -93,11 +101,14 @@ impl EstudosManager {
         let id = s.id.ok_or("missing id")?;
         conn.execute(
             "UPDATE study_sessions SET date=?2, subject=?3, hours=?4,
-             questions_new=?5, questions_review=?6, correct_new=?7, correct_review=?8, note=?9
-             WHERE id=?1 AND user_id=?10",
+             questions_new=?5, questions_review=?6, correct_new=?7, correct_review=?8, note=?9,
+             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12
+             WHERE id=?1 AND user_id=?13",
             params![id, s.date, s.subject, s.hours,
                     s.questions_new, s.questions_review,
-                    s.correct_new, s.correct_review, s.note, s.user_id],
+                    s.correct_new, s.correct_review, s.note,
+                    s.pages_read, s.custom_metric_label, s.custom_metric_value,
+                    s.user_id],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -113,7 +124,7 @@ impl EstudosManager {
         let conn = self.conn();
         let cutoff = format!("-{} months", months_back);
         let mut stmt = conn.prepare(
-            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at
+            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value
              FROM study_sessions
              WHERE user_id=?1 AND date >= date('now', ?2)
              ORDER BY date DESC, id DESC"
@@ -132,11 +143,12 @@ impl EstudosManager {
                 correct_review: row.get(7)?,
                 note: row.get(8)?,
                 created_at: row.get(9)?,
+                pages_read: row.get(10)?,
+                custom_metric_label: row.get(11)?,
+                custom_metric_value: row.get(12)?,
             })
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
-
-    
 
     pub fn upsert_goal(&self, g: StudyGoal) -> Result<(), String> {
         let conn = self.conn();
@@ -164,8 +176,6 @@ impl EstudosManager {
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
 
-    
-
     pub fn export_csv(&self, user_id: &str, dest_path: &str) -> Result<(), String> {
         let sessions = self.list_sessions(user_id, 3);
         let mut out = String::from(
@@ -188,6 +198,7 @@ impl EstudosManager {
         Ok(())
     }
 
+    #[allow(clippy::cast_precision_loss)]
     pub fn import_csv(&self, user_id: &str, file_path: &str) -> Result<usize, String> {
         let csv = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
         let mut count = 0usize;
@@ -207,6 +218,9 @@ impl EstudosManager {
                 correct_review: cols[6].trim().parse().unwrap_or(0),
                 note: cols.get(7).map(|s| s.trim().to_string()),
                 created_at: None,
+                pages_read: None,
+                custom_metric_label: None,
+                custom_metric_value: None,
             };
             self.add_session(s).ok();
             count += 1;

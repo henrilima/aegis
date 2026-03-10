@@ -10,6 +10,10 @@ export interface StudySession {
   correct_review: number;
   note?: string;
   created_at?: string;
+  // Campos multidisciplinares opcionais
+  pages_read?: number;
+  custom_metric_label?: string;
+  custom_metric_value?: number;
 }
 
 export interface StudyGoal {
@@ -19,7 +23,9 @@ export interface StudyGoal {
     | "weekly_hours"
     | "monthly_hours"
     | "weekly_questions"
-    | "monthly_questions";
+    | "monthly_questions"
+    | "weekly_pages"
+    | "monthly_pages";
   target_value: number;
 }
 
@@ -32,4 +38,30 @@ export interface DayStats {
   totalCorrectReview: number;
   subjects: string[];
   sessions: StudySession[];
+}
+
+export type TabId =
+  | "visao-geral"
+  | "historico"
+  | "desempenho"
+  | "relatorio"
+  | "heatmap";
+
+export interface StudyStats {
+  hours: number;
+  questions: number;
+  questionsNew: number;
+  correctNew: number;
+  questionsReview: number;
+  correctReview: number;
+  pages: number;
+  sessionsCount: number;
+}
+
+export interface SubjectData {
+  hours: number;
+  qNew: number;
+  cNew: number;
+  qRev: number;
+  cRev: number;
 }

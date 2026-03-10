@@ -7,6 +7,8 @@ mod notes;
 mod config;
 mod estudos;
 mod sono;
+mod calendar;
+mod statistics;
 
 use passwords::{PasswordEntry, DecryptedEntry, PasswordManager};
 use pomodoro::{PomodoroState, PomodoroManager, PomodoroHistory};
@@ -16,6 +18,8 @@ use habits::{Habit, HabitManager};
 use config::{AppConfig, ConfigManager};
 use estudos::{EstudosManager, StudySession, StudyGoal};
 use sono::{SonoManager, SleepEntry, SleepGoal};
+use calendar::{CalendarManager, CalendarEvent};
+use statistics::{StatisticsManager, CrossMetric, PerformanceSummary};
 use speedtest_rs::speedtest;
 use tauri::{Emitter, Manager, Window, State, tray::TrayIconBuilder};
 use std::thread;
@@ -36,6 +40,8 @@ struct AppState {
     config: ConfigManager,
     estudos: EstudosManager,
     sono: SonoManager,
+    calendar: CalendarManager,
+    stats: StatisticsManager,
 }
 
 #[tauri::command]
@@ -341,6 +347,11 @@ async fn add_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), S
 }
 
 #[tauri::command]
+async fn update_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), String> {
+    state.note.update_note(note)
+}
+
+#[tauri::command]
 async fn setup_local_vault(state: State<'_, AppState>, user_id: String, username: String, master_password: String) -> Result<(), String> {
     
     let local_email = format!("{}@aegis.local", username.to_lowercase());
@@ -457,13 +468,58 @@ async fn sono_get_goal(state: State<'_, AppState>, user_id: String) -> Result<Sl
 
 
 
+#[tauri::command]
+async fn open_notes_folder(state: State<'_, AppState>) -> Result<(), String> {
+    state.note.open_folder()
+}
+
+// ── Calendar commands ──────────────────────────────────────────────────────
+
+#[tauri::command]
+async fn calendar_add_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<i64, String> {
+    state.calendar.add_event(event)
+}
+
+#[tauri::command]
+async fn calendar_update_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<(), String> {
+    state.calendar.update_event(event)
+}
+
+#[tauri::command]
+async fn calendar_delete_event(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.calendar.delete_event(id, &user_id)
+}
+
+#[tauri::command]
+async fn calendar_list_events(state: State<'_, AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
+    Ok(state.calendar.list_events(&user_id))
+}
+
+#[tauri::command]
+async fn calendar_list_upcoming_deadlines(state: State<'_, AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
+    Ok(state.calendar.list_upcoming_deadlines(&user_id))
+}
+
+// ── Statistics commands ────────────────────────────────────────────────────
+
+#[tauri::command]
+async fn stats_get_cross_metrics(state: State<'_, AppState>, user_id: String, days: i32) -> Result<Vec<CrossMetric>, String> {
+    Ok(state.stats.get_cross_metrics(&user_id, days))
+}
+
+#[tauri::command]
+async fn stats_get_performance_summary(state: State<'_, AppState>, user_id: String, days: i32) -> Result<PerformanceSummary, String> {
+    Ok(state.stats.get_performance_summary(&user_id, days))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_focus();
                 let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
             }
         }))
         .plugin(tauri_plugin_dialog::init())
@@ -522,6 +578,8 @@ pub fn run() {
             let config = ConfigManager::new(app.handle());
             let estudos = EstudosManager::new(app.handle());
             let sono = SonoManager::new(app.handle());
+            let calendar = CalendarManager::new(app.handle());
+            let stats = StatisticsManager::new(app.handle());
 
             let initial_config = config.get_config();
             if initial_config.start_at_login {
@@ -609,7 +667,7 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, estudos, sono });
+            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, estudos, sono, calendar, stats });
             
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -619,9 +677,18 @@ pub fn run() {
                 )?;
             }
 
+            let args: Vec<String> = std::env::args().collect();
+            let arg_minimized = args.contains(&"--minimized".to_string());
+            let config_minimized = initial_config.start_minimized;
+
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
+                if arg_minimized || config_minimized {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.maximize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
             }
 
             Ok(())
@@ -690,9 +757,11 @@ pub fn run() {
             setup_local_vault,
             list_notes,
             add_note,
+            update_note,
             delete_note,
             update_note_status,
             update_note_pinned,
+            open_notes_folder,
             get_app_config,
             set_app_config,
             quit_app,
@@ -710,7 +779,16 @@ pub fn run() {
             sono_delete_entry,
             sono_list_entries,
             sono_upsert_goal,
-            sono_get_goal
+            sono_get_goal,
+
+            calendar_add_event,
+            calendar_update_event,
+            calendar_delete_event,
+            calendar_list_events,
+            calendar_list_upcoming_deadlines,
+
+            stats_get_cross_metrics,
+            stats_get_performance_summary
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
