@@ -51,7 +51,7 @@ export function StudiesHeader({
         <button
           type="button"
           onClick={onNewSession}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white  font-bold transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Nova Sessão
         </button>

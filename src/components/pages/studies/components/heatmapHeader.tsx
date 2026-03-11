@@ -59,7 +59,7 @@ export function HeatmapHeader({
         <div className="h-8 w-px bg-neutral-800 mx-1" />
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end">
-            <span className="text-sm font-black text-violet-400 leading-none">
+            <span className=" font-black text-violet-400 leading-none">
               {totalQuestions}
             </span>
             <span className="text-[10px] uppercase font-bold text-neutral-600">
@@ -67,7 +67,7 @@ export function HeatmapHeader({
             </span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-sm font-black text-white leading-none">
+            <span className=" font-black text-white leading-none">
               {totalHours.toFixed(1)}h
             </span>
             <span className="text-[10px] uppercase font-bold text-neutral-600">

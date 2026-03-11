@@ -102,7 +102,7 @@ export function CalendarDayPanel({
                         />
                       )}
                       <span
-                        className="text-sm font-black text-white truncate"
+                        className=" font-black text-white truncate"
                         style={{ textShadow: `0 0 10px ${color}20` }}
                       >
                         {ev.title}

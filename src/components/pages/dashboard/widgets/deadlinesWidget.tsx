@@ -66,7 +66,7 @@ export function DeadlinesWidget() {
           <div className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 group-hover:bg-red-500/20 transition-colors">
             <AlertTriangle className="w-4 h-4 text-red-400" />
           </div>
-          <h3 className="text-sm font-bold text-white">
+          <h3 className=" font-bold text-white">
             Deadlines (Próximas 4 semanas)
           </h3>
         </div>

@@ -4,7 +4,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { Eye, EyeOff, KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
@@ -25,11 +24,12 @@ function PwdInput({
   disabled?: boolean;
 }) {
   const [show, setShow] = useState(false);
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
   return (
     <div className="space-y-1.5">
       <Label
         htmlFor={id}
-        className="text-xs font-bold text-neutral-400 uppercase "
+        className={lc}
       >
         {label}
       </Label>
@@ -57,7 +57,7 @@ function PwdInput({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-black uppercase  text-neutral-500">{children}</p>
+    <p className="text-xs font-bold text-neutral-500">{children}</p>
   );
 }
 
@@ -211,13 +211,13 @@ export function SecurityTab() {
             placeholder="Repita a nova senha"
             disabled={acpLoading}
           />
-          <Button
+          <button
             type="submit"
-            className="w-full bg-amber-500 hover:bg-amber-500 text-black font-bold cursor-pointer"
+            className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
             disabled={acpLoading || !acpCurrent || !acpNew || !acpConfirm}
           >
-            {acpLoading ? "Alterando..." : "Alterar Senha da Conta"}
-          </Button>
+            {acpLoading ? "Alterando..." : "Alterar senha da conta"}
+          </button>
         </form>
       </section>
 
@@ -236,7 +236,7 @@ export function SecurityTab() {
             <div className="flex items-center gap-2">
               <SectionLabel>Senha Isolada do Cofre</SectionLabel>
               {hasVaultPwd && (
-                <span className="text-[10px] font-black uppercase  text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full ml-1">
                   Ativa
                 </span>
               )}
@@ -283,15 +283,15 @@ export function SecurityTab() {
                 placeholder="Repita"
                 disabled={vaultLoading}
               />
-              <Button
+              <button
                 type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-500 text-black font-bold cursor-pointer"
+                className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
                 disabled={
                   vaultLoading || !vaultCurrent || !vaultNew || !vaultConfirm
                 }
               >
-                {vaultLoading ? "Salvando..." : "Atualizar Senha do Cofre"}
-              </Button>
+                {vaultLoading ? "Salvando..." : "Atualizar senha do cofre"}
+              </button>
             </form>
 
             <form
@@ -318,14 +318,13 @@ export function SecurityTab() {
                 placeholder="Senha usada para entrar no Aegis"
                 disabled={vaultLoading}
               />
-              <Button
+              <button
                 type="submit"
-                variant="ghost"
-                className="w-full border border-neutral-700 hover:bg-neutral-800 cursor-pointer font-bold"
+                className="w-full py-3 rounded-xl text-neutral-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all font-semibold text-sm cursor-pointer"
                 disabled={vaultLoading || !vaultCurrent || !revertMaster}
               >
-                {vaultLoading ? "Processando..." : "Remover Senha Isolada"}
-              </Button>
+                {vaultLoading ? "Processando..." : "Remover senha isolada"}
+              </button>
             </form>
           </div>
         ) : (
@@ -362,15 +361,15 @@ export function SecurityTab() {
               ⚠️ Após definir, você precisará desta senha para acessar o cofre.
               Guarde-a em local seguro.
             </p>
-            <Button
+            <button
               type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-500 text-black font-bold cursor-pointer"
+              className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
               disabled={
                 vaultLoading || !vaultCurrent || !vaultNew || !vaultConfirm
               }
             >
-              {vaultLoading ? "Definindo..." : "Definir Senha Isolada do Cofre"}
-            </Button>
+              {vaultLoading ? "Definindo..." : "Definir senha isolada"}
+            </button>
           </form>
         )}
       </section>

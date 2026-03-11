@@ -7,9 +7,9 @@ import { toast } from "sonner";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 
-import { EditHabitDialog } from "./editDialog";
+import { EditHabitDialog } from "@/components/forms/habits/editDialog";
 import { HabitCard } from "./habitCard";
-import { HabitCreateModal } from "./habitCreateModal";
+import { HabitCreateModal } from "@/components/forms/habits/habitCreateModal";
 import type { Habit } from "./types";
 
 type TabId = "all" | "positive" | "negative";
@@ -54,7 +54,6 @@ export default function HabitsPage() {
     type: "Positive" | "Negative",
     chargesAmount: number,
     chargesInterval: number,
-    accumulates: boolean,
   ) => {
     if (!uid) return;
     const now = new Date().toISOString();
@@ -72,7 +71,7 @@ export default function HabitsPage() {
           charges_used: 0,
           charges_amount: chargesAmount,
           charges_interval_days: chargesInterval,
-          accumulates: accumulates,
+          accumulates: false,
           last_charge_refill: now,
           current_charges: chargesAmount,
         },
@@ -207,7 +206,7 @@ export default function HabitsPage() {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white  font-bold transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Novo Hábito
         </button>
@@ -251,7 +250,7 @@ export default function HabitsPage() {
           <div className="p-4 rounded-full bg-neutral-900/50">
             <Activity className="w-10 h-10 opacity-10" />
           </div>
-          <p className="text-sm font-bold uppercase opacity-30">
+          <p className=" font-bold uppercase opacity-30">
             Nenhum hábito rastreado aqui
           </p>
         </div>

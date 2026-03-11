@@ -65,7 +65,7 @@ export function NoteCard({
         </button>
 
         <p
-          className={`font-bold text-sm leading-snug flex-1 ${isDone ? "line-through text-neutral-500" : "text-neutral-200"}`}
+          className={`font-bold  leading-snug flex-1 ${isDone ? "line-through text-neutral-500" : "text-neutral-200"}`}
         >
           {n.title}
         </p>

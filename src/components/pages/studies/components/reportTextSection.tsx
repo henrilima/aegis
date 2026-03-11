@@ -16,7 +16,7 @@ export function ReportTextSection({
       <div className="p-6 border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Copy className="w-4 h-4 text-violet-500" />
-          <h2 className="text-sm font-black uppercase text-neutral-400">
+          <h2 className=" font-black uppercase text-neutral-400">
             Relatório Detalhado (Texto)
           </h2>
         </div>

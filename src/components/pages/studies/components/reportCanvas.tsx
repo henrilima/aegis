@@ -95,7 +95,7 @@ export function ReportCanvas({ weekStats, allStats }: ReportCanvasProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <TrendingUp className="w-5 h-5 text-violet-500" />
-          <h2 className="text-sm font-black uppercase text-neutral-400">
+          <h2 className=" font-black uppercase text-neutral-400">
             Relatório Visual (Story)
           </h2>
         </div>

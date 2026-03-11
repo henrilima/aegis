@@ -1,5 +1,6 @@
 import { Database, Info, Lock, Shield, ShieldAlert } from "lucide-react";
 import { Separator } from "../ui/separator";
+import { APP_CONFIG } from "@/app.config";
 
 interface TermsContentProps {
   className?: string;
@@ -19,7 +20,7 @@ export function FeedbackSection() {
               <p className="font-bold text-neutral-200 mb-1">
                 Feedback e Suporte (Beta)
               </p>
-              <p className="text-sm text-neutral-400">
+              <p className=" text-neutral-400">
                 O Aegis é atualmente um software em desenvolvimento (Beta).
                 Embora nos esforcemos para garantir estabilidade, bugs podem
                 ocorrer. Recomendamos que mantenha backups de dados críticos
@@ -28,13 +29,13 @@ export function FeedbackSection() {
                 <span className="mt-6 block font-bold transition-colors">
                   <span className="font-bold">E-mail:</span>{" "}
                   <span className="text-amber-500/80 select-text">
-                    henrilima.contactme@gmail.com
+                    {APP_CONFIG.support.email}
                   </span>
                 </span>
-                <span className="block font-medium font-mono text-sm mt-0.5">
+                <span className="block font-medium font-mono  mt-0.5">
                   <span className="font-bold">Discord:</span>{" "}
                   <span className="text-amber-500/80 select-text">
-                    atlassoatlas
+                    {APP_CONFIG.support.discord}
                   </span>
                 </span>
               </p>
@@ -51,7 +52,7 @@ export function FeedbackSection() {
               <p className="font-bold text-neutral-200 mb-1">
                 Compromisso com a Transparência
               </p>
-              <p className="text-sm text-neutral-400">
+              <p className=" text-neutral-400">
                 A perda da senha mestre impossibilita a recuperação dos dados.
                 Você é o único responsável pela sua senha.
               </p>
@@ -69,7 +70,7 @@ export function TermsContent({
 }: TermsContentProps) {
   return (
     <div
-      className={`space-y-6 text-sm text-neutral-400 overflow-auto pr-3 custom-scrollbar ${className}`}
+      className={`space-y-6  text-neutral-400 overflow-auto pr-3 custom-scrollbar ${className}`}
     >
       <div className="space-y-5">
         <div className="flex gap-4 items-start">

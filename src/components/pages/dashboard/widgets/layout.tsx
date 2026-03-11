@@ -80,7 +80,7 @@ export function ModuleGrid({ modules, colorConfig }: ModuleGridProps) {
                 <m.icon className={`w-4 h-4 ${c.text}`} />
               </div>
               <div>
-                <div className="text-sm font-bold text-neutral-200 leading-none">
+                <div className=" font-bold text-neutral-200 leading-none">
                   {m.label}
                 </div>
                 <div className="text-[10px] text-neutral-600 mt-0.5">

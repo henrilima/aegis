@@ -49,7 +49,7 @@ export function Header({
         <button
           type="button"
           onClick={onAddNew}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-500 text-black text-sm font-bold transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-500 text-black  font-bold transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
         >
           <Plus className="w-4 h-4" /> Nova Senha
         </button>

@@ -33,7 +33,7 @@ export function HabitsWidget({
           <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
             <Activity className="w-4 h-4 text-teal-400" />
           </div>
-          <span className="text-sm font-bold text-neutral-200">Hábitos</span>
+          <span className=" font-bold text-neutral-200">Hábitos</span>
         </div>
         <span className="text-[10px] font-black uppercase  text-neutral-600">
           Hoje

@@ -13,7 +13,7 @@ import type { TabId } from "../types";
 export const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "visao-geral", label: "Visão Geral", icon: LayoutDashboard },
   { id: "historico", label: "Histórico", icon: Calendar },
-  { id: "heatmap", label: "Flame", icon: Flame },
+  { id: "heatmap", label: "Constância", icon: Flame },
   { id: "desempenho", label: "Desempenho", icon: BarChart3 },
   { id: "relatorio", label: "Relatório", icon: Copy },
 ];

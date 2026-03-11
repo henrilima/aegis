@@ -76,7 +76,7 @@ export function DeleteModal({ id, onConfirm, onCancel }: DeleteModalProps) {
         <div className="w-20 h-20 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-6 border border-red-500/20 shadow-lg shadow-red-500/5 rotate-3">
           <Trash2 className="w-10 h-10 text-red-500" />
         </div>
-        <h3 className="text-sm font-black text-white uppercase mb-1">
+        <h3 className=" font-black text-white uppercase mb-1">
           Purga do Registro
         </h3>
         <p className="text-[10px] font-black text-neutral-500 uppercase mb-8">

@@ -1,3 +1,4 @@
 body {
   user-select: none;
+  font-size: 0.875rem; /* text-sm — base global para compensar classes removidas acidentalmente */
 }

@@ -17,7 +17,7 @@ export function ReminderCard({ reminder: r, onDelete }: ReminderCardProps) {
           <Clock className="w-4 h-4 text-amber-500" />
         )}
         <div>
-          <div className="font-bold text-sm">
+          <div className="font-bold ">
             {r.reminder_type === "Interval" ? `${r.value} min` : r.value}
           </div>
           <div className="text-[10px] text-neutral-500 uppercase font-semibold">

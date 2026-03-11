@@ -3,7 +3,6 @@
 import { ShieldAlert, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DeleteAccountModal } from "@/components/forms/DeleteAccountModal";
-import { Button } from "@/components/ui/button";
 
 interface DangerTabProps {
   username: string;
@@ -33,7 +32,7 @@ export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
           </div>
           <div>
             <h2 className="text-lg font-bold text-red-500">Zona de Perigo</h2>
-            <p className="text-sm text-neutral-500">
+            <p className=" text-neutral-500">
               Ações irreversíveis que afetam sua conta e seus dados
               permanentemente.
             </p>
@@ -43,7 +42,7 @@ export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
         <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-4">
           <div className="space-y-1">
             <p className="font-bold text-neutral-200">Excluir Conta Local</p>
-            <p className="text-sm text-neutral-500 leading-relaxed">
+            <p className=" text-neutral-500 leading-relaxed">
               Ao deletar sua conta, todos os dados criptografados (senhas,
               notas, hábitos, etc.) serão removidos permanentemente deste
               dispositivo.
@@ -53,14 +52,14 @@ export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
             </p>
           </div>
 
-          <Button
+          <button
+            type="button"
             onClick={() => setShowModal(true)}
-            variant="ghost"
-            className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 font-bold h-12 rounded-xl transition-all cursor-pointer group"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer group"
           >
-            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            Deletar Minha Conta Permanentemente
-          </Button>
+            <Trash2 className="w-4 h-4" />
+            Deletar minha conta permanentemente
+          </button>
         </div>
       </div>
     </div>

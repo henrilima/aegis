@@ -30,8 +30,12 @@ export const EVENT_COLOR_OPTIONS = [
   { label: "Azul", value: "#3b82f6" },
   { label: "Verde", value: "#22c55e" },
   { label: "Amarelo", value: "#eab308" },
-  { label: "Branco", value: "#e5e7eb" },
+  { label: "Laranja", value: "#f97316" },
+  { label: "Vermelho", value: "#ef4444" },
+  { label: "Rosa", value: "#ec4899" },
+  { label: "Roxo", value: "#8b5cf6" },
   { label: "Ciano", value: "#06b6d4" },
+  { label: "Branco", value: "#e5e7eb" },
 ];
 
 /** Calcula quantos dias faltam para a data (positivo = futuro, 0 = hoje, negativo = passado) */

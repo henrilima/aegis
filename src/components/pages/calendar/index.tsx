@@ -10,7 +10,7 @@ import { CalendarGrid } from "./components/calendarGrid";
 
 import { CalendarHeader } from "./components/calendarHeader";
 import { CalendarUpcomingDeadlines } from "./components/calendarUpcomingDeadlines";
-import { DeleteEventModal, EventModal } from "./modal/calendarModals";
+import { DeleteEventModal, EventModal } from "@/components/forms/calendar/calendarModals";
 import type { CalendarEvent } from "./types";
 
 /**
@@ -177,7 +177,7 @@ export default function CalendarPage() {
               <div className="p-4 bg-neutral-950/40 rounded-full w-fit mx-auto mb-4">
                 <CalendarDays className="w-8 h-8 text-neutral-800" />
               </div>
-              <p className="text-sm font-black uppercase text-neutral-600">
+              <p className=" font-black uppercase text-neutral-600">
                 Selecione uma data
               </p>
               <p className="text-[10px] text-neutral-700 mt-2 font-bold uppercase">

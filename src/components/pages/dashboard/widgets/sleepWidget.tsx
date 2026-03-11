@@ -34,7 +34,7 @@ export function SonoWidget({
           <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
             <Moon className="w-4 h-4 text-blue-400" />
           </div>
-          <span className="text-sm font-bold text-neutral-200">Sono</span>
+          <span className=" font-bold text-neutral-200">Sono</span>
         </div>
         <span className="text-[10px] font-black uppercase  text-neutral-600">
           Últimos 7 dias

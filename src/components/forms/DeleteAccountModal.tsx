@@ -2,7 +2,6 @@
 
 import { Eye, EyeOff, ShieldAlert, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -13,7 +12,7 @@ interface DeleteAccountModalProps {
 }
 
 /**
- * Interface de Purga: Confirmação mestre para exclusão definitiva de perfil
+ * Modal de confirmação para exclusão de conta
  */
 export function DeleteAccountModal({
   username,
@@ -28,7 +27,7 @@ export function DeleteAccountModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password) {
-      setError("Autenticação necessária para proceder.");
+      setError("Senha necessária para confirmar.");
       return;
     }
     setError(null);
@@ -41,80 +40,71 @@ export function DeleteAccountModal({
     }
   };
 
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md bg-neutral-950 border border-red-500/20 rounded-3xl shadow-2xl shadow-red-900/10 overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-900">
+      <div className="relative w-full max-w-sm bg-neutral-950 border border-red-500/20 rounded-[28px] overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="flex items-center justify-between p-5 border-b border-neutral-900">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
               <ShieldAlert className="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-white uppercase">
-                Deleção de Registro
+              <h2 className="text-base font-bold text-white">
+                Deletar conta
               </h2>
-              <p className="text-[9px] font-black text-red-500/60 uppercase mt-0.5">
-                Operação Irreversível
+              <p className="text-xs text-red-500/60 mt-0.5">
+                Ação irreversível
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="p-2 rounded-xl hover:bg-neutral-900 text-neutral-600 hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-600 hover:text-white transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-8 space-y-6">
-          <div className="p-5 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-4">
-            <p className="text-xs font-bold text-red-400 leading-relaxed">
-              ⚠️ Você está prestes a desintegrar permanentemente a conta{" "}
-              <span className="text-white font-black underline underline-offset-4 decoration-red-500/50">
-                "{username}"
-              </span>{" "}
-              do sistema local.
+        <div className="p-6 space-y-5">
+          <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-3">
+            <p className="text-xs font-medium text-red-400 leading-relaxed">
+              Você está prestes a excluir permanentemente a conta{" "}
+              <span className="text-white font-bold italic">
+                {username}
+              </span>.
             </p>
-            <div className="space-y-2">
-              <p className="text-[9px] font-black text-neutral-500 uppercase">
-                Impacto da Operação:
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold text-neutral-500 uppercase px-0.5">
+                O que será removido:
               </p>
-              <ul className="text-[10px] text-neutral-600 font-bold space-y-1.5 list-none">
+              <ul className="text-xs text-neutral-500 font-medium space-y-1">
                 <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Remoção
-                  de Cofres de Senhas
+                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Cofres de senhas
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" />{" "}
-                  Exclusão de Logs Biométricos
+                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Histórico de hábitos
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Purga
-                  de Arquivos de Notas
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Reset
-                  de Métricas de Performance
+                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Todas as notas e logs
                 </li>
               </ul>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2.5">
-              <Label
-                htmlFor="confirm-password"
-                className="text-[10px] font-black uppercase text-neutral-600 ml-1"
-              >
-                Chave de Autorização para Purga
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="confirm-password" className={lc}>
+                Senha de confirmação
               </Label>
               <div className="relative">
                 <Input
                   id="confirm-password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Insira sua senha mestre"
-                  className="bg-neutral-900 border-neutral-800 h-12 rounded-2xl text-white placeholder:text-neutral-800 font-bold pr-12 focus:border-red-500/50 shadow-inner"
+                  className="bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium pr-12 focus:border-red-500/50"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoFocus
@@ -123,7 +113,7 @@ export function DeleteAccountModal({
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-700 hover:text-white transition-colors cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-white transition-colors cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -133,37 +123,35 @@ export function DeleteAccountModal({
                 </button>
               </div>
               {error && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-red-500 text-[10px] font-black uppercase text-center">
+                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-500 text-[10px] font-bold text-center">
                     {error}
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-4 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onCancel}
-                className="flex-1 py-6 rounded-2xl text-xs font-black uppercase text-neutral-600 hover:text-white hover:bg-neutral-900 transition-all border-none"
-                disabled={loading}
-              >
-                Abortar
-              </Button>
-              <Button
+            <div className="flex flex-col gap-2 pt-1">
+              <button
                 type="submit"
-                className="flex-2 py-6 rounded-2xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase shadow-xl shadow-red-600/20 active:scale-[0.98] transition-all border-none gap-3"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 cursor-pointer"
                 disabled={loading || !password}
               >
                 {loading ? (
-                  "Desintegrando..."
+                  "Excluindo..."
                 ) : (
                   <>
-                    <Trash2 className="w-4 h-4" /> Confirmar Purga
+                    <Trash2 className="w-4 h-4" /> Confirmar exclusão
                   </>
                 )}
-              </Button>
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+              >
+                Agora não
+              </button>
             </div>
           </form>
         </div>

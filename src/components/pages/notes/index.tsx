@@ -8,8 +8,8 @@ import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { NoteCard } from "./components/noteCard";
 import { NotesHeader } from "./components/notesHeader";
-import { NoteCreateModal } from "./noteCreateModal";
-import { NoteExpandModal } from "./noteExpandModal";
+import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
+import { NoteExpandModal } from "@/components/forms/notes/noteExpandModal";
 import type { Note } from "./types";
 
 const MAX_PINS = 3;
@@ -225,7 +225,7 @@ export default function NotesPage() {
           <div className="p-4 rounded-full bg-neutral-900/50">
             <StickyNote className="w-10 h-10 opacity-10" />
           </div>
-          <p className="text-sm font-bold uppercase opacity-30">
+          <p className=" font-bold uppercase opacity-30">
             {tab === "pending" ? "Nenhuma nota pendente" : "Histórico vazio"}
           </p>
         </div>

@@ -38,7 +38,7 @@ export function HistoryTab({
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
           <input
-            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-9 pr-3 py-2  text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition-colors"
             placeholder="Buscar por matéria, data ou anotação..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -46,7 +46,7 @@ export function HistoryTab({
         </div>
         <div className="relative">
           <select
-            className="appearance-none bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
+            className="appearance-none bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-8 py-2  text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
             value={filterMonth}
             onChange={(e) => onFilterMonthChange(e.target.value)}
           >
@@ -67,7 +67,7 @@ export function HistoryTab({
       {sessions.length === 0 ? (
         <div className="text-center py-16 text-neutral-600">
           <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">Nenhuma sessão encontrada</p>
+          <p className="">Nenhuma sessão encontrada</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

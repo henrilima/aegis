@@ -194,7 +194,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
                   type="button"
                   onClick={() => navigate(item.route)}
                   className={cn(
-                    "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all group cursor-pointer",
+                    "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl  font-medium transition-all group cursor-pointer",
                     active
                       ? {
                           "bg-amber-500/12 text-amber-500 font-semibold":
@@ -260,7 +260,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
           type="button"
           onClick={() => navigate("settings")}
           className={cn(
-            "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer",
+            "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl  font-medium transition-all cursor-pointer",
             mounted && isActive("settings")
               ? "bg-amber-500/12 text-amber-500 font-semibold"
               : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/70",

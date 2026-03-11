@@ -9,7 +9,7 @@ export function SpeedStatus({ status, error }: SpeedStatusProps) {
       <p className="text-lg text-center">
         <span className="font-bold">Status:</span> {status}
       </p>
-      {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+      {error && <p className="text-red-500 text-center ">{error}</p>}
     </div>
   );
 }

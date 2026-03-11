@@ -2,7 +2,6 @@
 
 import { Star } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -96,15 +95,15 @@ export function SleepEntryForm({
   }
 
   const inputStyle =
-    "bg-neutral-950 border-neutral-800 h-12 rounded-2xl font-bold focus:border-blue-500/40 transition-all placeholder:text-neutral-700 shadow-inner";
-  const labelStyle = "text-[10px] font-black uppercase text-neutral-600 ml-1";
+    "bg-neutral-950 border-neutral-800 h-12 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* Campo de Data do Registro */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="ef-date" className={labelStyle}>
-          Data da Alvorada
+        <Label htmlFor="ef-date" className={lc}>
+          Data
         </Label>
         <Input
           id="ef-date"
@@ -119,8 +118,8 @@ export function SleepEntryForm({
       <div className="grid grid-cols-2 gap-5">
         {/* Hora de Recolhimento */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="ef-bedtime" className={labelStyle}>
-            Recolhimento
+          <Label htmlFor="ef-bedtime" className={lc}>
+            Hora de dormir
           </Label>
           <Input
             id="ef-bedtime"
@@ -133,8 +132,8 @@ export function SleepEntryForm({
         </div>
         {/* Hora de Despertar */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="ef-wake" className={labelStyle}>
-            Despertar
+          <Label htmlFor="ef-wake" className={lc}>
+            Hora de acordar
           </Label>
           <Input
             id="ef-wake"
@@ -149,14 +148,14 @@ export function SleepEntryForm({
 
       {/* Indicador de Descanso Calculado */}
       <div className="text-center py-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl animate-in fade-in duration-700 shadow-inner">
-        <span className="text-[10px] text-blue-400 font-black uppercase">
-          Repouso Total: {formatDuration(duration)}
+        <span className="text-xs text-blue-400 font-medium">
+          Total de repouso: {formatDuration(duration)}
         </span>
       </div>
 
       {/* Seletor de Percepção de Qualidade */}
       <div className="flex flex-col gap-3">
-        <Label className={labelStyle}>Grau de Vigor Bio-Neuronal</Label>
+        <Label className={lc}>Qualidade do sono</Label>
         <div className="flex gap-2 p-1 bg-neutral-950/50 border border-neutral-800 rounded-2xl">
           {[1, 2, 3, 4, 5].map((q) => (
             <button
@@ -173,15 +172,15 @@ export function SleepEntryForm({
             </button>
           ))}
         </div>
-        <p className="text-center text-[10px] font-black uppercase text-neutral-700 mt-1">
-          Estado: {qualityLabel(form.quality)}
+        <p className="text-center text-xs font-medium text-neutral-500 mt-1">
+          {qualityLabel(form.quality)}
         </p>
       </div>
 
       {/* Notas Opcionais */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="ef-note" className={labelStyle}>
-          Observações Biométricas
+        <Label htmlFor="ef-note" className={lc}>
+          Observações <span className="text-neutral-600 font-normal">(opcional)</span>
         </Label>
         <Textarea
           id="ef-note"
@@ -193,21 +192,20 @@ export function SleepEntryForm({
       </div>
 
       {/* Ações do Formulário */}
-      <div className="flex gap-4 pt-4">
-        <Button
+      <div className="flex flex-col gap-2 pt-2">
+        <button
+          type="submit"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+        >
+          {initial ? "Salvar alterações" : "Registrar sono"}
+        </button>
+        <button
           type="button"
           onClick={onCancel}
-          variant="ghost"
-          className="flex-1 py-6 rounded-2xl text-xs font-black uppercase text-neutral-600 hover:text-white transition-all border-none"
+          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
         >
-          Descartar
-        </Button>
-        <Button
-          type="submit"
-          className="flex-2 py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase shadow-lg shadow-blue-600/10 transition-all active:scale-[0.98] border-none"
-        >
-          {initial ? "Atualizar Log" : "Sincronizar Ciclo"}
-        </Button>
+          Agora não
+        </button>
       </div>
     </form>
   );

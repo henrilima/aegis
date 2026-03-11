@@ -16,7 +16,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
 
   if (metrics.length === 0) {
     return (
-      <p className="text-sm text-neutral-600 text-center py-6 italic font-medium">
+      <p className=" text-neutral-600 text-center py-6 italic font-medium">
         Dados insuficientes para gerar visualização temporal.
       </p>
     );

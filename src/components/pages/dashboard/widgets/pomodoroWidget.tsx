@@ -22,7 +22,7 @@ export function PomodoroWidget({ pomodoro }: PomodoroWidgetProps) {
           <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
             <Timer className="w-4 h-4 text-red-400" />
           </div>
-          <span className="text-sm font-bold text-neutral-200">Pomodoro</span>
+          <span className=" font-bold text-neutral-200">Pomodoro</span>
         </div>
         {pomodoro?.is_running && (
           <span className="flex items-center gap-1.5 text-[10px] font-black text-red-400 uppercase ">

@@ -17,7 +17,7 @@ export function CrossTable({ metrics }: CrossTableProps) {
 
   if (sorted.length === 0) {
     return (
-      <p className="text-sm text-neutral-600 text-center py-8 italic font-medium">
+      <p className=" text-neutral-600 text-center py-8 italic font-medium">
         Histórico vazio no período selecionado.
       </p>
     );

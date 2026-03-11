@@ -24,7 +24,7 @@ export function PomoHistory({ history, onClear }: PomoHistoryProps) {
 
       {history.length === 0 ? (
         <div className="flex flex-col items-center gap-1 py-8 text-neutral-700">
-          <p className="text-sm">Sem histórico</p>
+          <p className="">Sem histórico</p>
         </div>
       ) : (
         <ul className="space-y-2 overflow-auto max-h-72">

@@ -34,7 +34,7 @@ export function CurrencyConverter({
           <select
             value={baseCurrency}
             onChange={(e) => setBaseCurrency(e.target.value)}
-            className="flex h-10 w-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-[100px] rounded-md border border-input bg-background px-3 py-2 "
           >
             {Object.keys(rates)
               .sort()
@@ -65,7 +65,7 @@ export function CurrencyConverter({
           <select
             value={targetCurrency}
             onChange={(e) => setTargetCurrency(e.target.value)}
-            className="flex h-10 w-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-[100px] rounded-md border border-input bg-background px-3 py-2 "
           >
             {Object.keys(rates)
               .sort()

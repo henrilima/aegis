@@ -7,11 +7,11 @@ export const APP_CONFIG = {
     get versionLabel() {
       return `${this.stage}-${this.version} (${this.codename})`;
     },
-    author: "José Henrique",
+    author: "José Henrique da Silva Lima",
     year: 2026,
     support: {
-      discord: "henrilima",
-      email: "suporte@aegis.app",
+      discord: "atlassoatlas",
+      email: "henrilima.contactme@gmail.com",
       github: "https://github.com/henrilima/aegis",
     },
   } as const;

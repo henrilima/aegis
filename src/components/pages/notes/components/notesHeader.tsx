@@ -49,7 +49,7 @@ export function NotesHeader({
         <Button
           type="button"
           onClick={onNewNote}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-black text-sm font-bold transition-colors border-none h-auto"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-black  font-bold transition-colors border-none h-auto"
         >
           <Plus className="w-4 h-4" /> Nova Nota
         </Button>

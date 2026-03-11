@@ -21,7 +21,7 @@ export function SleepChart({ weekDays, targetMinutes }: SleepChartProps) {
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-      <h2 className="text-sm font-black uppercase text-neutral-400 mb-4">
+      <h2 className=" font-black uppercase text-neutral-400 mb-4">
         Sono por Dia
       </h2>
       <div className="flex items-end gap-2 h-32">

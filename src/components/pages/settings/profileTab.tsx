@@ -22,9 +22,7 @@ export function ProfileTab({ username, email }: ProfileTabProps) {
           <h2 className="text-2xl font-bold text-white ">{username}</h2>
           <div className="flex items-center gap-2 mt-1.5 p-1 px-2.5 bg-neutral-800/50 border border-neutral-700/50 rounded-lg w-fit">
             <Mail className="w-3.5 h-3.5 text-amber-500/70" />
-            <span className="text-sm text-neutral-400 font-medium">
-              {email}
-            </span>
+            <span className=" text-neutral-400 font-medium">{email}</span>
           </div>
         </div>
       </div>
@@ -32,8 +30,8 @@ export function ProfileTab({ username, email }: ProfileTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="space-y-6">
           <div className="space-y-3">
-            <p className="text-[10px] font-black uppercase  text-neutral-500 ml-1">
-              Informações da Conta Local
+            <p className="text-xs font-bold text-neutral-500 ml-1">
+              Informações da conta local
             </p>
             <FieldRow icon={User} label="Nome de Usuário" value={username} />
             <FieldRow icon={Mail} label="Endereço de E-mail" value={email} />
@@ -41,14 +39,6 @@ export function ProfileTab({ username, email }: ProfileTabProps) {
 
           <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-sm hover:border-neutral-700 transition-all duration-300 group">
             <FeedbackSection />
-          </div>
-
-          <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
-            <p className="text-xs text-amber-500/80 leading-relaxed italic">
-              * A edição direta de dados de perfil está desabilitada nesta
-              versão beta para garantir a integridade da criptografia do seu
-              banco de dados local.
-            </p>
           </div>
         </div>
 
@@ -59,16 +49,14 @@ export function ProfileTab({ username, email }: ProfileTabProps) {
             </div>
             <div className="flex-1 flex justify-between items-center">
               <div>
-                <p className="text-[10px] font-black uppercase  text-neutral-400">
-                  Privacidade e Dados
+                <p className="text-xs font-bold text-neutral-500">
+                  Privacidade e dados
                 </p>
-                <h3 className="text-sm font-bold text-white">
-                  Transparência Aegis
-                </h3>
+                <h3 className=" font-bold text-white">Transparência Aegis</h3>
               </div>
               <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-pulse">
                 <ChevronDown className="w-3 h-3 text-amber-500" />
-                <span className="text-[9px] font-black text-amber-500 uppercase">
+                <span className="text-[10px] font-bold text-amber-500 uppercase">
                   Scroll
                 </span>
               </div>
@@ -99,10 +87,10 @@ function FieldRow({
         <Icon className="w-4 h-4 text-neutral-500 group-hover:text-amber-500" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-black uppercase  text-neutral-600 mb-0.5">
+        <p className="text-xs font-medium text-neutral-500 mb-0.5">
           {label}
         </p>
-        <p className="font-bold text-sm text-neutral-200 truncate">{value}</p>
+        <p className="font-bold  text-neutral-200 truncate">{value}</p>
       </div>
     </div>
   );

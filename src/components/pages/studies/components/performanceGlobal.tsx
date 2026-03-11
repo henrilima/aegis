@@ -18,7 +18,7 @@ export function PerformanceGlobal({
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
           <PieChart className="w-4 h-4 text-emerald-500" />
-          <h3 className="text-sm font-black uppercase text-neutral-400">
+          <h3 className=" font-black uppercase text-neutral-400">
             Taxa de Acerto Global
           </h3>
         </div>

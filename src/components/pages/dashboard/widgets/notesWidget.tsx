@@ -4,7 +4,7 @@ import { Circle, Pin, Plus, StickyNote } from "lucide-react";
 import { useState } from "react";
 import type { Note } from "@/components/pages/notes/types";
 import { useNavigation } from "@/context/NavigationContext";
-import { NoteCreateModal } from "../../notes/noteCreateModal";
+import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
 
 interface NotesWidgetProps {
   notes: Note[];
@@ -37,7 +37,7 @@ export function NotesWidget({
             <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20">
               <StickyNote className="w-4 h-4 text-orange-400" />
             </div>
-            <div className="text-sm font-bold text-neutral-200">Notas</div>
+            <div className=" font-bold text-neutral-200">Notas</div>
           </div>
           <button
             type="button"

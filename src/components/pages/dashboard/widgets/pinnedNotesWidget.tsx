@@ -23,7 +23,7 @@ export function PinnedNotesWidget({ notes }: PinnedNotesWidgetProps) {
               className="py-3 border-b border-white/5 last:border-0"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-bold text-neutral-300 truncate">
+                <span className=" font-bold text-neutral-300 truncate">
                   {n.title}
                 </span>
                 <Pin className="w-3 h-3 text-orange-500 fill-orange-500/20" />

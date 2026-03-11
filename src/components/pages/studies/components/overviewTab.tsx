@@ -120,7 +120,7 @@ export function OverviewTab({
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <h2 className="text-sm font-black uppercase text-neutral-400 mb-4">
+        <h2 className=" font-black uppercase text-neutral-400 mb-4">
           Progresso das Metas
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -161,11 +161,11 @@ export function OverviewTab({
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <h2 className="text-sm font-black uppercase text-neutral-400 mb-4">
+        <h2 className=" font-black uppercase text-neutral-400 mb-4">
           Desempenho por Matéria (3 meses)
         </h2>
         {Object.keys(subjectMap).length === 0 ? (
-          <p className="text-sm text-neutral-600 text-center py-6">
+          <p className=" text-neutral-600 text-center py-6">
             Nenhuma sessão registrada ainda.
           </p>
         ) : (
@@ -182,7 +182,7 @@ export function OverviewTab({
                     className="flex items-center gap-4 py-2 border-b border-neutral-800 last:border-0"
                   >
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-white truncate block">
+                      <span className=" font-semibold text-white truncate block">
                         {subj}
                       </span>
                       <span className="text-[11px] text-neutral-500">
@@ -191,7 +191,7 @@ export function OverviewTab({
                     </div>
                     <div className="text-right shrink-0">
                       <span
-                        className={`text-sm font-black ${
+                        className={` font-black ${
                           rate >= 70
                             ? "text-green-400"
                             : rate >= 50

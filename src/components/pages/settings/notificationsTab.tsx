@@ -31,7 +31,7 @@ export function NotificationsTab({
               <ShieldAlert className="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <p className="font-bold text-sm">Prioridade Crítica (Windows)</p>
+              <p className="font-bold ">Prioridade Crítica (Windows)</p>
               <p className="text-xs text-neutral-500 mt-0.5 mr-2">
                 Defina as notificações prioritárias para que elas apareçam mesmo
                 se o Windows estiver em modo Foco/Não Perturbe.
@@ -56,7 +56,7 @@ export function NotificationsTab({
             <Bell className="w-5 h-5 text-amber-500" />
           </div>
           <div>
-            <p className="font-bold text-sm">Teste de Comunicação</p>
+            <p className="font-bold ">Teste de Comunicação</p>
             <p className="text-xs text-neutral-500 mt-0.5">
               Verifique se o Windows está entregando os alertas do Aegis.
             </p>

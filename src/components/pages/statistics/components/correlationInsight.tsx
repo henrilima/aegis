@@ -31,10 +31,10 @@ export function CorrelationInsight({ summary }: CorrelationInsightProps) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-black uppercase" style={{ color }}>
+        <span className=" font-black uppercase" style={{ color }}>
           Correlação {summary.correlation_label}: Sono × Acerto
         </span>
-        <p className="text-sm text-neutral-500 leading-relaxed font-medium">
+        <p className=" text-neutral-500 leading-relaxed font-medium">
           {isPositive
             ? "Métricas indicam que maiores períodos de sono impactam positivamente sua produtividade. Priorizar o descanso está rendendo resultados diretos nos estudos!"
             : isNegative

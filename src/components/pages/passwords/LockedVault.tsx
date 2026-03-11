@@ -32,17 +32,20 @@ export function LockedVault({
           <div className="mx-auto mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-fit">
             <Shield className="w-10 h-10 text-amber-500" />
           </div>
-          <CardTitle className="text-3xl font-black text-white tracking-tight">
+          <CardTitle className="text-3xl font-black text-white">
             Cofre de Segurança
           </CardTitle>
           <CardDescription className="text-neutral-500 font-medium px-6">
             Insira sua senha mestra para desbloquear seus dados locais e offline
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6 pt-8">
           <div className="space-y-3">
-            <Label htmlFor="master" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+            <Label
+              htmlFor="master"
+              className="text-[10px] font-black uppercase text-neutral-500 ml-1"
+            >
               Senha Mestra de Acesso
             </Label>
             <div className="relative">
@@ -79,7 +82,8 @@ export function LockedVault({
                 onClick={handleStartReset}
                 className="w-full py-3 rounded-xl text-red-500/50 hover:text-red-400 text-[10px] font-black uppercase gap-2 flex items-center justify-center transition-all hover:bg-red-500/5"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Esqueci minha senha / Resetar Cofre
+                <Trash2 className="w-3.5 h-3.5" /> Esqueci minha senha / Resetar
+                Cofre
               </button>
             </div>
           )}
@@ -88,8 +92,18 @@ export function LockedVault({
         <CardFooter className="pb-10 pt-4 px-8">
           <div className="text-center space-y-4">
             <p className="text-[11px] leading-relaxed text-neutral-500">
-              <span className="text-amber-500/80 font-black uppercase block mb-1 text-[9px]">Aviso de Segurança</span>
-              A Aegis utiliza criptografia <span className="text-neutral-300 font-bold">AES-256-GCM</span> e derivação de chave <span className="text-neutral-300 font-bold">Argon2id</span>. Seus dados nunca saem deste dispositivo. <span className="text-neutral-400">Salve sua senha em local seguro, pois não há recuperação possível.</span>
+              <span className="text-amber-500/80 font-black uppercase block mb-1 text-[9px]">
+                Aviso de Segurança
+              </span>
+              A Aegis utiliza criptografia{" "}
+              <span className="text-neutral-300 font-bold">AES-256-GCM</span> e
+              derivação de chave{" "}
+              <span className="text-neutral-300 font-bold">Argon2id</span>. Seus
+              dados nunca saem deste dispositivo.{" "}
+              <span className="text-neutral-400">
+                Salve sua senha em local seguro, pois não há recuperação
+                possível.
+              </span>
             </p>
           </div>
         </CardFooter>

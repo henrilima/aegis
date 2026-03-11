@@ -24,7 +24,7 @@ export function SystemTab({
   return (
     <div className="space-y-3 max-w-2xl">
       <SectionHeading>Comportamento do App</SectionHeading>
-      <p className="text-sm text-neutral-500 mb-4">
+      <p className=" text-neutral-500 mb-4">
         Configure como o {APP_CONFIG.name} interage com o Windows.
       </p>
 
@@ -51,7 +51,7 @@ export function SystemTab({
 
       <div className="pt-4 border-t border-neutral-800 mt-2">
         <SectionHeading>Processo</SectionHeading>
-        <p className="text-sm text-neutral-500 mb-4">
+        <p className=" text-neutral-500 mb-4">
           Encerre o {APP_CONFIG.name} completamente. O processo será reiniciado
           automaticamente se estiver configurado para iniciar com o Windows.
         </p>
@@ -97,7 +97,7 @@ function ToggleRow({
   return (
     <div className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:bg-neutral-900/80 transition-colors">
       <div>
-        <Label className="text-sm font-bold cursor-pointer">{label}</Label>
+        <Label className=" font-bold cursor-pointer">{label}</Label>
         <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />

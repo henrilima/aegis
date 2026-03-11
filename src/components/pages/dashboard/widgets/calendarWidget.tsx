@@ -55,7 +55,7 @@ export function CalendarWidget() {
           <div className="p-1.5 rounded-lg bg-green-500/10 border border-green-500/20 group-hover:bg-green-500/20 transition-colors">
             <CalendarDays className="w-4 h-4 text-green-400" />
           </div>
-          <h3 className="text-sm font-bold text-white">
+          <h3 className=" font-bold text-white">
             Eventos (Próximas 4 semanas)
           </h3>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { BarChart3, Calendar, Moon, Target } from "lucide-react";
+import { BarChart3, Calendar, Moon, Plus, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -11,11 +11,11 @@ import { SleepGoalTab } from "./components/sleepGoalTab";
 import { SleepHeader } from "./components/sleepHeader";
 import { SleepHistory } from "./components/sleepHistory";
 import { SleepStatsBanner } from "./components/sleepStatsBanner";
-import { DeleteSleepModal, SleepEntryModal } from "./modal/sleepModals";
+import { DeleteSleepModal, SleepEntryModal } from "@/components/forms/sleep/sleepModals";
 import { isoDate, weekRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
-type TabId = "semana" | "historico" | "metas";
+type TabId = "semana" | "historico";
 
 /**
  * Módulo de Sono: Monitoramento de ciclos de descanso, qualidade e metas de repouso
@@ -35,6 +35,7 @@ export default function SleepPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [goalHours, setGoalHours] = useState("8");
   const [goalBedtime, setGoalBedtime] = useState("23:00");
+  const [showSettings, setShowSettings] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -166,7 +167,6 @@ export default function SleepPage() {
   const TABS = [
     { id: "semana", label: "Visão Semanal", icon: BarChart3 },
     { id: "historico", label: "Relatórios", icon: Calendar },
-    { id: "metas", label: "Objetivos", icon: Target },
   ];
 
   if (loading)
@@ -187,6 +187,7 @@ export default function SleepPage() {
           setEditEntry(undefined);
           setShowForm(true);
         }}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
       {/* Camada de Modais */}
@@ -265,15 +266,38 @@ export default function SleepPage() {
         </div>
       )}
 
-      {tab === "metas" && (
-        <div className="animate-in zoom-in-95 duration-500">
-          <SleepGoalTab
-            goalHours={goalHours}
-            setGoalHours={setGoalHours}
-            goalBedtime={goalBedtime}
-            setGoalBedtime={setGoalBedtime}
-            onSave={handleGoalSave}
-          />
+    {/* Interface flutuante para configurações do módulo */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-[32px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+            <div className="p-6 border-b border-neutral-800 flex items-center justify-between sticky top-0 bg-neutral-900 z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-600/10 border border-blue-600/20">
+                  <Settings className="w-5 h-5 text-blue-400" />
+                </div>
+                <h2 className="text-xl font-bold">Objetivos de Sono</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
+              >
+                <Plus className="w-6 h-6 rotate-45" />
+              </button>
+            </div>
+            <div className="p-6">
+              <SleepGoalTab
+                goalHours={goalHours}
+                setGoalHours={setGoalHours}
+                goalBedtime={goalBedtime}
+                setGoalBedtime={setGoalBedtime}
+                onSave={async () => {
+                  await handleGoalSave();
+                  setShowSettings(false);
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

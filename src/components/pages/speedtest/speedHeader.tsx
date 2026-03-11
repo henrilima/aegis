@@ -11,9 +11,7 @@ export function SpeedtestHeader({ isRunning }: { isRunning: boolean }) {
         />
       </div>
       <h1 className="text-2xl font-bold">Teste de Internet</h1>
-      <p className="text-sm text-neutral-500">
-        Teste a velocidade da sua conexão.
-      </p>
+      <p className=" text-neutral-500">Teste a velocidade da sua conexão.</p>
     </div>
   );
 }

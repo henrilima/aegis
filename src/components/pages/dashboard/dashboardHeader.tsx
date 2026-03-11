@@ -40,7 +40,7 @@ export function DashboardHeader({
           !
         </h1>
         {/* Resumo rápido de atividades pendentes */}
-        <p className="text-sm text-neutral-500 mt-2 font-medium">
+        <p className=" text-neutral-500 mt-2 font-medium">
           {positiveHabitsCount > 0
             ? `${doneTodayCount} de ${positiveHabitsCount} hábitos concluídos · ${pendingNotesCount} nota${pendingNotesCount !== 1 ? "s" : ""} pendente${pendingNotesCount !== 1 ? "s" : ""}`
             : `${pendingNotesCount} nota${pendingNotesCount !== 1 ? "s" : ""} pendente${pendingNotesCount !== 1 ? "s" : ""}`}
@@ -55,7 +55,7 @@ export function DashboardHeader({
             minute: "2-digit",
           })}
         </span>
-        <span className="text-sm font-bold text-amber-500 mt-1 tabular-nums">
+        <span className=" font-bold text-amber-500 mt-1 tabular-nums">
           {time.getSeconds().toString().padStart(2, "0")}s
         </span>
       </div>

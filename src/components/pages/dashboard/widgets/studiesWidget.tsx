@@ -33,7 +33,7 @@ export function EstudosWidget({
           <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20">
             <BookOpen className="w-4 h-4 text-violet-400" />
           </div>
-          <span className="text-sm font-bold text-neutral-200">Estudos</span>
+          <span className=" font-bold text-neutral-200">Estudos</span>
         </div>
         <span className="text-[10px] font-black uppercase  text-neutral-600">
           Esta semana

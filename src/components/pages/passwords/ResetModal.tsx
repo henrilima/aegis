@@ -43,7 +43,7 @@ export function ResetModal({
         <CardContent className="space-y-4">
           {resetStep === 2 && (
             <div className="space-y-2">
-              <Label className="text-sm text-neutral-500">
+              <Label className=" text-neutral-500">
                 Digite: "
                 <span className="text-indigo-400 font-mono font-bold">
                   desejo apagar todas as senhas

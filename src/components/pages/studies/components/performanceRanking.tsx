@@ -24,7 +24,7 @@ export function PerformanceRanking({
       <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 shadow-xl lg:col-span-1">
         <div className="flex items-center gap-2">
           <Award className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-black uppercase text-neutral-400">
+          <h3 className=" font-black uppercase text-neutral-400">
             Maestria (Top Acerto)
           </h3>
         </div>
@@ -44,7 +44,7 @@ export function PerformanceRanking({
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-black text-emerald-400">
+                  <span className=" font-black text-emerald-400">
                     {s.rate}%
                   </span>
                 </div>
@@ -62,7 +62,7 @@ export function PerformanceRanking({
       <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 lg:col-span-1 shadow-xl">
         <div className="flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-500" />
-          <h3 className="text-sm font-black uppercase text-neutral-400">
+          <h3 className=" font-black uppercase text-neutral-400">
             Atenção (Acerto Baixo)
           </h3>
         </div>
@@ -82,9 +82,7 @@ export function PerformanceRanking({
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-black text-red-400">
-                    {s.rate}%
-                  </span>
+                  <span className=" font-black text-red-400">{s.rate}%</span>
                 </div>
               </div>
             ))

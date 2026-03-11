@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   Check,
+  CheckCheck,
   Clock,
   Edit2,
   Flame,
@@ -54,150 +55,151 @@ export function HabitCard({
     ? "bg-red-500/10 border-red-500/20"
     : "bg-teal-500/10 border-teal-500/20";
 
+  // Se tem cargas configuradas, mostra o timer de recarga nos detalhes
+  const hasCharges = maxCharges > 0;
+
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 flex flex-col gap-5 hover:border-neutral-700 transition-all group relative active:scale-[0.99]">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 flex flex-col gap-4 hover:border-neutral-700 transition-all group relative active:scale-[0.99]">
       {/* Cabeçalho do Card */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-4">
-          <div
-            className={`mt-0.5 p-3 rounded-2xl border ${accentBg}`}
-          >
+        <div className="flex items-start gap-3">
+          <div className={`mt-0.5 p-2.5 rounded-xl border ${accentBg}`}>
             {isNegative ? (
-              <Flame className={`w-6 h-6 ${accentColor}`} />
+              <Flame className={`w-5 h-5 ${accentColor}`} />
             ) : (
-              <Check className={`w-6 h-6 ${accentColor}`} />
+              <Check className={`w-5 h-5 ${accentColor}`} />
             )}
           </div>
           <div className="flex flex-col gap-0.5">
-            <h3 className="font-black text-lg leading-tight text-neutral-100">
+            <h3 className="font-bold text-base leading-tight text-neutral-100">
               {name}
             </h3>
-            <p className={`text-[10px] font-black uppercase ${accentColor}`}>
-              {isNegative ? "Monitoramento de Vício" : "Hábito Construtivo"}
+            <p className={`text-xs font-medium ${accentColor} opacity-70`}>
+              {isNegative ? "Controle de danos" : "Hábito construtivo"}
             </p>
           </div>
         </div>
 
         {/* Ações Administrativas (Hover) */}
-        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <IconBtn
-            onClick={() => habit.id && onEdit(habit)}
-            title="Editar Configurações"
-          >
-            <Edit2 className="w-4 h-4" />
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <IconBtn onClick={() => habit.id && onEdit(habit)} title="Editar">
+            <Edit2 className="w-3.5 h-3.5" />
           </IconBtn>
           <IconBtn
             onClick={() => habit.id && onOpenHardResetDialog(habit.id)}
-            title="Resetar Histórico"
+            title="Resetar histórico"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </IconBtn>
           <IconBtn
             onClick={() => habit.id && onDelete(habit.id)}
-            title="Excluir Definitivamente"
+            title="Excluir"
             danger
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </IconBtn>
         </div>
       </div>
 
-      {/* Grid de Estatísticas Principais */}
-      <div className="grid grid-cols-3 gap-2.5">
+      {/* Grid de Estatísticas */}
+      <div className="grid grid-cols-3 gap-2">
         <StatBadge
           icon={
             <Flame
-              className={`w-5 h-5 mb-1 ${diaAtual > 0 ? accentColor : "text-neutral-700"}`}
+              className={`w-4 h-4 mb-1 ${diaAtual > 0 ? accentColor : "text-neutral-700"}`}
             />
           }
-          label="Sqn."
+          label="Sequência"
           value={`${diaAtual}d`}
           active={diaAtual > 0}
         />
         <StatBadge
           icon={
             <Trophy
-              className={`w-5 h-5 mb-1 ${recorde > 0 ? "text-amber-500" : "text-neutral-700"}`}
+              className={`w-4 h-4 mb-1 ${recorde > 0 ? "text-amber-500" : "text-neutral-700"}`}
             />
           }
-          label="Rec."
+          label="Recorde"
           value={`${recorde}d`}
           active={recorde > 0}
         />
         <StatBadge
           icon={
             <Zap
-              className={`w-5 h-5 mb-1 ${currentCharges > 0 ? "text-orange-400" : "text-neutral-700"}`}
+              className={`w-4 h-4 mb-1 ${currentCharges > 0 ? "text-orange-400" : "text-neutral-700"}`}
             />
           }
           label="Vidas"
-          value={`${currentCharges}/${maxCharges}`}
+          value={hasCharges ? `${currentCharges}/${maxCharges}` : "—"}
           active={currentCharges > 0}
         />
       </div>
 
-      {/* Detalhes de Progresso */}
-      <div className="flex items-center justify-between px-1">
-        <p className="text-[10px] text-neutral-600 font-black uppercase">
-          Total de {isNegative ? "Deslizes" : "Iterações"}:{" "}
+      {/* Linha de detalhes: iterações + frequência + próxima carga */}
+      <div className="flex items-center justify-between px-0.5">
+        <p className="text-[10px] text-neutral-600 font-medium">
+          {isNegative ? "Deslizes" : "Iterações"}:{" "}
           <span className="text-neutral-400">{totalContagem}</span>
         </p>
-        {!isNegative && (
-          <p className="text-[10px] text-neutral-600 font-black uppercase">
-            Janela: <span className="text-neutral-400">{intervalo}d</span>
+
+        {/* Timer de próxima carga — aparece aqui para ambos os tipos */}
+        {hasCharges && chargeTimeLeft ? (
+          <p className="text-[10px] text-neutral-600 font-medium flex items-center gap-1">
+            <Zap className="w-2.5 h-2.5 text-orange-500/60" />
+            Próxima carga em: <span className="text-neutral-400 ml-0.5">{chargeTimeLeft}</span>
           </p>
-        )}
+        ) : !isNegative ? (
+          <p className="text-[10px] text-neutral-600 font-medium">
+            Frequência: <span className="text-neutral-400">{intervalo}d</span>
+          </p>
+        ) : null}
       </div>
 
-      {/* Seção de Ações de Usuário */}
-      <div className="flex flex-col gap-2.5 mt-auto">
+      {/* Seção de Ações */}
+      <div className="flex flex-col gap-2 mt-auto">
         {!isNegative ? (
-          // Fluxo para Hábito Positivo
+          // Hábito Positivo
           canUse ? (
             <button
               type="button"
               onClick={() => habit.id && actions.markDone()}
-              className="w-full py-4 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-black uppercase hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
+              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
             >
-              <Check className="w-5 h-5" /> Marcar Registro
+              <Check className="w-4 h-4" /> Marcar como feito
             </button>
           ) : (
-            <div className="w-full py-4 rounded-xl bg-neutral-950/40 border border-neutral-800 text-neutral-500 text-[10px] font-black uppercase flex items-center justify-center gap-3">
-              <Clock className="w-4 h-4 opacity-40" />
-              <span>
-                Próxima atualização em:{" "}
-                <span className="text-neutral-300 ml-1">{timeLeft}</span>
-              </span>
+            <div className="w-full py-3 rounded-xl bg-neutral-950/50 border border-neutral-800 flex flex-col items-center justify-center gap-0.5">
+              <div className="flex items-center gap-1.5 text-teal-500/70">
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">Feito hoje</span>
+              </div>
+              <div className="flex items-center gap-1 text-neutral-500">
+                <Clock className="w-3 h-3" />
+                <span className="text-[10px] font-medium">
+                  Próximo em: <span className="text-neutral-300">{timeLeft}</span>
+                </span>
+              </div>
             </div>
           )
         ) : (
-          // Fluxo para Controle de Vícios
-          <div className="flex flex-col gap-2.5">
+          // Controle de Vícios
+          <div className="flex flex-col gap-1.5">
             <button
               type="button"
               onClick={() => habit.id && onOpenResetDialog(habit.id)}
-              className="w-full py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase hover:bg-red-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
+              className="w-full py-3 rounded-xl border border-red-900/60 text-red-400/80 text-sm font-medium hover:border-red-500/40 hover:text-red-300 hover:bg-red-950/30 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
             >
-              <AlertTriangle className="w-5 h-5" /> Registrar Quebra
+              <AlertTriangle className="w-3.5 h-3.5" /> Registrar falha
             </button>
 
             {currentCharges > 0 && (
               <button
                 type="button"
                 onClick={() => habit.id && actions.handleUseCharge()}
-                className="w-full py-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-black uppercase hover:bg-orange-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
+                className="w-full py-2 rounded-xl text-orange-500/60 text-xs font-medium hover:text-orange-400 hover:bg-orange-950/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
               >
-                <Zap className="w-4 h-4" /> Usar Carga Protetora
+                <Zap className="w-3 h-3" /> Usar vida protetora
               </button>
-            )}
-
-            {chargeTimeLeft && (
-              <div className="w-full py-2 flex items-center justify-center gap-2 opacity-40">
-                <Clock className="w-3 h-3 text-neutral-500" />
-                <span className="text-[9px] font-black uppercase text-neutral-500">
-                  Recarga em: {chargeTimeLeft}
-                </span>
-              </div>
             )}
           </div>
         )}
@@ -207,7 +209,7 @@ export function HabitCard({
 }
 
 /**
- * Componente interno para exibir métricas com estilo unificado
+ * Badge de estatística individual
  */
 function StatBadge({
   icon,
@@ -222,13 +224,13 @@ function StatBadge({
 }) {
   return (
     <div
-      className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border transition-all ${active ? "bg-neutral-950/40 border-neutral-800" : "bg-transparent border-transparent opacity-40"}`}
+      className={`flex flex-col items-center gap-1 py-3.5 rounded-xl border transition-all ${active ? "bg-neutral-950/40 border-neutral-800" : "bg-transparent border-transparent opacity-30"}`}
     >
       {icon}
-      <span className="text-xl font-black font-mono leading-none text-neutral-100">
+      <span className="text-lg font-black font-mono leading-none text-neutral-100">
         {value}
       </span>
-      <span className="text-[9px] text-neutral-600 font-black uppercase leading-none">
+      <span className="text-[9px] text-neutral-600 font-semibold leading-none">
         {label}
       </span>
     </div>
@@ -236,7 +238,7 @@ function StatBadge({
 }
 
 /**
- * Botão de ícone utilitário para ações no card
+ * Botão de ícone para ações administrativas do card
  */
 function IconBtn({
   onClick,
@@ -254,7 +256,7 @@ function IconBtn({
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-2 rounded-xl transition-all cursor-pointer border border-transparent ${
+      className={`p-1.5 rounded-lg transition-all cursor-pointer border border-transparent ${
         danger
           ? "text-neutral-700 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
           : "text-neutral-700 hover:text-neutral-200 hover:bg-neutral-800 hover:border-neutral-700"

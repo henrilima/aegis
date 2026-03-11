@@ -68,13 +68,13 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
   }
 
   const ic =
-    "flex-1 bg-neutral-800/60 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition-colors";
+    "flex-1 bg-neutral-800/60 border border-neutral-700 rounded-xl px-3 py-2  text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition-colors";
 
   return (
     <div className="flex flex-col gap-3">
       {goalTypes.map((type) => (
         <div key={type} className="flex items-center gap-2">
-          <span className="text-sm text-neutral-400 w-44 shrink-0">
+          <span className=" text-neutral-400 w-44 shrink-0">
             {GOAL_LABELS[type]}
           </span>
           <input

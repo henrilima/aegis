@@ -102,7 +102,7 @@ export default function HydrationPage() {
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white  font-bold transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Novo Lembrete
         </button>
@@ -119,6 +119,7 @@ export default function HydrationPage() {
             newStartTime={newStartTime}
             setNewStartTime={setNewStartTime}
             onAdd={handleAdd}
+            onCancel={() => setShowForm(false)}
           />
         </div>
       )}
@@ -129,7 +130,7 @@ export default function HydrationPage() {
           <div className="p-4 rounded-full bg-neutral-900/50">
             <Droplet className="w-10 h-10 opacity-10" />
           </div>
-          <p className="text-sm font-bold uppercase opacity-30">
+          <p className=" font-bold uppercase opacity-30">
             Nenhum lembrete ativo
           </p>
           <p className="text-xs text-neutral-700 opacity-40">

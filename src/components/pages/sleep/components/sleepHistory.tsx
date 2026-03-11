@@ -32,9 +32,7 @@ export function SleepHistory({
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-      <h2 className="text-sm font-black uppercase text-neutral-400 mb-3">
-        {title}
-      </h2>
+      <h2 className=" font-black uppercase text-neutral-400 mb-3">{title}</h2>
       <div className="flex flex-col gap-2">
         {entries.map((e) => (
           <div
@@ -52,7 +50,7 @@ export function SleepHistory({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-white">
+                <span className=" font-semibold text-white">
                   {parseDate(e.date).toLocaleDateString("pt-BR", {
                     weekday: "short",
                     day: "2-digit",

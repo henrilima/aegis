@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,6 +19,7 @@ interface HydrationFormProps {
   newStartTime: string;
   setNewStartTime: (val: string) => void;
   onAdd: () => void;
+  onCancel: () => void;
 }
 
 /**
@@ -33,22 +33,23 @@ export function HydrationForm({
   newStartTime,
   setNewStartTime,
   onAdd,
+  onCancel,
 }: HydrationFormProps) {
   const inputStyle =
-    "bg-neutral-900 border-neutral-800 h-12 rounded-2xl font-bold focus:border-blue-500/40 transition-all placeholder:text-neutral-700 shadow-inner";
-  const labelStyle = "text-[10px] font-black uppercase text-neutral-500 ml-1";
+    "w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 space-y-5 shadow-xl">
-      {/* Seleção do Tipo de Lembrete */}
-      <div className="space-y-2">
-        <Label htmlFor="hydration-type" className={labelStyle}>
-          Estratégia de Alerta
+    <div className="bg-neutral-950/40 border border-neutral-800 rounded-[28px] p-6 space-y-5">
+      {/* Tipo de Alerta */}
+      <div className="space-y-1.5">
+        <Label htmlFor="hydration-type" className={lc}>
+          Tipo de alerta
         </Label>
         <Select value={newType} onValueChange={setNewType}>
           <SelectTrigger
             id="hydration-type"
-            className="w-full bg-neutral-950 border-neutral-800 h-12 rounded-2xl text-xs font-bold ring-offset-neutral-950 focus:ring-blue-500/50 shadow-inner"
+            className="w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium ring-offset-neutral-950 focus:ring-blue-500/50"
           >
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
@@ -69,12 +70,11 @@ export function HydrationForm({
         </Select>
       </div>
 
-      {/* Valor do Lembrete (Minutos ou Hora) */}
-      <div className="space-y-2 animate-in slide-in-from-top-1">
-        <Label htmlFor="hydration-value" className={labelStyle}>
+      <div className="space-y-1.5 animate-in slide-in-from-top-1">
+        <Label htmlFor="hydration-value" className={lc}>
           {newType === "Interval"
-            ? "Frequência (Minutos)"
-            : "Horário de Alerta"}
+            ? "Frequência (minutos)"
+            : "Horário do alerta"}
         </Label>
         {newType === "Interval" ? (
           <Input
@@ -97,11 +97,10 @@ export function HydrationForm({
         )}
       </div>
 
-      {/* Horário de Início (Apenas para Intervalos) */}
       {newType === "Interval" && (
-        <div className="space-y-2 animate-in slide-in-from-top-1">
-          <Label htmlFor="hydration-start" className={labelStyle}>
-            Momento da Primeira Dose
+        <div className="space-y-1.5 animate-in slide-in-from-top-1">
+          <Label htmlFor="hydration-start" className={lc}>
+            Início dos alertas
           </Label>
           <Input
             id="hydration-start"
@@ -113,14 +112,23 @@ export function HydrationForm({
         </div>
       )}
 
-      {/* Botão de Ativação */}
-      <Button
-        type="button"
-        onClick={onAdd}
-        className="w-full py-7 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase transition-all shadow-lg shadow-blue-600/10 active:scale-95 cursor-pointer flex items-center justify-center gap-2 border-none"
-      >
-        <Plus className="w-4 h-4" /> Ativar Lembrete
-      </Button>
+      {/* Ações */}
+      <div className="flex flex-col gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+        >
+          <Plus className="w-4 h-4" /> Ativar lembrete
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+        >
+          Agora não
+        </button>
+      </div>
     </div>
   );
 }

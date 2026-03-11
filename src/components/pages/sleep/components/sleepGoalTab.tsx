@@ -24,7 +24,7 @@ export function SleepGoalTab({
   onSave,
 }: SleepGoalTabProps) {
   const inputStyle =
-    "bg-neutral-950/40 border-neutral-800 h-12 rounded-2xl px-4 text-sm text-white focus:border-blue-500/40 transition-all font-bold shadow-inner";
+    "bg-neutral-950/40 border-neutral-800 h-12 rounded-2xl px-4  text-white focus:border-blue-500/40 transition-all font-bold shadow-inner";
   const labelStyle = "text-[10px] font-black uppercase text-neutral-600 ml-1";
 
   return (
@@ -34,11 +34,11 @@ export function SleepGoalTab({
           <Target className="w-6 h-6 text-blue-400" />
         </div>
         <div>
-          <h2 className="text-sm font-black text-white uppercase">
+          <h2 className="text-lg font-black text-white leading-none">
             Arquitetura de Repouso
           </h2>
-          <p className="text-[10px] font-black text-neutral-600 uppercase mt-0.5">
-            Parametrização de Objetivos Biológicos
+          <p className="text-xs text-neutral-500 mt-1">
+            Parametrização de objetivos biológicos
           </p>
         </div>
       </div>
@@ -81,9 +81,9 @@ export function SleepGoalTab({
         <Button
           type="button"
           onClick={onSave}
-          className="w-full py-7 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase shadow-xl shadow-blue-600/10 active:scale-[0.98] transition-all border-none"
+          className="w-full px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-bold border border-blue-600/30 transition-colors cursor-pointer"
         >
-          Consolidar Métricas
+          Consolidar métricas
         </Button>
       </div>
     </div>

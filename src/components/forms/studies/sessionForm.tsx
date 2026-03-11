@@ -105,16 +105,16 @@ export function SessionForm({
   }
 
   const inputStyle =
-    "w-full bg-neutral-950 border-neutral-800 h-12 rounded-xl font-bold focus:border-violet-500/40 transition-all placeholder:text-neutral-700";
-  const labelStyle = "text-[10px] font-black uppercase text-neutral-600 ml-1";
+    "w-full bg-neutral-950 border-neutral-800 h-12 rounded-xl text-sm font-medium focus:border-violet-500/40 transition-all placeholder:text-neutral-700";
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Identificação da Matéria */}
         <div className="flex flex-col gap-2 md:col-span-2">
-          <Label htmlFor="sf-subject" className={labelStyle}>
-            Módulo Acadêmico
+          <Label htmlFor="sf-subject" className={lc}>
+            Matéria
           </Label>
           <SubjectInput
             value={form.subject}
@@ -126,8 +126,8 @@ export function SessionForm({
 
         {/* Cronograma de Registro */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="sf-date" className={labelStyle}>
-            Data da Sessão
+          <Label htmlFor="sf-date" className={lc}>
+            Data
           </Label>
           <Input
             id="sf-date"
@@ -141,14 +141,14 @@ export function SessionForm({
 
         {/* Mensuração de Tempo */}
         <div className="flex flex-col gap-2">
-          <Label className={labelStyle}>Carga de Foco</Label>
+          <Label className={lc}>Duração</Label>
           <div className="flex gap-2">
             <div className="flex-1 flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-all">
               <input
                 type="number"
                 min="0"
                 max="24"
-                className="w-full bg-transparent text-sm text-white focus:outline-none font-bold placeholder:text-neutral-800"
+                className="w-full bg-transparent  text-white focus:outline-none font-bold placeholder:text-neutral-800"
                 placeholder="0"
                 value={durH || ""}
                 onChange={(e) => {
@@ -160,8 +160,8 @@ export function SessionForm({
                   if (val === 24) setDurM(0);
                 }}
               />
-              <span className="text-[10px] font-black text-neutral-700 uppercase">
-                H
+              <span className="text-xs font-medium text-neutral-600">
+                h
               </span>
             </div>
             <div className="flex-1 flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-all">
@@ -169,7 +169,7 @@ export function SessionForm({
                 type="number"
                 min="0"
                 max="59"
-                className="w-full bg-transparent text-sm text-white focus:outline-none font-bold placeholder:text-neutral-800"
+                className="w-full bg-transparent  text-white focus:outline-none font-bold placeholder:text-neutral-800"
                 placeholder="0"
                 value={durM || ""}
                 onChange={(e) =>
@@ -180,8 +180,8 @@ export function SessionForm({
                   )
                 }
               />
-              <span className="text-[10px] font-black text-neutral-700 uppercase">
-                Min
+              <span className="text-xs font-medium text-neutral-600">
+                min
               </span>
             </div>
           </div>
@@ -190,7 +190,7 @@ export function SessionForm({
 
       {/* Camadas de Métricas (Toggle) */}
       <div className="flex flex-col gap-2.5">
-        <Label className={labelStyle}>Métricas de Performance</Label>
+        <Label className={lc}>Métricas</Label>
         <div className="flex p-1 bg-neutral-950/50 border border-neutral-800 rounded-2xl gap-1">
           {[
             { id: "questions" as const, label: "Questões" },
@@ -219,8 +219,8 @@ export function SessionForm({
           {activeModes.includes("questions") && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label className="text-[10px] font-black text-violet-400/60 uppercase ml-1">
-                  Estudo de Inéditas
+                <Label className="text-[10px] font-medium text-violet-400/60 ml-0.5">
+                  Questões inéditas
                 </Label>
                 <div className="flex gap-3">
                   <div className="flex-1">
@@ -256,8 +256,8 @@ export function SessionForm({
                 </div>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black text-violet-400/60 uppercase ml-1">
-                  Ciclo de Revisão
+                <Label className="text-[10px] font-medium text-violet-400/60 ml-0.5">
+                  Questões de revisão
                 </Label>
                 <div className="flex gap-3">
                   <div className="flex-1">
@@ -298,8 +298,8 @@ export function SessionForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {activeModes.includes("pages") && (
               <div className="space-y-3">
-                <Label className="text-[10px] font-black text-neutral-600 uppercase ml-1">
-                  Volume de Leitura
+                <Label className="text-[10px] font-medium text-neutral-500 ml-0.5">
+                  Páginas lidas
                 </Label>
                 <Input
                   type="number"
@@ -318,8 +318,8 @@ export function SessionForm({
             )}
             {activeModes.includes("custom") && (
               <div className="space-y-3">
-                <Label className="text-[10px] font-black text-neutral-600 uppercase ml-1">
-                  Indicador Adicional
+                <Label className="text-[10px] font-medium text-neutral-500 ml-0.5">
+                  Métrica personalizada
                 </Label>
                 <div className="flex gap-3">
                   <Input
@@ -353,8 +353,8 @@ export function SessionForm({
 
       {/* Observações Gerais */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="sf-note" className={labelStyle}>
-          Relatório Bio-Analítico
+        <Label htmlFor="sf-note" className={lc}>
+          Observações
         </Label>
         <Textarea
           id="sf-note"
@@ -366,19 +366,19 @@ export function SessionForm({
       </div>
 
       {/* Ações do Formulário */}
-      <div className="flex gap-4 pt-4">
+      <div className="flex flex-col gap-2 pt-2">
+        <button
+          type="submit"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/40 hover:border-violet-400 text-violet-300 hover:text-violet-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+        >
+          {initial ? "Salvar alterações" : "Registrar sessão"}
+        </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-4 rounded-xl text-xs font-black uppercase text-neutral-600 hover:text-neutral-400 hover:bg-neutral-900 transition-all cursor-pointer"
+          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
         >
-          Descartar
-        </button>
-        <button
-          type="submit"
-          className="flex-2 py-4 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400 text-xs font-black uppercase transition-all hover:bg-violet-600/20 active:scale-[0.98] cursor-pointer"
-        >
-          {initial ? "Salvar Alterações" : "Iniciar Sessão"}
+          Agora não
         </button>
       </div>
     </form>

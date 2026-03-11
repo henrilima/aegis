@@ -65,7 +65,7 @@ export default function StatisticsPage() {
           <div className="p-4 rounded-3xl bg-red-500/10 border border-red-500/20 shadow-lg shadow-red-500/5">
             <BarChart3 className="w-10 h-10 text-red-400" />
           </div>
-          <span className="text-neutral-500 text-sm uppercase">
+          <span className="text-neutral-500  uppercase">
             Processando Matriz de Dados...
           </span>
         </div>
@@ -153,9 +153,7 @@ export default function StatisticsPage() {
                 <Brain className="w-5 h-5 text-red-100" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-white">
-                  Cruzamento Temporal
-                </h2>
+                <h2 className=" font-black text-white">Cruzamento Temporal</h2>
                 <p className="text-[10px] uppercase font-black text-neutral-600 mt-0.5">
                   Sono × Estudo × Acerto
                 </p>
@@ -171,9 +169,7 @@ export default function StatisticsPage() {
                 <BarChart3 className="w-5 h-5 text-neutral-400" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-white">
-                  Log de Processamento
-                </h2>
+                <h2 className=" font-black text-white">Log de Processamento</h2>
                 <p className="text-[10px] uppercase font-black text-neutral-600 mt-0.5">
                   Dados Brutos do Ciclo ({days} dias)
                 </p>
@@ -192,7 +188,7 @@ export default function StatisticsPage() {
             <h3 className="text-white font-black text-xl mb-3">
               Volume de Dados Insuficiente
             </h3>
-            <p className="text-neutral-600 text-sm max-w-sm mx-auto leading-relaxed font-bold">
+            <p className="text-neutral-600  max-w-sm mx-auto leading-relaxed font-bold">
               Para gerar insights precisos, precisamos de pelo menos alguns dias
               de atividade registrada. Continue alimentando seu roteiro de
               estudos e sono!

@@ -1,5 +1,11 @@
 import { APP_CONFIG } from "@/app.config";
-import { Github, Mail, MessageSquare, User, type LucideIcon } from "lucide-react";
+import {
+  Github,
+  Mail,
+  MessageSquare,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import Image from "next/image";
 
 export function AboutTab() {
@@ -7,7 +13,7 @@ export function AboutTab() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h2 className="text-lg font-bold">Sobre o {APP_CONFIG.name}</h2>
-        <p className="text-sm text-neutral-500 mt-1">
+        <p className=" text-neutral-500 mt-1">
           Informações sobre a versão atual e suporte do projeto.
         </p>
       </div>
@@ -18,21 +24,27 @@ export function AboutTab() {
             <div className="p-1.5 bg-amber-500/10 rounded-lg">
               <User className="w-4 h-4 text-amber-500" />
             </div>
-            <span className="text-sm font-bold text-neutral-300">Desenvolvedor</span>
+            <span className=" font-bold text-neutral-300">Desenvolvedor</span>
           </div>
           <p className="text-lg font-black text-white">{APP_CONFIG.author}</p>
-          <p className="text-xs text-neutral-500 italic">© {APP_CONFIG.year} Todos os direitos reservados</p>
+          <p className="text-xs text-neutral-500 italic">
+            © {APP_CONFIG.year} Todos os direitos reservados
+          </p>
         </div>
 
         <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-amber-500/10 rounded-lg">
-              <span className="text-[10px] font-black text-amber-500 uppercase">v</span>
+              <span className="text-[10px] font-black text-amber-500 uppercase">
+                v
+              </span>
             </div>
-            <span className="text-sm font-bold text-neutral-300">Versão Atual</span>
+            <span className=" font-bold text-neutral-300">Versão Atual</span>
           </div>
           <p className="text-lg font-black text-white">{APP_CONFIG.version}</p>
-          <p className="text-xs text-neutral-500 uppercase tracking-widest">{APP_CONFIG.stage} • {APP_CONFIG.codename}</p>
+          <p className="text-xs text-neutral-500 uppercase tracking-widest">
+            {APP_CONFIG.stage} • {APP_CONFIG.codename}
+          </p>
         </div>
       </div>
 
@@ -40,23 +52,23 @@ export function AboutTab() {
         <p className="text-xs font-black uppercase text-neutral-500 flex items-center gap-1.5">
           Canais de Suporte
         </p>
-        
+
         <div className="grid grid-cols-1 gap-2">
-          <SupportLink 
-            icon={Github} 
-            label="GitHub Repository" 
+          <SupportLink
+            icon={Github}
+            label="GitHub Repository"
             value={APP_CONFIG.support.github}
             href={APP_CONFIG.support.github}
           />
-          <SupportLink 
-            icon={Mail} 
-            label="E-mail de Suporte" 
+          <SupportLink
+            icon={Mail}
+            label="E-mail de Suporte"
             value={APP_CONFIG.support.email}
             href={`mailto:${APP_CONFIG.support.email}`}
           />
-          <SupportLink 
-            icon={MessageSquare} 
-            label="Discord" 
+          <SupportLink
+            icon={MessageSquare}
+            label="Discord"
             value={APP_CONFIG.support.discord}
           />
         </div>
@@ -64,30 +76,39 @@ export function AboutTab() {
 
       <div className="p-6 bg-linear-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl relative overflow-hidden group">
         <div className="relative z-10">
-          <h3 className="text-base font-bold text-amber-500 mb-1">Obrigado por usar o {APP_CONFIG.name}!</h3>
-          <p className="text-sm text-neutral-400 leading-relaxed">
-            Seu feedback é fundamental para o crescimento deste projeto. 
-            Se encontrar bugs ou tiver sugestões, não hesite em nos contatar através dos canais acima.
+          <h3 className="text-base font-bold text-amber-500 mb-1">
+            Obrigado por usar o {APP_CONFIG.name}!
+          </h3>
+          <p className=" text-neutral-400 leading-relaxed">
+            Seu feedback é fundamental para o crescimento deste projeto. Se
+            encontrar bugs ou tiver sugestões, não hesite em nos contatar
+            através dos canais acima.
           </p>
         </div>
         <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-           <Image src="/favicon.ico" alt="Logo" width={128} height={128} className="grayscale" />
+          <Image
+            src="/favicon.ico"
+            alt="Logo"
+            width={128}
+            height={128}
+            className="grayscale"
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function SupportLink({ 
-  icon: Icon, 
-  label, 
-  value, 
-  href 
-}: { 
-  icon: LucideIcon, 
-  label: string, 
-  value: string,
-  href?: string
+function SupportLink({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  href?: string;
 }) {
   const content = (
     <div className="flex items-center justify-between p-3 bg-neutral-900/50 border border-neutral-800 rounded-xl hover:bg-neutral-800/80 transition-all group cursor-pointer">
@@ -97,7 +118,7 @@ function SupportLink({
         </div>
         <div>
           <p className="text-xs text-neutral-500 font-medium">{label}</p>
-          <p className="text-sm font-bold text-neutral-200">{value}</p>
+          <p className=" font-bold text-neutral-200">{value}</p>
         </div>
       </div>
       {href && (
@@ -110,7 +131,12 @@ function SupportLink({
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="block outline-none">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block outline-none"
+      >
         {content}
       </a>
     );
@@ -118,4 +144,3 @@ function SupportLink({
 
   return content;
 }
-
