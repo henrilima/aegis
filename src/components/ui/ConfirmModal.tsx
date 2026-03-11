@@ -26,23 +26,27 @@ const VARIANT_CONFIG: Record<
   {
     icon: LucideIcon;
     iconColor: string;
-    btnColor: string;
+    btnClass: string;
+    bgColor: string;
   }
 > = {
   danger: {
     icon: Trash2,
-    iconColor: "text-red-400",
-    btnColor: "bg-red-600 hover:bg-red-500",
+    iconColor: "text-red-500",
+    btnClass: "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20",
+    bgColor: "bg-red-500/5",
   },
   warning: {
     icon: AlertTriangle,
     iconColor: "text-amber-500",
-    btnColor: "bg-amber-600 hover:bg-amber-500",
+    btnClass: "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20",
+    bgColor: "bg-amber-500/5",
   },
   default: {
     icon: HelpCircle,
-    iconColor: "text-blue-400",
-    btnColor: "bg-blue-600 hover:bg-blue-500",
+    iconColor: "text-blue-500",
+    btnClass: "bg-blue-500/10 border-blue-500/20 text-blue-500 hover:bg-blue-500/20",
+    bgColor: "bg-blue-500/5",
   },
 };
 
@@ -60,28 +64,34 @@ export function ConfirmModal({
   const Icon = icon ?? cfg.icon;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl text-center flex flex-col items-center">
-        <Icon className={`w-10 h-10 ${cfg.iconColor} mb-4`} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+      <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden animate-in zoom-in-95 duration-300 text-center flex flex-col items-center">
+        <div className={`w-full py-8 flex justify-center ${cfg.bgColor} border-b border-neutral-800/50`}>
+          <div className={`p-4 bg-neutral-950/50 border border-neutral-800 rounded-2xl w-fit ${cfg.iconColor}`}>
+            <Icon className="w-8 h-8" />
+          </div>
+        </div>
 
-        <h3 className="font-bold text-lg text-white mb-1">{title}</h3>
-        <p className="text-sm text-neutral-500 mb-6">{description}</p>
+        <div className="p-8 w-full flex flex-col items-center">
+          <h3 className="font-black text-xl text-neutral-100 mb-2 uppercase tracking-tight">{title}</h3>
+          <p className="text-xs text-neutral-500 mb-8 font-medium leading-relaxed">{description}</p>
 
-        <div className="flex gap-2 w-full">
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer ${cfg.btnColor}`}
-          >
-            {confirmLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-sm font-bold transition-all cursor-pointer border border-neutral-700/50"
-          >
-            {cancelLabel}
-          </button>
+          <div className="flex flex-col gap-3 w-full">
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={`w-full py-4 rounded-xl border text-[10px] font-black uppercase transition-all cursor-pointer active:scale-95 ${cfg.btnClass}`}
+            >
+              {confirmLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full py-3 rounded-xl text-neutral-500 hover:text-neutral-300 text-[10px] font-black uppercase transition-all hover:bg-neutral-800 cursor-pointer"
+            >
+              {cancelLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>

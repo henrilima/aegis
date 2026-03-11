@@ -4,7 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { StudySession } from "@/components/pages/studies/types";
 import { isoDate } from "@/components/pages/studies/utils";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,7 +105,7 @@ export function SessionForm({
   }
 
   const inputStyle =
-    "bg-neutral-950 border-neutral-800 h-11 rounded-xl font-bold focus:border-violet-500/40 transition-all placeholder:text-neutral-700 shadow-inner";
+    "w-full bg-neutral-950 border-neutral-800 h-12 rounded-xl font-bold focus:border-violet-500/40 transition-all placeholder:text-neutral-700";
   const labelStyle = "text-[10px] font-black uppercase text-neutral-600 ml-1";
 
   return (
@@ -144,7 +143,7 @@ export function SessionForm({
         <div className="flex flex-col gap-2">
           <Label className={labelStyle}>Carga de Foco</Label>
           <div className="flex gap-2">
-            <div className="flex-1 flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-all shadow-inner">
+            <div className="flex-1 flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-all">
               <input
                 type="number"
                 min="0"
@@ -165,7 +164,7 @@ export function SessionForm({
                 H
               </span>
             </div>
-            <div className="flex-1 flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-all shadow-inner">
+            <div className="flex-1 flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-all">
               <input
                 type="number"
                 min="0"
@@ -204,7 +203,7 @@ export function SessionForm({
               onClick={() => toggleMode(opt.id)}
               className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all cursor-pointer border ${
                 activeModes.includes(opt.id)
-                  ? "bg-violet-600/10 border-violet-600/30 text-violet-400 shadow-lg shadow-violet-600/5"
+                  ? "bg-violet-600/10 border-violet-600/30 text-violet-400"
                   : "bg-transparent border-transparent text-neutral-600 hover:text-neutral-400"
               }`}
             >
@@ -359,7 +358,7 @@ export function SessionForm({
         </Label>
         <Textarea
           id="sf-note"
-          className="bg-neutral-950 border-neutral-800 rounded-2xl min-h-[100px] resize-none pt-4 font-bold text-neutral-400 focus:border-violet-600/30 placeholder:text-neutral-800 transition-all shadow-inner"
+          className="bg-neutral-950 border-neutral-800 rounded-2xl min-h-[100px] resize-none pt-4 font-bold text-neutral-400 focus:border-violet-600/30 placeholder:text-neutral-800 transition-all shadow-none"
           placeholder="Dificuldades cognitivas, gatilhos de aprendizagem ou pontos de revisão..."
           value={form.note || ""}
           onChange={(e) => setField("note", e.target.value)}
@@ -368,20 +367,19 @@ export function SessionForm({
 
       {/* Ações do Formulário */}
       <div className="flex gap-4 pt-4">
-        <Button
+        <button
           type="button"
           onClick={onCancel}
-          variant="ghost"
-          className="flex-1 py-6 rounded-2xl text-xs font-black uppercase text-neutral-600 hover:text-white hover:bg-neutral-900 transition-all border-none"
+          className="flex-1 py-4 rounded-xl text-xs font-black uppercase text-neutral-600 hover:text-neutral-400 hover:bg-neutral-900 transition-all cursor-pointer"
         >
           Descartar
-        </Button>
-        <Button
+        </button>
+        <button
           type="submit"
-          className="flex-2 py-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase shadow-lg shadow-indigo-600/10 transition-all active:scale-[0.98] border-none"
+          className="flex-2 py-4 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400 text-xs font-black uppercase transition-all hover:bg-violet-600/20 active:scale-[0.98] cursor-pointer"
         >
           {initial ? "Salvar Alterações" : "Iniciar Sessão"}
-        </Button>
+        </button>
       </div>
     </form>
   );

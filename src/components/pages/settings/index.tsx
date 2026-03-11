@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  Info,
   Monitor,
   Settings as SettingsIcon,
   ShieldCheck,
@@ -9,12 +10,14 @@ import {
   User,
 } from "lucide-react";
 import { useState } from "react";
+import { APP_CONFIG } from "@/app.config";
 import { Badge } from "@/components/ui/badge";
 import { DangerTab } from "./dangerTab";
 import { NotificationsTab } from "./notificationsTab";
 import { ProfileTab } from "./profileTab";
 import { SecurityTab } from "./securityTab";
 import { SystemTab } from "./systemTab";
+import { AboutTab } from "./aboutTab";
 import { useSettingsLogic } from "./useSettingsLogic";
 
 const TABS = [
@@ -22,6 +25,7 @@ const TABS = [
   { id: "system", label: "Sistema", icon: Monitor },
   { id: "security", label: "Segurança", icon: ShieldCheck },
   { id: "notifications", label: "Notificações", icon: Bell },
+  { id: "about", label: "Sobre", icon: Info },
   { id: "danger", label: "Zona de Perigo", icon: Trash2 },
 ] as const;
 
@@ -52,9 +56,9 @@ export default function Settings() {
             <h1 className="text-xl font-bold leading-none">Configurações</h1>
             <Badge
               variant="outline"
-              className="text-[10px] py-0 px-1.5 h-4 border-amber-500/30 text-amber-500 bg-amber-500/5"
+              className="text-[10px] py-0 px-1.5 h-4 border-amber-500/30 text-amber-500 bg-amber-500/5 uppercase"
             >
-              beta-0.1.0 (blossom)
+              {APP_CONFIG.versionLabel}
             </Badge>
           </div>
           <p className="text-xs text-neutral-500 mt-0.5">
@@ -109,6 +113,12 @@ export default function Settings() {
         {activeTab === "notifications" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <NotificationsTab handleTestNotification={handleTestNotification} />
+          </div>
+        )}
+
+        {activeTab === "about" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <AboutTab />
           </div>
         )}
 

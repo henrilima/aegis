@@ -6,8 +6,6 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { Note } from "./types";
 
 interface NoteExpandModalProps {
@@ -47,17 +45,17 @@ export function NoteExpandModal({
         onClick={onClose}
       />
       <div
-        className={`bg-neutral-950 border border-neutral-800 flex flex-col overflow-hidden transition-all duration-500 shadow-3xl relative ${
+        className={`bg-neutral-950 border border-neutral-800 flex flex-col overflow-hidden transition-all duration-500 relative ${
           isFullscreen
             ? "w-full h-full rounded-none"
-            : "w-full max-w-6xl h-[90vh] rounded-[2.5rem]"
+            : "w-full max-w-6xl h-[90vh] rounded-[40px]"
         }`}
       >
         {/* Barra de Ferramentas Superior */}
         <div className="flex items-center justify-between p-6 border-b border-neutral-900 bg-neutral-950/50 backdrop-blur-xl z-20">
           <div className="flex-1 mr-8">
             {isEditing ? (
-              <Input
+              <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -73,27 +71,28 @@ export function NoteExpandModal({
 
           <div className="flex items-center gap-3">
             {isEditing ? (
-              <Button
+              <button
+                type="button"
                 onClick={handleSave}
-                className="h-11 px-6 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-[10px] uppercase transition-all shadow-xl shadow-orange-600/10 border-none"
+                className="h-12 px-6 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 font-black text-[10px] uppercase transition-all hover:bg-orange-500/20 cursor-pointer flex items-center gap-2 active:scale-95"
               >
-                <Save className="w-4 h-4 mr-2" /> Consolidar Alterações
-              </Button>
+                <Save className="w-4 h-4" /> Consolidar Alterações
+              </button>
             ) : (
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 onClick={() => setIsEditing(true)}
-                className="w-11 h-11 p-0 rounded-xl bg-neutral-900 border-neutral-800 text-neutral-600 hover:text-orange-400 hover:bg-neutral-800 transition-all"
+                className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-orange-400 hover:bg-neutral-800 transition-all flex items-center justify-center cursor-pointer"
                 title="Habilitar Edição"
               >
                 <Pencil className="w-4 h-4" />
-              </Button>
+              </button>
             )}
 
-            <Button
-              variant="outline"
+            <button
+              type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="w-11 h-11 p-0 rounded-xl bg-neutral-900 border-neutral-800 text-neutral-600 hover:text-white hover:bg-neutral-800 transition-all"
+              className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all flex items-center justify-center cursor-pointer"
               title={
                 isFullscreen ? "Sair da Tela Cheia" : "Maximizar Interface"
               }
@@ -103,16 +102,16 @@ export function NoteExpandModal({
               ) : (
                 <Maximize2 className="w-4 h-4" />
               )}
-            </Button>
+            </button>
 
-            <Button
-              variant="outline"
+            <button
+              type="button"
               onClick={onClose}
-              className="w-11 h-11 p-0 rounded-xl bg-neutral-900 border-neutral-800 text-neutral-600 hover:text-red-400 hover:bg-neutral-800 transition-all"
+              className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-all flex items-center justify-center cursor-pointer"
               title="Encerrar Visualização"
             >
               <X className="w-4 h-4" />
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -126,7 +125,7 @@ export function NoteExpandModal({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="flex-1 h-full w-full lg:w-1/2 p-10 bg-neutral-950 resize-none outline-none text-neutral-400 font-mono text-sm leading-relaxed border-b lg:border-b-0 lg:border-r border-neutral-900 custom-scrollbar shadow-inner"
+                className="flex-1 h-full w-full lg:w-1/2 p-10 bg-neutral-950 resize-none outline-none text-neutral-400 font-mono text-sm leading-relaxed border-b lg:border-b-0 lg:border-r border-neutral-900 custom-scrollbar"
                 placeholder="Aperte o fluxo de consciência digital aqui... (Markdown Habilitado)"
               />
               {/* Preview em Tempo Real */}
@@ -156,7 +155,7 @@ export function NoteExpandModal({
             </>
           ) : (
             /* Modo Leitura Exclusiva */
-            <div className="flex-1 overflow-auto p-10 lg:p-16 custom-scrollbar bg-linear-to-b from-neutral-950 to-neutral-900">
+            <div className="flex-1 overflow-auto p-10 lg:p-16 custom-scrollbar bg-neutral-900/20">
               <div className="max-w-4xl mx-auto w-full">
                 <div className="markdown-preview prose prose-invert prose-orange lg:prose-xl max-w-none">
                   <ReactMarkdown

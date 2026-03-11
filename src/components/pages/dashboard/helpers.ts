@@ -61,6 +61,10 @@ export function formatDurationMin(minutes: number) {
 }
 
 export function getHabitStreak(habit: Habit) {
+  const isNegative =
+    habit.habit_type === "Bad" || habit.habit_type === "Negative";
+  if (!isNegative) return habit.current_streak || 0;
+
   if (!habit.last_slip) return 0;
   const slip = new Date(habit.last_slip);
   const now = new Date();

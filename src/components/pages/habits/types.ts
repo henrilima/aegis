@@ -15,4 +15,5 @@ export interface Habit {
   accumulates: boolean;
   last_charge_refill: string;
   current_charges: number;
+  current_streak: number;
 }

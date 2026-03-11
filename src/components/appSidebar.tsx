@@ -127,6 +127,7 @@ const NAV_GROUPS = [
     ],
   },
 ];
+import { APP_CONFIG } from "@/app.config";
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -164,7 +165,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 border border-amber-500/20">
             <Shield className="w-5 h-5 text-amber-500" strokeWidth={2.5} />
           </div>
-          <span className="text-lg font-black">Aegis</span>
+          <span className="text-lg font-black">{APP_CONFIG.name}</span>
         </div>
         <button
           onClick={() => setIsOpen(false)}

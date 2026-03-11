@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Power } from "lucide-react";
+import { APP_CONFIG } from "@/app.config";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -24,7 +25,7 @@ export function SystemTab({
     <div className="space-y-3 max-w-2xl">
       <SectionHeading>Comportamento do App</SectionHeading>
       <p className="text-sm text-neutral-500 mb-4">
-        Configure como o Aegis interage com o Windows.
+        Configure como o {APP_CONFIG.name} interage com o Windows.
       </p>
 
       <ToggleRow
@@ -51,7 +52,7 @@ export function SystemTab({
       <div className="pt-4 border-t border-neutral-800 mt-2">
         <SectionHeading>Processo</SectionHeading>
         <p className="text-sm text-neutral-500 mb-4">
-          Encerre o Aegis completamente. O processo será reiniciado
+          Encerre o {APP_CONFIG.name} completamente. O processo será reiniciado
           automaticamente se estiver configurado para iniciar com o Windows.
         </p>
         <Button

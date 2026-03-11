@@ -22,16 +22,18 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     [type],
   );
 
-  // Cálculo da sequência atual baseada no último deslize ou data de criação
-  const diaAtual = useMemo(() => {
+  // Cálculo da sequência atual baseada no campo do banco para positivos ou tempo para negativos
+  const currentStreak = useMemo(() => {
+    if (!isNegative) return habit.current_streak || 0;
+    
     if (!habit.last_slip) return 0;
     const slip = new Date(habit.last_slip);
     const now = new Date();
     const diff = now.getTime() - slip.getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
-  }, [habit.last_slip]);
+  }, [habit.current_streak, habit.last_slip, isNegative]);
 
-  const currentStreak = diaAtual;
+  const diaAtual = currentStreak;
 
   // Tempo total desde o início do rastreamento deste hábito
   const tempoDeCriacao = useMemo(() => {

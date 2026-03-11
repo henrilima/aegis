@@ -52,25 +52,32 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
   };
 
   const ic =
-    "w-full bg-neutral-900 border border-neutral-800 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-teal-500/50 transition-all placeholder:text-neutral-700 font-bold";
+    "w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-teal-500/50 transition-all placeholder:text-neutral-700 font-bold";
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="modal-title"
     >
-      <div className="absolute inset-0" onClick={onClose} />
+      <button 
+        type="button"
+        className="absolute inset-0 w-full h-full bg-transparent border-none p-0 m-0 cursor-default" 
+        onClick={onClose} 
+        tabIndex={-1}
+        aria-hidden="true"
+      />
 
-      <div className="relative w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="relative w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-[32px] animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800/50 bg-linear-to-br from-teal-500/5 to-transparent">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-800/50 bg-teal-500/5">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-teal-500/10 rounded-2xl border border-teal-500/20">
               <Activity className="w-5 h-5 text-teal-400" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-white">Novo Roteiro</h2>
+              <h2 id="modal-title" className="text-lg font-black text-white">Novo Roteiro</h2>
               <p className="text-[10px] font-black text-neutral-600 uppercase mt-0.5">
                 Disciplina & Hábitos
               </p>
@@ -80,19 +87,21 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all cursor-pointer"
+            aria-label="Fechar modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Identificação */}
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+            <div className="space-y-2">
+              <Label htmlFor="habit-name" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                 O que vamos rastrear?
               </Label>
               <input
+                id="habit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Ler 20 páginas, Sem açúcar..."
@@ -102,19 +111,19 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
             </div>
 
             {/* Natureza do Registro */}
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+            <div className="space-y-2">
+              <Label htmlFor="habit-type" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                 Natureza
               </Label>
               <Select
                 value={type}
-                onValueChange={(v) => {
+                onValueChange={(v: string) => {
                   const t = v as "Positive" | "Negative";
                   setType(t);
                   if (t === "Negative") setCooldown((c) => Math.max(c, 2));
                 }}
               >
-                <SelectTrigger className="w-full bg-neutral-900 border-neutral-800 h-[44px] rounded-2xl text-xs font-bold">
+                <SelectTrigger id="habit-type" className="w-full bg-neutral-900 border-neutral-800 h-12 rounded-xl text-xs font-bold shadow-none">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-neutral-900 border-neutral-800">
@@ -130,11 +139,12 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
 
             <div className="grid grid-cols-2 gap-4">
               {/* Meta Temporal */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+              <div className="space-y-2">
+                <Label htmlFor="habit-cooldown" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                   {type === "Negative" ? "Alerta (d)" : "Frequência (d)"}
                 </Label>
                 <input
+                  id="habit-cooldown"
                   type="number"
                   min={minCooldown}
                   value={cooldown}
@@ -146,11 +156,12 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
               </div>
 
               {/* Quantidade de "Vidas" / Cargas */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+              <div className="space-y-2">
+                <Label htmlFor="habit-charges" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                   Vidas / Cargas
                 </Label>
                 <input
+                  id="habit-charges"
                   type="number"
                   min={0}
                   value={chargesAmount}
@@ -165,11 +176,12 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
             {/* Expansão de Cargas */}
             {chargesAmount > 0 && (
               <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+                <div className="space-y-2">
+                  <Label htmlFor="charge-interval" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                     Recuperação (d)
                   </Label>
                   <input
+                    id="charge-interval"
                     type="number"
                     min={1}
                     value={chargesInterval}
@@ -180,15 +192,15 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+                <div className="space-y-2">
+                  <Label htmlFor="charge-accumulate" className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                     Acúmulo
                   </Label>
                   <Select
                     value={accumulates ? "yes" : "no"}
-                    onValueChange={(v) => setAccumulates(v === "yes")}
+                    onValueChange={(v: string) => setAccumulates(v === "yes")}
                   >
-                    <SelectTrigger className="bg-neutral-900 border-neutral-800 h-[44px] rounded-2xl text-xs font-bold">
+                    <SelectTrigger id="charge-accumulate" className="bg-neutral-900 border-neutral-800 h-12 rounded-xl text-xs font-bold shadow-none">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-neutral-900 border-neutral-800">
@@ -209,16 +221,16 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
               <button
                 type="submit"
                 disabled={!name.trim()}
-                className="w-full bg-teal-600 hover:bg-teal-500 text-black font-black py-4 rounded-2xl shadow-lg shadow-teal-500/10 cursor-pointer text-xs uppercase transition-all active:scale-[0.98] disabled:opacity-50"
+                className="w-full py-4 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-black uppercase transition-all hover:bg-teal-500/20 cursor-pointer flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
               >
-                <Plus className="w-4 h-4 inline mr-2" /> Iniciar Rastreamento
+                <Plus className="w-4 h-4" /> Iniciar Rastreamento
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full text-neutral-600 hover:text-neutral-400 py-2 text-xs font-black uppercase cursor-pointer transition-colors"
+                className="w-full text-neutral-600 hover:text-neutral-400 py-2 text-[10px] font-black uppercase cursor-pointer transition-colors"
               >
-                Agora não
+                Cancelar
               </button>
             </div>
           </form>

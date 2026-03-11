@@ -55,12 +55,12 @@ export function HabitCard({
     : "bg-teal-500/10 border-teal-500/20";
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 flex flex-col gap-5 hover:border-neutral-700 transition-all group relative hover:shadow-2xl hover:shadow-black/40 active:scale-[0.99]">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 flex flex-col gap-5 hover:border-neutral-700 transition-all group relative active:scale-[0.99]">
       {/* Cabeçalho do Card */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-4">
           <div
-            className={`mt-0.5 p-3 rounded-2xl border ${accentBg} shadow-sm`}
+            className={`mt-0.5 p-3 rounded-2xl border ${accentBg}`}
           >
             {isNegative ? (
               <Flame className={`w-6 h-6 ${accentColor}`} />
@@ -157,12 +157,12 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && actions.markDone()}
-              className="w-full py-4 rounded-2xl bg-teal-600/10 border border-teal-500/20 text-teal-400 text-xs font-black uppercase hover:bg-teal-600/20 transition-all cursor-pointer flex items-center justify-center gap-3 shadow-sm active:scale-95"
+              className="w-full py-4 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-black uppercase hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
             >
               <Check className="w-5 h-5" /> Marcar Registro
             </button>
           ) : (
-            <div className="w-full py-4 rounded-2xl bg-neutral-950/40 border border-neutral-800 text-neutral-500 text-[10px] font-black uppercase flex items-center justify-center gap-3">
+            <div className="w-full py-4 rounded-xl bg-neutral-950/40 border border-neutral-800 text-neutral-500 text-[10px] font-black uppercase flex items-center justify-center gap-3">
               <Clock className="w-4 h-4 opacity-40" />
               <span>
                 Próxima atualização em:{" "}
@@ -176,7 +176,7 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && onOpenResetDialog(habit.id)}
-              className="w-full py-4 rounded-2xl bg-red-600/10 border border-red-500/20 text-red-500 text-xs font-black uppercase hover:bg-red-600/20 transition-all cursor-pointer flex items-center justify-center gap-3 shadow-sm active:scale-95"
+              className="w-full py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase hover:bg-red-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
             >
               <AlertTriangle className="w-5 h-5" /> Registrar Quebra
             </button>
@@ -185,7 +185,7 @@ export function HabitCard({
               <button
                 type="button"
                 onClick={() => habit.id && actions.handleUseCharge()}
-                className="w-full py-4 rounded-2xl bg-orange-600/10 border border-orange-500/20 text-orange-400 text-xs font-black uppercase hover:bg-orange-600/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
+                className="w-full py-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-black uppercase hover:bg-orange-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-95"
               >
                 <Zap className="w-4 h-4" /> Usar Carga Protetora
               </button>
@@ -222,7 +222,7 @@ function StatBadge({
 }) {
   return (
     <div
-      className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border transition-all ${active ? "bg-neutral-950/40 border-neutral-800 shadow-inner" : "bg-transparent border-transparent opacity-40"}`}
+      className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border transition-all ${active ? "bg-neutral-950/40 border-neutral-800" : "bg-transparent border-transparent opacity-40"}`}
     >
       {icon}
       <span className="text-xl font-black font-mono leading-none text-neutral-100">
