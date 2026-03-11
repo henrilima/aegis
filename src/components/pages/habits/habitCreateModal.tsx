@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface HabitCreateModalProps {
   onAdd: (
@@ -88,9 +89,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Identificação */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+              <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                 O que vamos rastrear?
-              </label>
+              </Label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -102,9 +103,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
 
             {/* Natureza do Registro */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+              <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                 Natureza
-              </label>
+              </Label>
               <Select
                 value={type}
                 onValueChange={(v) => {
@@ -130,9 +131,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
             <div className="grid grid-cols-2 gap-4">
               {/* Meta Temporal */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+                <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                   {type === "Negative" ? "Alerta (d)" : "Frequência (d)"}
-                </label>
+                </Label>
                 <input
                   type="number"
                   min={minCooldown}
@@ -146,9 +147,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
 
               {/* Quantidade de "Vidas" / Cargas */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+                <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                   Vidas / Cargas
-                </label>
+                </Label>
                 <input
                   type="number"
                   min={0}
@@ -165,9 +166,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
             {chargesAmount > 0 && (
               <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+                  <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                     Recuperação (d)
-                  </label>
+                  </Label>
                   <input
                     type="number"
                     min={1}
@@ -180,9 +181,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
+                  <Label className="text-[10px] font-black uppercase text-neutral-500 ml-1">
                     Acúmulo
-                  </label>
+                  </Label>
                   <Select
                     value={accumulates ? "yes" : "no"}
                     onValueChange={(v) => setAccumulates(v === "yes")}
