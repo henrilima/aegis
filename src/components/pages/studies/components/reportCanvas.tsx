@@ -100,7 +100,7 @@ export function ReportCanvas({
 
       ctx.fillText(hoursText, canvas.width / 2, 640);
 
-      const hrGoal = goalValue(goalPrefix + "hours");
+      const hrGoal = goalValue(`${goalPrefix}hours`);
       ctx.font = "800 38px Montserrat, sans-serif";
       ctx.fillStyle = "#a78bfa";
       const perfText =
@@ -230,7 +230,7 @@ export function ReportCanvas({
         spacing = 280;
 
       // Card 1: Questões
-      const qGoal = goalValue(goalPrefix + "questions");
+      const qGoal = goalValue(`${goalPrefix}questions`);
       drawFullCard(
         startY,
         "q",
@@ -240,7 +240,7 @@ export function ReportCanvas({
       );
 
       // Card 2: Páginas
-      const pGoal = goalValue(goalPrefix + "pages");
+      const pGoal = goalValue(`${goalPrefix}pages`);
       drawFullCard(
         startY + spacing,
         "p",

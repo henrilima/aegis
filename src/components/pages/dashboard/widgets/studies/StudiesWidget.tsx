@@ -9,7 +9,6 @@ interface EstudosWidgetProps {
   weekHours: number;
   weekQuestions: number;
   goalWeekHours: number | null;
-  goalWeekQuestions: number | null;
   isEditMode?: boolean;
 }
 
@@ -18,7 +17,6 @@ export function EstudosWidget({
   weekHours,
   weekQuestions,
   goalWeekHours,
-  goalWeekQuestions,
   isEditMode,
 }: EstudosWidgetProps) {
   const weekProgress = goalWeekHours

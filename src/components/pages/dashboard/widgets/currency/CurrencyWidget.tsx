@@ -15,13 +15,13 @@ export function CurrencyWidget({
   isEditMode,
 }: CurrencyWidgetProps) {
   const getRate = (code: string, invert = false) => {
-    if (!rates["BRL"] || !rates[code]) return null;
+    if (!rates.BRL || !rates[code]) return null;
     if (invert) {
       // Quanto 1 Moeda Estrangeira vale em BRL
-      return (rates["BRL"] / rates[code]).toFixed(2);
+      return (rates.BRL / rates[code]).toFixed(2);
     }
     // Quanto 1 BRL vale na moeda estrangeira
-    const val = rates[code] / rates["BRL"];
+    const val = rates[code] / rates.BRL;
     return val < 1 ? val.toFixed(4) : val.toFixed(2);
   };
 

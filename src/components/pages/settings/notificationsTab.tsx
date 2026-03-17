@@ -4,7 +4,6 @@ import {
   ExternalLink,
   Settings as SettingsIcon,
   ShieldAlert,
-  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getThemeColor } from "@/lib/utils";

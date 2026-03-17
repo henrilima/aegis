@@ -12,7 +12,8 @@ import { SonoWidget } from "./sleep/SleepWidget";
 import { StatisticsWidget } from "./statistics/StatisticsWidget";
 import { EstudosWidget } from "./studies/StudiesWidget";
 
-export const WIDGET_REGISTRY: Record<string, React.FC<any>> = {
+// biome-ignore lint/suspicious/noExplicitAny: Heterogeneous widget registry
+export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   habits: HabitsWidget,
   pomodoro: PomodoroWidget,
   notes: NotesWidget,

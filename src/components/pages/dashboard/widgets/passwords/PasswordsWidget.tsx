@@ -61,7 +61,7 @@ export function PasswordsWidget({
         <div className="space-y-1.5">
           {passwords.slice(0, 2).map((p, i) => (
             <div
-              key={i}
+              key={p.id ?? i}
               className="flex items-center gap-2 p-2 rounded-xl bg-neutral-800/30 border border-neutral-800/50"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-amber-500/40" />
