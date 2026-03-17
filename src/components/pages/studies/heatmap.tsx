@@ -100,7 +100,7 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
   }, [dates, selectedYear]);
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 w-full animate-in fade-in duration-500 shadow-2xl relative overflow-hidden">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 w-full animate-in fade-in duration-500 shadow-2xl relative overflow-hidden">
       <HeatmapHeader
         selectedYear={selectedYear}
         currentYear={currentYear}

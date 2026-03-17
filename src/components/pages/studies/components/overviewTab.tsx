@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { GOAL_LABELS } from "../goalPanel";
 import type { StudyStats, SubjectData } from "../types";
 import { formatHours, hitRate } from "../utils";
@@ -95,7 +96,7 @@ export function OverviewTab({
         {statCards.map((c) => (
           <div
             key={c.label}
-            className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col gap-2"
+            className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-2"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase text-neutral-500">
@@ -119,7 +120,7 @@ export function OverviewTab({
         ))}
       </div>
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
         <h2 className=" font-black uppercase text-neutral-400 mb-4">
           Progresso das Metas
         </h2>
@@ -160,14 +161,17 @@ export function OverviewTab({
         </div>
       </div>
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
         <h2 className=" font-black uppercase text-neutral-400 mb-4">
           Desempenho por Matéria (3 meses)
         </h2>
         {Object.keys(subjectMap).length === 0 ? (
-          <p className=" text-neutral-600 text-center py-6">
-            Nenhuma sessão registrada ainda.
-          </p>
+          <EmptyState
+            icon={BookOpen}
+            title="Aguardando registros"
+            description="Seu desempenho por matéria será calculado assim que você salvar seus primeiros estudos."
+            className="py-12"
+          />
         ) : (
           <div className="flex flex-col gap-3">
             {Object.entries(subjectMap)

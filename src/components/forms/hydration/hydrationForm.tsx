@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getThemeColor } from "@/lib/utils";
 
 interface HydrationFormProps {
   newType: string;
@@ -35,12 +36,12 @@ export function HydrationForm({
   onAdd,
   onCancel,
 }: HydrationFormProps) {
-  const inputStyle =
-    "w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
+  const theme = getThemeColor();
+  const inputStyle = `w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:${theme.border.split(" ")[0]} transition-all placeholder:text-neutral-600`;
   const lc = "text-xs font-medium text-neutral-400 ml-0.5";
 
   return (
-    <div className="bg-neutral-950/40 border border-neutral-800 rounded-[28px] p-6 space-y-5">
+    <div className="bg-neutral-950/40 border border-neutral-800 rounded-xl p-6 space-y-5">
       {/* Tipo de Alerta */}
       <div className="space-y-1.5">
         <Label htmlFor="hydration-type" className={lc}>
@@ -49,7 +50,7 @@ export function HydrationForm({
         <Select value={newType} onValueChange={setNewType}>
           <SelectTrigger
             id="hydration-type"
-            className="w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium ring-offset-neutral-950 focus:ring-blue-500/50"
+            className={`w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium ring-offset-neutral-950 focus:ring-${theme.text.split("-")[1]}-500/50`}
           >
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
@@ -117,7 +118,7 @@ export function HydrationForm({
         <button
           type="button"
           onClick={onAdd}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer`}
         >
           <Plus className="w-4 h-4" /> Ativar lembrete
         </button>

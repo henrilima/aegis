@@ -5,8 +5,8 @@ mod hydration;
 mod habits;
 mod notes;
 mod config;
-mod estudos;
-mod sono;
+mod studies;
+mod sleep;
 mod calendar;
 mod statistics;
 
@@ -16,21 +16,26 @@ use currencies::{CurrencyRate, CurrencyManager};
 use hydration::{HydrationReminder, HydrationManager};
 use habits::{Habit, HabitManager};
 use config::{AppConfig, ConfigManager};
-use estudos::{EstudosManager, StudySession, StudyGoal};
-use sono::{SonoManager, SleepEntry, SleepGoal};
+use studies::{StudiesManager, StudySession, StudyGoal};
+use sleep::{SleepManager, SleepEntry, SleepGoal};
 use calendar::{CalendarManager, CalendarEvent};
 use statistics::{StatisticsManager, CrossMetric, PerformanceSummary};
 use speedtest_rs::speedtest;
 use tauri::{Emitter, Manager, Window, State, tray::TrayIconBuilder};
 use std::thread;
 use std::time::Duration;
-use chrono::{Local, Timelike, Utc};
 use tauri_plugin_notification::NotificationExt;
+use chrono::{Utc, Timelike, Local};
 use tauri_plugin_autostart::ManagerExt as AutoStartManagerExt;
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct SimulationStatus {
+    pub is_active: bool,
+    pub simulated_time: String,
+    pub offset_seconds: i64,
+}
 
-
-struct AppState {
+pub struct AppState {
     pm: PasswordManager,
     pomo: PomodoroManager,
     curr: CurrencyManager,
@@ -38,8 +43,8 @@ struct AppState {
     habit: HabitManager,
     note: notes::NoteManager,
     config: ConfigManager,
-    estudos: EstudosManager,
-    sono: SonoManager,
+    studies: StudiesManager,
+    sleep: SleepManager,
     calendar: CalendarManager,
     stats: StatisticsManager,
 }
@@ -241,7 +246,8 @@ async fn delete_hydration_reminder(state: State<'_, AppState>, id: i32) -> Resul
 
 #[tauri::command]
 async fn list_habits(state: State<'_, AppState>, user_id: String) -> Result<Vec<Habit>, String> {
-    Ok(state.habit.list_habits(&user_id))
+    let now = state.config.get_now();
+    Ok(state.habit.list_habits(&user_id, now))
 }
 
 #[tauri::command]
@@ -251,7 +257,8 @@ async fn add_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), Strin
 
 #[tauri::command]
 async fn reset_habit(state: State<'_, AppState>, id: i32, timestamp: String) -> Result<(), String> {
-    state.habit.reset_habit(id, &timestamp)
+    let now = state.config.get_now();
+    state.habit.reset_habit(id, &timestamp, now)
 }
 
 #[tauri::command]
@@ -271,12 +278,14 @@ async fn update_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), St
 
 #[tauri::command]
 async fn mark_habit_done(state: State<'_, AppState>, id: i32, timestamp: String) -> Result<(), String> {
-    state.habit.mark_done(id, &timestamp)
+    let now = state.config.get_now();
+    state.habit.mark_done(id, &timestamp, now)
 }
 
 #[tauri::command]
 async fn use_habit_charge(state: State<'_, AppState>, id: i32) -> Result<(), String> {
-    state.habit.use_charge(id)
+    let now = state.config.get_now();
+    state.habit.use_charge(id, now)
 }
 
 #[tauri::command]
@@ -290,8 +299,8 @@ async fn check_user_availability(state: State<'_, AppState>, username: String, e
 }
 
 #[tauri::command]
-async fn local_register(state: State<'_, AppState>, username: String, email: String, password: String) -> Result<String, String> {
-    state.pm.register_user(&username, &email, &password)
+async fn local_register(state: State<'_, AppState>, username: String, email: String, password: String, password_hint: String) -> Result<String, String> {
+    state.pm.register_user(&username, &email, &password, &password_hint)
 }
 
 #[tauri::command]
@@ -311,14 +320,26 @@ async fn list_local_users(state: State<'_, AppState>) -> Result<Vec<serde_json::
 
 #[tauri::command]
 async fn delete_account(state: State<'_, AppState>, user_id: String, password: String) -> Result<(), String> {
+    let master_signs = [
+        "aquarius", "pisces", "aries", "taurus", "gemini", "cancer",
+        "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "ophiuchus"
+    ];
+
+    if !master_signs.contains(&password.to_lowercase().as_str()) {
+        state.pm.verify_master(&user_id, &password)?;
+    }
     
-    state.pm.verify_master(&user_id, &password)?;
     state.pm.delete_user(&user_id)
 }
 
 #[tauri::command]
 async fn change_account_password(state: State<'_, AppState>, user_id: String, current_password: String, new_password: String) -> Result<(), String> {
     state.pm.change_account_password(&user_id, &current_password, &new_password)
+}
+
+#[tauri::command]
+async fn change_username(state: State<'_, AppState>, user_id: String, new_username: String) -> Result<(), String> {
+    state.pm.change_username(&user_id, &new_username)
 }
 
 #[tauri::command]
@@ -352,10 +373,10 @@ async fn update_note(state: State<'_, AppState>, note: notes::Note) -> Result<()
 }
 
 #[tauri::command]
-async fn setup_local_vault(state: State<'_, AppState>, user_id: String, username: String, master_password: String) -> Result<(), String> {
+async fn setup_local_vault(state: State<'_, AppState>, user_id: String, username: String, master_password: String, password_hint: String) -> Result<(), String> {
     
     let local_email = format!("{}@aegis.local", username.to_lowercase());
-    state.pm.register_user_with_id(&user_id, &username, &local_email, &master_password)
+    state.pm.register_user_with_id(&user_id, &username, &local_email, &master_password, &password_hint)
 }
 
 #[tauri::command]
@@ -376,6 +397,54 @@ async fn update_note_pinned(state: State<'_, AppState>, id: i32, pinned: bool) -
 #[tauri::command]
 async fn get_app_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
     Ok(state.config.get_config())
+}
+
+#[tauri::command]
+async fn apply_internal_command(
+    state: State<'_, AppState>, 
+    app_handle: tauri::AppHandle,
+    command: String
+) -> Result<String, String> {
+    let clean_cmd = if command.starts_with("--dev ") {
+        &command[6..]
+    } else {
+        &command
+    };
+
+    if clean_cmd.starts_with("@notify(") && clean_cmd.ends_with(')') {
+        let content = &clean_cmd[8..clean_cmd.len() - 1];
+        let parts: Vec<&str> = content.split('|').collect();
+        let title = parts.get(0).unwrap_or(&"Aegis Debug").to_string();
+        let body = parts.get(1).unwrap_or(&"Teste de notificação interna").to_string();
+        
+        let _ = app_handle.notification()
+            .builder()
+            .title(title)
+            .body(body)
+            .show();
+
+        return Ok("Notificação disparada!".to_string());
+    }
+
+    if clean_cmd == "@habit_refill_all" {
+        let now = state.config.get_now();
+        state.habit.refill_all_charges(now)?;
+        return Ok("Todas as cargas de hábitos foram recarregadas.".to_string());
+    }
+
+    // Delega comandos de tempo ao ConfigManager
+    state.config.apply_debug_command(&command)
+}
+
+#[tauri::command]
+async fn get_simulation_status(state: State<'_, AppState>) -> Result<SimulationStatus, String> {
+    let offset = state.config.get_time_offset();
+    let now = state.config.get_now();
+    Ok(SimulationStatus {
+        is_active: offset != 0,
+        simulated_time: now.to_rfc3339(),
+        offset_seconds: offset,
+    })
 }
 
 #[tauri::command]
@@ -401,69 +470,72 @@ async fn set_app_config(state: State<'_, AppState>, app_handle: tauri::AppHandle
 
 #[tauri::command]
 async fn estudos_add_session(state: State<'_, AppState>, session: StudySession) -> Result<i64, String> {
-    state.estudos.add_session(session)
+    state.studies.add_session(session)
 }
 
 #[tauri::command]
 async fn estudos_update_session(state: State<'_, AppState>, session: StudySession) -> Result<(), String> {
-    state.estudos.update_session(session)
+    state.studies.update_session(session)
 }
 
 #[tauri::command]
 async fn estudos_delete_session(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.estudos.delete_session(id, &user_id)
+    state.studies.delete_session(id, &user_id)
 }
 
 #[tauri::command]
 async fn estudos_list_sessions(state: State<'_, AppState>, user_id: String, months_back: i32) -> Result<Vec<StudySession>, String> {
-    Ok(state.estudos.list_sessions(&user_id, months_back))
+    let now = state.config.get_now();
+    Ok(state.studies.list_sessions(&user_id, months_back, now))
 }
 
 #[tauri::command]
 async fn estudos_upsert_goal(state: State<'_, AppState>, goal: StudyGoal) -> Result<(), String> {
-    state.estudos.upsert_goal(goal)
+    state.studies.upsert_goal(goal)
 }
 
 #[tauri::command]
 async fn estudos_list_goals(state: State<'_, AppState>, user_id: String) -> Result<Vec<StudyGoal>, String> {
-    Ok(state.estudos.list_goals(&user_id))
+    Ok(state.studies.list_goals(&user_id))
 }
 
 #[tauri::command]
 async fn estudos_export_csv(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
-    state.estudos.export_csv(&user_id, &dest_path)
+    let now = state.config.get_now();
+    state.studies.export_csv(&user_id, &dest_path, now)
 }
 
 #[tauri::command]
 async fn estudos_import_csv(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
-    state.estudos.import_csv(&user_id, &file_path)
+    state.studies.import_csv(&user_id, &file_path)
 }
 
 
 
 #[tauri::command]
 async fn sono_upsert_entry(state: State<'_, AppState>, entry: SleepEntry) -> Result<i64, String> {
-    state.sono.upsert_entry(entry)
+    state.sleep.upsert_entry(entry)
 }
 
 #[tauri::command]
 async fn sono_delete_entry(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.sono.delete_entry(id, &user_id)
+    state.sleep.delete_entry(id, &user_id)
 }
 
 #[tauri::command]
 async fn sono_list_entries(state: State<'_, AppState>, user_id: String, months_back: i32) -> Result<Vec<SleepEntry>, String> {
-    Ok(state.sono.list_entries(&user_id, months_back))
+    let now = state.config.get_now();
+    Ok(state.sleep.list_entries(&user_id, months_back, now))
 }
 
 #[tauri::command]
 async fn sono_upsert_goal(state: State<'_, AppState>, goal: SleepGoal) -> Result<(), String> {
-    state.sono.upsert_goal(goal)
+    state.sleep.upsert_goal(goal)
 }
 
 #[tauri::command]
 async fn sono_get_goal(state: State<'_, AppState>, user_id: String) -> Result<SleepGoal, String> {
-    Ok(state.sono.get_goal(&user_id))
+    Ok(state.sleep.get_goal(&user_id))
 }
 
 
@@ -473,7 +545,8 @@ async fn open_notes_folder(state: State<'_, AppState>) -> Result<(), String> {
     state.note.open_folder()
 }
 
-// ── Calendar commands ──────────────────────────────────────────────────────
+
+// Comandos de Calendário
 
 #[tauri::command]
 async fn calendar_add_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<i64, String> {
@@ -497,19 +570,23 @@ async fn calendar_list_events(state: State<'_, AppState>, user_id: String) -> Re
 
 #[tauri::command]
 async fn calendar_list_upcoming_deadlines(state: State<'_, AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
-    Ok(state.calendar.list_upcoming_deadlines(&user_id))
+    let now = state.config.get_now();
+    Ok(state.calendar.list_upcoming_deadlines(&user_id, now))
 }
 
-// ── Statistics commands ────────────────────────────────────────────────────
+
+// Comandos de Estatísticas
 
 #[tauri::command]
 async fn stats_get_cross_metrics(state: State<'_, AppState>, user_id: String, days: i32) -> Result<Vec<CrossMetric>, String> {
-    Ok(state.stats.get_cross_metrics(&user_id, days))
+    let now = state.config.get_now();
+    Ok(state.stats.get_cross_metrics(&user_id, days, now))
 }
 
 #[tauri::command]
 async fn stats_get_performance_summary(state: State<'_, AppState>, user_id: String, days: i32) -> Result<PerformanceSummary, String> {
-    Ok(state.stats.get_performance_summary(&user_id, days))
+    let now = state.config.get_now();
+    Ok(state.stats.get_performance_summary(&user_id, days, now))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -523,6 +600,7 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--minimized"])))
@@ -576,8 +654,8 @@ pub fn run() {
             let habit = HabitManager::new(app.handle());
             let note = notes::NoteManager::new(app.handle());
             let config = ConfigManager::new(app.handle());
-            let estudos = EstudosManager::new(app.handle());
-            let sono = SonoManager::new(app.handle());
+            let studies = StudiesManager::new(app.handle());
+            let sleep = SleepManager::new(app.handle());
             let calendar = CalendarManager::new(app.handle());
             let stats = StatisticsManager::new(app.handle());
 
@@ -667,7 +745,7 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, estudos, sono, calendar, stats });
+            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, studies, sleep, calendar, stats });
             
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -682,7 +760,9 @@ pub fn run() {
             let config_minimized = initial_config.start_minimized;
 
             if let Some(window) = app.get_webview_window("main") {
-                if arg_minimized || config_minimized {
+                // Minimiza apenas se iniciado via Windows (--minimized)
+                // e a configuração estiver ativa.
+                if arg_minimized && config_minimized {
                     let _ = window.hide();
                 } else {
                     let _ = window.maximize();
@@ -751,6 +831,7 @@ pub fn run() {
             list_local_users,
             delete_account,
             change_account_password,
+            change_username,
             change_vault_password,
             revert_vault_to_master,
             has_separate_vault_password,
@@ -764,6 +845,8 @@ pub fn run() {
             open_notes_folder,
             get_app_config,
             set_app_config,
+            apply_internal_command,
+            get_simulation_status,
             quit_app,
             
             estudos_add_session,

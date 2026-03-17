@@ -31,7 +31,7 @@ export function CrossTable({ metrics }: CrossTableProps) {
             {["Data", "Sono", "Estudo", "Questões", "Acerto"].map((h) => (
               <th
                 key={h}
-                className="py-3 px-2 text-left text-[10px] font-black uppercase text-neutral-600"
+                className="py-3 px-2 text-left text-[10px] font-bold text-neutral-600"
               >
                 {h}
               </th>
@@ -73,7 +73,7 @@ export function CrossTable({ metrics }: CrossTableProps) {
                 <td className="py-2.5 px-2 text-neutral-500 font-medium">
                   {m.questions_total}
                 </td>
-                <td className={`py-2.5 px-2 font-black ${hitColor}`}>
+                <td className={`py-2.5 px-2 font-bold ${hitColor}`}>
                   {m.questions_total > 0 ? `${m.study_hit_rate}%` : "—"}
                 </td>
               </tr>

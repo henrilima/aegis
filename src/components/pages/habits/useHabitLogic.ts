@@ -3,12 +3,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useTime } from "@/context/TimeContext";
 import type { Habit } from "./types";
 
 /**
  * Hook de Lógica para Hábitos: Gerencia timers de cooldown, recarga de cargas e ações backend
  */
 export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
+  const { now: simulatedNow } = useTime();
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [chargeTimeLeft, setChargeTimeLeft] = useState<string>("");
   const [canUse, setCanUse] = useState(true);
@@ -25,21 +27,32 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   // Cálculo da sequência atual baseada no campo do banco para positivos ou tempo para negativos
   const currentStreak = useMemo(() => {
     if (!isNegative) return habit.current_streak || 0;
-    
+
     if (!habit.last_slip) return 0;
     const slip = new Date(habit.last_slip);
-    const now = new Date();
-    const diff = now.getTime() - slip.getTime();
+
+    // Zera horas para contar dias de calendário (meia-noite a meia-noite)
+    const slipDate = new Date(
+      slip.getFullYear(),
+      slip.getMonth(),
+      slip.getDate(),
+    );
+    const nowDate = new Date(
+      simulatedNow.getFullYear(),
+      simulatedNow.getMonth(),
+      simulatedNow.getDate(),
+    );
+
+    const diff = nowDate.getTime() - slipDate.getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
-  }, [habit.current_streak, habit.last_slip, isNegative]);
+  }, [habit.current_streak, habit.last_slip, isNegative, simulatedNow]);
 
   const diaAtual = currentStreak;
 
   // Tempo total desde o início do rastreamento deste hábito
   const tempoDeCriacao = useMemo(() => {
     const created = new Date(habit.created_at);
-    const now = new Date();
-    const diff = now.getTime() - created.getTime();
+    const diff = simulatedNow.getTime() - created.getTime();
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -50,7 +63,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     if (hours > 0 || days > 0) text += `${hours}h `;
     text += `${mins}m`;
     return text;
-  }, [habit.created_at]);
+  }, [habit.created_at, simulatedNow]);
 
   const recorde = habit.max_streak;
   const totalContagem = habit.charges_used;
@@ -61,14 +74,14 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   // Registrar conclusão de hábito positivo
   const markDone = useCallback(async () => {
     try {
-      const now = new Date().toISOString();
-      await invoke("mark_habit_done", { id, timestamp: now });
+      const nowStr = simulatedNow.toISOString();
+      await invoke("mark_habit_done", { id, timestamp: nowStr });
       onRefresh?.();
       toast.success("Hábito concluído com sucesso!");
     } catch {
       toast.error("Erro ao registrar progresso");
     }
-  }, [id, onRefresh]);
+  }, [id, onRefresh, simulatedNow]);
 
   // Utilizar carga de proteção (vícios)
   const handleUseCharge = useCallback(async () => {
@@ -90,7 +103,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     try {
       await invoke("reset_habit", {
         id,
-        timestamp: new Date().toISOString(),
+        timestamp: simulatedNow.toISOString(),
       });
       onRefresh?.();
       toast.error(
@@ -101,21 +114,21 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     } catch {
       toast.error("Erro ao processar reinício");
     }
-  }, [id, isNegative, onRefresh]);
+  }, [id, isNegative, onRefresh, simulatedNow]);
 
   // Reset total (zerar todas as métricas)
   const hardReset = useCallback(async () => {
     try {
       await invoke("hard_reset_habit", {
         id,
-        timestamp: new Date().toISOString(),
+        timestamp: simulatedNow.toISOString(),
       });
       onRefresh?.();
       toast.info("Histórico do hábito resetado.");
     } catch {
       toast.error("Erro no reset total");
     }
-  }, [id, onRefresh]);
+  }, [id, onRefresh, simulatedNow]);
 
   // Excluir hábito
   const deleteHabit = useCallback(async () => {
@@ -157,8 +170,8 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
         nextDate.setHours(0, 0, 0, 0); // Considera virada do dia
 
         const nextAvailable = nextDate.getTime();
-        const now = Date.now();
-        const diff = nextAvailable - now;
+        const nowMs = simulatedNow.getTime();
+        const diff = nextAvailable - nowMs;
 
         if (diff <= 0) {
           setCanUse(true);
@@ -169,13 +182,13 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
         }
       }
 
-      // Cálculo do tempo para próxima recarga de vida (Vícios)
+      // Cálculo do tempo para próxima carga (Vícios)
       if (habit.charges_amount > 0 && habit.charges_interval_days > 0) {
         const lastRefill = new Date(habit.last_charge_refill).getTime();
         const intervalMs = habit.charges_interval_days * 24 * 60 * 60 * 1000;
         const nextRefill = lastRefill + intervalMs;
-        const now = Date.now();
-        const diffCharge = nextRefill - now;
+        const nowMs = simulatedNow.getTime();
+        const diffCharge = nextRefill - nowMs;
 
         if (diffCharge <= 0) {
           setChargeTimeLeft("");
@@ -197,6 +210,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     habit.charges_interval_days,
     intervalo,
     isNegative,
+    simulatedNow,
   ]);
 
   return {

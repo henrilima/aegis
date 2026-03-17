@@ -24,13 +24,13 @@ export function SleepGoalTab({
   onSave,
 }: SleepGoalTabProps) {
   const inputStyle =
-    "bg-neutral-950/40 border-neutral-800 h-12 rounded-2xl px-4  text-white focus:border-blue-500/40 transition-all font-bold shadow-inner";
+    "bg-neutral-950/40 border-neutral-800 h-12 rounded-xl px-4  text-white focus:border-blue-500/40 transition-all font-bold shadow-inner";
   const labelStyle = "text-[10px] font-black uppercase text-neutral-600 ml-1";
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-xl animate-in zoom-in-95 duration-500">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-xl animate-in zoom-in-95 duration-500">
       <div className="flex items-center gap-4 mb-10">
-        <div className="p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 shadow-lg shadow-blue-500/5">
+        <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/5">
           <Target className="w-6 h-6 text-blue-400" />
         </div>
         <div>
@@ -77,11 +77,11 @@ export function SleepGoalTab({
       </div>
 
       {/* Ação de Persistência */}
-      <div className="mt-10 pt-8 border-t border-neutral-800/50">
+      <div className="mt-10 border-neutral-800/50">
         <Button
           type="button"
           onClick={onSave}
-          className="w-full px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-bold border border-blue-600/30 transition-colors cursor-pointer"
+          className="w-full px-3 py-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-bold border border-blue-600/30 transition-colors cursor-pointer"
         >
           Consolidar métricas
         </Button>

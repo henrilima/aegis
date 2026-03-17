@@ -9,7 +9,7 @@ interface ReminderCardProps {
 
 export function ReminderCard({ reminder: r, onDelete }: ReminderCardProps) {
   return (
-    <div className="flex items-center justify-between p-3 border rounded-md">
+    <div className="flex items-center justify-between p-3 border border-neutral-800 bg-neutral-900 rounded-xl transition-all hover:border-neutral-700 hover:bg-neutral-800/20">
       <div className="flex items-center gap-3">
         {r.reminder_type === "Interval" ? (
           <Timer className="w-4 h-4 text-blue-500" />

@@ -19,7 +19,7 @@ export default function Speedtest() {
         {/* Cabeçalho Visual */}
         <SpeedtestHeader isRunning={isRunning} />
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 space-y-6 shadow-2xl shadow-black/40">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 space-y-6 shadow-2xl shadow-black/40">
           {/* Status do Mecanismo */}
           <div className="text-center relative">
             <span className="text-[10px] font-black uppercase text-neutral-600 block mb-2">
@@ -51,10 +51,10 @@ export default function Speedtest() {
           type="button"
           onClick={startTest}
           disabled={isRunning}
-          className={`w-full py-4 rounded-2xl font-black text-xs uppercase transition-all duration-300 shadow-xl cursor-pointer active:scale-[0.98] ${
+          className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-300 shadow-xl cursor-pointer active:scale-[0.98] ${
             isRunning
               ? "bg-neutral-800 text-neutral-600 border border-neutral-700 cursor-not-allowed"
-              : "bg-red-600 hover:bg-red-500 text-white shadow-red-600/10"
+              : "bg-red-500 hover:bg-red-400 text-white shadow-red-600/10"
           }`}
         >
           {isRunning ? (

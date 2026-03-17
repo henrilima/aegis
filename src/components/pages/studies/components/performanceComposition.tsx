@@ -5,10 +5,12 @@ import type { StudyStats } from "../types";
 
 interface PerformanceCompositionProps {
   allStats: StudyStats;
+  isMonthly?: boolean;
 }
 
 export function PerformanceComposition({
   allStats,
+  isMonthly = false,
 }: PerformanceCompositionProps) {
   const items = [
     {
@@ -32,11 +34,11 @@ export function PerformanceComposition({
     allStats.questions + allStats.pages + allStats.sessionsCount || 1;
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-8 shadow-xl">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-8 shadow_xl">
       <div className="flex items-center gap-2">
         <Zap className="w-4 h-4 text-violet-500" />
         <h3 className=" font-black uppercase text-neutral-400">
-          Composição de Atividade
+          {isMonthly ? "Composição Mensal" : "Composição de Atividade"}
         </h3>
       </div>
       <div className="flex flex-col gap-8">

@@ -4,12 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { Activity, LayoutGrid, Plus, ShieldOff, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
-import { useAuth } from "@/context/AuthContext";
-
 import { EditHabitDialog } from "@/components/forms/habits/editDialog";
-import { HabitCard } from "./habitCard";
 import { HabitCreateModal } from "@/components/forms/habits/habitCreateModal";
+import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useAuth } from "@/context/AuthContext";
+import { useTime } from "@/context/TimeContext";
+import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
 
 type TabId = "all" | "positive" | "negative";
@@ -19,6 +20,7 @@ type TabId = "all" | "positive" | "negative";
  */
 export default function HabitsPage() {
   const { user } = useAuth();
+  const { now: simulatedNow } = useTime();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabId>("all");
@@ -56,7 +58,7 @@ export default function HabitsPage() {
     chargesInterval: number,
   ) => {
     if (!uid) return;
-    const now = new Date().toISOString();
+    const now = simulatedNow.toISOString();
     try {
       await invoke("add_habit", {
         habit: {
@@ -74,6 +76,7 @@ export default function HabitsPage() {
           accumulates: false,
           last_charge_refill: now,
           current_charges: chargesAmount,
+          current_streak: 0,
         },
       });
       fetchHabits();
@@ -106,7 +109,7 @@ export default function HabitsPage() {
     try {
       await invoke("reset_habit", {
         id: resetId,
-        timestamp: new Date().toISOString(),
+        timestamp: simulatedNow.toISOString(),
       });
       setResetId(null);
       fetchHabits();
@@ -121,7 +124,7 @@ export default function HabitsPage() {
     try {
       await invoke("hard_reset_habit", {
         id: hardResetId,
-        timestamp: new Date().toISOString(),
+        timestamp: simulatedNow.toISOString(),
       });
       setHardResetId(null);
       fetchHabits();
@@ -143,7 +146,7 @@ export default function HabitsPage() {
     }
   };
 
-  // Filtragem de listas para navegação inteligente
+  // Filtragem de listas
   const positive = habits.filter((h) => h.habit_type === "Positive");
   const negative = habits.filter(
     (h) => h.habit_type === "Negative" || h.habit_type === "Bad",
@@ -187,7 +190,7 @@ export default function HabitsPage() {
 
   return (
     <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12 animate-in fade-in duration-500 text-white">
-      {/* Cabeçalho do Módulo */}
+      {/* Cabeçalho */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
@@ -212,8 +215,8 @@ export default function HabitsPage() {
         </button>
       </div>
 
-      {/* Navegação por Categoria */}
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
+      {/* Categorias */}
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -244,16 +247,13 @@ export default function HabitsPage() {
         ))}
       </div>
 
-      {/* Listagem de Hábitos */}
+      {/* Listagem */}
       {currentList.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-neutral-800">
-          <div className="p-4 rounded-full bg-neutral-900/50">
-            <Activity className="w-10 h-10 opacity-10" />
-          </div>
-          <p className=" font-bold uppercase opacity-30">
-            Nenhum hábito rastreado aqui
-          </p>
-        </div>
+        <EmptyState
+          icon={Activity}
+          title="Nenhum hábito rastreado"
+          description="Você ainda não possui registros nesta categoria. Comece definindo uma nova meta de disciplina."
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {currentList.map((h) => (
@@ -270,7 +270,7 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* Modais de Fluxo */}
+      {/* Modais */}
       {createOpen && (
         <HabitCreateModal
           onAdd={handleAdd}
@@ -286,7 +286,7 @@ export default function HabitsPage() {
         />
       )}
 
-      {/* Diálogos de Confirmação */}
+      {/* Confirmações */}
       {resetId !== null && (
         <ConfirmModal
           {...CONFIRM_PRESETS.resetStreak}

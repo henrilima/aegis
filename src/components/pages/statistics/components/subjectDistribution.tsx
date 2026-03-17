@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { PerformanceSummary } from "../types";
 
 interface SubjectDistributionProps {
@@ -12,12 +13,19 @@ interface SubjectDistributionProps {
  */
 export function SubjectDistribution({ summary }: SubjectDistributionProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col gap-5">
-      <div className="flex items-center gap-2.5">
-        <BookOpen className="w-4 h-4 text-violet-400" />
-        <h2 className="text-[10px] font-black uppercase text-neutral-400">
-          Distribuição de Esforço por Matéria
-        </h2>
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex flex-col gap-5 overflow-hidden">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <BookOpen className="w-4 h-4 text-violet-400" />
+          <h2 className="text-[10px] font-bold text-neutral-400">
+            Distribuição de Esforço por Matéria
+          </h2>
+        </div>
+        <ToolTip content="Distribuição do tempo total de estudo e taxa de acerto entre as 5 matérias mais estudadas.">
+          <div className="text-[10px] text-neutral-600 cursor-help hover:text-neutral-400 transition-colors">
+            O que é isso?
+          </div>
+        </ToolTip>
       </div>
 
       <div className="flex flex-col gap-3.5">
@@ -27,7 +35,7 @@ export function SubjectDistribution({ summary }: SubjectDistributionProps) {
               <span className="text-neutral-300 truncate max-w-[170px] group-hover:text-white transition-colors">
                 {s.name}
               </span>
-              <span className="text-neutral-500 font-black">
+              <span className="text-neutral-500 font-bold">
                 {s.hours.toFixed(1)}h ·{" "}
                 <span className="text-violet-400">{s.hit_rate}%</span>
               </span>
@@ -46,7 +54,7 @@ export function SubjectDistribution({ summary }: SubjectDistributionProps) {
         {/* Caso não existam dados */}
         {summary.subject_distribution.length === 0 && (
           <div className="text-center py-10 opacity-30">
-            <span className="text-xs text-neutral-600 font-black uppercase">
+            <span className="text-xs text-neutral-600 font-bold">
               Nenhuma matéria registrada
             </span>
           </div>

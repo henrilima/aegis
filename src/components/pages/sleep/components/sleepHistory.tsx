@@ -1,6 +1,8 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Moon, Pencil, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import {
   formatDuration,
   parseDate,
@@ -28,10 +30,19 @@ export function SleepHistory({
   onDelete,
   title = "Registros de sono",
 }: SleepHistoryProps) {
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return (
+      <EmptyState
+        icon={Moon}
+        title="Nenhum ciclo registrado"
+        description="Seu histórico de sono aparecerá aqui. Comece registrando sua última noite de descanso."
+        className="py-12 bg-neutral-900/20 border border-neutral-800 rounded-xl"
+      />
+    );
+  }
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
       <h2 className=" font-black uppercase text-neutral-400 mb-3">{title}</h2>
       <div className="flex flex-col gap-2">
         {entries.map((e) => (
@@ -64,6 +75,11 @@ export function SleepHistory({
               <div className="flex items-center gap-3 mt-0.5">
                 <span className="text-xs text-blue-400 font-bold">
                   {formatDuration(e.duration_minutes)}
+                  {e.nap_minutes && e.nap_minutes > 0 ? (
+                    <span className="text-[10px] text-neutral-600 font-medium ml-1">
+                      (+{formatDuration(e.nap_minutes)} soneca)
+                    </span>
+                  ) : null}
                 </span>
                 <SleepStars quality={e.quality} />
                 <span
@@ -81,20 +97,24 @@ export function SleepHistory({
 
             {/* Ações */}
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onEdit(e)}
-                className="p-1.5 rounded-lg text-neutral-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => e.id && onDelete(e.id)}
-                className="p-1.5 rounded-lg text-neutral-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              <ToolTip content="Editar registro">
+                <button
+                  type="button"
+                  onClick={() => onEdit(e)}
+                  className="p-1.5 rounded-lg text-neutral-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </ToolTip>
+              <ToolTip content="Excluir registro">
+                <button
+                  type="button"
+                  onClick={() => e.id && onDelete(e.id)}
+                  className="p-1.5 rounded-lg text-neutral-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </ToolTip>
             </div>
           </div>
         ))}

@@ -8,8 +8,11 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { StudySession } from "../types";
 import { formatHours, hitRate, parseDate } from "../utils";
+import { StudyStars } from "./studyStars";
 
 interface HistoryTabProps {
   sessions: StudySession[];
@@ -38,7 +41,7 @@ export function HistoryTab({
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
           <input
-            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-9 pr-3 py-2  text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500 transition-colors"
+            className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-9 pr-3 py-2  text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-600/20 transition-colors`}
             placeholder="Buscar por matéria, data ou anotação..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -46,7 +49,7 @@ export function HistoryTab({
         </div>
         <div className="relative">
           <select
-            className="appearance-none bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-8 py-2  text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
+            className={`appearance-none bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-8 py-2  text-white focus:outline-none focus:border-violet-600/20 transition-colors cursor-pointer`}
             value={filterMonth}
             onChange={(e) => onFilterMonthChange(e.target.value)}
           >
@@ -65,10 +68,12 @@ export function HistoryTab({
       </div>
 
       {sessions.length === 0 ? (
-        <div className="text-center py-16 text-neutral-600">
-          <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-          <p className="">Nenhuma sessão encontrada</p>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="Nenhuma sessão encontrada"
+          description="Seu histórico de estudos está vazio ou não corresponde à sua busca atual."
+          className="py-12"
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {sessions.map((s) => {
@@ -79,7 +84,7 @@ export function HistoryTab({
             return (
               <div
                 key={s.id}
-                className="group bg-neutral-900/50 border border-neutral-800 hover:border-violet-500/30 hover:bg-neutral-900 rounded-3xl p-5 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-violet-500/5"
+                className={`group bg-neutral-900/50 border border-neutral-800 hover:border-violet-600/30 hover:bg-neutral-900 rounded-xl p-5 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-violet-500/5`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 flex flex-col gap-3">
@@ -88,7 +93,9 @@ export function HistoryTab({
                       <h3 className="text-base font-black text-white truncate">
                         {s.subject}
                       </h3>
-                      <span className="shrink-0 text-[10px] font-black uppercase text-violet-400 bg-violet-400/10 border border-violet-400/20 px-2.5 py-1 rounded-full shadow-sm">
+                      <span
+                        className={`shrink-0 text-[10px] font-black uppercase text-violet-500 bg-violet-600/10 border border-violet-600/20 px-2.5 py-1 rounded-full shadow-sm`}
+                      >
                         {parseDate(s.date).toLocaleDateString("pt-BR", {
                           day: "2-digit",
                           month: "short",
@@ -99,11 +106,19 @@ export function HistoryTab({
                     {/* Linha de Métricas: Badges estilizados */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-neutral-800 group-hover:border-neutral-700 transition-colors">
-                        <Clock className="w-3.5 h-3.5 text-neutral-500 group-hover:text-violet-400 transition-colors" />
+                        <Clock
+                          className={`w-3.5 h-3.5 text-neutral-500 group-hover:text-violet-500 transition-colors`}
+                        />
                         <span className="text-xs font-bold text-neutral-300 group-hover:text-white transition-colors">
                           {formatHours(s.hours)}
                         </span>
                       </div>
+
+                      {s.focus_score && s.focus_score > 0 && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-neutral-800 group-hover:border-neutral-700 transition-colors">
+                          <StudyStars score={s.focus_score} />
+                        </div>
+                      )}
 
                       {totalQ > 0 && (
                         <div className="flex items-center gap-2">
@@ -147,20 +162,24 @@ export function HistoryTab({
 
                   {/* Ações */}
                   <div className="flex items-center gap-1 shrink-0 bg-neutral-800/20 p-1 rounded-xl border border-neutral-800/50">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(s)}
-                      className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-violet-600 transition-all cursor-pointer shadow-sm active:scale-95"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => s.id !== undefined && onDelete(s.id)}
-                      className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-red-600 transition-all cursor-pointer shadow-sm active:scale-95"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ToolTip content="Editar sessão">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(s)}
+                        className={`p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-violet-600 transition-all cursor-pointer shadow-sm active:scale-95`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </ToolTip>
+                    <ToolTip content="Excluir sessão">
+                      <button
+                        type="button"
+                        onClick={() => s.id !== undefined && onDelete(s.id)}
+                        className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-red-600 transition-all cursor-pointer shadow-sm active:scale-95"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </ToolTip>
                   </div>
                 </div>
               </div>

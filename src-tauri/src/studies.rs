@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
@@ -16,10 +17,11 @@ pub struct StudySession {
     pub correct_review: i32,
     pub note: Option<String>,
     pub created_at: Option<String>,
-    // Campos multidisciplinares opcionais
+    // Métricas extras opcionais
     pub pages_read: Option<i32>,
     pub custom_metric_label: Option<String>,
     pub custom_metric_value: Option<f64>,
+    pub focus_score: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -30,16 +32,16 @@ pub struct StudyGoal {
     pub target_value: f64,
 }
 
-pub struct EstudosManager {
+pub struct StudiesManager {
     db_path: PathBuf,
 }
 
-impl EstudosManager {
+impl StudiesManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("app data dir");
+        let app_dir = app_handle.path().app_data_dir().expect("Falha ao obter diretório de dados");
         let db_path = app_dir.join("passwords.db");
 
-        let conn = Connection::open(&db_path).expect("open db");
+        let conn = Connection::open(&db_path).expect("Falha ao abrir banco");
 
         let _ = conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS study_sessions (
@@ -56,7 +58,8 @@ impl EstudosManager {
                 created_at   TEXT NOT NULL DEFAULT (datetime('now')),
                 pages_read        INTEGER,
                 custom_metric_label TEXT,
-                custom_metric_value REAL
+                custom_metric_value REAL,
+                focus_score       INTEGER
             );
             CREATE TABLE IF NOT EXISTS study_goals (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,17 +70,17 @@ impl EstudosManager {
             );"
         );
 
-        // Migração manual: SQLite não suporta "IF NOT EXISTS" no ALTER TABLE.
-        // Tentamos adicionar cada coluna individualmente e ignoramos o erro caso já existam.
+        // Migração manual de colunas (SQLite não suporta IF NOT EXISTS no ALTER TABLE)
         let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN pages_read INTEGER", []);
         let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN custom_metric_label TEXT", []);
         let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN custom_metric_value REAL", []);
+        let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN focus_score INTEGER", []);
 
         Self { db_path }
     }
 
     fn conn(&self) -> Connection {
-        let conn = Connection::open(&self.db_path).expect("open db");
+        let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
         conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
         conn
     }
@@ -86,12 +89,12 @@ impl EstudosManager {
         let conn = self.conn();
         conn.execute(
             "INSERT INTO study_sessions
-             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
+             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value, focus_score)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
             params![s.user_id, s.date, s.subject, s.hours,
                     s.questions_new, s.questions_review,
                     s.correct_new, s.correct_review, s.note,
-                    s.pages_read, s.custom_metric_label, s.custom_metric_value],
+                    s.pages_read, s.custom_metric_label, s.custom_metric_value, s.focus_score],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
     }
@@ -102,13 +105,13 @@ impl EstudosManager {
         conn.execute(
             "UPDATE study_sessions SET date=?2, subject=?3, hours=?4,
              questions_new=?5, questions_review=?6, correct_new=?7, correct_review=?8, note=?9,
-             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12
+             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12, focus_score=?14
              WHERE id=?1 AND user_id=?13",
             params![id, s.date, s.subject, s.hours,
                     s.questions_new, s.questions_review,
                     s.correct_new, s.correct_review, s.note,
                     s.pages_read, s.custom_metric_label, s.custom_metric_value,
-                    s.user_id],
+                    s.user_id, s.focus_score],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -120,17 +123,17 @@ impl EstudosManager {
         Ok(())
     }
 
-    pub fn list_sessions(&self, user_id: &str, months_back: i32) -> Vec<StudySession> {
+    pub fn list_sessions(&self, user_id: &str, months_back: i32, now: DateTime<Utc>) -> Vec<StudySession> {
         let conn = self.conn();
-        let cutoff = format!("-{} months", months_back);
+        let cutoff_date = (now - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
         let mut stmt = conn.prepare(
-            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value
+            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value, focus_score
              FROM study_sessions
-             WHERE user_id=?1 AND date >= date('now', ?2)
+             WHERE user_id=?1 AND date >= ?2
              ORDER BY date DESC, id DESC"
         ).unwrap();
 
-        stmt.query_map(params![user_id, cutoff], |row| {
+        stmt.query_map(params![user_id, cutoff_date], |row| {
             Ok(StudySession {
                 id: Some(row.get(0)?),
                 user_id: user_id.to_string(),
@@ -146,6 +149,7 @@ impl EstudosManager {
                 pages_read: row.get(10)?,
                 custom_metric_label: row.get(11)?,
                 custom_metric_value: row.get(12)?,
+                focus_score: row.get(13)?,
             })
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
@@ -176,8 +180,8 @@ impl EstudosManager {
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
 
-    pub fn export_csv(&self, user_id: &str, dest_path: &str) -> Result<(), String> {
-        let sessions = self.list_sessions(user_id, 3);
+    pub fn export_csv(&self, user_id: &str, dest_path: &str, now: DateTime<Utc>) -> Result<(), String> {
+        let sessions = self.list_sessions(user_id, 3, now);
         let mut out = String::from(
             "data,materia,horas,questoes_ineditas,questoes_refeitas,acertos_ineditas,acertos_refeitas,nota\n"
         );
@@ -221,6 +225,7 @@ impl EstudosManager {
                 pages_read: None,
                 custom_metric_label: None,
                 custom_metric_value: None,
+                focus_score: None,
             };
             self.add_session(s).ok();
             count += 1;

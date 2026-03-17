@@ -32,7 +32,7 @@ export function EditHabitDialog({
         tabIndex={-1}
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-[28px] animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="relative w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between p-5 border-b border-neutral-800/60">
           <div className="flex items-center gap-3">
@@ -40,8 +40,12 @@ export function EditHabitDialog({
               <Edit2 className="w-5 h-5 text-teal-400" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white leading-none">Editar hábito</h2>
-              <p className="text-xs text-neutral-500 mt-0.5">Ajustar configurações</p>
+              <h2 className="text-base font-bold text-white leading-none">
+                Editar hábito
+              </h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Ajustar configurações
+              </p>
             </div>
           </div>
           <button
@@ -72,7 +76,9 @@ export function EditHabitDialog({
             {/* Cooldown */}
             <div className="space-y-1.5">
               <label htmlFor="ed-cooldown" className={lc}>
-                {habit.habit_type === "Positive" ? "Frequência (dias)" : "Tolerância (dias)"}
+                {habit.habit_type === "Positive"
+                  ? "Frequência (dias)"
+                  : "Tolerância (dias)"}
               </label>
               <input
                 id="ed-cooldown"
@@ -89,7 +95,7 @@ export function EditHabitDialog({
             {/* Cargas */}
             <div className="space-y-1.5">
               <label htmlFor="ed-charges" className={lc}>
-                Vidas / Cargas
+                Cargas
               </label>
               <input
                 id="ed-charges"
@@ -116,12 +122,12 @@ export function EditHabitDialog({
               <input
                 id="ed-interval"
                 type="number"
-                min={1}
+                min={2}
                 value={habit.charges_interval_days}
                 onChange={(e) =>
                   setHabit({
                     ...habit,
-                    charges_interval_days: Math.max(1, Number(e.target.value)),
+                    charges_interval_days: Math.max(2, Number(e.target.value)),
                   })
                 }
                 className={ic}

@@ -11,9 +11,11 @@ export function isoDate(d: Date) {
   return `${y}-${m}-${dd}`;
 }
 
-export function startOfWeek(d: Date) {
+export function startOfWeek(d: Date, weekStartDay: number = 1) {
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  // Se weekStartDay for 1 (Seg), domingo (0) vira 7 para o cálculo do diff
+  const dayAdjusted = weekStartDay === 1 && day === 0 ? 7 : day;
+  const diff = d.getDate() - dayAdjusted + weekStartDay;
   return new Date(d.getFullYear(), d.getMonth(), diff);
 }
 

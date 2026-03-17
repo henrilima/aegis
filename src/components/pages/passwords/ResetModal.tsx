@@ -1,13 +1,6 @@
-import { Trash2 } from "lucide-react";
-import { Button } from "../../ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../../ui/card";
+"use client";
+
+import { Trash2, X } from "lucide-react";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 
@@ -26,53 +19,86 @@ export function ResetModal({
   onClose,
   onConfirm,
 }: ResetModalProps) {
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const inputStyle =
+    "bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-red-500/40 transition-all placeholder:text-neutral-700";
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-60 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-neutral-900 shadow-2xl animate-in zoom-in duration-300">
-        <CardHeader>
-          <CardTitle className="text-red-500 flex items-center gap-2">
-            <Trash2 className="w-5 h-5" />{" "}
-            {resetStep === 1 ? "Confirmar Exclusão" : "Verificação Necessária"}
-          </CardTitle>
-          <CardDescription className="text-neutral-400">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-60 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-5 border-b border-neutral-800/60 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
+              <Trash2 className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-white leading-none">
+                {resetStep === 1
+                  ? "Confirmar exclusão"
+                  : "Verificação necessária"}
+              </h1>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Operação crítica
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+          <p className="text-xs text-neutral-400 font-medium leading-relaxed px-1">
             {resetStep === 1
-              ? "Esta ação apagará permanentemente TODAS as suas senhas salvas localmente nesta conta."
-              : "Por favor, digite a frase abaixo para confirmar que você entende os riscos."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+              ? "Esta ação apagará permanentemente todas as suas senhas salvas localmente nesta conta. Esta operação não pode ser desfeita."
+              : "Por favor, digite a frase abaixo para confirmar que você entende os riscos da exclusão permanente."}
+          </p>
+
           {resetStep === 2 && (
             <div className="space-y-2">
-              <Label className=" text-neutral-500">
-                Digite: "
-                <span className="text-indigo-400 font-mono font-bold">
+              <Label className={lc}>
+                Digite:{" "}
+                <span className="text-red-400">
                   desejo apagar todas as senhas
                 </span>
-                "
               </Label>
               <Input
                 value={resetConfirmText}
                 onChange={(e) => setResetConfirmText(e.target.value)}
                 placeholder="Digite a frase aqui..."
-                className="border-red-900/30 focus:border-red-500"
+                className={inputStyle}
                 onKeyDown={(e) => e.key === "Enter" && onConfirm()}
+                autoFocus
               />
             </div>
           )}
-        </CardContent>
-        <CardFooter className="flex justify-end gap-3">
-          <Button variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={onConfirm}
-            variant={resetStep === 1 ? "outline" : "destructive"}
-            className={resetStep === 2 ? "bg-red-700! hover:bg-red-800!" : ""}
-          >
-            {resetStep === 1 ? "Continuar" : "Confirmar exclusão"}
-          </Button>
-        </CardFooter>
-      </Card>
+
+          <div className="flex flex-col gap-2 pt-2 pb-1">
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={`w-full py-3 rounded-xl border text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer ${
+                resetStep === 1
+                  ? "bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700"
+                  : "bg-red-500/10 border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200"
+              }`}
+            >
+              {resetStep === 1 ? "Continuar" : "Confirmar exclusão"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+            >
+              Agora não
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

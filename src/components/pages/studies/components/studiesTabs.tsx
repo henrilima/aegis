@@ -14,7 +14,7 @@ export const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "visao-geral", label: "Visão Geral", icon: LayoutDashboard },
   { id: "historico", label: "Histórico", icon: Calendar },
   { id: "heatmap", label: "Constância", icon: Flame },
-  { id: "desempenho", label: "Desempenho", icon: BarChart3 },
+  { id: "desempenho", label: "Desempenho Mensal", icon: BarChart3 },
   { id: "relatorio", label: "Relatório", icon: Copy },
 ];
 
@@ -25,7 +25,7 @@ interface StudiesTabsProps {
 
 export function StudiesTabs({ activeTab, onTabChange }: StudiesTabsProps) {
   return (
-    <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
+    <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
       {TABS.map((t) => (
         <button
           key={t.id}

@@ -4,12 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { CheckCheck, Clock, Pin, StickyNote } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
+import { NoteExpandModal } from "@/components/forms/notes/noteExpandModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { NoteCard } from "./components/noteCard";
 import { NotesHeader } from "./components/notesHeader";
-import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
-import { NoteExpandModal } from "@/components/forms/notes/noteExpandModal";
 import type { Note } from "./types";
 
 const MAX_PINS = 3;
@@ -173,7 +174,7 @@ export default function NotesPage() {
         />
       )}
 
-      {/* Seção de Notas Fixadas */}
+      {/* Fixadas */}
       {pinnedNotes.length > 0 && (
         <div className="flex flex-col gap-3">
           <p className="text-[10px] font-black uppercase text-orange-500 flex items-center gap-2">
@@ -195,8 +196,8 @@ export default function NotesPage() {
         </div>
       )}
 
-      {/* Navegação por Status */}
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
+      {/* Status */}
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -219,16 +220,19 @@ export default function NotesPage() {
         ))}
       </div>
 
-      {/* Listagem de Notas (Filtro Ativo) */}
+      {/* Listagem */}
       {currentList.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-neutral-800">
-          <div className="p-4 rounded-full bg-neutral-900/50">
-            <StickyNote className="w-10 h-10 opacity-10" />
-          </div>
-          <p className=" font-bold uppercase opacity-30">
-            {tab === "pending" ? "Nenhuma nota pendente" : "Histórico vazio"}
-          </p>
-        </div>
+        <EmptyState
+          icon={StickyNote}
+          title={
+            tab === "pending" ? "Nenhuma nota pendente" : "Histórico vazio"
+          }
+          description={
+            tab === "pending"
+              ? "Capture suas primeiras ideias ou lembretes clicando no botão de nova nota."
+              : "Suas notas concluídas aparecerão aqui para referência futura."
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {currentList.map((n) => (
@@ -244,7 +248,7 @@ export default function NotesPage() {
         </div>
       )}
 
-      {/* Modal de Confirmação de Exclusão */}
+      {/* Confirmação */}
       {deletingId !== null && (
         <ConfirmModal
           {...CONFIRM_PRESETS.deleteNote}

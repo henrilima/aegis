@@ -68,7 +68,8 @@ impl PasswordManager {
                 id TEXT PRIMARY KEY,
                 username TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
-                master_hash TEXT NOT NULL
+                master_hash TEXT NOT NULL,
+                password_hint TEXT NOT NULL DEFAULT 'Sem dica'
             )",
             [],
         ).ok();
@@ -99,7 +100,10 @@ impl PasswordManager {
         ).ok();
 
         
+        // Migrações adicionais
         let _ = conn.execute("ALTER TABLE users ADD COLUMN vault_hash TEXT", []);
+        let _ = conn.execute("ALTER TABLE users ADD COLUMN master_code_index INTEGER DEFAULT 4", []);
+        let _ = conn.execute("ALTER TABLE users ADD COLUMN password_hint TEXT DEFAULT 'Sem dica'", []);
 
         Self { db_path }
     }
@@ -148,6 +152,27 @@ impl PasswordManager {
         Ok(())
     }
 
+    pub fn change_username(&self, user_id: &str, new_username: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        
+        let exists_username: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?1 AND id != ?2)",
+            params![new_username, user_id],
+            |row| row.get(0),
+        ).unwrap_or(false);
+
+        if exists_username {
+            return Err("Este nome de usuário já está sendo usado.".to_string());
+        }
+
+        conn.execute(
+            "UPDATE users SET username = ?1 WHERE id = ?2",
+            params![new_username, user_id],
+        ).map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
     pub fn delete_user(&self, user_id: &str) -> Result<(), String> {
         let conn = self.get_connection();
         let _ = conn.execute("DELETE FROM passwords WHERE user_id = ?1", params![user_id]);
@@ -160,13 +185,13 @@ impl PasswordManager {
         Ok(())
     }
 
-    pub fn register_user(&self, username: &str, email: &str, master_password: &str) -> Result<String, String> {
+    pub fn register_user(&self, username: &str, email: &str, master_password: &str, password_hint: &str) -> Result<String, String> {
         let id = uuid::Uuid::new_v4().to_string();
-        self.register_user_with_id(&id, username, email, master_password)?;
+        self.register_user_with_id(&id, username, email, master_password, password_hint)?;
         Ok(id)
     }
 
-    pub fn register_user_with_id(&self, user_id: &str, username: &str, email: &str, master_password: &str) -> Result<(), String> {
+    pub fn register_user_with_id(&self, user_id: &str, username: &str, email: &str, master_password: &str, password_hint: &str) -> Result<(), String> {
         let conn = self.get_connection();
         
         let exists_email: bool = conn.query_row(
@@ -196,9 +221,12 @@ impl PasswordManager {
             .map_err(|e| e.to_string())?
             .to_string();
 
+        use rand::Rng;
+        let code_index = rand::thread_rng().gen_range(0..13);
+
         conn.execute(
-            "INSERT INTO users (id, username, email, master_hash) VALUES (?1, ?2, ?3, ?4)",
-            params![user_id, username, email, password_hash],
+            "INSERT INTO users (id, username, email, master_hash, master_code_index, password_hint) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![user_id, username, email, password_hash, code_index, password_hint],
         ).map_err(|e| e.to_string())?;
 
         Ok(())
@@ -237,14 +265,16 @@ impl PasswordManager {
 
     pub fn list_users(&self) -> Result<Vec<serde_json::Value>, String> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT id, username, email FROM users")
+        let mut stmt = conn.prepare("SELECT id, username, email, master_code_index, password_hint FROM users")
             .map_err(|e| e.to_string())?;
         
         let users = stmt.query_map([], |row| {
             Ok(serde_json::json!({
                 "id": row.get::<_, String>(0)?,
                 "username": row.get::<_, String>(1)?,
-                "email": row.get::<_, String>(2)?
+                "email": row.get::<_, String>(2)?,
+                "master_code_index": row.get::<_, i32>(3)?,
+                "password_hint": row.get::<_, String>(4)?
             }))
         }).map_err(|e| e.to_string())?
         .filter_map(|e| e.ok())

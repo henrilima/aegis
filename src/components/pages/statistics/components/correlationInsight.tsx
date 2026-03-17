@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, TrendingDown, TrendingUp } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { PerformanceSummary } from "../types";
 
 interface CorrelationInsightProps {
@@ -20,7 +21,7 @@ export function CorrelationInsight({ summary }: CorrelationInsightProps) {
 
   return (
     <div
-      className="rounded-2xl p-5 border flex items-start gap-4 transition-all"
+      className="rounded-xl p-5 border flex items-start gap-4 transition-all"
       style={{ backgroundColor: `${color}08`, borderColor: `${color}25` }}
     >
       <div
@@ -30,10 +31,17 @@ export function CorrelationInsight({ summary }: CorrelationInsightProps) {
         <Icon className="w-5 h-5" style={{ color }} />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span className=" font-black uppercase" style={{ color }}>
-          Correlação {summary.correlation_label}: Sono × Acerto
-        </span>
+      <div className="flex flex-col gap-1 flex-1">
+        <div className="flex items-center justify-between">
+          <span className="font-bold" style={{ color }}>
+            Correlação {summary.correlation_label}: Sono x Acerto
+          </span>
+          <ToolTip content="Análise automatizada que identifica tendências entre seus hábitos e seu rendimento acadêmico.">
+            <div className="text-[10px] text-neutral-600 cursor-help hover:text-neutral-400 transition-colors">
+              Como funciona?
+            </div>
+          </ToolTip>
+        </div>
         <p className=" text-neutral-500 leading-relaxed font-medium">
           {isPositive
             ? "Métricas indicam que maiores períodos de sono impactam positivamente sua produtividade. Priorizar o descanso está rendendo resultados diretos nos estudos!"

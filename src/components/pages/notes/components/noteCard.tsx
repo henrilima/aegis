@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, Circle, Pin, PinOff, Trash2 } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { Note } from "../types";
 
 /**
@@ -40,78 +41,91 @@ export function NoteCard({
 
   return (
     <div
-      onClick={onClick}
-      className={`group cursor-pointer relative bg-neutral-900 border rounded-2xl p-4 flex flex-col gap-2 transition-all hover:border-neutral-700 active:scale-[0.99] ${
-        n.pinned
-          ? "border-orange-500/25 shadow-[0_0_15px_rgba(249,115,22,0.05)]"
-          : "border-neutral-800"
+      className={`group relative bg-neutral-900 border rounded-xl p-4 flex flex-col gap-2 transition-all hover:border-neutral-700 text-left ${
+        n.pinned ? "border-orange-500/50" : "border-neutral-800"
       } ${isDone ? "opacity-60" : ""}`}
     >
-      <div className="flex items-start justify-between gap-2">
+      {/* Clique na área do card */}
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute inset-0 w-full h-full cursor-pointer rounded-xl z-0"
+        aria-label={`Ver nota: ${n.title}`}
+      />
+
+      <div className="flex items-start justify-between gap-2 relative z-10 pointer-events-none">
         {/* Toggle de Conclusão */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleStatus(n);
-          }}
-          className="shrink-0 mt-0.5 text-neutral-600 hover:text-orange-400 transition-colors cursor-pointer"
+        <ToolTip
+          content={isDone ? "Marcar como pendente" : "Marcar como concluída"}
         >
-          {isDone ? (
-            <CheckCircle className="w-4 h-4 text-green-500" />
-          ) : (
-            <Circle className="w-4 h-4" />
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStatus(n);
+            }}
+            className="shrink-0 mt-0.5 text-neutral-600 hover:text-orange-400 transition-colors cursor-pointer pointer-events-auto"
+          >
+            {isDone ? (
+              <CheckCircle className="w-4 h-4 text-green-500" />
+            ) : (
+              <Circle className="w-4 h-4" />
+            )}
+          </button>
+        </ToolTip>
 
         <p
-          className={`font-bold  leading-snug flex-1 ${isDone ? "line-through text-neutral-500" : "text-neutral-200"}`}
+          className={`font-bold leading-snug flex-1 text-left ${isDone ? "line-through text-neutral-500" : "text-neutral-200"}`}
         >
           {n.title}
         </p>
 
         {/* Ações Rápidas (Hover) */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onTogglePin(n);
-            }}
-            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-              n.pinned
-                ? "text-orange-400 hover:bg-orange-500/10"
-                : "text-neutral-700 hover:text-orange-400 hover:bg-orange-500/10"
-            }`}
-          >
-            {n.pinned ? (
-              <PinOff className="w-3.5 h-3.5" />
-            ) : (
-              <Pin className="w-3.5 h-3.5" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (n.id) onDelete(n.id);
-            }}
-            className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+          <ToolTip content={n.pinned ? "Desafixar" : "Fixar nota"}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(n);
+              }}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                n.pinned
+                  ? "text-orange-400 hover:bg-orange-500/10"
+                  : "text-neutral-700 hover:text-orange-400 hover:bg-orange-500/10"
+              }`}
+            >
+              {n.pinned ? (
+                <PinOff className="w-3.5 h-3.5" />
+              ) : (
+                <Pin className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </ToolTip>
+          <ToolTip content="Excluir nota">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (n.id) onDelete(n.id);
+              }}
+              className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </ToolTip>
         </div>
       </div>
 
       {/* Preview do conteúdo truncado */}
       {n.content && (
-        <div className="text-xs text-neutral-500 line-clamp-3 whitespace-pre-wrap leading-relaxed pl-6 pointer-events-none">
+        <div className="relative z-10 text-xs text-neutral-500 line-clamp-3 whitespace-pre-wrap leading-relaxed pl-6 pointer-events-none">
           {stripMarkdown(n.content)}
         </div>
       )}
 
       {/* Rodapé do Card */}
-      <p className="text-[10px] text-neutral-700 font-bold uppercase mt-auto pt-2 border-t border-neutral-800 pl-6">
+      <p className="relative z-10 text-[10px] text-neutral-700 font-bold uppercase mt-auto pt-2 border-t border-neutral-800 pl-6 pointer-events-none">
         {new Date(n.created_at).toLocaleDateString("pt-BR")}
       </p>
     </div>

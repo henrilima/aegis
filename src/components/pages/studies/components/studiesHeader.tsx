@@ -1,12 +1,21 @@
 "use client";
 
-import { BookOpen, Download, Plus, Settings, Upload } from "lucide-react";
+import {
+  BookOpen,
+  Download,
+  HelpCircle,
+  Plus,
+  Settings,
+  Upload,
+} from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 
 interface StudiesHeaderProps {
   onImportCSV: () => void;
   onExportCSV: () => void;
   onNewSession: () => void;
   onOpenSettings: () => void;
+  onOpenInfo: () => void;
 }
 
 export function StudiesHeader({
@@ -14,6 +23,7 @@ export function StudiesHeader({
   onExportCSV,
   onNewSession,
   onOpenSettings,
+  onOpenInfo,
 }: StudiesHeaderProps) {
   return (
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -35,7 +45,7 @@ export function StudiesHeader({
         <button
           type="button"
           onClick={onImportCSV}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-violet-400 border border-neutral-700 transition-all cursor-pointer text-xs font-bold"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-violet-400 border border-neutral-800 transition-all cursor-pointer text-xs font-bold"
         >
           <Download className="w-4 h-4" />
           Importar
@@ -43,25 +53,38 @@ export function StudiesHeader({
         <button
           type="button"
           onClick={onExportCSV}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-violet-400 border border-neutral-700 transition-all cursor-pointer text-xs font-bold"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-violet-400 border border-neutral-800 transition-all cursor-pointer text-xs font-bold"
         >
           <Upload className="w-4 h-4" />
           Exportar
         </button>
+        <ToolTip content="Informações do Módulo">
+          <button
+            type="button"
+            onClick={onOpenInfo}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-violet-400 border border-neutral-800 transition-all cursor-pointer text-xs font-bold"
+          >
+            <HelpCircle className="w-4 h-4" />
+            Guia
+          </button>
+        </ToolTip>
+        <ToolTip content="Configurações e Metas">
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-violet-400 border border-neutral-800 transition-all cursor-pointer text-xs font-bold"
+          >
+            <Settings className="w-4 h-4" />
+            Metas
+          </button>
+        </ToolTip>
+
         <button
           type="button"
           onClick={onNewSession}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white  font-bold transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Nova Sessão
-        </button>
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white border border-neutral-700 transition-all cursor-pointer"
-          title="Configurações e Metas"
-        >
-          <Settings className="w-5 h-5" />
         </button>
       </div>
     </div>

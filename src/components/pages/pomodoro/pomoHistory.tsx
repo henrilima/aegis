@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { PomodoroHistory } from "./types";
 
 interface PomoHistoryProps {
@@ -8,18 +9,20 @@ interface PomoHistoryProps {
 
 export function PomoHistory({ history, onClear }: PomoHistoryProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 h-full">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 h-full">
       <div className="flex items-center justify-between mb-4">
         <p className="text-[10px] font-black uppercase  text-neutral-500">
           Histórico
         </p>
-        <button
-          type="button"
-          onClick={onClear}
-          className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        <ToolTip content="Limpar histórico">
+          <button
+            type="button"
+            onClick={onClear}
+            className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </ToolTip>
       </div>
 
       {history.length === 0 ? (

@@ -21,7 +21,7 @@ export function PerformanceRanking({
   return (
     <>
       {/* Maestria top acerto */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 shadow-xl lg:col-span-1">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 shadow-xl lg:col-span-1">
         <div className="flex items-center gap-2">
           <Award className="w-4 h-4 text-amber-500" />
           <h3 className=" font-black uppercase text-neutral-400">
@@ -33,7 +33,7 @@ export function PerformanceRanking({
             mastered.map((s) => (
               <div
                 key={s.name}
-                className="flex items-center justify-between p-3 bg-neutral-950/50 rounded-2xl border border-neutral-800"
+                className="flex items-center justify-between p-3 bg-neutral-950/50 rounded-xl border border-neutral-800"
               >
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-white truncate max-w-[120px]">
@@ -59,7 +59,7 @@ export function PerformanceRanking({
       </div>
 
       {/* Pontos de atenção */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 lg:col-span-1 shadow-xl">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 lg:col-span-1 shadow-xl">
         <div className="flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-500" />
           <h3 className=" font-black uppercase text-neutral-400">
@@ -71,7 +71,7 @@ export function PerformanceRanking({
             needFocus.map((s) => (
               <div
                 key={s.name}
-                className="flex items-center justify-between p-3 bg-neutral-950/50 rounded-2xl border border-neutral-800"
+                className="flex items-center justify-between p-3 bg-neutral-950/50 rounded-xl border border-neutral-800"
               >
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-white truncate max-w-[120px]">

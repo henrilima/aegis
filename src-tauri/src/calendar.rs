@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
-// ─── Estruturas ─────────────────────────────────────────────────────────────
+
+// Estruturas de Dados
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CalendarEvent {
@@ -19,7 +21,8 @@ pub struct CalendarEvent {
     pub created_at: Option<String>,
 }
 
-// ─── Manager ────────────────────────────────────────────────────────────────
+
+// Gerenciador de Calendário
 
 pub struct CalendarManager {
     db_path: PathBuf,
@@ -27,10 +30,10 @@ pub struct CalendarManager {
 
 impl CalendarManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("app data dir");
+        let app_dir = app_handle.path().app_data_dir().expect("Falha ao obter diretório de dados");
         let db_path = app_dir.join("passwords.db");
 
-        let conn = Connection::open(&db_path).expect("open db");
+        let conn = Connection::open(&db_path).expect("Falha ao abrir banco");
 
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS calendar_events (
@@ -51,7 +54,7 @@ impl CalendarManager {
     }
 
     fn conn(&self) -> Connection {
-        let conn = Connection::open(&self.db_path).expect("open db");
+        let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
         conn.busy_timeout(std::time::Duration::from_millis(5000))
             .expect("failed to set busy timeout");
         conn
@@ -120,16 +123,17 @@ impl CalendarManager {
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
 
-    pub fn list_upcoming_deadlines(&self, user_id: &str) -> Vec<CalendarEvent> {
+    pub fn list_upcoming_deadlines(&self, user_id: &str, now: DateTime<Utc>) -> Vec<CalendarEvent> {
         let conn = self.conn();
+        let today_simple = now.format("%Y-%m-%d").to_string();
         let mut stmt = conn.prepare(
             "SELECT id, title, description, date, time, event_type, deadline_category, color, created_at
              FROM calendar_events
-             WHERE user_id=?1 AND event_type='deadline' AND date >= date('now')
+             WHERE user_id=?1 AND event_type='deadline' AND date >= ?2
              ORDER BY date ASC"
         ).unwrap();
 
-        stmt.query_map(params![user_id], |row| {
+        stmt.query_map(params![user_id, today_simple], |row| {
             Ok(CalendarEvent {
                 id: Some(row.get(0)?),
                 user_id: user_id.to_string(),

@@ -14,6 +14,10 @@
     "autostart:default",
     "notification:default",
     "dialog:default",
+    "fs:allow-write-file",
+    "fs:allow-desktop-write-recursive",
+    "fs:allow-download-write-recursive",
+    "fs:allow-document-write-recursive",
     "shell:allow-open"
   ]
 }

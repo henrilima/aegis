@@ -52,7 +52,7 @@ export default function PasswordManager() {
       });
       setVaultExists(exists);
     } catch (error) {
-      console.error("Erro ao verificar cofre:", error);
+      console.error("Cofre não encontrado:", error);
     }
   }, [user]);
 
@@ -285,7 +285,7 @@ export default function PasswordManager() {
   };
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative animate-in fade-in duration-500">
       {!isVerified ? (
         <LockedVault
           vaultExists={vaultExists}
@@ -312,11 +312,11 @@ export default function PasswordManager() {
             }}
           />
 
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-neutral-500" />
+          <div className="relative group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 group-focus-within:text-amber-500 transition-colors" />
             <Input
               placeholder="Buscar por serviço ou usuário..."
-              className="pl-10 bg-neutral-800/50 border-neutral-700"
+              className="h-11 pl-11 bg-neutral-900 border-neutral-800 rounded-xl text-sm font-medium placeholder:text-neutral-600 focus:border-amber-500/40 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

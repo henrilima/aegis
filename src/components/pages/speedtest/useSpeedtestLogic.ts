@@ -4,7 +4,7 @@ import gsap from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useSpeedtestLogic() {
-  const [status, setStatus] = useState("Parado...");
+  const [status, setStatus] = useState("Parado");
   const [ping, setPing] = useState(0);
   const [download, setDownload] = useState(0);
   const [upload, setUpload] = useState(0);

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { formatDateLocal } from "@/lib/utils";
 import type { CalendarEvent, DeadlineCategory } from "../types";
 import { DEADLINE_COLORS } from "../types";
 
@@ -12,6 +14,7 @@ interface CalendarGridProps {
   events: CalendarEvent[];
   selectedDate: string | null;
   onDayClick: (date: string) => void;
+  onDayDoubleClick: (date: string) => void;
 }
 
 /**
@@ -23,8 +26,9 @@ export function CalendarGrid({
   events,
   selectedDate,
   onDayClick,
+  onDayDoubleClick,
 }: CalendarGridProps) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = useMemo(() => formatDateLocal(), []);
 
   const cells = useMemo(() => {
     const firstDay = new Date(year, month, 1);
@@ -86,13 +90,13 @@ export function CalendarGrid({
   }, [events]);
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden animate-in fade-in duration-700 shadow-xl shadow-black/20">
       {/* Cabeçalho de Dias da Semana */}
       <div className="grid grid-cols-7 bg-neutral-950/50 border-b border-neutral-800">
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="py-4 text-center text-[10px] font-black uppercase text-neutral-600 bg-neutral-950/30"
+            className="py-4 text-center text-[11px] font-bold text-neutral-500 bg-neutral-950/20"
           >
             {d}
           </div>
@@ -100,11 +104,12 @@ export function CalendarGrid({
       </div>
 
       {/* Grid de Dias */}
-      <div className="grid grid-cols-7">
-        {cells.map((cell) => {
+      <div className="grid grid-cols-7 bg-neutral-950/10">
+        {cells.map((cell, index) => {
           const dayEvents = eventMap[cell.date] ?? [];
           const isCellToday = cell.date === today;
           const isSelected = cell.date === selectedDate;
+          const isSunday = index % 7 === 6;
           const deadlines = dayEvents.filter(
             (e) => e.event_type === "deadline",
           );
@@ -113,99 +118,135 @@ export function CalendarGrid({
           );
 
           return (
-            <button
+            <ToolTip
               key={cell.date}
-              type="button"
-              onClick={() => onDayClick(cell.date)}
-              className={`min-h-[110px] p-2.5 border-b border-r border-neutral-800/40 text-left transition-all cursor-pointer group relative overflow-hidden ${
-                isSelected
-                  ? "bg-green-500/5 ring-1 ring-inset ring-green-500/20 z-10"
-                  : "hover:bg-white/2"
-              } ${cell.isCurrentMonth ? "" : "opacity-15 grayscale-[0.5]"}`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span
-                  className={`text-[11px] font-black inline-flex items-center justify-center w-7 h-7 rounded-xl transition-all shadow-sm ${
-                    isCellToday
-                      ? "bg-green-600 text-white shadow-green-600/20 scale-105"
-                      : isSelected
-                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                        : "text-neutral-500 group-hover:text-neutral-300 group-hover:bg-neutral-800/50"
-                  }`}
-                >
-                  {cell.day}
-                </span>
-
-                {/* Dot indicators for quick density check */}
-                {dayEvents.length > 0 && !isSelected && (
-                  <div className="flex gap-0.5">
-                    {dayEvents.slice(0, 3).map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="w-1 h-1 rounded-full"
-                        style={{
-                          backgroundColor:
-                            ev.event_type === "deadline"
-                              ? DEADLINE_COLORS[
-                                  ev.deadline_category as DeadlineCategory
-                                ]
-                              : ev.color || "#6366f1",
-                        }}
-                      />
+              content={
+                dayEvents.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 p-1 max-w-[200px]">
+                    <p className="text-[10px] font-black uppercase text-neutral-400 border-b border-neutral-800 pb-1 mb-1">
+                      {new Date(
+                        cell.date.split("-").map(Number)[0],
+                        cell.date.split("-").map(Number)[1] - 1,
+                        cell.date.split("-").map(Number)[2],
+                      ).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "short",
+                        weekday: "short",
+                      })}
+                    </p>
+                    {dayEvents.map((ev) => (
+                      <div key={ev.id} className="flex items-center gap-2">
+                        <div
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{
+                            backgroundColor:
+                              ev.event_type === "deadline"
+                                ? DEADLINE_COLORS[
+                                    ev.deadline_category as DeadlineCategory
+                                  ]
+                                : ev.color || "#6b7280",
+                          }}
+                        />
+                        <span className="text-[10px] font-bold text-neutral-200 truncate">
+                          {ev.title}
+                        </span>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              {/* Event Tags */}
-              <div className="flex flex-col gap-1">
-                {deadlines.slice(0, 2).map((ev) => {
-                  const color = ev.deadline_category
-                    ? DEADLINE_COLORS[ev.deadline_category as DeadlineCategory]
-                    : "#ef4444";
-                  return (
-                    <div
-                      key={ev.id}
-                      className="text-[8px] font-black px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2"
-                      style={{
-                        backgroundColor: `${color}15`,
-                        color,
-                        borderColor: `${color}25`,
-                      }}
-                    >
-                      <span className="opacity-60 mr-1">⚠️</span> {ev.title}
-                    </div>
-                  );
-                })}
-                {normalEvents
-                  .slice(0, 2 - deadlines.slice(0, 2).length)
-                  .map((ev) => (
-                    <div
-                      key={ev.id}
-                      className="text-[8px] font-bold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2"
-                      style={{
-                        backgroundColor: `${ev.color ?? "#6366f1"}12`,
-                        color: ev.color ?? "#6366f1",
-                        borderColor: `${ev.color ?? "#6366f1"}20`,
-                      }}
-                    >
-                      {ev.title}
-                    </div>
-                  ))}
-                {dayEvents.length > 2 && (
-                  <span className="text-[7px] font-black uppercase text-neutral-700 pl-1 mt-0.5">
-                    + {dayEvents.length - 2} Operações
+                ) : null
+              }
+            >
+              <button
+                type="button"
+                onClick={() => onDayClick(cell.date)}
+                onDoubleClick={() => onDayDoubleClick(cell.date)}
+                className={`min-h-[110px] p-2.5 border-b border-r border-neutral-800/40 text-left transition-all cursor-pointer group relative overflow-hidden w-full ${
+                  isSelected
+                    ? "bg-green-500/5 ring-1 ring-inset ring-green-500/10 z-10"
+                    : "hover:bg-white/2"
+                } ${cell.isCurrentMonth ? "" : "opacity-15 grayscale-[0.8]"}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span
+                    className={`text-xs font-bold inline-flex items-center justify-center w-7 h-7 rounded-xl transition-all ${
+                      isCellToday
+                        ? "bg-green-500 text-white shadow-lg shadow-green-600/20 scale-105"
+                        : isSelected
+                          ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                          : isSunday
+                            ? "text-red-500 group-hover:text-red-400"
+                            : "text-neutral-500 group-hover:text-neutral-300"
+                    }`}
+                  >
+                    {cell.day}
                   </span>
-                )}
-              </div>
 
-              {/* Subtle background glow for today or selected */}
-              {(isCellToday || isSelected) && (
-                <div
-                  className={`absolute -bottom-1 -right-1 w-12 h-12 blur-2xl opacity-20 pointer-events-none rounded-full ${isCellToday ? "bg-green-500" : "bg-green-400/50"}`}
-                />
-              )}
-            </button>
+                  {/* Pot indicators for density */}
+                  {dayEvents.length > 0 && !isSelected && (
+                    <div className="flex gap-0.5">
+                      {dayEvents.slice(0, 3).map((ev) => (
+                        <div
+                          key={ev.id}
+                          className="w-1 h-1 rounded-full"
+                          style={{
+                            backgroundColor:
+                              ev.event_type === "deadline"
+                                ? DEADLINE_COLORS[
+                                    ev.deadline_category as DeadlineCategory
+                                  ]
+                                : ev.color || "#6b7280",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Event Tags */}
+                <div className="flex flex-col gap-1">
+                  {deadlines.slice(0, 2).map((ev) => {
+                    const color = ev.deadline_category
+                      ? DEADLINE_COLORS[
+                          ev.deadline_category as DeadlineCategory
+                        ]
+                      : "#ef4444";
+                    return (
+                      <div
+                        key={ev.id}
+                        className="text-[9px] font-bold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2"
+                        style={{
+                          backgroundColor: `${color}10`,
+                          color,
+                          borderColor: `${color}20`,
+                        }}
+                      >
+                        {ev.title}
+                      </div>
+                    );
+                  })}
+                  {normalEvents
+                    .slice(0, 2 - deadlines.slice(0, 2).length)
+                    .map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="text-[9px] font-semibold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2"
+                        style={{
+                          backgroundColor: `${ev.color ?? "#d4d4d4"}10`,
+                          color: ev.color ?? "#a3a3a3",
+                          borderColor: `${ev.color ?? "#d4d4d4"}15`,
+                        }}
+                      >
+                        {ev.title}
+                      </div>
+                    ))}
+                  {dayEvents.length > 2 && (
+                    <span className="text-[9px] font-medium text-neutral-600 pl-1 mt-0.5">
+                      + {dayEvents.length - 2} mais
+                    </span>
+                  )}
+                </div>
+              </button>
+            </ToolTip>
           );
         })}
       </div>

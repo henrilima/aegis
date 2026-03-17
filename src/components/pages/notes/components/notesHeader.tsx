@@ -1,7 +1,7 @@
 "use client";
 
 import { FolderOpen, Plus, StickyNote } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 
 interface NotesHeaderProps {
   totalNotes: number;
@@ -37,22 +37,26 @@ export function NotesHeader({
       </div>
 
       <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onOpenFolder}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-orange-400 border border-neutral-700 transition-all text-xs font-bold h-auto"
-        >
-          <FolderOpen className="w-4 h-4" />
-          Pasta
-        </Button>
-        <Button
-          type="button"
-          onClick={onNewNote}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-black  font-bold transition-colors border-none h-auto"
-        >
-          <Plus className="w-4 h-4" /> Nova Nota
-        </Button>
+        <ToolTip content="Abrir pasta de notas">
+          <button
+            type="button"
+            onClick={onOpenFolder}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-orange-400 border border-neutral-800 transition-all text-xs font-bold h-auto cursor-pointer"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Pasta
+          </button>
+        </ToolTip>
+
+        <ToolTip content="Criar nova nota">
+          <button
+            type="button"
+            onClick={onNewNote}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-black font-bold transition-colors border-none h-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Nova Nota
+          </button>
+        </ToolTip>
       </div>
     </div>
   );

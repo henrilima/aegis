@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { getThemeColor } from "@/lib/utils";
 
 function PwdInput({
   id,
@@ -27,10 +28,7 @@ function PwdInput({
   const lc = "text-xs font-medium text-neutral-400 ml-0.5";
   return (
     <div className="space-y-1.5">
-      <Label
-        htmlFor={id}
-        className={lc}
-      >
+      <Label htmlFor={id} className={lc}>
         {label}
       </Label>
       <div className="relative">
@@ -41,7 +39,7 @@ function PwdInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-700 pr-10"
+          className="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-600 pr-10"
         />
         <button
           type="button"
@@ -56,12 +54,11 @@ function PwdInput({
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-bold text-neutral-500">{children}</p>
-  );
+  return <p className="text-xs font-bold text-neutral-500">{children}</p>;
 }
 
 export function SecurityTab() {
+  const theme = getThemeColor();
   const { user } = useAuth();
 
   const [acpCurrent, setAcpCurrent] = useState("");
@@ -171,7 +168,7 @@ export function SecurityTab() {
       <section className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-neutral-800 rounded-lg border border-neutral-700 shrink-0">
-            <KeyRound className="w-4 h-4 text-amber-500" />
+            <KeyRound className={`w-4 h-4 ${theme.text}`} />
           </div>
           <div>
             <SectionLabel>Senha da Conta</SectionLabel>
@@ -185,7 +182,7 @@ export function SecurityTab() {
         <form
           id="change-account-pwd-form"
           onSubmit={handleChangeAccountPassword}
-          className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-4"
+          className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-4"
         >
           <PwdInput
             id="acp-current"
@@ -213,7 +210,7 @@ export function SecurityTab() {
           />
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
+            className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40`}
             disabled={acpLoading || !acpCurrent || !acpNew || !acpConfirm}
           >
             {acpLoading ? "Alterando..." : "Alterar senha da conta"}
@@ -250,7 +247,7 @@ export function SecurityTab() {
         </div>
 
         {hasVaultPwd ? (
-          <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-6">
+          <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-6">
             <form
               id="update-vault-pwd-form"
               onSubmit={handleSetVaultPassword}
@@ -285,7 +282,7 @@ export function SecurityTab() {
               />
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
+                className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40`}
                 disabled={
                   vaultLoading || !vaultCurrent || !vaultNew || !vaultConfirm
                 }
@@ -331,7 +328,7 @@ export function SecurityTab() {
           <form
             id="set-vault-pwd-form"
             onSubmit={handleSetVaultPassword}
-            className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-4"
+            className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-4"
           >
             <PwdInput
               id="vault-cur-n"
@@ -357,13 +354,15 @@ export function SecurityTab() {
               placeholder="Repita a senha"
               disabled={vaultLoading}
             />
-            <p className="text-xs text-amber-500/70 bg-amber-500/5 border border-amber-500/10 rounded-lg p-3">
+            <p
+              className={`text-xs ${theme.text}/70 ${theme.bg.replace("10", "5")} border ${theme.border.replace("20", "10")} rounded-lg p-3`}
+            >
               ⚠️ Após definir, você precisará desta senha para acessar o cofre.
               Guarde-a em local seguro.
             </p>
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+              className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer`}
               disabled={
                 vaultLoading || !vaultCurrent || !vaultNew || !vaultConfirm
               }

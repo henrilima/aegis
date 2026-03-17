@@ -11,7 +11,7 @@ interface StatsCardProps {
  */
 export function StatsCard({ count }: StatsCardProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-lg">
       <div className="p-3 rounded-full bg-orange-500/10 border border-orange-500/20 mb-3">
         <FileText className="w-6 h-6 text-orange-400" />
       </div>

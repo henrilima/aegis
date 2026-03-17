@@ -1,16 +1,18 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EventModal } from "@/components/forms/calendar/calendarModals";
+import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
+import { useTime } from "@/context/TimeContext";
 import { CalendarDayPanel } from "./components/calendarDayPanel";
 import { CalendarGrid } from "./components/calendarGrid";
-
 import { CalendarHeader } from "./components/calendarHeader";
 import { CalendarUpcomingDeadlines } from "./components/calendarUpcomingDeadlines";
-import { DeleteEventModal, EventModal } from "@/components/forms/calendar/calendarModals";
 import type { CalendarEvent } from "./types";
 
 /**
@@ -20,9 +22,9 @@ export default function CalendarPage() {
   const { user } = useAuth();
   const uid = user ? String(user.id) : "";
 
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth());
-  const [year, setYear] = useState(now.getFullYear());
+  const { now: simulatedNow } = useTime();
+  const [month, setMonth] = useState(simulatedNow.getMonth());
+  const [year, setYear] = useState(simulatedNow.getFullYear());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -30,7 +32,7 @@ export default function CalendarPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sincronização de eventos com o backend
+  // Sincronização
   const loadEvents = useCallback(async () => {
     if (!uid) return;
     try {
@@ -78,7 +80,7 @@ export default function CalendarPage() {
     }
   };
 
-  // Filtragem reativa de eventos para o dia selecionado
+  // Filtragem de eventos
   const selectedEvents = useMemo(
     () => (selectedDate ? events.filter((e) => e.date === selectedDate) : []),
     [events, selectedDate],
@@ -109,15 +111,15 @@ export default function CalendarPage() {
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white">
-      {/* Controles de Navegação e Ações Globais */}
+      {/* Cabeçalho */}
       <CalendarHeader
         month={month}
         year={year}
         onPrev={prevMonth}
         onNext={nextMonth}
         onToday={() => {
-          setMonth(now.getMonth());
-          setYear(now.getFullYear());
+          setMonth(simulatedNow.getMonth());
+          setYear(simulatedNow.getFullYear());
         }}
         onNew={() => {
           setEditEvent(undefined);
@@ -125,7 +127,7 @@ export default function CalendarPage() {
         }}
       />
 
-      {/* Camada de Modais de Fluxo */}
+      {/* Modais */}
       <EventModal
         show={showForm}
         userId={uid}
@@ -137,14 +139,16 @@ export default function CalendarPage() {
         }}
       />
 
-      <DeleteEventModal
-        id={deleteConfirm}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm(null)}
-      />
+      {deleteConfirm !== null && (
+        <ConfirmModal
+          {...CONFIRM_PRESETS.deleteEvent}
+          onConfirm={() => handleDelete(deleteConfirm)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Grade do Calendário Principal */}
+        {/* Grade */}
         <div className="lg:col-span-2">
           <CalendarGrid
             month={month}
@@ -154,12 +158,16 @@ export default function CalendarPage() {
             onDayClick={(date) =>
               setSelectedDate((prev) => (prev === date ? null : date))
             }
+            onDayDoubleClick={(date) => {
+              setEditEvent({ date } as CalendarEvent);
+              setShowForm(true);
+            }}
           />
         </div>
 
         {/* Painel Lateral: Prazos e Detalhes do Dia */}
         <div className="flex flex-col gap-6">
-          <CalendarUpcomingDeadlines events={events} />
+          <CalendarUpcomingDeadlines events={events} time={simulatedNow} />
 
           {selectedDate ? (
             <CalendarDayPanel
@@ -173,17 +181,12 @@ export default function CalendarPage() {
               onClose={() => setSelectedDate(null)}
             />
           ) : (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 text-center shadow-lg animate-in fade-in duration-500">
-              <div className="p-4 bg-neutral-950/40 rounded-full w-fit mx-auto mb-4">
-                <CalendarDays className="w-8 h-8 text-neutral-800" />
-              </div>
-              <p className=" font-black uppercase text-neutral-600">
-                Selecione uma data
-              </p>
-              <p className="text-[10px] text-neutral-700 mt-2 font-bold uppercase">
-                Consulte os registros do dia clicando no calendário
-              </p>
-            </div>
+            <EmptyState
+              icon={Info}
+              title="Selecione uma data"
+              description="Consulte os registros do dia ou adicione novos eventos clicando no calendário."
+              className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-lg shadow-black/20"
+            />
           )}
         </div>
       </div>

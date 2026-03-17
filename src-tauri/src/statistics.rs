@@ -1,17 +1,20 @@
 use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
-// ─── Estruturas ─────────────────────────────────────────────────────────────
+
+// Estruturas de Dados
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CrossMetric {
     pub date: String,
     pub sleep_hours: f64,
     pub study_hours: f64,
-    pub study_hit_rate: f64,   // % acerto geral
+    pub study_hit_rate: f64,   // Taxa de acerto global (%)
     pub questions_total: i32,
+    pub focus_score: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,15 +37,19 @@ pub struct PerformanceSummary {
     pub study_streak_days: i32,
     pub sleep_streak_days: i32,
     pub peak_study_subject: Option<String>,
-    // Novas métricas
-    pub consistency_score: f64,     // % de dias com alguma atividade
-    pub study_efficiency: f64,      // questões por hora
-    pub rested_hit_rate: f64,       // acerto quando dorme > 7.5h
-    pub tired_hit_rate: f64,        // acerto quando dorme < 6h
+    // Métricas calculadas
+    pub consistency_score: f64,     // % de dias com atividade
+    pub study_efficiency: f64,      // Questões resolvidas por hora
+    pub rested_hit_rate: f64,       // Taxa de acerto com > 7.5h de sono
+    pub tired_hit_rate: f64,        // Taxa de acerto com < 6h de sono
+    pub avg_focus_score: f64,
+    pub focus_hit_rate_high: f64,   // Taxa de acerto com foco >= 4
+    pub focus_hit_rate_low: f64,    // Taxa de acerto com foco <= 2
     pub subject_distribution: Vec<SubjectStats>,
 }
 
-// ─── Manager ────────────────────────────────────────────────────────────────
+
+// Gerenciador de Estatísticas
 
 pub struct StatisticsManager {
     db_path: PathBuf,
@@ -50,13 +57,13 @@ pub struct StatisticsManager {
 
 impl StatisticsManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("app data dir");
+        let app_dir = app_handle.path().app_data_dir().expect("Diretório de dados não encontrado");
         let db_path = app_dir.join("passwords.db");
         Self { db_path }
     }
 
     fn conn(&self) -> Connection {
-        let conn = Connection::open(&self.db_path).expect("open db");
+        let conn = Connection::open(&self.db_path).expect("Falha ao abrir banco");
         conn.busy_timeout(std::time::Duration::from_millis(5000))
             .expect("failed to set busy timeout");
         conn
@@ -64,29 +71,31 @@ impl StatisticsManager {
 
     /// Retorna métricas cruzadas (sono + estudo) para os últimos N dias
     #[allow(clippy::cast_precision_loss)]
-    pub fn get_cross_metrics(&self, user_id: &str, days: i32) -> Vec<CrossMetric> {
+    pub fn get_cross_metrics(&self, user_id: &str, days: i32, now: DateTime<Utc>) -> Vec<CrossMetric> {
         let conn = self.conn();
-        let cutoff = format!("-{} days", days);
+        let cutoff_date = (now - chrono::Duration::days(days as i64)).format("%Y-%m-%d").to_string();
 
         // Busca sessões de estudo agrupadas por data
         let mut study_stmt = conn.prepare(
             "SELECT date,
                     SUM(hours) as total_hours,
                     SUM(questions_new + questions_review) as total_q,
-                    SUM(correct_new + correct_review) as total_c
+                    SUM(correct_new + correct_review) as total_c,
+                    AVG(focus_score) as avg_focus
              FROM study_sessions
-             WHERE user_id=?1 AND date >= date('now', ?2)
+             WHERE user_id=?1 AND date >= ?2
              GROUP BY date
              ORDER BY date ASC"
         ).unwrap();
 
-        let study_rows: Vec<(String, f64, i32, i32)> = study_stmt
-            .query_map(params![user_id, cutoff], |row| {
+        let study_rows: Vec<(String, f64, i32, i32, Option<f64>)> = study_stmt
+            .query_map(params![user_id, cutoff_date], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, f64>(1)?,
                     row.get::<_, i32>(2)?,
                     row.get::<_, i32>(3)?,
+                    row.get::<_, Option<f64>>(4)?,
                 ))
             }).unwrap()
             .filter_map(|r| r.ok())
@@ -95,12 +104,12 @@ impl StatisticsManager {
         // Busca entradas de sono
         let mut sleep_stmt = conn.prepare(
             "SELECT date, duration_minutes FROM sleep_entries
-             WHERE user_id=?1 AND date >= date('now', ?2)
+             WHERE user_id=?1 AND date >= ?2
              ORDER BY date ASC"
         ).unwrap();
 
         let sleep_map: std::collections::HashMap<String, f64> = sleep_stmt
-            .query_map(params![user_id, cutoff], |row| {
+            .query_map(params![user_id, cutoff_date], |row| {
                 let date: String = row.get(0)?;
                 let mins: i32 = row.get(1)?;
                 Ok((date, mins as f64 / 60.0))
@@ -108,7 +117,7 @@ impl StatisticsManager {
             .filter_map(|r| r.ok())
             .collect();
 
-        study_rows.into_iter().map(|(date, sh, tq, tc)| {
+        study_rows.into_iter().map(|(date, sh, tq, tc, fs)| {
             let sleep_hours = sleep_map.get(&date).copied().unwrap_or(0.0);
             let hit_rate = if tq > 0 { (tc as f64 / tq as f64) * 100.0 } else { 0.0 };
             CrossMetric {
@@ -117,16 +126,17 @@ impl StatisticsManager {
                 study_hours: sh,
                 study_hit_rate: (hit_rate * 10.0).round() / 10.0,
                 questions_total: tq,
+                focus_score: fs,
             }
         }).collect()
     }
 
     /// Gera resumo geral de desempenho
     #[allow(clippy::cast_precision_loss)]
-    pub fn get_performance_summary(&self, user_id: &str, days: i32) -> PerformanceSummary {
-        let metrics = self.get_cross_metrics(user_id, days);
+    pub fn get_performance_summary(&self, user_id: &str, days: i32, now: DateTime<Utc>) -> PerformanceSummary {
+        let metrics = self.get_cross_metrics(user_id, days, now);
         let conn = self.conn();
-        let cutoff = format!("-{} days", days);
+        let cutoff_date = (now - chrono::Duration::days(days as i64)).format("%Y-%m-%d").to_string();
 
         if metrics.is_empty() {
             return PerformanceSummary {
@@ -144,6 +154,9 @@ impl StatisticsManager {
                 study_efficiency: 0.0,
                 rested_hit_rate: 0.0,
                 tired_hit_rate: 0.0,
+                avg_focus_score: 0.0,
+                focus_hit_rate_high: 0.0,
+                focus_hit_rate_low: 0.0,
                 subject_distribution: vec![],
             };
         }
@@ -177,6 +190,22 @@ impl StatisticsManager {
             .fold((0.0, 0), |(s, c), m| (s + m.study_hit_rate, c + 1));
         let tired_hr = if tired_count > 0 { tired_sum / tired_count as f64 } else { 0.0 };
 
+        // Métricas de Foco
+        let focus_metrics: Vec<&CrossMetric> = metrics.iter().filter(|m| m.focus_score.is_some()).collect();
+        let avg_focus = if focus_metrics.is_empty() { 0.0 } else {
+            focus_metrics.iter().map(|m| m.focus_score.unwrap()).sum::<f64>() / focus_metrics.len() as f64
+        };
+
+        let (fh_sum, fh_count) = metrics.iter()
+            .filter(|m| m.focus_score.unwrap_or(0.0) >= 4.0 && m.questions_total > 0)
+            .fold((0.0, 0), |(s, c), m| (s + m.study_hit_rate, c + 1));
+        let focus_hr_high = if fh_count > 0 { fh_sum / fh_count as f64 } else { 0.0 };
+
+        let (fl_sum, fl_count) = metrics.iter()
+            .filter(|m| m.focus_score.is_some() && m.focus_score.unwrap_or(10.0) <= 2.0 && m.questions_total > 0)
+            .fold((0.0, 0), |(s, c), m| (s + m.study_hit_rate, c + 1));
+        let focus_hr_low = if fl_count > 0 { fl_sum / fl_count as f64 } else { 0.0 };
+
         // Distribuição por matéria
         let mut subject_distribution = vec![];
         {
@@ -185,11 +214,11 @@ impl StatisticsManager {
                         SUM(questions_new + questions_review) as tq,
                         SUM(correct_new + correct_review) as tc
                  FROM study_sessions
-                 WHERE user_id=?1 AND date >= date('now', ?2)
+                 WHERE user_id=?1 AND date >= ?2
                  GROUP BY subject ORDER BY sh DESC LIMIT 10"
             ).unwrap();
             
-            let rows = stmt.query_map(params![user_id, cutoff], |row| {
+            let rows = stmt.query_map(params![user_id, cutoff_date], |row| {
                 let name: String = row.get(0)?;
                 let hours: f64 = row.get(1)?;
                 let tq: i32 = row.get(2)?;
@@ -223,8 +252,8 @@ impl StatisticsManager {
         } else { "Neutra".to_string() };
 
         // Streaks
-        let study_streak = self.calculate_streak(user_id, "study_sessions", &cutoff);
-        let sleep_streak = self.calculate_streak(user_id, "sleep_entries", &cutoff);
+        let study_streak = self.calculate_streak(user_id, "study_sessions", &cutoff_date, now);
+        let sleep_streak = self.calculate_streak(user_id, "sleep_entries", &cutoff_date, now);
 
         PerformanceSummary {
             avg_sleep_hours: (avg_sleep * 100.0).round() / 100.0,
@@ -241,25 +270,28 @@ impl StatisticsManager {
             study_efficiency: (study_efficiency * 10.0).round() / 10.0,
             rested_hit_rate: (rested_hr * 10.0).round() / 10.0,
             tired_hit_rate: (tired_hr * 10.0).round() / 10.0,
+            avg_focus_score: (avg_focus * 10.0).round() / 10.0,
+            focus_hit_rate_high: (focus_hr_high * 10.0).round() / 10.0,
+            focus_hit_rate_low: (focus_hr_low * 10.0).round() / 10.0,
             subject_distribution,
         }
     }
 
-    fn calculate_streak(&self, user_id: &str, table: &str, cutoff: &str) -> i32 {
+    fn calculate_streak(&self, user_id: &str, table: &str, cutoff_date: &str, now: DateTime<Utc>) -> i32 {
         let conn = self.conn();
         let sql = format!(
-            "SELECT date FROM {} WHERE user_id=?1 AND date >= date('now', ?2)
+            "SELECT date FROM {} WHERE user_id=?1 AND date >= ?2
              GROUP BY date ORDER BY date DESC",
             table
         );
         let mut stmt = conn.prepare(&sql).unwrap();
-        let dates: Vec<String> = stmt.query_map(params![user_id, cutoff], |row| row.get(0))
+        let dates: Vec<String> = stmt.query_map(params![user_id, cutoff_date], |row| row.get(0))
             .unwrap().filter_map(|r| r.ok()).collect();
         
         if dates.is_empty() { return 0; }
         
-        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let yesterday = (chrono::Local::now() - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+        let today = now.format("%Y-%m-%d").to_string();
+        let yesterday = (now - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
         
         // Se não estudou nem hoje nem ontem, streak é 0
         if dates[0] != today && dates[0] != yesterday { return 0; }

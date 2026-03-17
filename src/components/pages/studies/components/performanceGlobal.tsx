@@ -7,19 +7,21 @@ import { hitRate } from "../utils";
 interface PerformanceGlobalProps {
   allStats: StudyStats;
   globalRate: number;
+  isMonthly?: boolean;
 }
 
 export function PerformanceGlobal({
   allStats,
   globalRate,
+  isMonthly = false,
 }: PerformanceGlobalProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 shadow-xl lg:col-span-2">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 shadow-xl lg:col-span-2">
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
           <PieChart className="w-4 h-4 text-emerald-500" />
           <h3 className=" font-black uppercase text-neutral-400">
-            Taxa de Acerto Global
+            {isMonthly ? "Taxa de Acerto Mensal" : "Taxa de Acerto Global"}
           </h3>
         </div>
       </div>
@@ -56,14 +58,14 @@ export function PerformanceGlobal({
               {globalRate}%
             </span>
             <span className="text-xs font-black text-violet-400 uppercase mt-2">
-              Acerto Geral
+              {isMonthly ? "Acerto Mensal" : "Acerto Geral"}
             </span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-neutral-950/50 border border-neutral-800 p-4 rounded-2xl flex flex-col gap-1 items-center">
+        <div className="bg-neutral-950/50 border border-neutral-800 p-4 rounded-xl flex flex-col gap-1 items-center">
           <span className="text-xs font-black text-neutral-500 uppercase">
             Inéditas
           </span>
@@ -71,7 +73,7 @@ export function PerformanceGlobal({
             {hitRate(allStats.correctNew, allStats.questionsNew)}%
           </span>
         </div>
-        <div className="bg-neutral-950/50 border border-neutral-800 p-4 rounded-2xl flex flex-col gap-1 items-center">
+        <div className="bg-neutral-950/50 border border-neutral-800 p-4 rounded-xl flex flex-col gap-1 items-center">
           <span className="text-xs font-black text-neutral-500 uppercase">
             Refeitas
           </span>

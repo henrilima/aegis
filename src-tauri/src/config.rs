@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc, NaiveDate};
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
-use rusqlite::{params, Connection};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -10,6 +11,7 @@ pub struct AppConfig {
     pub start_at_login: bool,
     pub high_priority_notifications: bool,
     pub start_minimized: bool,
+    pub week_start_day: i32,
 }
 
 pub struct ConfigManager {
@@ -37,6 +39,8 @@ impl ConfigManager {
             ("start_at_login", "false"),
             ("high_priority_notifications", "false"),
             ("start_minimized", "false"),
+            ("week_start_day", "1"),
+            ("debug_time_offset", "0"),
         ];
 
         for (key, val) in defaults {
@@ -92,12 +96,22 @@ impl ConfigManager {
                 Ok(s == "true")
             }
         ).unwrap_or(false);
+        
+        let week_start_day: i32 = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'week_start_day'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s.parse::<i32>().unwrap_or(1))
+            }
+        ).unwrap_or(1);
 
         AppConfig {
             minimize_on_close,
             start_at_login,
             high_priority_notifications,
             start_minimized,
+            week_start_day,
         }
     }
 
@@ -123,6 +137,86 @@ impl ConfigManager {
             params![if config.start_minimized { "true" } else { "false" }],
         ).map_err(|e| e.to_string())?;
 
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('week_start_day', ?1)",
+            params![config.week_start_day.to_string()],
+        ).map_err(|e| e.to_string())?;
+
         Ok(())
+    }
+    pub fn get_time_offset(&self) -> i64 {
+        let conn = self.get_connection();
+        conn.query_row(
+            "SELECT value FROM settings WHERE key = 'debug_time_offset'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s.parse::<i64>().unwrap_or(0))
+            }
+        ).unwrap_or(0)
+    }
+
+    pub fn set_time_offset(&self, offset: i64) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('debug_time_offset', ?1)",
+            params![offset.to_string()],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn get_now(&self) -> DateTime<Utc> {
+        let offset = self.get_time_offset();
+        Utc::now() + chrono::Duration::seconds(offset)
+    }
+
+    pub fn apply_debug_command(&self, command: &str) -> Result<String, String> {
+        if !command.starts_with("--dev") {
+            return Err("Comando deve começar com --dev".to_string());
+        }
+
+        if command == "--dev @reset" {
+            self.set_time_offset(0)?;
+            return Ok("Tempo resetado para o real.".to_string());
+        }
+
+        let parse_target = |cmd: &str, tag: &str| -> Result<i64, String> {
+            if let Some(start) = cmd.find(tag) {
+                let rest = &cmd[start + tag.len()..];
+                if let Some(end) = rest.find(')') {
+                    let date_str = &rest[..end].trim();
+                    
+                    // Tenta DD-MM-YYYY HH:MM
+                    let dt_str = format!("{} +0000", date_str);
+                    if let Ok(dt) = DateTime::parse_from_str(&dt_str, "%d-%m-%Y %H:%M %z") {
+                        let target = dt.with_timezone(&Utc);
+                        return Ok(target.signed_duration_since(Utc::now()).num_seconds());
+                    }
+                    
+                    // Tenta apenas DD-MM-YYYY
+                    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%d-%m-%Y") {
+                        let target = date.and_hms_opt(12, 0, 0).unwrap().and_local_timezone(Utc).unwrap();
+                        return Ok(target.signed_duration_since(Utc::now()).num_seconds());
+                    }
+
+                    return Err(format!("Formato inválido: {}. Use DD-MM-YYYY ou DD-MM-YYYY HH:MM", date_str));
+                }
+            }
+            Err("Não encontrado".to_string())
+        };
+
+        if command.contains("@skipto") {
+            let diff = parse_target(command, "@skipto(")?;
+            self.set_time_offset(diff)?;
+            return Ok("Tempo simulado com sucesso.".to_string());
+        }
+
+        if command.contains("@backto") {
+            let diff = parse_target(command, "@backto(")?;
+            self.set_time_offset(diff)?;
+            return Ok("Tempo retrocedido com sucesso.".to_string());
+        }
+
+        Err("Comando interno não reconhecido.".to_string())
     }
 }

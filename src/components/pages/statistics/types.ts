@@ -11,6 +11,7 @@ export interface CrossMetric {
   study_hours: number;
   study_hit_rate: number;
   questions_total: number;
+  focus_score?: number;
 }
 
 export interface PerformanceSummary {
@@ -29,5 +30,8 @@ export interface PerformanceSummary {
   study_efficiency: number;
   rested_hit_rate: number;
   tired_hit_rate: number;
+  avg_focus_score: number;
+  focus_hit_rate_high: number;
+  focus_hit_rate_low: number;
   subject_distribution: SubjectStats[];
 }

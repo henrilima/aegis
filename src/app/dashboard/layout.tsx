@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/appSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProvider } from "@/context/NavigationContext";
-import { cn } from "@/lib/utils";
+import { cn, getThemeColor } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -28,7 +28,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setIsSidebarOpen(true)}
             type="button"
-            className="fixed top-6 left-6 z-30 p-3 bg-neutral-900/80 backdrop-blur-md border border-neutral-800 rounded-2xl text-amber-500 hover:text-white transition-all shadow-2xl hover:scale-110 active:scale-95 cursor-pointer group flex items-center justify-center"
+            className={cn(
+              "fixed top-6 left-6 z-30 p-3 backdrop-blur-md border rounded-xl transition-all hover:scale-110 active:scale-95 cursor-pointer group flex items-center justify-center",
+              getThemeColor().text,
+              getThemeColor().bg,
+              getThemeColor().border,
+              getThemeColor().borderHover,
+            )}
             title="Abrir Sidebar"
           >
             <Menu className="w-5 h-5" />

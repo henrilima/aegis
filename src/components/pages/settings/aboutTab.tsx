@@ -1,14 +1,16 @@
-import { APP_CONFIG } from "@/app.config";
 import {
   Github,
+  Heart,
+  type LucideIcon,
   Mail,
   MessageSquare,
   User,
-  type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
+import { APP_CONFIG } from "@/app.config";
+import { getThemeColor } from "@/lib/utils";
 
 export function AboutTab() {
+  const theme = getThemeColor();
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -19,10 +21,11 @@ export function AboutTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col gap-3">
+        {/* Developer Card - Modified */}
+        <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-amber-500/10 rounded-lg">
-              <User className="w-4 h-4 text-amber-500" />
+            <div className={`p-1.5 ${theme.bg} rounded-lg`}>
+              <User className={`w-4 h-4 ${theme.text}`} />
             </div>
             <span className=" font-bold text-neutral-300">Desenvolvedor</span>
           </div>
@@ -32,17 +35,21 @@ export function AboutTab() {
           </p>
         </div>
 
-        <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col gap-3">
+        <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-amber-500/10 rounded-lg">
-              <span className="text-[10px] font-black text-amber-500 uppercase">
-                v
+            <div
+              className={`${theme.bg} rounded-lg w-7 h-7 flex items-center justify-center`}
+            >
+              <span
+                className={`text-[14px] font-semibold ${theme.text} uppercase`}
+              >
+                V
               </span>
             </div>
             <span className=" font-bold text-neutral-300">Versão Atual</span>
           </div>
           <p className="text-lg font-black text-white">{APP_CONFIG.version}</p>
-          <p className="text-xs text-neutral-500 uppercase tracking-widest">
+          <p className="text-xs text-neutral-500 uppercase">
             {APP_CONFIG.stage} • {APP_CONFIG.codename}
           </p>
         </div>
@@ -68,15 +75,21 @@ export function AboutTab() {
           />
           <SupportLink
             icon={MessageSquare}
-            label="Discord"
-            value={APP_CONFIG.support.discord}
+            label="Servidor no Discord"
+            value={APP_CONFIG.support.discordserver}
+            href={APP_CONFIG.support.discordserver}
           />
         </div>
       </div>
 
-      <div className="p-6 bg-linear-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl relative overflow-hidden group">
+      {/* Gratitude Section */}
+      <div
+        className={`mt-8 p-6 border ${theme.border} ${theme.bg} rounded-xl text-center relative overflow-hidden group border-l-4 ${theme.border.replace("border-", "border-l-")}`}
+      >
+        <Heart className={`w-8 h-8 ${theme.text} mx-auto mb-3`} />
+
         <div className="relative z-10">
-          <h3 className="text-base font-bold text-amber-500 mb-1">
+          <h3 className={`text-base font-bold ${theme.text} mb-1`}>
             Obrigado por usar o {APP_CONFIG.name}!
           </h3>
           <p className=" text-neutral-400 leading-relaxed">
@@ -84,15 +97,6 @@ export function AboutTab() {
             encontrar bugs ou tiver sugestões, não hesite em nos contatar
             através dos canais acima.
           </p>
-        </div>
-        <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-          <Image
-            src="/favicon.ico"
-            alt="Logo"
-            width={128}
-            height={128}
-            className="grayscale"
-          />
         </div>
       </div>
     </div>
@@ -110,10 +114,14 @@ function SupportLink({
   value: string;
   href?: string;
 }) {
+  const theme = getThemeColor(); // Added theme here
   const content = (
     <div className="flex items-center justify-between p-3 bg-neutral-900/50 border border-neutral-800 rounded-xl hover:bg-neutral-800/80 transition-all group cursor-pointer">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-neutral-800 rounded-lg group-hover:bg-amber-500/20 group-hover:text-amber-500 transition-colors">
+        {/* SupportLink icon styling - Modified */}
+        <div
+          className={`p-2 bg-neutral-800 rounded-lg group-hover:${theme.bg} group-hover:${theme.text} transition-colors`}
+        >
           <Icon className="w-4 h-4" />
         </div>
         <div>
@@ -122,7 +130,9 @@ function SupportLink({
         </div>
       </div>
       {href && (
-        <div className="text-[10px] font-black text-neutral-600 uppercase group-hover:text-amber-500 transition-colors">
+        <div
+          className={`text-[10px] font-black text-neutral-600 uppercase group-hover:${theme.text} transition-colors`}
+        >
           Abrir Link
         </div>
       )}

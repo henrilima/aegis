@@ -12,12 +12,13 @@ import {
 import { useState } from "react";
 import { APP_CONFIG } from "@/app.config";
 import { Badge } from "@/components/ui/badge";
+import { getThemeColor } from "@/lib/utils";
+import { AboutTab } from "./aboutTab";
 import { DangerTab } from "./dangerTab";
 import { NotificationsTab } from "./notificationsTab";
 import { ProfileTab } from "./profileTab";
 import { SecurityTab } from "./securityTab";
 import { SystemTab } from "./systemTab";
-import { AboutTab } from "./aboutTab";
 import { useSettingsLogic } from "./useSettingsLogic";
 
 const TABS = [
@@ -40,23 +41,25 @@ export default function Settings() {
     email,
     updateSystemConfig,
     handleTestNotification,
+    handleInternalCommand,
     handleDeleteAccount,
   } = useSettingsLogic();
+  const theme = getThemeColor();
 
   const [activeTab, setActiveTab] = useState<TabId>("profile");
 
   return (
     <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 animate-in fade-in duration-500">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
-          <SettingsIcon className="w-5 h-5 text-amber-500" />
+        <div className={`p-2 ${theme.bg} rounded-xl border ${theme.border}`}>
+          <SettingsIcon className={`w-5 h-5 ${theme.text}`} />
         </div>
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold leading-none">Configurações</h1>
             <Badge
               variant="outline"
-              className="text-[10px] py-0 px-1.5 h-4 border-amber-500/30 text-amber-500 bg-amber-500/5"
+              className={`text-[10px] py-0 px-1.5 h-4 ${theme.border} border-opacity-30 ${theme.text} ${theme.bg} bg-opacity-5`}
             >
               {APP_CONFIG.versionLabel}
             </Badge>
@@ -67,7 +70,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -75,7 +78,7 @@ export default function Settings() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl  font-bold transition-all cursor-pointer ${
               activeTab === tab.id
-                ? "bg-amber-500/25 text-amber-400 border border-amber-500/40 shadow-md shadow-amber-500/10"
+                ? `${theme.bg} ${theme.text.replace("text-", "text-").replace("500", "400")} border ${theme.border.replace("20", "40")} shadow-md shadow-${theme.text.split("-")[1]}-600/10`
                 : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/60"
             }`}
           >
@@ -86,7 +89,7 @@ export default function Settings() {
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* Renderiza a aba ativa no painel de configurações */}
+        {/* Abas */}
         {activeTab === "profile" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <ProfileTab username={username} email={email} />
@@ -100,6 +103,9 @@ export default function Settings() {
               minimizeOnClose={minimizeOnClose}
               startMinimized={startMinimized}
               updateSystemConfig={updateSystemConfig}
+              handleInternalCommand={handleInternalCommand}
+              weekStartDay={0} // Default placeholder as it's handled via hook if needed
+              updateWeekStart={async () => {}} // Placeholder
             />
           </div>
         )}

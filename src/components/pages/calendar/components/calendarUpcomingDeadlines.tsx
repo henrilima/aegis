@@ -6,6 +6,7 @@ import { DEADLINE_COLORS, DEADLINE_LABELS, daysUntil } from "../types";
 
 interface CalendarUpcomingDeadlinesProps {
   events: CalendarEvent[];
+  time: Date;
 }
 
 /**
@@ -13,26 +14,28 @@ interface CalendarUpcomingDeadlinesProps {
  */
 export function CalendarUpcomingDeadlines({
   events,
+  time,
 }: CalendarUpcomingDeadlinesProps) {
   const deadlines = events
-    .filter((e) => e.event_type === "deadline" && daysUntil(e.date) >= 0)
+    .filter((e) => e.event_type === "deadline" && daysUntil(e.date, time) >= 0)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
 
   if (deadlines.length === 0) return null;
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 shadow-xl animate-in slide-in-from-left-4 duration-500 overflow-hidden">
-      <div className="flex items-center gap-3 border-b border-neutral-800 pb-4">
-        <div className="p-2 bg-red-600/10 rounded-xl border border-red-600/20">
-          <AlertTriangle className="w-4 h-4 text-red-500" />
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-5 animate-in slide-in-from-left-4 duration-500 overflow-hidden">
+      {/* Cabeçalho */}
+      <div className="flex items-center gap-3 border-b border-neutral-800/60 pb-4">
+        <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
         </div>
         <div>
-          <h2 className="text-[10px] font-black uppercase text-white leading-none">
-            Fronteiras Críticas
+          <h2 className="text-base font-bold text-white leading-none">
+            Fronteiras críticas
           </h2>
-          <p className="text-[8px] font-black text-neutral-600 uppercase mt-1">
-            Lembretes de Prazo Fatal
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Lembretes de prazo fatal
           </p>
         </div>
       </div>
@@ -43,31 +46,28 @@ export function CalendarUpcomingDeadlines({
             DEADLINE_COLORS[
               (ev.deadline_category ?? "prova") as DeadlineCategory
             ];
-          const days = daysUntil(ev.date);
+          const days = daysUntil(ev.date, time);
           return (
             <div
               key={ev.id}
-              className="group relative flex items-center gap-4 p-3 rounded-2xl bg-neutral-950/40 border border-neutral-800/40 hover:border-neutral-700 transition-all duration-300"
+              className="group relative flex items-center gap-4 p-3 rounded-xl bg-neutral-950/40 border border-neutral-800/40 hover:border-neutral-700 transition-all duration-300"
             >
               <div
-                className="w-1.5 h-10 rounded-full shrink-0 shadow-lg"
-                style={{
-                  backgroundColor: color,
-                  boxShadow: `0 0 12px ${color}30`,
-                }}
+                className="w-1.5 h-10 rounded-full shrink-0"
+                style={{ backgroundColor: color }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-black text-white truncate uppercase">
+                <p className="text-sm font-bold text-white truncate">
                   {ev.title}
                 </p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-0.5">
                   <span
-                    className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md"
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg"
                     style={{ backgroundColor: `${color}15`, color }}
                   >
                     {DEADLINE_LABELS[ev.deadline_category as DeadlineCategory]}
                   </span>
-                  <span className="text-[9px] font-bold text-neutral-600 uppercase">
+                  <span className="text-[10px] font-medium text-neutral-500">
                     {new Date(`${ev.date}T12:00:00`).toLocaleDateString(
                       "pt-BR",
                       { day: "2-digit", month: "short" },
@@ -78,23 +78,23 @@ export function CalendarUpcomingDeadlines({
 
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span
-                  className="text-[9px] font-black uppercase px-2.5 py-1.5 rounded-xl border"
+                  className="text-[10px] font-bold px-3 py-1.5 rounded-xl border"
                   style={{
                     backgroundColor: days === 0 ? `${color}15` : "transparent",
                     borderColor:
                       days === 0 ? `${color}30` : "rgba(255,255,255,0.05)",
-                    color: days === 0 ? color : "rgba(255,255,255,0.2)",
+                    color: days === 0 ? color : "rgba(255,255,255,0.3)",
                   }}
                 >
                   {days === 0
                     ? "Crítico"
                     : days === 1
                       ? "Amanhã"
-                      : `${days} Dias`}
+                      : `${days} dias`}
                 </span>
                 {ev.time && (
-                  <div className="flex items-center gap-1 text-[8px] font-bold text-neutral-700">
-                    <Clock className="w-2.5 h-2.5" />
+                  <div className="flex items-center gap-1 text-[10px] font-medium text-neutral-600">
+                    <Clock className="w-3 h-3" />
                     {ev.time}
                   </div>
                 )}

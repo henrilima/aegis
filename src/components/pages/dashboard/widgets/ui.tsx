@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils"; // Assuming cn is imported from here or similar
 import { fmtTime, pomodoroClock } from "../helpers";
 import type { PomodoroState } from "../types";
 
@@ -9,20 +10,21 @@ export function Ring({
   color,
   size = 80,
   stroke = 8,
+  className,
 }: {
   pct: number;
   color: string;
   size?: number;
   stroke?: number;
+  className?: string;
 }) {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   return (
     <svg
-      width={size}
-      height={size}
-      className="-rotate-90"
+      viewBox={`0 0 ${size} ${size}`}
+      className={cn("-rotate-90 w-full h-full", className)}
       aria-label="Anel de progresso circular"
     >
       <title>Progresso</title>
@@ -175,12 +177,12 @@ export function Widget({
   return (
     <Link
       href={href}
-      className={`group relative flex flex-col p-5 bg-neutral-900 border border-neutral-800 rounded-3xl transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/40 overflow-hidden shadow-sm`}
+      className={`group relative flex flex-col p-5 bg-neutral-900 border border-neutral-800 rounded-xl transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/40 overflow-hidden shadow-sm`}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-2xl ${c.bg} border ${c.border} flex items-center justify-center group-hover:scale-110 transition-transform`}
+            className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center group-hover:scale-110 transition-transform`}
           >
             <Icon className={`w-5 h-5 ${c.text}`} />
           </div>

@@ -5,6 +5,7 @@ export interface SleepEntry {
   bedtime: string;
   wake_time: string;
   duration_minutes: number;
+  nap_minutes?: number;
   quality: number;
   note?: string;
   created_at?: string;

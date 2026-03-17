@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatDuration, qualityLabel } from "../sleepUtils";
 import type { SleepEntry } from "../types";
 
@@ -20,7 +25,7 @@ export function SleepChart({ weekDays, targetMinutes }: SleepChartProps) {
   );
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
       <h2 className=" font-black uppercase text-neutral-400 mb-4">
         Sono por Dia
       </h2>
@@ -43,17 +48,23 @@ export function SleepChart({ weekDays, targetMinutes }: SleepChartProps) {
                 />
 
                 {dur > 0 && entry ? (
-                  <div
-                    className={`w-full rounded-t-lg transition-all relative z-10 ${
-                      entry.quality >= 4
-                        ? "bg-blue-500"
-                        : entry.quality === 3
-                          ? "bg-blue-400/60"
-                          : "bg-blue-300/40"
-                    }`}
-                    style={{ height: `${pct}%` }}
-                    title={`${formatDuration(dur)} · ${qualityLabel(entry.quality)}`}
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={`w-full rounded-t-lg transition-all relative z-10 ${
+                          entry.quality >= 4
+                            ? "bg-blue-500"
+                            : entry.quality === 3
+                              ? "bg-blue-400/60"
+                              : "bg-blue-300/40"
+                        }`}
+                        style={{ height: `${pct}%` }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {formatDuration(dur)} · {qualityLabel(entry.quality)}
+                    </TooltipContent>
+                  </Tooltip>
                 ) : (
                   <div className="w-full h-1 rounded-full bg-neutral-800 relative z-10" />
                 )}

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { CorrelationChart } from "./components/correlationChart";
 import { CorrelationInsight } from "./components/correlationInsight";
@@ -33,7 +34,7 @@ export default function StatisticsPage() {
   const [summary, setSummary] = useState<PerformanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Consolidação de métricas via backend
+  // Busca métricas consolidadas do backend
   const loadStats = useCallback(async () => {
     if (!uid) return;
     setLoading(true);
@@ -60,26 +61,22 @@ export default function StatisticsPage() {
 
   if (loading)
     return (
-      <div className="h-full flex items-center justify-center font-bold">
-        <div className="flex flex-col items-center gap-5 animate-pulse">
-          <div className="p-4 rounded-3xl bg-red-500/10 border border-red-500/20 shadow-lg shadow-red-500/5">
-            <BarChart3 className="w-10 h-10 text-red-400" />
-          </div>
-          <span className="text-neutral-500  uppercase">
-            Processando Matriz de Dados...
-          </span>
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="flex items-center gap-2 text-neutral-500 animate-pulse font-bold">
+          <BarChart3 className="w-4 h-4" />
+          <span>Processando Matriz de Dados...</span>
         </div>
       </div>
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white">
-      {/* Cabeçalho de Período e Título */}
+    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white px-1">
+      {/* Cabeçalho */}
       <StatisticsHeader days={days} onDaysChange={setDays} />
 
       {summary && summary.total_days_analyzed > 0 ? (
         <>
-          {/* Grid de Métricas Fundamentais */}
+          {/* Métricas Principais */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <MetricCard
               icon={Moon}
@@ -89,6 +86,7 @@ export default function StatisticsPage() {
               color="#3b82f6"
               bgColor="#3b82f615"
               borderColor="#3b82f625"
+              tooltip="Média de horas dormidas por noite e sequência de dias com registros de sono."
             />
             <MetricCard
               icon={BookOpen}
@@ -98,6 +96,7 @@ export default function StatisticsPage() {
               color="#8b5cf6"
               bgColor="#8b5cf615"
               borderColor="#8b5cf625"
+              tooltip="Média de horas estudadas por dia e sequência de dias com registros de estudo."
             />
             <MetricCard
               icon={Target}
@@ -107,6 +106,7 @@ export default function StatisticsPage() {
               color="#22c55e"
               bgColor="#22c55e15"
               borderColor="#22c55e25"
+              tooltip="Porcentagem média de acertos em questões durante as sessões de estudo."
             />
             <MetricCard
               icon={Activity}
@@ -116,62 +116,65 @@ export default function StatisticsPage() {
               color="#0ea5e9"
               bgColor="#0ea5e915"
               borderColor="#0ea5e925"
+              tooltip="Frequência com que o aplicativo é utilizado para registrar dados no período analisado."
             />
             <MetricCard
               icon={Zap}
-              label="Taxa Processamento"
+              label="Eficiência"
               value={`${summary.study_efficiency.toFixed(1)}`}
               sub={`Itens por Hora`}
               color="#f59e0b"
               bgColor="#f59e0b15"
               borderColor="#f59e0b25"
+              tooltip="Quantidade média de questões/itens processados por hora de estudo."
             />
             <MetricCard
               icon={Brain}
-              label="Maior Retenção"
-              value={summary.peak_study_subject || "N/A"}
-              sub={`Volume Máximo`}
+              label="Foco/Energia"
+              value={`${summary.avg_focus_score.toFixed(1)}`}
+              sub={`Nível Médio`}
               color="#f43f5e"
               bgColor="#f43f5e15"
               borderColor="#f43f5e25"
+              tooltip="Avaliação média do seu nível de foco e energia durante as sessões de estudo (1 a 5)."
             />
           </div>
 
-          {/* Análises Qualitativas de Impacto */}
+          {/* Impacto e Distribuição */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
             <SleepImpact summary={summary} />
             <SubjectDistribution summary={summary} />
           </div>
 
-          {/* Engine de Insights: Correlações Sazonais */}
+          {/* Insights de Correlação */}
           <CorrelationInsight summary={summary} />
 
-          {/* Gráfico de Linha do Tempo Reativo */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+          {/* Gráfico Temporal */}
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-xl">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-red-400/10 rounded-xl border border-red-400/20">
                 <Brain className="w-5 h-5 text-red-100" />
               </div>
               <div>
-                <h2 className=" font-black text-white">Cruzamento Temporal</h2>
-                <p className="text-[10px] uppercase font-black text-neutral-600 mt-0.5">
-                  Sono × Estudo × Acerto
+                <h2 className="font-bold text-white">Cruzamento Temporal</h2>
+                <p className="text-[10px] font-bold text-neutral-600 mt-0.5">
+                  Sono · Estudo · Acerto
                 </p>
               </div>
             </div>
             <CorrelationChart metrics={metrics} />
           </div>
 
-          {/* Matriz Bruta de Dados (Tabela) */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-xl">
+          {/* Dados Brutos */}
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-xl">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-neutral-800 rounded-xl border border-neutral-700">
                 <BarChart3 className="w-5 h-5 text-neutral-400" />
               </div>
               <div>
-                <h2 className=" font-black text-white">Log de Processamento</h2>
-                <p className="text-[10px] uppercase font-black text-neutral-600 mt-0.5">
-                  Dados Brutos do Ciclo ({days} dias)
+                <h2 className="font-bold text-white">Log de Processamento</h2>
+                <p className="text-[10px] font-bold text-neutral-600 mt-0.5">
+                  Dados Brutos (Últimos {days} dias)
                 </p>
               </div>
             </div>
@@ -179,21 +182,13 @@ export default function StatisticsPage() {
           </div>
         </>
       ) : (
-        /* Estado Vazio: Aguardando volume de dados */
+        /* Sem dados suficientes */
         !loading && (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-20 text-center shadow-2xl animate-in zoom-in-95 duration-500">
-            <div className="w-20 h-20 rounded-full bg-neutral-950/40 border border-neutral-800/50 flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <BarChart3 className="w-10 h-10 text-neutral-800" />
-            </div>
-            <h3 className="text-white font-black text-xl mb-3">
-              Volume de Dados Insuficiente
-            </h3>
-            <p className="text-neutral-600  max-w-sm mx-auto leading-relaxed font-bold">
-              Para gerar insights precisos, precisamos de pelo menos alguns dias
-              de atividade registrada. Continue alimentando seu roteiro de
-              estudos e sono!
-            </p>
-          </div>
+          <EmptyState
+            icon={BarChart3}
+            title="Volume de Dados Insuficiente"
+            description="Para gerar insights precisos, precisamos de pelo menos alguns dias de atividade registrada. Continue alimentando seu roteiro de estudos e sono!"
+          />
         )
       )}
     </div>

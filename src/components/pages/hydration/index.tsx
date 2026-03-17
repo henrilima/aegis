@@ -5,6 +5,8 @@ import { Clock, Droplet, Plus, Timer, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HydrationForm } from "@/components/forms/hydration/hydrationForm";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import type { HydrationReminder } from "./types";
 
@@ -85,7 +87,7 @@ export default function HydrationPage() {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white px-1">
-      {/* Cabeçalho do Módulo */}
+      {/* Cabeçalho */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
@@ -108,7 +110,7 @@ export default function HydrationPage() {
         </button>
       </div>
 
-      {/* Formulário de novo lembrete */}
+      {/* Formulário */}
       {showForm && (
         <div className="animate-in slide-in-from-top-2 duration-300">
           <HydrationForm
@@ -124,25 +126,19 @@ export default function HydrationPage() {
         </div>
       )}
 
-      {/* Listagem de Lembretes */}
+      {/* Listagem */}
       {reminders.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-20 text-neutral-800">
-          <div className="p-4 rounded-full bg-neutral-900/50">
-            <Droplet className="w-10 h-10 opacity-10" />
-          </div>
-          <p className=" font-bold uppercase opacity-30">
-            Nenhum lembrete ativo
-          </p>
-          <p className="text-xs text-neutral-700 opacity-40">
-            Clique em "Novo Lembrete" para começar
-          </p>
-        </div>
+        <EmptyState
+          icon={Droplet}
+          title="Nenhum lembrete ativo"
+          description="Você ainda não configurou alertas de hidratação. Mantenha seu foco e saúde em dia criando seu primeiro lembrete."
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {reminders.map((r) => (
             <div
               key={r.id}
-              className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-neutral-700 transition-all group"
+              className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-neutral-700 transition-all group"
             >
               {/* Tag de tipo */}
               <div
@@ -176,14 +172,15 @@ export default function HydrationPage() {
                     </p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => r.id && handleDelete(r.id)}
-                  className="p-2.5 rounded-xl border border-transparent text-neutral-600 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all cursor-pointer"
-                  title="Excluir"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <ToolTip content="Excluir">
+                  <button
+                    type="button"
+                    onClick={() => r.id && handleDelete(r.id)}
+                    className="p-2.5 rounded-xl border border-transparent text-neutral-600 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </ToolTip>
               </div>
             </div>
           ))}

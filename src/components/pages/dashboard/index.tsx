@@ -1,111 +1,208 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Activity,
-  Banknote,
-  BarChart3,
-  BookOpen,
-  CalendarDays,
-  Droplet,
-  FileText,
-  Flame,
-  Lock,
-  Moon,
-  ShieldOff,
-  Timer,
-  TrendingUp,
-  Wifi,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { Habit } from "@/components/pages/habits/types";
-import type { Note } from "@/components/pages/notes/types";
+import { DashboardConfigModal } from "@/components/forms/dashboard/DashboardConfigModal";
 import { useAuth } from "@/context/AuthContext";
-import type { AppRoute } from "@/context/NavigationContext";
+import { useTime } from "@/context/TimeContext";
+import type { CurrencyRate } from "../currency/types";
 import { DashboardHeader } from "./dashboardHeader";
+import { isToday, startOfWeekIso } from "./helpers";
 
-import {
-  formatDurationMin,
-  getHabitStreak,
-  isHabitDueToday,
-  isToday,
-  startOfWeekIso,
-} from "./helpers";
 import type {
+  Habit,
   HydrationReminder,
+  Note,
   PasswordEntry,
+  PerformanceSummary,
   PomodoroState,
   SleepEntry,
   SleepGoal,
   StudyGoal,
   StudySession,
 } from "./types";
-import {
-  CalendarWidget,
-  DeadlinesWidget,
-  EstudosWidget,
-  HabitsWidget,
-  ModuleGrid,
-  NotesWidget,
-  PomodoroWidget,
-  QuickStatsBar,
-  SonoWidget,
-} from "./widgets";
+import { WIDGET_REGISTRY } from "./widgets/registry";
 
-/**
- * Dashboard principal: O hub central do sistema Aegis
- */
-export default function DashboardPage() {
+const DEFAULT_WIDGET_IDS = [
+  "habits",
+  "pomodoro",
+  "notes",
+  "studies",
+  "sleep",
+  "statistics",
+  "hydration",
+  "calendar",
+  "passwords",
+  "currency",
+];
+
+export default function Dashboard() {
   const { user } = useAuth();
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
-  const [hydration, setHydration] = useState<HydrationReminder[]>([]);
-  const [pomodoro, setPomodoro] = useState<PomodoroState | null>(null);
-  const [studySessions, setStudySessions] = useState<StudySession[]>([]);
-  const [studyGoals, setStudyGoals] = useState<StudyGoal[]>([]);
-  const [sleepEntries, setSleepEntries] = useState<SleepEntry[]>([]);
-  const [sleepGoal, setSleepGoal] = useState<SleepGoal | null>(null);
-  const [time, setTime] = useState(new Date());
+  const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>([]);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [data, setData] = useState<{
+    habits: Habit[];
+    notes: Note[];
+    pomodoro: PomodoroState | null;
+    studySessions: StudySession[];
+    studyGoals: StudyGoal[];
+    sleepEntries: SleepEntry[];
+    sleepGoal: SleepGoal | null;
+    passwords: PasswordEntry[];
+    vaultExists: boolean | null;
+    hydrationReminders: HydrationReminder[];
+    currencyRates: Record<string, number>;
+    currencyLastUpdated: string | null;
+    statsSummary: PerformanceSummary | null;
+    weekStartDay: number;
+  }>({
+    habits: [],
+    notes: [],
+    pomodoro: null,
+    studySessions: [],
+    studyGoals: [],
+    sleepEntries: [],
+    sleepGoal: null,
+    passwords: [],
+    vaultExists: null,
+    hydrationReminders: [],
+    currencyRates: {},
+    currencyLastUpdated: null,
+    statsSummary: null,
+    weekStartDay: 1,
+  });
+  const { now: time, isSimulated } = useTime();
 
-  // Atualização do relógio e saudação
+  // Carrega layout ao montar
   useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(id);
+    const saved = localStorage.getItem("aegis_dashboard_widgets");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setActiveWidgetIds(parsed);
+          return;
+        }
+      } catch (e) {
+        console.error("Error parsing saved widgets", e);
+      }
+    }
+    setActiveWidgetIds(DEFAULT_WIDGET_IDS);
   }, []);
 
-  // Busca centralizada de todos os dados dos módulos ativos
-  const fetchAll = useCallback(async () => {
-    if (!user) return;
-    const uid = String(user.id);
-    const results = await Promise.allSettled([
-      invoke<Habit[]>("list_habits", { userId: uid }),
-      invoke<Note[]>("list_notes", { userId: uid }),
-      invoke<PasswordEntry[]>("list_passwords", { userId: uid }),
-      invoke<HydrationReminder[]>("list_hydration_reminders", { userId: uid }),
-      invoke<PomodoroState>("get_pomodoro_state", { userId: uid }),
-      invoke<StudySession[]>("estudos_list_sessions", {
-        userId: uid,
-        monthsBack: 1,
-      }),
-      invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
-      invoke<SleepEntry[]>("sono_list_entries", {
-        userId: uid,
-        monthsBack: 1,
-      }),
-      invoke<SleepGoal>("sono_get_goal", { userId: uid }),
-    ]);
+  const handleToggleWidget = (id: string) => {
+    setActiveWidgetIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id];
+      localStorage.setItem("aegis_dashboard_widgets", JSON.stringify(next));
+      return next;
+    });
+  };
 
-    if (results[0].status === "fulfilled") setHabits(results[0].value);
-    if (results[1].status === "fulfilled") setNotes(results[1].value);
-    if (results[2].status === "fulfilled") setPasswords(results[2].value);
-    if (results[3].status === "fulfilled") setHydration(results[3].value);
-    if (results[4].status === "fulfilled") setPomodoro(results[4].value);
-    if (results[5].status === "fulfilled") setStudySessions(results[5].value);
-    if (results[6].status === "fulfilled") setStudyGoals(results[6].value);
-    if (results[7].status === "fulfilled") setSleepEntries(results[7].value);
-    if (results[8].status === "fulfilled") setSleepGoal(results[8].value);
+  const handleReorderWidgets = (newOrder: string[]) => {
+    setActiveWidgetIds(newOrder);
+    localStorage.setItem("aegis_dashboard_widgets", JSON.stringify(newOrder));
+  };
+
+  const fetchAll = useCallback(async () => {
+    if (!user?.id) return;
+    const uid = String(user.id);
+
+    try {
+      const config = await invoke<{ week_start_day: number }>("get_app_config");
+      const results = await Promise.allSettled([
+        invoke<Habit[]>("list_habits", { userId: uid }),
+        invoke<Note[]>("list_notes", { userId: uid }),
+        invoke<PomodoroState>("get_pomodoro_state", { userId: uid }),
+        invoke<StudySession[]>("estudos_list_sessions", {
+          userId: uid,
+          monthsBack: 1,
+        }),
+        invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
+        invoke<SleepEntry[]>("sono_list_entries", {
+          userId: uid,
+          monthsBack: 1,
+        }),
+        invoke<SleepGoal>("sono_get_goal", { userId: uid }),
+        invoke<PasswordEntry[]>("list_passwords", { userId: uid }),
+        invoke<boolean>("check_vault", { userId: uid }),
+        invoke<HydrationReminder[]>("list_hydration_reminders", {
+          userId: uid,
+        }),
+        invoke<CurrencyRate[]>("get_currency_rates"),
+        invoke<PerformanceSummary>("stats_get_performance_summary", {
+          userId: uid,
+          days: 30,
+        }),
+      ]);
+
+      const ratesMap: Record<string, number> = {};
+      let lastUpdateTS: string | null = null;
+      if (
+        results[10].status === "fulfilled" &&
+        Array.isArray(results[10].value)
+      ) {
+        const ratesArr = results[10].value as CurrencyRate[];
+        for (const r of ratesArr) {
+          ratesMap[r.code.toUpperCase()] = r.rate;
+        }
+        if (ratesArr.length > 0) {
+          lastUpdateTS = ratesArr[0].last_updated;
+        }
+      }
+
+      setData({
+        habits:
+          results[0].status === "fulfilled"
+            ? (results[0].value as Habit[])
+            : [],
+        notes:
+          results[1].status === "fulfilled" ? (results[1].value as Note[]) : [],
+        pomodoro:
+          results[2].status === "fulfilled"
+            ? (results[2].value as PomodoroState)
+            : null,
+        studySessions:
+          results[3].status === "fulfilled"
+            ? (results[3].value as StudySession[])
+            : [],
+        studyGoals:
+          results[4].status === "fulfilled"
+            ? (results[4].value as StudyGoal[])
+            : [],
+        sleepEntries:
+          results[5].status === "fulfilled"
+            ? (results[5].value as SleepEntry[])
+            : [],
+        sleepGoal:
+          results[6].status === "fulfilled"
+            ? (results[6].value as SleepGoal)
+            : null,
+        passwords:
+          results[7].status === "fulfilled"
+            ? (results[7].value as PasswordEntry[])
+            : [],
+        vaultExists:
+          results[8].status === "fulfilled"
+            ? (results[8].value as boolean)
+            : null,
+        hydrationReminders:
+          results[9].status === "fulfilled"
+            ? (results[9].value as HydrationReminder[])
+            : [],
+        currencyRates: ratesMap,
+        currencyLastUpdated: lastUpdateTS,
+        statsSummary:
+          results[11].status === "fulfilled"
+            ? (results[11].value as PerformanceSummary)
+            : null,
+        weekStartDay: config.week_start_day,
+      });
+    } catch (error) {
+      console.error("Dashboard fetch error:", error);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -113,335 +210,153 @@ export default function DashboardPage() {
   }, [fetchAll]);
 
   const handleCreateNote = async (title: string, content: string) => {
-    if (!user) return;
+    if (!user?.id) return;
     try {
       await invoke("add_note", {
         note: {
           user_id: String(user.id),
           title: title.trim(),
           content: content.trim(),
-          created_at: new Date().toISOString(),
-          pinned: false,
+          created_at: time.toISOString(),
           status: "pending",
-        } satisfies Omit<Note, "id">,
+          pinned: false,
+        },
       });
       fetchAll();
-      toast.success("Nota rápida criada!");
+      toast.success("Nota salva!");
     } catch {
-      toast.error("Falha ao criar nota");
+      toast.error("Erro ao criar nota");
     }
   };
 
-  const hour = time.getHours();
-  const greeting = useMemo(
-    () => (hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite"),
-    [hour],
-  );
-
-  // Lógica de Processamento de Dados para Widgets
-  const allPositiveHabits = habits.filter((h) => h.habit_type === "Positive");
-  const duePositiveHabits = allPositiveHabits.filter(isHabitDueToday);
-
-  const negativeHabits = habits.filter(
-    (h) => h.habit_type === "Negative" || h.habit_type === "Bad",
-  );
-
-  const doneToday = duePositiveHabits.filter(
-    (h) => h.last_done && isToday(h.last_done),
-  );
-
-  const progressPct =
-    duePositiveHabits.length > 0
-      ? Math.round((doneToday.length / duePositiveHabits.length) * 100)
-      : 0;
-
-  const maxStreak = allPositiveHabits.reduce(
-    (m, h) => Math.max(m, getHabitStreak(h)),
-    0,
-  );
-
-  const pendingNotes = notes.filter((n) => n.status === "pending" && !n.pinned);
-  const pinnedNotes = notes.filter((n) => n.pinned);
-  const doneNotes = notes.filter((n) => n.status === "done");
-
-  const weekStart = startOfWeekIso();
-  const weekSessions = studySessions.filter((s) => s.date >= weekStart);
-  const weekHours = weekSessions.reduce((a, s) => a + s.hours, 0);
+  const weekStart = startOfWeekIso(time, data.weekStartDay);
+  const weekSessions = data.studySessions.filter((s) => s.date >= weekStart);
+  const weekHours = weekSessions.reduce((acc, s) => acc + (s.hours || 0), 0);
   const weekQuestions = weekSessions.reduce(
-    (a, s) => a + s.questions_new + s.questions_review,
+    (acc, s) => acc + (s.questions_new + s.questions_review || 0),
     0,
   );
 
-  const totalSessions = studySessions.length;
   const goalWeekHours =
-    studyGoals.find((g) => g.goal_type === "weekly_hours")?.target_value ??
-    null;
+    data.studyGoals.find((g) => g.goal_type === "weekly_hours")?.target_value ||
+    0;
   const goalWeekQuestions =
-    studyGoals.find((g) => g.goal_type === "weekly_questions")?.target_value ??
-    null;
+    data.studyGoals.find((g) => g.goal_type === "weekly_questions")
+      ?.target_value || 0;
 
-  const recentSleep = sleepEntries.filter((e) => e.date >= weekStart);
-  const avgSleepMin =
-    recentSleep.length > 0
-      ? Math.round(
-          recentSleep.reduce((a, e) => a + e.duration_minutes, 0) /
-            recentSleep.length,
-        )
-      : 0;
+  // Sono: Últimos 7 dias rolantes
+  const sleepLimit = new Date(time);
+  sleepLimit.setDate(time.getDate() - 6);
+  sleepLimit.setHours(0, 0, 0, 0);
+  const recentSleep = data.sleepEntries
+    .filter((e) => new Date(e.date.replace(/-/g, "/")) >= sleepLimit)
+    .slice(0, 7);
+  const avgSleepMin = recentSleep.length
+    ? recentSleep.reduce((acc, s) => acc + s.duration_minutes, 0) /
+      recentSleep.length
+    : 0;
+  const avgQuality = recentSleep.length
+    ? (
+        recentSleep.reduce((acc, s) => acc + s.quality, 0) / recentSleep.length
+      ).toFixed(1)
+    : "0.0";
+  const goalSleepMin = (data.sleepGoal?.target_hours || 8) * 60;
+  const sleepPct =
+    goalSleepMin > 0 ? Math.round((avgSleepMin / goalSleepMin) * 100) : 0;
 
-  const avgQuality =
-    recentSleep.length > 0
-      ? (
-          recentSleep.reduce((a, e) => a + e.quality, 0) / recentSleep.length
-        ).toFixed(1)
-      : "—";
-
-  const todaySleep = sleepEntries.find((e) => isToday(e.date));
-  const goalSleepMin = sleepGoal ? sleepGoal.target_hours * 60 : null;
-  const sleepPctTarget =
-    goalSleepMin && avgSleepMin > 0
-      ? Math.min(100, Math.round((avgSleepMin / goalSleepMin) * 100))
-      : 0;
-
-  // Configuração rápida dos módulos para o ModuleGrid
-  const MODULES = [
-    {
-      label: "Hábitos",
-      icon: Activity,
-      route: "habits" as AppRoute,
-      color: "teal",
-      count: allPositiveHabits.length,
-      sub: `${doneToday.length} feitos hoje`,
-    },
-    {
-      label: "Pomodoro",
-      icon: Timer,
-      route: "pomodoro" as AppRoute,
-      color: "red",
-      count: pomodoro?.cycles_completed ?? 0,
-      sub: pomodoro?.is_running ? "Em andamento" : "Parado",
-    },
-    {
-      label: "Notas",
-      icon: FileText,
-      route: "notes" as AppRoute,
-      color: "orange",
-      count: pendingNotes.length,
-      sub: `${doneNotes.length} concluídas`,
-    },
-    {
-      label: "Senhas",
-      icon: Lock,
-      route: "passwords" as AppRoute,
-      color: "amber",
-      count: passwords.length,
-      sub: "Cofre seguro",
-    },
-    {
-      label: "Estudos",
-      icon: BookOpen,
-      route: "studies" as AppRoute,
-      color: "violet",
-      count: totalSessions,
-      sub: `${weekHours.toFixed(1)}h esta semana`,
-    },
-    {
-      label: "Sono",
-      icon: Moon,
-      route: "sleep" as AppRoute,
-      color: "blue",
-      count: sleepEntries.length,
-      sub:
-        avgSleepMin > 0
-          ? `Média ${formatDurationMin(avgSleepMin)}`
-          : "Sem dados",
-    },
-    {
-      label: "Câmbio",
-      icon: Banknote,
-      route: "currency" as AppRoute,
-      color: "green",
-      count: null,
-      sub: "Cotações",
-    },
-    {
-      label: "Hidratação",
-      icon: Droplet,
-      route: "hydration" as AppRoute,
-      color: "sky",
-      count: hydration.length,
-      sub: "Lembretes",
-    },
-    {
-      label: "Internet",
-      icon: Wifi,
-      route: "speedtest" as AppRoute,
-      color: "red",
-      count: null,
-      sub: "Speedtest",
-    },
-    {
-      label: "Calendário",
-      icon: CalendarDays,
-      route: "calendar" as AppRoute,
-      color: "green",
-      count: null,
-      sub: "Eventos & Datas",
-    },
-    {
-      label: "Estatísticas",
-      icon: BarChart3,
-      route: "statistics" as AppRoute,
-      color: "red",
-      count: null,
-      sub: "Dados Cruzados",
-    },
-  ] as const;
-
-  const COLOR: Record<string, any> = {
-    teal: {
-      text: "text-teal-400",
-      bg: "bg-teal-500/10",
-      border: "border-teal-500/20",
-      ring: "#2dd4bf",
-    },
-    red: {
-      text: "text-red-400",
-      bg: "bg-red-500/10",
-      border: "border-red-500/20",
-      ring: "#ef4444",
-    },
-    orange: {
-      text: "text-orange-400",
-      bg: "bg-orange-500/10",
-      border: "border-orange-500/20",
-      ring: "#f97316",
-    },
-    amber: {
-      text: "text-amber-500",
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20",
-      ring: "#f59e0b",
-    },
-    violet: {
-      text: "text-violet-400",
-      bg: "bg-violet-500/10",
-      border: "border-violet-500/20",
-      ring: "#8b5cf6",
-    },
-    blue: {
-      text: "text-blue-400",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-      ring: "#3b82f6",
-    },
-    green: {
-      text: "text-green-400",
-      bg: "bg-green-500/10",
-      border: "border-green-500/20",
-      ring: "#22c55e",
-    },
-    sky: {
-      text: "text-sky-400",
-      bg: "bg-sky-500/10",
-      border: "border-sky-500/20",
-      ring: "#0ea5e9",
-    },
-  };
+  const doneTodayCount = data.habits.filter(
+    (h) => h.last_done && isToday(h.last_done),
+  ).length;
+  const positiveHabitsCount = data.habits.filter(
+    (h) => h.habit_type === "Positive",
+  ).length;
+  const pendingNotesCount = data.notes.filter(
+    (n) => n.status === "pending",
+  ).length;
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-500 text-white">
-      <DashboardHeader
-        time={time}
-        greeting={greeting}
-        user={user}
-        doneTodayCount={doneToday.length}
-        positiveHabitsCount={allPositiveHabits.length}
-        pendingNotesCount={pendingNotes.length}
-      />
+    <div className="flex flex-col items-center w-full min-h-screen bg-neutral-950 p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
+      <div className="w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0">
+        <div className="flex-none px-4 sm:px-0 mt-4 sm:mt-0">
+          <DashboardHeader
+            time={time}
+            greeting="Olá"
+            user={user}
+            doneTodayCount={doneTodayCount}
+            positiveHabitsCount={positiveHabitsCount}
+            pendingNotesCount={pendingNotesCount}
+            onOpenConfig={() => setIsConfigOpen(true)}
+            isSimulated={isSimulated}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <HabitsWidget
-          positiveHabits={duePositiveHabits}
-          doneToday={doneToday}
-          progressPct={progressPct}
-          maxStreak={maxStreak}
-          isToday={isToday}
-        />
-        <NotesWidget
-          notes={notes}
-          pendingNotes={pendingNotes}
-          pinnedNotes={pinnedNotes}
-          doneNotes={doneNotes}
-          onCreateNote={handleCreateNote}
-        />
-        <PomodoroWidget pomodoro={pomodoro} />
+        <div className="relative flex-1 px-4 sm:px-0 mb-20 whitespace-normal">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
+            {activeWidgetIds.map((id) => {
+              const WidgetComponent = WIDGET_REGISTRY[id];
+              if (!WidgetComponent) return null;
+
+              const boundIsToday = (iso: string) => isToday(iso, time);
+              const widgetProps: Record<string, unknown> = {
+                isToday: boundIsToday,
+                time,
+              };
+              if (id === "habits") widgetProps.habits = data.habits;
+              if (id === "pomodoro") widgetProps.pomodoro = data.pomodoro;
+              if (id === "notes") {
+                widgetProps.notes = data.notes;
+                widgetProps.onCreateNote = handleCreateNote;
+              }
+              if (id === "studies") {
+                widgetProps.sessions = weekSessions;
+                widgetProps.weekHours = weekHours;
+                widgetProps.weekQuestions = weekQuestions;
+                widgetProps.goalWeekHours = goalWeekHours;
+                widgetProps.goalWeekQuestions = goalWeekQuestions;
+              }
+              if (id === "sleep") {
+                widgetProps.recentSleep = recentSleep;
+                widgetProps.avgSleepMin = avgSleepMin;
+                widgetProps.avgQuality = avgQuality;
+                widgetProps.goalSleepMin = goalSleepMin;
+                widgetProps.sleepPct = sleepPct;
+              }
+              if (id === "passwords") {
+                widgetProps.passwords = data.passwords;
+                widgetProps.vaultExists = data.vaultExists;
+              }
+              if (id === "hydration") {
+                widgetProps.reminders = data.hydrationReminders;
+              }
+              if (id === "currency") {
+                widgetProps.rates = data.currencyRates;
+                widgetProps.lastUpdated = data.currencyLastUpdated;
+              }
+              if (id === "statistics") {
+                widgetProps.summary = data.statsSummary;
+              }
+
+              return (
+                <div
+                  key={id}
+                  className="w-full h-full min-h-[320px] lg:min-h-[380px]"
+                >
+                  <WidgetComponent {...widgetProps} className="h-full w-full" />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <EstudosWidget
-          weekHours={weekHours}
-          goalWeekHours={goalWeekHours}
-          weekQuestions={weekQuestions}
-          goalWeekQuestions={goalWeekQuestions}
-          weekSessions={weekSessions}
-          totalSessions={totalSessions}
+      {isConfigOpen && (
+        <DashboardConfigModal
+          activeWidgetIds={activeWidgetIds}
+          onToggle={handleToggleWidget}
+          onReorder={handleReorderWidgets}
+          onClose={() => setIsConfigOpen(false)}
         />
-        <SonoWidget
-          recentSleep={recentSleep}
-          avgSleepMin={avgSleepMin}
-          goalSleepMin={goalSleepMin}
-          avgQuality={avgQuality}
-          sleepPct={sleepPctTarget}
-          todaySleep={todaySleep}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CalendarWidget />
-        <DeadlinesWidget />
-      </div>
-
-      {/* Barra rápida de estatísticas consolidadas */}
-      <QuickStatsBar
-        stats={[
-          {
-            icon: Lock,
-            label: "Senhas no cofre",
-            value: passwords.length,
-            color: "text-amber-500",
-            bg: "bg-amber-500/10",
-            border: "border-amber-500/20",
-          },
-          {
-            icon: Flame,
-            label: "Recorde Habit",
-            value: `${maxStreak}d`,
-            color: "text-orange-400",
-            bg: "bg-orange-500/10",
-            border: "border-orange-500/20",
-          },
-          {
-            icon: TrendingUp,
-            label: "Metas Positivas",
-            value: allPositiveHabits.length,
-            color: "text-teal-400",
-            bg: "bg-teal-500/10",
-            border: "border-teal-500/20",
-          },
-          {
-            icon: ShieldOff,
-            label: "Controle Vícios",
-            value: negativeHabits.length,
-            color: "text-red-400",
-            bg: "bg-red-500/10",
-            border: "border-red-500/20",
-          },
-        ]}
-      />
-
-      {/* Grade de atalhos rápidos para módulos */}
-      <ModuleGrid modules={MODULES} colorConfig={COLOR} />
+      )}
     </div>
   );
 }

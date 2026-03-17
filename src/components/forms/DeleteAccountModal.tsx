@@ -2,20 +2,39 @@
 
 import { Eye, EyeOff, ShieldAlert, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import { APP_CONFIG } from "@/app.config";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface DeleteAccountModalProps {
   username: string;
+  masterCodeIndex: number;
   onConfirm: (password: string) => Promise<void>;
   onCancel: () => void;
 }
+
+const MASTER_ENTRIES = [
+  { code: "NX7W2Q4", pass: "aquarius" },
+  { code: "K9B5V1R", pass: "pisces" },
+  { code: "M3L8Z0X", pass: "aries" },
+  { code: "P6Y1H4D", pass: "taurus" },
+  { code: "G2N9S3F", pass: "gemini" },
+  { code: "J5K7L2M", pass: "cancer" },
+  { code: "R8T1V0P", pass: "leo" },
+  { code: "C4D6F9G", pass: "virgo" },
+  { code: "W3Q7N1Z", pass: "libra" },
+  { code: "X9V0B2M", pass: "scorpio" },
+  { code: "S5Y1V6L", pass: "sagittarius" },
+  { code: "H3N8R1K", pass: "capricorn" },
+  { code: "Z7P2Q9F", pass: "ophiuchus" },
+];
 
 /**
  * Modal de confirmação para exclusão de conta
  */
 export function DeleteAccountModal({
   username,
+  masterCodeIndex,
   onConfirm,
   onCancel,
 }: DeleteAccountModalProps) {
@@ -24,16 +43,43 @@ export function DeleteAccountModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Modo Master (Forçado)
+  const [isMasterMode, setIsMasterMode] = useState(false);
+  const [currentEntry, setCurrentEntry] = useState<
+    (typeof MASTER_ENTRIES)[0] | null
+  >(null);
+
+  const startMasterMode = () => {
+    // Busca o código vinculado à conta
+    const entry = MASTER_ENTRIES[masterCodeIndex] || MASTER_ENTRIES[4]; // Default Gemini (4)
+    setCurrentEntry(entry);
+    setIsMasterMode(true);
+    setPassword("");
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password) {
-      setError("Senha necessária para confirmar.");
+      setError(
+        isMasterMode
+          ? "Chave de Protocolo necessária."
+          : "Senha necessária para confirmar.",
+      );
       return;
     }
     setError(null);
     setLoading(true);
+
     try {
-      await onConfirm(password);
+      if (isMasterMode && currentEntry) {
+        if (password.toLowerCase().trim() !== currentEntry.pass) {
+          setError("Chave de Protocolo inválida!");
+          setLoading(false);
+          return;
+        }
+      }
+      await onConfirm(password.toLowerCase().trim());
     } catch (err) {
       setError(String(err));
       setLoading(false);
@@ -44,7 +90,7 @@ export function DeleteAccountModal({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-sm bg-neutral-950 border border-red-500/20 rounded-[28px] overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-sm bg-neutral-950 border border-red-500/20 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between p-5 border-b border-neutral-900">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
@@ -52,10 +98,12 @@ export function DeleteAccountModal({
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
-                Deletar conta
+                Gerenciar Conta
               </h2>
               <p className="text-xs text-red-500/60 mt-0.5">
-                Ação irreversível
+                {isMasterMode
+                  ? "Validação de Identidade Nível 2"
+                  : "Ação Irreversível"}
               </p>
             </div>
           </div>
@@ -69,42 +117,77 @@ export function DeleteAccountModal({
         </div>
 
         <div className="p-6 space-y-5">
-          <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-3">
-            <p className="text-xs font-medium text-red-400 leading-relaxed">
-              Você está prestes a excluir permanentemente a conta{" "}
-              <span className="text-white font-bold italic">
-                {username}
-              </span>.
-            </p>
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-neutral-500 uppercase px-0.5">
-                O que será removido:
+          {!isMasterMode ? (
+            <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-xl space-y-3">
+              <p className="text-xs font-medium text-red-400 leading-relaxed">
+                Você solicitou a exclusão permanente dos dados de{" "}
+                <span className="text-white font-bold italic">{username}</span>.
               </p>
-              <ul className="text-xs text-neutral-500 font-medium space-y-1">
-                <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Cofres de senhas
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Histórico de hábitos
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-red-500/40" /> Todas as notas e logs
-                </li>
-              </ul>
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold text-neutral-500 uppercase px-0.5">
+                  Dados afetados:
+                </p>
+                <ul className="text-[11px] text-neutral-500 font-medium space-y-1.5">
+                  <li className="flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-red-500/40" />{" "}
+                    Cofres de chaves e senhas
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-red-500/40" />{" "}
+                    Registros de produtividade e hábitos
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-red-500/40" /> Notas
+                    privadas e logs de sessões
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-3 text-center">
+              <p className="text-xs font-bold text-amber-500">
+                Protocolo de Validação
+              </p>
+              <div className="relative group">
+                <h3 className="text-2xl font-black text-white font-mono bg-neutral-900 py-3 rounded-lg border border-neutral-800">
+                  {currentEntry?.code}
+                </h3>
+              </div>
+              <p className="text-[11px] text-neutral-400 font-medium px-6 leading-relaxed">
+                Para obter a <b>Chave de Protocolo</b> vinculada a este código,
+                envie uma mensagem para{" "}
+                <span className="text-amber-500/80 font-bold">
+                  {APP_CONFIG.support.email}
+                </span>{" "}
+                ou acesse nossa comunidade.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="confirm-password" className={lc}>
-                Senha de confirmação
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="confirm-password" className={lc}>
+                  {isMasterMode ? "Chave de Protocolo" : "Senha de acesso"}
+                </Label>
+                {!isMasterMode && (
+                  <button
+                    type="button"
+                    onClick={startMasterMode}
+                    className="text-[10px] font-bold text-neutral-600 hover:text-amber-500 transition-colors uppercase cursor-pointer pr-1"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Input
                   id="confirm-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Insira sua senha mestre"
-                  className="bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium pr-12 focus:border-red-500/50"
+                  placeholder={
+                    isMasterMode ? "Digite a chave..." : "Sua senha mestra"
+                  }
+                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium pr-12 transition-all ${isMasterMode ? "focus:border-amber-500/50" : "focus:border-red-500/50"}`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoFocus
@@ -134,14 +217,18 @@ export function DeleteAccountModal({
             <div className="flex flex-col gap-2 pt-1">
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 cursor-pointer"
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40 cursor-pointer ${
+                  isMasterMode
+                    ? "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200"
+                    : "bg-red-500/10 hover:bg-red-500/20 border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200"
+                }`}
                 disabled={loading || !password}
               >
                 {loading ? (
-                  "Excluindo..."
+                  "Processando..."
                 ) : (
                   <>
-                    <Trash2 className="w-4 h-4" /> Confirmar exclusão
+                    <Trash2 className="w-4 h-4" /> Finalizar Exclusão
                   </>
                 )}
               </button>
@@ -149,8 +236,9 @@ export function DeleteAccountModal({
                 type="button"
                 onClick={onCancel}
                 className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+                disabled={loading}
               >
-                Agora não
+                Cancelar Operação
               </button>
             </div>
           </form>

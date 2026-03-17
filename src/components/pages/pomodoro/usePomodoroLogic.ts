@@ -3,10 +3,12 @@ import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useTime } from "@/context/TimeContext";
 import type { PomodoroHistory, PomodoroState } from "./types";
 
 export function usePomodoroLogic() {
   const { user } = useAuth();
+  const { now: simulatedNow } = useTime();
   const [state, setState] = useState<PomodoroState | null>(null);
   const [history, setHistory] = useState<PomodoroHistory[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -24,23 +26,28 @@ export function usePomodoroLogic() {
     }
   }, [user]);
 
-  const updateDisplayTime = useCallback((pState: PomodoroState) => {
-    const duration =
-      pState.cycle_type === "Work" ? pState.work_minutes : pState.break_minutes;
-    const totalSeconds = duration * 60;
+  const updateDisplayTime = useCallback(
+    (pState: PomodoroState) => {
+      const duration =
+        pState.cycle_type === "Work"
+          ? pState.work_minutes
+          : pState.break_minutes;
+      const totalSeconds = duration * 60;
 
-    let elapsed = pState.accumulated_seconds;
-    // Soma o tempo acumulado com o tempo que passou desde o início do timer
-    if (pState.is_running && pState.start_time) {
-      const startTime = new Date(pState.start_time).getTime();
-      const now = Date.now();
-      elapsed += Math.floor((now - startTime) / 1000);
-    }
+      let elapsed = pState.accumulated_seconds;
+      // Soma o tempo acumulado com o tempo que passou desde o início do timer
+      if (pState.is_running && pState.start_time) {
+        const startTime = new Date(pState.start_time).getTime();
+        const nowMs = simulatedNow.getTime();
+        elapsed += Math.floor((nowMs - startTime) / 1000);
+      }
 
-    // Calcula o tempo restante garantindo que não seja negativo
-    const left = Math.max(0, totalSeconds - elapsed);
-    setTimeLeft(left);
-  }, []);
+      // Calcula o tempo restante garantindo que não seja negativo
+      const left = Math.max(0, totalSeconds - elapsed);
+      setTimeLeft(left);
+    },
+    [simulatedNow],
+  );
 
   const fetchState = useCallback(async () => {
     if (!user) return;
@@ -75,20 +82,20 @@ export function usePomodoroLogic() {
   const toggleTimer = useCallback(async () => {
     if (!state || !user) return;
     const isStarting = !state.is_running;
-    const now = new Date().toISOString();
+    const nowIso = simulatedNow.toISOString();
 
     let newAccumulated = state.accumulated_seconds;
     // Registra os segundos decorridos antes de pausar ou alternar o timer
     if (!isStarting && state.start_time) {
       const startTime = new Date(state.start_time).getTime();
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const elapsed = Math.floor((simulatedNow.getTime() - startTime) / 1000);
       newAccumulated += elapsed;
     }
 
     const newState = {
       ...state,
       is_running: isStarting,
-      start_time: isStarting ? now : null,
+      start_time: isStarting ? nowIso : null,
       accumulated_seconds: newAccumulated,
       cycle_type:
         isStarting && state.cycles_completed === 0 ? "Work" : state.cycle_type,
@@ -103,7 +110,7 @@ export function usePomodoroLogic() {
     } catch {
       toast.error("Erro ao salvar");
     }
-  }, [state, user, updateDisplayTime]);
+  }, [state, user, updateDisplayTime, simulatedNow]);
 
   const stopTimer = useCallback(async () => {
     if (!user || !state) return;
@@ -113,8 +120,8 @@ export function usePomodoroLogic() {
         work_minutes: state.work_minutes,
         break_minutes: state.break_minutes,
         cycles_done: state.cycles_completed,
-        start_time: new Date().toISOString(),
-        end_time: new Date().toISOString(),
+        start_time: simulatedNow.toISOString(),
+        end_time: simulatedNow.toISOString(),
       };
       try {
         await invoke("record_pomodoro_session", { session: historyEntry });
@@ -138,7 +145,7 @@ export function usePomodoroLogic() {
     setState(newState);
     updateDisplayTime(newState);
     fetchHistory();
-  }, [user, state, updateDisplayTime, fetchHistory]);
+  }, [user, state, updateDisplayTime, fetchHistory, simulatedNow]);
 
   const clearHistory = useCallback(async () => {
     if (!user) return;

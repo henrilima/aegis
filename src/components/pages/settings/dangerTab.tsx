@@ -25,9 +25,9 @@ export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
         />
       )}
 
-      <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-3xl space-y-6">
+      <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-xl space-y-6">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-red-500/10 rounded-2xl border border-red-500/20">
+          <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20">
             <ShieldAlert className="w-6 h-6 text-red-500" />
           </div>
           <div>
@@ -39,7 +39,7 @@ export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
           </div>
         </div>
 
-        <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-4">
+        <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-4">
           <div className="space-y-1">
             <p className="font-bold text-neutral-200">Excluir Conta Local</p>
             <p className=" text-neutral-500 leading-relaxed">

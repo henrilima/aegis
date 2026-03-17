@@ -58,13 +58,23 @@ export function qualityColor(q: number) {
   }
 }
 
-export function weekRange() {
-  const now = new Date();
+export function weekRange(referenceNow?: Date) {
+  const now = referenceNow || new Date();
   const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
   const start = new Date(now.getFullYear(), now.getMonth(), diff);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
+  return { start: isoDate(start), end: isoDate(end) };
+}
+
+/**
+ * Retorna o intervalo dos últimos 7 dias a partir de hoje (janela móvel)
+ */
+export function rollingRange(referenceNow?: Date) {
+  const end = referenceNow || new Date();
+  const start = new Date(end);
+  start.setDate(end.getDate() - 6);
   return { start: isoDate(start), end: isoDate(end) };
 }
 

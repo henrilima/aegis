@@ -1,6 +1,7 @@
 "use client";
 
 import { Moon } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { PerformanceSummary } from "../types";
 
 interface SleepImpactProps {
@@ -12,20 +13,27 @@ interface SleepImpactProps {
  */
 export function SleepImpact({ summary }: SleepImpactProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 shadow-sm">
-      <div className="flex items-center gap-2.5">
-        <div className="p-1.5 bg-blue-500/10 rounded-lg">
-          <Moon className="w-3.5 h-3.5 text-blue-400" />
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-blue-500/10 rounded-lg">
+            <Moon className="w-3.5 h-3.5 text-blue-400" />
+          </div>
+          <h2 className="text-[10px] font-bold text-neutral-500">
+            Impacto do Sono na Performance
+          </h2>
         </div>
-        <h2 className="text-[10px] font-black uppercase text-neutral-500">
-          Impacto do Sono na Performance
-        </h2>
+        <ToolTip content="Relaciona o acerto nas questões com a quantidade de horas dormidas na noite anterior.">
+          <div className="text-[10px] text-neutral-600 cursor-help hover:text-neutral-400 transition-colors">
+            O que é isso?
+          </div>
+        </ToolTip>
       </div>
 
       <div className="flex flex-col gap-6">
         {/* Camada: Performance em Estado de Repouso Ideal */}
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between text-[10px] font-black uppercase">
+          <div className="flex items-center justify-between text-[10px] font-bold">
             <span className="text-green-400">Descansado ({">"}7.5h)</span>
             <span className="text-green-500 tabular-nums">
               {summary.rested_hit_rate.toFixed(1)}%
@@ -41,7 +49,7 @@ export function SleepImpact({ summary }: SleepImpactProps) {
 
         {/* Camada: Performance em Estado de Deprivação */}
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between text-[10px] font-black uppercase">
+          <div className="flex items-center justify-between text-[10px] font-bold">
             <span className="text-red-400">Privação de Sono ({"<"}6h)</span>
             <span className="text-red-500 tabular-nums">
               {summary.tired_hit_rate.toFixed(1)}%

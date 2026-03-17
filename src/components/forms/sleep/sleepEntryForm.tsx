@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useTime } from "@/context/TimeContext";
 import type { SleepEntry } from "../../pages/sleep/types";
 
 // ─── Funções Utilitárias Internas ───────────────────────────────────────────
@@ -17,6 +18,7 @@ export function isoDate(d: Date) {
 }
 
 export function calcDurationMinutes(bedtime: string, wakeTime: string): number {
+  if (!bedtime || !wakeTime) return 0;
   const [bh, bm] = bedtime.split(":").map(Number);
   const [wh, wm] = wakeTime.split(":").map(Number);
   const bedMins = bh * 60 + bm;
@@ -70,15 +72,18 @@ export function SleepEntryForm({
   onSave,
   onCancel,
 }: EntryFormProps) {
+  const { now: simulatedNow } = useTime();
   const [form, setForm] = useState({
-    date: initial?.date ?? isoDate(new Date()),
+    date: initial?.date ?? isoDate(simulatedNow),
     bedtime: initial?.bedtime ?? "23:00",
     wake_time: initial?.wake_time ?? "07:00",
     quality: initial?.quality ?? 3,
     note: initial?.note ?? "",
+    nap_minutes: initial?.nap_minutes ?? 0,
   });
 
-  const duration = calcDurationMinutes(form.bedtime, form.wake_time);
+  const nightDuration = calcDurationMinutes(form.bedtime, form.wake_time);
+  const totalDuration = nightDuration + form.nap_minutes;
 
   function setField(k: string, v: string | number) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -90,114 +95,171 @@ export function SleepEntryForm({
       ...form,
       user_id: userId,
       id: initial?.id,
-      duration_minutes: duration,
+      duration_minutes: totalDuration,
+      nap_minutes: form.nap_minutes,
     });
   }
 
   const inputStyle =
-    "bg-neutral-950 border-neutral-800 h-12 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
+    "bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
   const lc = "text-xs font-medium text-neutral-400 ml-0.5";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      {/* Campo de Data do Registro */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="ef-date" className={lc}>
-          Data
-        </Label>
-        <Input
-          id="ef-date"
-          type="date"
-          className={inputStyle}
-          value={form.date}
-          onChange={(e) => setField("date", e.target.value)}
-          required
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        {/* Lado Esquerdo: Horários */}
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ef-date" className={lc}>
+              Data do registro
+            </Label>
+            <Input
+              id="ef-date"
+              type="date"
+              className={inputStyle}
+              value={form.date}
+              onChange={(e) => setField("date", e.target.value)}
+              required
+            />
+          </div>
 
-      <div className="grid grid-cols-2 gap-5">
-        {/* Hora de Recolhimento */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="ef-bedtime" className={lc}>
-            Hora de dormir
-          </Label>
-          <Input
-            id="ef-bedtime"
-            type="time"
-            className={inputStyle}
-            value={form.bedtime}
-            onChange={(e) => setField("bedtime", e.target.value)}
-            required
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ef-bedtime" className={lc}>
+                Hora de dormir
+              </Label>
+              <Input
+                id="ef-bedtime"
+                type="time"
+                className={inputStyle}
+                value={form.bedtime}
+                onChange={(e) => setField("bedtime", e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ef-wake" className={lc}>
+                Hora de acordar
+              </Label>
+              <Input
+                id="ef-wake"
+                type="time"
+                className={inputStyle}
+                value={form.wake_time}
+                onChange={(e) => setField("wake_time", e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Seção de Soneca */}
+          <div className="flex flex-col gap-1.5 border-t border-neutral-900/50 pt-5">
+            <Label className={lc}>Adicionar Soneca (Extra do dia)</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-11">
+                <Input
+                  type="number"
+                  min={0}
+                  max={23}
+                  className="bg-transparent border-none p-0 h-full text-center font-bold text-sm outline-none focus:ring-0"
+                  placeholder="0"
+                  value={Math.floor(form.nap_minutes / 60) || ""}
+                  onChange={(e) => {
+                    const h = Number(e.target.value);
+                    const m = form.nap_minutes % 60;
+                    setField("nap_minutes", h * 60 + m);
+                  }}
+                />
+                <span className="text-[10px] font-bold text-neutral-600 uppercase">
+                  h
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-11">
+                <Input
+                  type="number"
+                  min={0}
+                  max={59}
+                  className="bg-transparent border-none p-0 h-full text-center font-bold text-sm outline-none focus:ring-0"
+                  placeholder="0"
+                  value={form.nap_minutes % 60 || ""}
+                  onChange={(e) => {
+                    const h = Math.floor(form.nap_minutes / 60);
+                    const m = Number(e.target.value);
+                    setField("nap_minutes", h * 60 + m);
+                  }}
+                />
+                <span className="text-[10px] font-bold text-neutral-600 uppercase">
+                  m
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-6 bg-blue-500/5 border border-blue-500/10 rounded-xl animate-in fade-in duration-700">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-blue-500/70 font-bold uppercase mb-1">
+                Duração total
+              </span>
+              <span className="text-xl font-black text-blue-400">
+                {formatDuration(totalDuration)}
+              </span>
+              {form.nap_minutes > 0 && (
+                <span className="text-[10px] text-neutral-600 font-bold mt-1 uppercase">
+                  ({formatDuration(nightDuration)} sono +{" "}
+                  {formatDuration(form.nap_minutes)} soneca)
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        {/* Hora de Despertar */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="ef-wake" className={lc}>
-            Hora de acordar
-          </Label>
-          <Input
-            id="ef-wake"
-            type="time"
-            className={inputStyle}
-            value={form.wake_time}
-            onChange={(e) => setField("wake_time", e.target.value)}
-            required
-          />
+
+        {/* Lado Direito: Qualidade e Notas */}
+        <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
+            <Label className={lc}>Qualidade percebida</Label>
+            <div className="flex gap-1 p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
+              {[1, 2, 3, 4, 5].map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => setField("quality", q)}
+                  className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                    form.quality === q
+                      ? "bg-blue-600/10 border-blue-600/30 text-blue-400"
+                      : "bg-transparent border-transparent text-neutral-600 hover:text-neutral-500"
+                  }`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-[10px] font-bold text-neutral-600 uppercase">
+              {qualityLabel(form.quality)}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ef-note" className={lc}>
+              Observações qualitativas
+            </Label>
+            <Textarea
+              id="ef-note"
+              className="bg-neutral-900 border-neutral-800 rounded-xl min-h-[105px] resize-none pt-4 text-sm font-medium text-neutral-300 focus:border-blue-600/30 placeholder:text-neutral-700 transition-all shadow-none"
+              placeholder="Fatores externos, sonhos, interrupções..."
+              value={form.note}
+              onChange={(e) => setField("note", e.target.value)}
+            />
+          </div>
         </div>
-      </div>
-
-      {/* Indicador de Descanso Calculado */}
-      <div className="text-center py-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl animate-in fade-in duration-700 shadow-inner">
-        <span className="text-xs text-blue-400 font-medium">
-          Total de repouso: {formatDuration(duration)}
-        </span>
-      </div>
-
-      {/* Seletor de Percepção de Qualidade */}
-      <div className="flex flex-col gap-3">
-        <Label className={lc}>Qualidade do sono</Label>
-        <div className="flex gap-2 p-1 bg-neutral-950/50 border border-neutral-800 rounded-2xl">
-          {[1, 2, 3, 4, 5].map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => setField("quality", q)}
-              className={`flex-1 py-3 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                form.quality === q
-                  ? "bg-blue-600/10 border-blue-600/30 text-blue-400 shadow-lg shadow-blue-500/5"
-                  : "bg-transparent border-transparent text-neutral-600 hover:text-neutral-400"
-              }`}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-        <p className="text-center text-xs font-medium text-neutral-500 mt-1">
-          {qualityLabel(form.quality)}
-        </p>
-      </div>
-
-      {/* Notas Opcionais */}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="ef-note" className={lc}>
-          Observações <span className="text-neutral-600 font-normal">(opcional)</span>
-        </Label>
-        <Textarea
-          id="ef-note"
-          className="bg-neutral-950 border-neutral-800 rounded-2xl min-h-[100px] resize-none pt-4 font-bold text-neutral-400 focus:border-blue-500/30 placeholder:text-neutral-800 transition-all shadow-inner"
-          placeholder="Ex: Interrupções, sonhos, fatores externos qualitativos..."
-          value={form.note}
-          onChange={(e) => setField("note", e.target.value)}
-        />
       </div>
 
       {/* Ações do Formulário */}
-      <div className="flex flex-col gap-2 pt-2">
+      <div className="flex flex-col gap-2 pt-6 border-t border-neutral-900/50">
         <button
           type="submit"
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-bold transition-all active:scale-[0.98] cursor-pointer"
         >
-          {initial ? "Salvar alterações" : "Registrar sono"}
+          {initial ? "Salvar alterações" : "Confirmar registro"}
         </button>
         <button
           type="button"

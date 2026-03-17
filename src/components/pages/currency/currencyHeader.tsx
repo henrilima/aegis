@@ -8,7 +8,7 @@ interface CurrencyHeaderProps {
 export function CurrencyHeader({ isOffline, loading }: CurrencyHeaderProps) {
   return (
     <div className="text-center space-y-1">
-      <div className="mx-auto mb-3 p-3 bg-green-500/10 rounded-3xl w-fit border border-green-500/20">
+      <div className="mx-auto mb-3 p-3 bg-green-500/10 rounded-xl w-fit border border-green-500/20">
         <Coins
           className={`w-7 h-7 text-green-500 ${loading ? "animate-pulse" : ""}`}
         />

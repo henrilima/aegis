@@ -25,17 +25,26 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Legenda simples */}
-      <div className="flex items-center gap-4 text-[10px] font-black uppercase text-neutral-500">
-        <span className="flex items-center gap-1.5">
+      <div className="flex items-center gap-4 text-[10px] font-bold text-neutral-500">
+        <span
+          className="flex items-center gap-1.5 cursor-help"
+          title="Média de horas de estudo por dia"
+        >
           <span className="w-2 h-2 rounded-full bg-violet-500 shadow-sm" />
           Estudo
         </span>
-        <span className="flex items-center gap-1.5">
+        <span
+          className="flex items-center gap-1.5 cursor-help"
+          title="Média de horas de sono por dia"
+        >
           <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
           Sono
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm" />%
+        <span
+          className="flex items-center gap-1.5 cursor-help"
+          title="Porcentagem de acerto em questões"
+        >
+          <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm" />
           Acerto
         </span>
       </div>

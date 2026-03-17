@@ -12,6 +12,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { Habit } from "./types";
 import { useHabitLogic } from "./useHabitLogic";
 
@@ -59,7 +60,7 @@ export function HabitCard({
   const hasCharges = maxCharges > 0;
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 flex flex-col gap-4 hover:border-neutral-700 transition-all group relative active:scale-[0.99]">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex flex-col gap-4 hover:border-neutral-700 hover:bg-neutral-800/20 transition-all group relative">
       {/* Cabeçalho do Card */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3">
@@ -129,7 +130,7 @@ export function HabitCard({
               className={`w-4 h-4 mb-1 ${currentCharges > 0 ? "text-orange-400" : "text-neutral-700"}`}
             />
           }
-          label="Vidas"
+          label="Cargas"
           value={hasCharges ? `${currentCharges}/${maxCharges}` : "—"}
           active={currentCharges > 0}
         />
@@ -142,11 +143,12 @@ export function HabitCard({
           <span className="text-neutral-400">{totalContagem}</span>
         </p>
 
-        {/* Timer de próxima carga — aparece aqui para ambos os tipos */}
-        {hasCharges && chargeTimeLeft ? (
+        {/* Timer de próxima carga — aparece aqui para ambos os tipos se NÃO estiver no máximo */}
+        {hasCharges && currentCharges < maxCharges && chargeTimeLeft ? (
           <p className="text-[10px] text-neutral-600 font-medium flex items-center gap-1">
             <Zap className="w-2.5 h-2.5 text-orange-500/60" />
-            Próxima carga em: <span className="text-neutral-400 ml-0.5">{chargeTimeLeft}</span>
+            Próxima carga em:{" "}
+            <span className="text-neutral-400 ml-0.5">{chargeTimeLeft}</span>
           </p>
         ) : !isNegative ? (
           <p className="text-[10px] text-neutral-600 font-medium">
@@ -163,7 +165,7 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && actions.markDone()}
-              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" /> Marcar como feito
             </button>
@@ -176,7 +178,8 @@ export function HabitCard({
               <div className="flex items-center gap-1 text-neutral-500">
                 <Clock className="w-3 h-3" />
                 <span className="text-[10px] font-medium">
-                  Próximo em: <span className="text-neutral-300">{timeLeft}</span>
+                  Próximo em:{" "}
+                  <span className="text-neutral-300">{timeLeft}</span>
                 </span>
               </div>
             </div>
@@ -187,7 +190,7 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && onOpenResetDialog(habit.id)}
-              className="w-full py-3 rounded-xl border border-red-900/60 text-red-400/80 text-sm font-medium hover:border-red-500/40 hover:text-red-300 hover:bg-red-950/30 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+              className="w-full py-3 rounded-xl border border-red-900/60 text-red-400/80 text-sm font-medium hover:border-red-500/40 hover:text-red-300 hover:bg-red-800/30 bg-red-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <AlertTriangle className="w-3.5 h-3.5" /> Registrar falha
             </button>
@@ -196,9 +199,9 @@ export function HabitCard({
               <button
                 type="button"
                 onClick={() => habit.id && actions.handleUseCharge()}
-                className="w-full py-2 rounded-xl text-orange-500/60 text-xs font-medium hover:text-orange-400 hover:bg-orange-950/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                className="w-full py-2 rounded-xl text-yellow-500/60 text-xs font-medium hover:text-yellow-400 hover:bg-yellow-900/20 bg-yellow-800/10 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Zap className="w-3 h-3" /> Usar vida protetora
+                <Zap className="w-3 h-3" /> Usar carga protetora
               </button>
             )}
           </div>
@@ -252,17 +255,18 @@ function IconBtn({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`p-1.5 rounded-lg transition-all cursor-pointer border border-transparent ${
-        danger
-          ? "text-neutral-700 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
-          : "text-neutral-700 hover:text-neutral-200 hover:bg-neutral-800 hover:border-neutral-700"
-      }`}
-    >
-      {children}
-    </button>
+    <ToolTip content={title}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`p-1.5 rounded-lg transition-all cursor-pointer border border-transparent ${
+          danger
+            ? "text-neutral-700 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+            : "text-neutral-700 hover:text-neutral-200 hover:bg-neutral-800 hover:border-neutral-700"
+        }`}
+      >
+        {children}
+      </button>
+    </ToolTip>
   );
 }

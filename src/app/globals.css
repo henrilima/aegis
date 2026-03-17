@@ -125,15 +125,32 @@
     @apply bg-background text-foreground;
   }
 
+  /* Subtle Scrollbar */
   ::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #262626; /* neutral-800 */
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #404040; /* neutral-700 */
+    background-clip: padding-box;
   }
 
   * {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #262626 transparent;
   }
 }
 

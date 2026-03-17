@@ -41,16 +41,17 @@ Este projeto está sob a licença **MIT**. Isso significa que ele é um software
 
 ## 🤖 Uma Observação sobre o Desenvolvimento
 
-Este projeto preza pela clareza e manutenção. Por isso, toda a base de código foi documentada com comentários detalhados em português (PT-BR)
+Este projeto preza pela clareza e manutenção. Por isso, toda a base de código foi documentada com comentários detalhados em português (PT-BR).
 
-> **Nota**: Os comentários de código, anotações lógicas, simplificações em trechos de Rust (como auxílio no aprendizado inicial da linguagem) e este README foram gerados com o auxílio de inteligência artificial (IA) para garantir consistência gramatical e clareza técnica. Isso serve como um guia prático para entender as entranhas do sistema sem perder o toque humano na arquitetura, com planos de refinamento manual conforme o domínio da linguagem Rust avance.
+> [!NOTE]
+> Os comentários de código, anotações lógicas, simplificações em trechos de Rust, este **README** e o **changelog** foram gerados com o auxílio de inteligência artificial (IA) para garantir consistência gramatical e clareza técnica. Isso serve como um guia prático para entender as entranhas do sistema sem perder o toque humano na arquitetura, sendo revisados integralmente por um humano para garantir a precisão e integridade do projeto.
 
 ---
 
 ## 🪟 Compatibilidade
 
 Atualmente, o Aegis é **otimizado exclusivamente para Windows**. 
-Isso ocorre devido às integrações profundas com o sistema de notificações nativo (suporte a Alertas Críticos/Foco) e protocolos de sistema desenhados especificamente para a experiência de desktop no Windows 10 e 11.
+Isso ocorre devido às integrações profundas com o sistema de notificações nativo (suporte a Alertas Críticos/Foco) e protocolos de sistema desenhados especificamente para a experiência de desktop no Windows 10 e 11. Caso o projeto tenha algum sucesso, pensamos em futuramente expandir para outras plataformas.
 
 ---
 
@@ -60,4 +61,4 @@ O Aegis processa seus dados localmente através da infraestrutura do Tauri. Suas
 
 ---
 
-Feito com carinho por [José Henrique](https://github.com/henrilima).
+Feito com carinho por [José Henrique](https://github.com/henrilima) e revisado por uma IA.

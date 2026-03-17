@@ -6,7 +6,9 @@ import "./style.css";
 import { useEffect } from "react";
 import { NotificationPermission } from "@/components/NotificationPermission";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
+import { TimeProvider } from "@/context/TimeContext";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -22,6 +24,8 @@ export default function RootLayout({
   useEffect(() => {
     // Handler global de erros (Safety Net)
     const handleError = (event: ErrorEvent) => {
+      // Ignorar erro comum de ResizeObserver que não afeta a funcionalidade
+      if (event.message?.includes("ResizeObserver loop completed")) return;
       console.error("[CRITICAL ERROR]", event.error || event.message);
     };
 
@@ -43,7 +47,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className={`${montserrat.className} antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <TooltipProvider>
+          <TimeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </TimeProvider>
+        </TooltipProvider>
         <NotificationPermission />
         <Toaster />
       </body>

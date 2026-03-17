@@ -12,7 +12,7 @@ export function ReportTextSection({
   onCopy,
 }: ReportTextSectionProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-2xl h-full flex flex-col">
       <div className="p-6 border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Copy className="w-4 h-4 text-violet-500" />
@@ -29,7 +29,7 @@ export function ReportTextSection({
         </button>
       </div>
       <div className="p-6 flex-1">
-        <pre className="text-xs text-neutral-300 font-mono whitespace-pre-wrap bg-neutral-950 border border-neutral-800 rounded-2xl p-6 leading-relaxed shadow-inner h-full overflow-y-auto">
+        <pre className="text-xs text-neutral-300 font-mono whitespace-pre-wrap bg-neutral-950 border border-neutral-800 rounded-xl p-6 leading-relaxed shadow-inner h-full overflow-y-auto">
           {reportText}
         </pre>
       </div>

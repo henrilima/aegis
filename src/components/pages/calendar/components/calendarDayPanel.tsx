@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { CalendarEvent, DeadlineCategory } from "../types";
 import {
   DEADLINE_COLORS,
@@ -43,7 +44,7 @@ export function CalendarDayPanel({
   });
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col gap-6 sticky top-4 shadow-2xl animate-in slide-in-from-right-4 duration-500 overflow-hidden">
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 sticky top-4 shadow-2xl animate-in slide-in-from-right-4 duration-500 overflow-hidden">
       {/* Cabeçalho do Painel */}
       <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
         <div className="flex items-center gap-3">
@@ -85,7 +86,7 @@ export function CalendarDayPanel({
             return (
               <div
                 key={ev.id}
-                className="group relative rounded-2xl p-4 flex flex-col gap-3 border transition-all hover:translate-x-1 duration-300"
+                className="group relative rounded-xl p-4 flex flex-col gap-3 border transition-all hover:translate-x-1 duration-300"
                 style={{
                   backgroundColor: `${color}08`,
                   borderColor: `${color}20`,
@@ -124,22 +125,26 @@ export function CalendarDayPanel({
 
                   {/* Ações do Registro */}
                   <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => onEdit(ev)}
-                      className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-white hover:bg-neutral-800 transition-all border-none"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => ev.id != null && onDelete(ev.id)}
-                      className="w-7 h-7 p-0 rounded-lg text-neutral-700 hover:text-red-500 hover:bg-red-500/10 transition-all border-none"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <ToolTip content="Editar registro">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => onEdit(ev)}
+                        className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-white hover:bg-neutral-800 transition-all border-none"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                    </ToolTip>
+                    <ToolTip content="Excluir registro">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => ev.id != null && onDelete(ev.id)}
+                        className="w-7 h-7 p-0 rounded-lg text-neutral-700 hover:text-red-500 hover:bg-red-500/10 transition-all border-none"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </ToolTip>
                   </div>
                 </div>
 

@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { CurrencyRate } from "./types";
 
 const CURRENCY_API = "https://open.er-api.com/v6/latest/USD";
@@ -131,7 +132,7 @@ export default function CurrencyPage() {
       <div className="w-full max-w-sm space-y-5">
         {/* Cabeçalho */}
         <div className="text-center space-y-1">
-          <div className="mx-auto mb-3 p-3 bg-green-500/10 rounded-3xl w-fit border border-green-500/20">
+          <div className="mx-auto mb-3 p-3 bg-green-500/10 rounded-xl w-fit border border-green-500/20">
             <Coins
               className={`w-7 h-7 text-green-500 ${loading ? "animate-pulse" : ""}`}
             />
@@ -147,7 +148,7 @@ export default function CurrencyPage() {
         </div>
 
         {/* Console de Conversão */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 space-y-4 shadow-2xl shadow-black/40">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-4 shadow-2xl shadow-black/40">
           {/* Campo de Origem */}
           <div className="space-y-1.5">
             <label
@@ -158,7 +159,7 @@ export default function CurrencyPage() {
             </label>
             <div className="flex gap-2">
               <Select value={baseCurrency} onValueChange={setBaseCurrency}>
-                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-2xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
+                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-neutral-900 border-neutral-800 max-h-60">
@@ -179,21 +180,22 @@ export default function CurrencyPage() {
                 min={0}
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-2xl px-4 py-3 font-mono font-black text-right text-white outline-none focus:border-green-500/30 transition-all shadow-inner"
+                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 font-mono font-black text-right text-white outline-none focus:border-green-500/30 transition-all shadow-inner"
               />
             </div>
           </div>
 
           {/* Botão de Inversão */}
           <div className="flex justify-center -my-2 relative z-10">
-            <button
-              type="button"
-              onClick={handleSwap}
-              className="p-3 rounded-2xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-400 hover:text-white transition-all cursor-pointer shadow-lg active:scale-90"
-              title="Inverter Moedas"
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-            </button>
+            <ToolTip content="Inverter Moedas">
+              <button
+                type="button"
+                onClick={handleSwap}
+                className="p-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-400 hover:text-white transition-all cursor-pointer shadow-lg active:scale-90"
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+              </button>
+            </ToolTip>
           </div>
 
           {/* Campo de Destino */}
@@ -206,7 +208,7 @@ export default function CurrencyPage() {
             </label>
             <div className="flex gap-2">
               <Select value={targetCurrency} onValueChange={setTargetCurrency}>
-                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-2xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
+                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-neutral-900 border-neutral-800 max-h-60">
@@ -223,7 +225,7 @@ export default function CurrencyPage() {
               </Select>
               <div
                 id="currency-target"
-                className="flex-1 h-[46px] px-4 rounded-2xl bg-neutral-950/50 border border-neutral-800 font-mono font-black text-right flex items-center justify-end text-green-400 text-xl shadow-inner"
+                className="flex-1 h-[46px] px-4 rounded-xl bg-neutral-950/50 border border-neutral-800 font-mono font-black text-right flex items-center justify-end text-green-400 text-xl shadow-inner"
               >
                 {result.toFixed(2)}
               </div>

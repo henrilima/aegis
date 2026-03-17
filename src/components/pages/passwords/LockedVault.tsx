@@ -1,4 +1,6 @@
-import { Key, Shield, Trash2, Lock } from "lucide-react";
+"use client";
+
+import { Key, Lock, Shield, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -25,31 +27,30 @@ export function LockedVault({
   handleVerify,
   handleStartReset,
 }: LockedVaultProps) {
+  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+
   return (
-    <div className="h-full w-full flex items-center justify-center bg-neutral-950 p-6">
-      <Card className="w-full max-w-md border border-neutral-800 bg-neutral-900 rounded-[32px] overflow-hidden">
-        <CardHeader className="text-center pt-10 pb-6 bg-amber-500/5">
-          <div className="mx-auto mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-fit">
-            <Shield className="w-10 h-10 text-amber-500" />
+    <div className="h-full w-full flex items-center justify-center bg-neutral-950 p-6 animate-in fade-in duration-500">
+      <Card className="w-full max-w-sm bg-neutral-900 border border-neutral-800 shadow-none rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+        <CardHeader className="text-center pt-10 pb-6">
+          <div className="mx-auto mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl w-fit">
+            <Shield className="w-8 h-8 text-amber-400" />
           </div>
-          <CardTitle className="text-3xl font-black text-white">
-            Cofre de Segurança
+          <CardTitle className="text-2xl font-black text-white">
+            Cofre de segurança
           </CardTitle>
-          <CardDescription className="text-neutral-500 font-medium px-6">
-            Insira sua senha mestra para desbloquear seus dados locais e offline
+          <CardDescription className="text-xs font-medium text-neutral-500 px-4 mt-1">
+            Insira sua senha mestre para descriptografar seus dados
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6 pt-8">
-          <div className="space-y-3">
-            <Label
-              htmlFor="master"
-              className="text-[10px] font-black uppercase text-neutral-500 ml-1"
-            >
-              Senha Mestra de Acesso
+        <CardContent className="space-y-6 px-8">
+          <div className="space-y-1.5">
+            <Label htmlFor="master" className={lc}>
+              Senha de acesso
             </Label>
             <div className="relative">
-              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500/50" />
+              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500/30" />
               <Input
                 id="master"
                 type="password"
@@ -58,52 +59,53 @@ export function LockedVault({
                     ? "Sua senha mestra secreta"
                     : "Defina sua nova senha mestra"
                 }
-                className="pl-12 h-14 bg-neutral-950/50 border-neutral-800 rounded-2xl text-base focus-visible:ring-amber-500/20 focus-visible:border-amber-500/30 transition-all"
+                className="pl-12 h-11 bg-neutral-900 border-neutral-800 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:border-amber-500/40 transition-all"
                 value={masterPassword}
                 onChange={(e) => setMasterPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+                autoFocus
               />
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleVerify}
-            className="w-full h-14 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-black uppercase hover:bg-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-3 active:scale-[0.98]"
-          >
-            <Lock className="w-5 h-5" />
-            {vaultExists ? "Desbloquear Cofre" : "Configurar Novo Cofre"}
-          </button>
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleVerify}
+              className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              {vaultExists ? "Desbloquear cofre" : "Configurar novo cofre"}
+            </button>
 
-          {vaultExists && (
-            <div className="pt-2">
+            {vaultExists && (
               <button
                 type="button"
                 onClick={handleStartReset}
-                className="w-full py-3 rounded-xl text-red-500/50 hover:text-red-400 text-[10px] font-black uppercase gap-2 flex items-center justify-center transition-all hover:bg-red-500/5"
+                className="w-full py-2 text-neutral-600 hover:text-red-400 text-[11px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Esqueci minha senha / Resetar
-                Cofre
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
 
-        <CardFooter className="pb-10 pt-4 px-8">
+        <CardFooter className="pb-10 pt-8 px-10 border-t border-neutral-900/50">
           <div className="text-center space-y-4">
-            <p className="text-[11px] leading-relaxed text-neutral-500">
-              <span className="text-amber-500/80 font-black uppercase block mb-1 text-[9px]">
-                Aviso de Segurança
-              </span>
-              A Aegis utiliza criptografia{" "}
-              <span className="text-neutral-300 font-bold">AES-256-GCM</span> e
-              derivação de chave{" "}
-              <span className="text-neutral-300 font-bold">Argon2id</span>. Seus
-              dados nunca saem deste dispositivo.{" "}
-              <span className="text-neutral-400">
-                Salve sua senha em local seguro, pois não há recuperação
-                possível.
-              </span>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-neutral-600 uppercase">
+                Protocolo de Segurança
+              </p>
+              <p className="text-[11px] leading-relaxed text-neutral-500 font-medium">
+                Criptografia{" "}
+                <span className="text-neutral-300">AES-256-GCM</span> com
+                derivação
+                <span className="text-neutral-300"> Argon2id</span>. Seus dados
+                nunca saem do dispositivo.
+              </p>
+            </div>
+            <p className="text-[10px] text-amber-500/40 font-medium italic">
+              Atenção: Não há recuperação de senha possível.
             </p>
           </div>
         </CardFooter>

@@ -8,6 +8,7 @@ interface PerformanceKpiProps {
   qPerHour: number;
   pPerHour: number;
   sessionsCount: number;
+  isMonthly?: boolean;
 }
 
 export function PerformanceKpi({
@@ -15,10 +16,11 @@ export function PerformanceKpi({
   qPerHour,
   pPerHour,
   sessionsCount,
+  isMonthly = false,
 }: PerformanceKpiProps) {
   const kpis = [
     {
-      label: "Tempo Total",
+      label: isMonthly ? "Tempo no Mês" : "Tempo Total",
       value: formatHours(hours),
       icon: TrendingUp,
       color: "text-violet-400",
@@ -52,7 +54,7 @@ export function PerformanceKpi({
       {kpis.map((stat) => (
         <div
           key={stat.label}
-          className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-center gap-4 transition-all hover:bg-neutral-800/40"
+          className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-neutral-800/40"
         >
           <div
             className={`p-3 rounded-xl border border-neutral-800/50 ${stat.bg} ${stat.color}`}

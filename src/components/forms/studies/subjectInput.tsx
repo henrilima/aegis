@@ -71,14 +71,14 @@ export function SubjectInput({
 
       {/* Dropdown de sugestões */}
       {open && (filtered.length > 0 || isNew) && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto custom-scrollbar">
             {filtered.map((s) => (
               <button
                 key={s}
                 type="button"
                 onMouseDown={() => select(s)}
-                className="w-full text-left px-3 py-2 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-white rounded-lg transition-all cursor-pointer font-bold"
+                className="w-full text-left px-3 py-2 text-[11px] text-neutral-400 hover:bg-neutral-800 hover:text-white rounded-lg transition-all cursor-pointer font-bold"
               >
                 {s}
               </button>
@@ -89,9 +89,9 @@ export function SubjectInput({
               <button
                 type="button"
                 onMouseDown={() => select(query.trim())}
-                className="w-full text-left px-3 py-2 text-xs text-violet-400 font-black hover:bg-violet-500/10 rounded-lg transition-all border-t border-neutral-800/20 mt-0.5 cursor-pointer"
+                className="w-full text-left px-3 py-2 text-[11px] text-violet-400 font-bold hover:bg-violet-500/10 rounded-lg transition-all border-t border-neutral-800/20 mt-1 cursor-pointer"
               >
-                + Registrar "{query.trim()}"
+                + Criar "{query.trim()}"
               </button>
             )}
           </div>

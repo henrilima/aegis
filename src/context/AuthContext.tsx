@@ -23,6 +23,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (userId: string) => Promise<void>;
   logout: () => void;
+  updateUsername: (newUsername: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,10 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = useCallback(async (userId: string) => {
     console.log(`[AUTH] Buscando dados para userId: ${userId}`);
     try {
-      // Busca os dados do usuário no backend pelo ID
+      // Busca dados do usuário no backend
       const userData = await invoke<User>("get_local_user", { userId });
 
-      // Atualiza o estado global se o usuário for encontrado
       if (userData?.id) {
         console.log(`[AUTH] Usuário encontrado: ${userData.username}`);
         setUser(userData);
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Usuário não encontrado");
       }
     } catch (error) {
-      // Limpa a sessão em caso de erro na recuperação do usuário
+      // Limpa sessão em caso de erro
       console.error("Erro na autenticação local:", error);
       localStorage.removeItem("token");
       setUser(null);
@@ -71,12 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/");
   };
 
+  const updateUsername = (newUsername: string) => {
+    if (user) {
+      setUser({ ...user, username: newUsername });
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     console.log(
       `[AUTH] Verificando token salvo: ${storedToken ? "Encontrado" : "Não encontrado"}`,
     );
-    // Tenta restaurar a sessão se houver um token salvo
+    // Restaura sessão se houver token
     if (storedToken) {
       fetchUser(storedToken);
     } else {
@@ -86,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, isAuthenticated, login, logout }}
+      value={{ user, loading, isAuthenticated, login, logout, updateUsername }}
     >
       {children}
     </AuthContext.Provider>
@@ -96,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
   }
   return context;
 }

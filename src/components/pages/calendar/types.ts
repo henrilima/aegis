@@ -39,8 +39,8 @@ export const EVENT_COLOR_OPTIONS = [
 ];
 
 /** Calcula quantos dias faltam para a data (positivo = futuro, 0 = hoje, negativo = passado) */
-export function daysUntil(dateStr: string): number {
-  const today = new Date();
+export function daysUntil(dateStr: string, referenceNow?: Date): number {
+  const today = referenceNow ? new Date(referenceNow) : new Date();
   today.setHours(0, 0, 0, 0);
   const [y, m, d] = dateStr.split("-").map(Number);
   const target = new Date(y, m - 1, d);

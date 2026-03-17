@@ -14,6 +14,7 @@ export interface StudySession {
   pages_read?: number;
   custom_metric_label?: string;
   custom_metric_value?: number;
+  focus_score?: number;
 }
 
 export interface StudyGoal {

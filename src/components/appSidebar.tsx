@@ -19,9 +19,10 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { type AppRoute, useNavigation } from "@/context/NavigationContext";
-import { cn } from "@/lib/utils";
+import { cn, getColorTheme, getThemeColor } from "@/lib/utils";
 
 const NAV_GROUPS = [
   {
@@ -31,7 +32,7 @@ const NAV_GROUPS = [
         title: "Dashboard",
         route: "dashboard" as AppRoute,
         icon: Home,
-        color: "amber",
+        color: "blue",
       },
     ],
   },
@@ -107,6 +108,12 @@ const NAV_GROUPS = [
     label: "Utilidades",
     items: [
       {
+        title: "Hidratação",
+        route: "hydration" as AppRoute,
+        icon: Droplet,
+        color: "blue",
+      },
+      {
         title: "Câmbio",
         route: "currency" as AppRoute,
         icon: Banknote,
@@ -118,15 +125,10 @@ const NAV_GROUPS = [
         icon: Wifi,
         color: "red",
       },
-      {
-        title: "Hidratação",
-        route: "hydration" as AppRoute,
-        icon: Droplet,
-        color: "blue",
-      },
     ],
   },
 ];
+
 import { APP_CONFIG } from "@/app.config";
 
 interface AppSidebarProps {
@@ -135,6 +137,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
+  const theme = getThemeColor();
   const { route, navigate } = useNavigation();
   const { user, logout } = useAuth();
 
@@ -162,8 +165,10 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
     >
       <div className="flex items-center justify-between gap-2.5 px-4 py-5 border-b border-neutral-800/70">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 border border-amber-500/20">
-            <Shield className="w-5 h-5 text-amber-500" strokeWidth={2.5} />
+          <div
+            className={`flex h-9 w-9 items-center justify-center rounded-xl ${theme.bg} border ${theme.border}`}
+          >
+            <Shield className={`w-5 h-5 ${theme.text}`} strokeWidth={2.5} />
           </div>
           <span className="text-lg font-black">{APP_CONFIG.name}</span>
         </div>
@@ -186,7 +191,26 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
             )}
             {group.items.map((item) => {
               const active = mounted && isActive(item.route);
-              const colorClass = item.color;
+              const itemTheme = getColorTheme(item.color);
+
+              // Determina as classes baseadas no estado ativo e na cor do item
+              const getActiveClasses = () => {
+                if (!active)
+                  return "text-neutral-500 hover:text-neutral-200 hover:bg-white/5";
+
+                return `${itemTheme.active} ${itemTheme.text} ${itemTheme.border.replace("/20", "/30")} font-semibold`;
+              };
+
+              const getIconClasses = () => {
+                if (!active)
+                  return "text-neutral-600 group-hover:text-neutral-400";
+                return itemTheme.text;
+              };
+
+              const getDotClasses = () => {
+                if (!active) return "bg-transparent";
+                return itemTheme.solid;
+              };
 
               return (
                 <button
@@ -194,41 +218,14 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
                   type="button"
                   onClick={() => navigate(item.route)}
                   className={cn(
-                    "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl  font-medium transition-all group cursor-pointer",
-                    active
-                      ? {
-                          "bg-amber-500/12 text-amber-500 font-semibold":
-                            colorClass === "amber",
-                          "bg-teal-500/12 text-teal-400 font-semibold":
-                            colorClass === "teal",
-                          "bg-red-500/12 text-red-400 font-semibold":
-                            colorClass === "red",
-                          "bg-orange-500/12 text-orange-400 font-semibold":
-                            colorClass === "orange",
-                          "bg-green-500/12 text-green-400 font-semibold":
-                            colorClass === "green",
-                          "bg-blue-500/12 text-blue-400 font-semibold":
-                            colorClass === "blue",
-                          "bg-violet-500/12 text-violet-400 font-semibold":
-                            colorClass === "violet",
-                        }
-                      : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/70",
+                    "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl font-medium transition-all group cursor-pointer border border-transparent",
+                    getActiveClasses(),
                   )}
                 >
                   <item.icon
                     className={cn(
                       "w-4 h-4 shrink-0 transition-colors",
-                      active
-                        ? {
-                            "text-amber-500": colorClass === "amber",
-                            "text-teal-400": colorClass === "teal",
-                            "text-red-400": colorClass === "red",
-                            "text-orange-400": colorClass === "orange",
-                            "text-green-400": colorClass === "green",
-                            "text-blue-400": colorClass === "blue",
-                            "text-violet-400": colorClass === "violet",
-                          }
-                        : "text-neutral-600 group-hover:text-neutral-400",
+                      getIconClasses(),
                     )}
                   />
                   {item.title}
@@ -236,15 +233,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
                     <span
                       className={cn(
                         "ml-auto w-1.5 h-1.5 rounded-full shrink-0",
-                        {
-                          "bg-amber-500": colorClass === "amber",
-                          "bg-teal-400": colorClass === "teal",
-                          "bg-red-400": colorClass === "red",
-                          "bg-orange-400": colorClass === "orange",
-                          "bg-green-400": colorClass === "green",
-                          "bg-blue-400": colorClass === "blue",
-                          "bg-violet-400": colorClass === "violet",
-                        },
+                        getDotClasses(),
                       )}
                     />
                   )}
@@ -262,7 +251,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
           className={cn(
             "flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-xl  font-medium transition-all cursor-pointer",
             mounted && isActive("settings")
-              ? "bg-amber-500/12 text-amber-500 font-semibold"
+              ? `${theme.bg} ${theme.text} font-semibold`
               : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/70",
           )}
         >
@@ -271,7 +260,9 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
         </button>
 
         <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-neutral-900 border border-neutral-800 mt-1">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-black uppercase">
+          <div
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${theme.bg} border ${theme.border} ${theme.text} text-xs font-black uppercase`}
+          >
             {user?.username?.[0] ?? "A"}
           </div>
           <div className="flex-1 min-w-0">
@@ -282,14 +273,15 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
               {user?.email ?? ""}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            title="Sair"
-            className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
+          <ToolTip content="Sair">
+            <button
+              type="button"
+              onClick={logout}
+              className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </ToolTip>
         </div>
       </div>
     </aside>

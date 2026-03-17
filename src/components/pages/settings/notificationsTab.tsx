@@ -4,8 +4,10 @@ import {
   ExternalLink,
   Settings as SettingsIcon,
   ShieldAlert,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getThemeColor } from "@/lib/utils";
 
 interface NotificationsTabProps {
   handleTestNotification: () => void;
@@ -14,6 +16,7 @@ interface NotificationsTabProps {
 export function NotificationsTab({
   handleTestNotification,
 }: NotificationsTabProps) {
+  const theme = getThemeColor();
   const handleOpenSettings = async () => {
     await invoke("open_notification_settings");
   };
@@ -24,11 +27,13 @@ export function NotificationsTab({
         Notificações do Sistema
       </p>
 
-      <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-6">
+      <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20 shrink-0">
-              <ShieldAlert className="w-5 h-5 text-red-500" />
+            <div
+              className={`p-2.5 ${theme.bg} rounded-xl border ${theme.border} shrink-0`}
+            >
+              <ShieldAlert className={`w-5 h-5 ${theme.text}`} />
             </div>
             <div>
               <p className="font-bold ">Prioridade Crítica (Windows)</p>
@@ -52,8 +57,10 @@ export function NotificationsTab({
         </div>
 
         <div className="flex items-center gap-4 border-t border-neutral-800 pt-6">
-          <div className="p-2.5 bg-amber-500/10 rounded-xl border border-amber-500/20 shrink-0">
-            <Bell className="w-5 h-5 text-amber-500" />
+          <div
+            className={`p-2.5 ${theme.bg} rounded-xl border ${theme.border} shrink-0`}
+          >
+            <Bell className={`w-5 h-5 ${theme.text}`} />
           </div>
           <div>
             <p className="font-bold ">Teste de Comunicação</p>
@@ -64,7 +71,7 @@ export function NotificationsTab({
         </div>
         <Button
           onClick={handleTestNotification}
-          className="w-full bg-amber-500 hover:bg-amber-500 text-black font-black uppercase text-xs cursor-pointer"
+          className={`w-full ${theme.solid} ${theme.solidHover} text-white font-black uppercase text-xs cursor-pointer`}
         >
           Enviar Notificação de Teste
         </Button>

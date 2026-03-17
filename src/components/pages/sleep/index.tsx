@@ -4,15 +4,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { BarChart3, Calendar, Moon, Plus, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { SleepInfoModal } from "@/components/forms/sleep/SleepInfoModal";
+import { SleepEntryModal } from "@/components/forms/sleep/sleepModals";
+import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
+import { useTime } from "@/context/TimeContext";
 import { SleepChart } from "./components/sleepChart";
 import { SleepGoalTab } from "./components/sleepGoalTab";
-
 import { SleepHeader } from "./components/sleepHeader";
 import { SleepHistory } from "./components/sleepHistory";
 import { SleepStatsBanner } from "./components/sleepStatsBanner";
-import { DeleteSleepModal, SleepEntryModal } from "@/components/forms/sleep/sleepModals";
-import { isoDate, weekRange } from "./sleepUtils";
+import { isoDate, rollingRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
 type TabId = "semana" | "historico";
@@ -22,6 +24,7 @@ type TabId = "semana" | "historico";
  */
 export default function SleepPage() {
   const { user } = useAuth();
+  const uid = user ? String(user.id) : "";
   const [entries, setEntries] = useState<SleepEntry[]>([]);
   const [goal, setGoal] = useState<SleepGoal>({
     user_id: "",
@@ -36,10 +39,9 @@ export default function SleepPage() {
   const [goalHours, setGoalHours] = useState("8");
   const [goalBedtime, setGoalBedtime] = useState("23:00");
   const [showSettings, setShowSettings] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
-  const uid = user ? String(user.id) : "";
-
-  // Carrega sincronizadamente os registros e as metas do usuário
+  // Busca registros e metas
   const loadData = useCallback(async () => {
     if (!uid) return;
     try {
@@ -114,9 +116,9 @@ export default function SleepPage() {
     }
   };
 
-  // ─── Processamento de Métricas ───────────────────────────────────────────
-
-  const { start: weekStart, end: weekEnd } = weekRange();
+  // Processamento de métricas
+  const { now: simulatedNow } = useTime();
+  const { start: weekStart, end: weekEnd } = rollingRange(simulatedNow);
 
   const weekEntries = useMemo(
     () => entries.filter((e) => e.date >= weekStart && e.date <= weekEnd),
@@ -148,7 +150,7 @@ export default function SleepPage() {
 
   const weekDays = useMemo(() => {
     const days: { date: string; label: string; entry?: SleepEntry }[] = [];
-    const labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+    const labels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const startParts = weekStart.split("-").map(Number);
     const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
     for (let i = 0; i < 7; i++) {
@@ -157,7 +159,7 @@ export default function SleepPage() {
       const date = isoDate(d);
       days.push({
         date,
-        label: labels[i],
+        label: labels[d.getDay()],
         entry: weekEntries.find((e) => e.date === date),
       });
     }
@@ -181,16 +183,17 @@ export default function SleepPage() {
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white">
-      {/* Cabeçalho de Ações Primárias */}
+      {/* Cabeçalho */}
       <SleepHeader
         onNew={() => {
           setEditEntry(undefined);
           setShowForm(true);
         }}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenInfo={() => setShowInfo(true)}
       />
 
-      {/* Camada de Modais */}
+      {/* Modais */}
       <SleepEntryModal
         show={showForm}
         userId={uid}
@@ -202,14 +205,18 @@ export default function SleepPage() {
         }}
       />
 
-      <DeleteSleepModal
-        id={deleteConfirm}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm(null)}
-      />
+      <SleepInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
-      {/* Navegação entre Visões */}
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-2xl w-fit shadow-lg shadow-black/30">
+      {deleteConfirm !== null && (
+        <ConfirmModal
+          {...CONFIRM_PRESETS.deleteSleep}
+          onConfirm={() => handleDelete(deleteConfirm)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {/* Abas */}
+      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -266,10 +273,10 @@ export default function SleepPage() {
         </div>
       )}
 
-    {/* Interface flutuante para configurações do módulo */}
+      {/* Configurações */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-[32px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
             <div className="p-6 border-b border-neutral-800 flex items-center justify-between sticky top-0 bg-neutral-900 z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-600/10 border border-blue-600/20">

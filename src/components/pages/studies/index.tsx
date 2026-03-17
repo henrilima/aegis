@@ -5,13 +5,17 @@ import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { BookOpen, Plus, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { StudyInfoModal } from "@/components/forms/studies/StudyInfoModal";
+import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
+import { useTime } from "@/context/TimeContext";
+import type { AppConfig } from "../settings/useSettingsLogic";
 import { HistoryTab } from "./components/historyTab";
 import { MetasTab } from "./components/metasTab";
 import { OverviewTab } from "./components/overviewTab";
 import { DesempenhoTab, RelatorioTab } from "./components/reportTab";
 import { StudiesHeader } from "./components/studiesHeader";
-import { DeleteModal, SessionModal } from "./components/studiesModals";
+import { SessionModal } from "./components/studiesModals";
 import { StudiesTabs } from "./components/studiesTabs";
 import { StudiesHeatmap } from "./heatmap";
 import type { StudyGoal, StudySession, TabId } from "./types";
@@ -39,10 +43,12 @@ export default function StudiesPage() {
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
   const [showSettings, setShowSettings] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [weekStartDay, setWeekStartDay] = useState(1);
 
   const uid = user ? String(user.id) : "";
 
-  // Carregamento inicial de dados brutos e configurações
+  // Carregamento inicial
   const load = useCallback(async () => {
     if (!uid) return;
     try {
@@ -63,6 +69,9 @@ export default function StudiesPage() {
       if (results[1].status === "fulfilled") {
         setGoals(results[1].value);
       }
+
+      const config = await invoke<{ week_start_day: number }>("get_app_config");
+      setWeekStartDay(config.week_start_day);
     } finally {
       setLoading(false);
     }
@@ -89,6 +98,18 @@ export default function StudiesPage() {
     }
   };
 
+  const handleGoalSave = async (gs: StudyGoal[]) => {
+    try {
+      await Promise.all(
+        gs.map((g) => invoke("estudos_upsert_goal", { goal: g })),
+      );
+      await load();
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   const handleDelete = async (id: number) => {
     try {
       await invoke("estudos_delete_session", { id, userId: uid });
@@ -97,16 +118,6 @@ export default function StudiesPage() {
       await load();
     } catch {
       toast.error("Erro ao remover");
-    }
-  };
-
-  const handleGoalSave = async (g: StudyGoal) => {
-    try {
-      await invoke("estudos_upsert_goal", { goal: g });
-      toast.success("Meta salva!");
-      await load();
-    } catch {
-      toast.error("Erro ao salvar meta");
     }
   };
 
@@ -144,10 +155,10 @@ export default function StudiesPage() {
     }
   };
 
-  // Cálculo de janelas temporais e estatísticas agregadas
-  const now = new Date();
-  const weekStart = isoDate(startOfWeek(now));
-  const monthStart = isoDate(startOfMonth(now));
+  // Estatísticas e janelas temporais
+  const { now: simulatedNow } = useTime();
+  const weekStart = isoDate(startOfWeek(simulatedNow, weekStartDay));
+  const monthStart = isoDate(startOfMonth(simulatedNow));
 
   const weekSessions = useMemo(
     () => sessions.filter((s) => s.date >= weekStart),
@@ -181,6 +192,10 @@ export default function StudiesPage() {
   );
 
   const subjectMap = useMemo(() => computeSubjectMap(sessions), [sessions]);
+  const monthSubjectMap = useMemo(
+    () => computeSubjectMap(monthSessions),
+    [monthSessions],
+  );
 
   const existingSubjects = useMemo(() => {
     const set = new Set<string>();
@@ -227,7 +242,7 @@ export default function StudiesPage() {
   if (loading)
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
+        <div className="flex items-center gap-2 text-violet-500/60 animate-pulse">
           <BookOpen className="w-4 h-4" />
           <span className="font-bold">Sincronizando estudos...</span>
         </div>
@@ -240,6 +255,7 @@ export default function StudiesPage() {
         onImportCSV={handleImportCSV}
         onExportCSV={handleExportCSV}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenInfo={() => setShowInfo(true)}
         onNewSession={() => {
           setEditSession(undefined);
           setShowForm(true);
@@ -258,15 +274,19 @@ export default function StudiesPage() {
         }}
       />
 
-      <DeleteModal
-        id={deleteConfirm}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm(null)}
-      />
+      <StudyInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
+
+      {deleteConfirm !== null && (
+        <ConfirmModal
+          {...CONFIRM_PRESETS.deleteSession}
+          onConfirm={() => handleDelete(deleteConfirm)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
 
       <StudiesTabs activeTab={tab} onTabChange={setTab} />
 
-      {/* Renderização condicional das abas */}
+      {/* Abas */}
       {tab === "visao-geral" && (
         <OverviewTab
           weekStats={weekStats}
@@ -297,7 +317,11 @@ export default function StudiesPage() {
       {tab === "heatmap" && <StudiesHeatmap sessions={sessions} />}
 
       {tab === "desempenho" && (
-        <DesempenhoTab allStats={allStats} subjectMap={subjectMap} />
+        <DesempenhoTab
+          allStats={monthStats}
+          subjectMap={monthSubjectMap}
+          isMonthly
+        />
       )}
 
       {tab === "relatorio" && (
@@ -309,15 +333,16 @@ export default function StudiesPage() {
             goalValue,
           })}
           onCopy={copyReport}
-          weekStats={weekStats}
+          sessions={sessions}
           allStats={allStats}
+          goalValue={goalValue}
         />
       )}
 
-      {/* Interface flutuante para configurações do módulo */}
+      {/* Configurações */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="p-6 border-b border-neutral-800 flex items-center justify-between sticky top-0 bg-neutral-900 z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-violet-600/10 border border-violet-600/20">
@@ -330,11 +355,24 @@ export default function StudiesPage() {
                 onClick={() => setShowSettings(false)}
                 className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
               >
-                <Plus className="w-6 h-6 rotate-45" />
+                <Plus className="w-5 h-5 rotate-45" />
               </button>
             </div>
             <div className="p-6">
-              <MetasTab goals={goals} userId={uid} onSave={handleGoalSave} />
+              <MetasTab
+                goals={goals}
+                userId={uid}
+                onSave={handleGoalSave}
+                weekStartDay={weekStartDay}
+                onWeekStartChange={async (val: number) => {
+                  setWeekStartDay(val);
+                  const config = await invoke<AppConfig>("get_app_config");
+                  await invoke("set_app_config", {
+                    config: { ...config, week_start_day: val },
+                  });
+                  toast.success("Preferência de semana atualizada!");
+                }}
+              />
             </div>
           </div>
         </div>

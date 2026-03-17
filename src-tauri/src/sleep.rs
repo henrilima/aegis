@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
@@ -27,16 +28,16 @@ pub struct SleepGoal {
 
 
 
-pub struct SonoManager {
+pub struct SleepManager {
     db_path: PathBuf,
 }
 
-impl SonoManager {
+impl SleepManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("app data dir");
+        let app_dir = app_handle.path().app_data_dir().expect("Falha ao obter diretório de dados");
         let db_path = app_dir.join("passwords.db");
 
-        let conn = Connection::open(&db_path).expect("open db");
+        let conn = Connection::open(&db_path).expect("Falha ao abrir banco");
 
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS sleep_entries (
@@ -62,7 +63,7 @@ impl SonoManager {
     }
 
     fn conn(&self) -> Connection {
-        let conn = Connection::open(&self.db_path).expect("open db");
+        let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
         conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
         conn
     }
@@ -92,17 +93,17 @@ impl SonoManager {
         Ok(())
     }
 
-    pub fn list_entries(&self, user_id: &str, months_back: i32) -> Vec<SleepEntry> {
+    pub fn list_entries(&self, user_id: &str, months_back: i32, now: DateTime<Utc>) -> Vec<SleepEntry> {
         let conn = self.conn();
-        let cutoff = format!("-{} months", months_back);
+        let cutoff_date = (now - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
         let mut stmt = conn.prepare(
             "SELECT id, date, bedtime, wake_time, duration_minutes, quality, note, created_at
              FROM sleep_entries
-             WHERE user_id=?1 AND date >= date('now', ?2)
+             WHERE user_id=?1 AND date >= ?2
              ORDER BY date DESC"
         ).unwrap();
 
-        stmt.query_map(params![user_id, cutoff], |row| {
+        stmt.query_map(params![user_id, cutoff_date], |row| {
             Ok(SleepEntry {
                 id: Some(row.get(0)?),
                 user_id: user_id.to_string(),

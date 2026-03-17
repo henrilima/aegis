@@ -1,15 +1,10 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import {
-  ChevronLeft,
-  Plus,
-  Shield,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ChevronLeft, Plus, Shield, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { APP_CONFIG } from "@/app.config";
 import {
   Card,
   CardContent,
@@ -18,7 +13,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
+import { getThemeColor } from "@/lib/utils";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { DeleteAccountModal } from "./DeleteAccountModal";
@@ -29,9 +26,12 @@ interface LocalUser {
   id: string;
   username: string;
   email: string;
+  master_code_index: number;
+  password_hint: string;
 }
 
 export default function LoginComponent() {
+  const theme = getThemeColor();
   const { login } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -43,6 +43,7 @@ export default function LoginComponent() {
   const [loading, setLoading] = useState(false);
   const [fetchingUsers, setFetchingUsers] = useState(true);
 
+  // Carrega usuários locais
   const loadUsers = useCallback(async () => {
     setFetchingUsers(true);
     try {
@@ -112,21 +113,24 @@ export default function LoginComponent() {
       {deleteTarget && (
         <DeleteAccountModal
           username={deleteTarget.username}
+          masterCodeIndex={deleteTarget.master_code_index}
           onConfirm={confirmDeleteAccount}
           onCancel={() => setDeleteTarget(null)}
         />
       )}
 
       {showTerms && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-[2rem] overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between p-5 border-b border-neutral-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-neutral-800 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                  <Shield className="w-5 h-5 text-amber-400" />
+                <div
+                  className={`p-2 ${theme.bg} rounded-xl border ${theme.border}`}
+                >
+                  <Shield className={`w-5 h-5 ${theme.textSub}`} />
                 </div>
-                <h2 className="text-base font-bold text-white">
-                  Privacidade e Termos
+                <h2 className="text-base font-bold text-white leading-none">
+                  Privacidade & Termos
                 </h2>
               </div>
               <button
@@ -137,15 +141,15 @@ export default function LoginComponent() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6">
-              <TermsContent className="max-h-[400px] custom-scrollbar" />
-              <div className="flex flex-col gap-2 pt-6">
-                 <button
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              <TermsContent className="custom-scrollbar" />
+              <div className="flex flex-col gap-2 pt-8 pb-2">
+                <button
                   type="button"
                   onClick={() => setShowTerms(false)}
-                  className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+                  className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer`}
                 >
-                  Entendi
+                  Confirmar leitura
                 </button>
                 <button
                   type="button"
@@ -160,85 +164,96 @@ export default function LoginComponent() {
         </div>
       )}
 
-      <Card className="w-full bg-neutral-950 border-neutral-800 shadow-2xl shadow-black/60 rounded-[2rem] overflow-hidden animate-in fade-in zoom-in-95 duration-500">
-        <CardHeader className="space-y-1 pb-8 p-8">
-          <CardTitle className="text-2xl font-black text-amber-500">
-            Portal de Identidade
+      <Card className="w-full bg-neutral-900/50 backdrop-blur-xl border-neutral-800/50 shadow-2xl shadow-black/40 rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 flex flex-col max-h-[90vh] md:max-h-none">
+        <CardHeader className="space-y-1.5 pb-8 p-10 shrink-0 text-center md:text-left">
+          <CardTitle className="text-3xl font-black text-white">
+            Identidade <span className={theme.text}>{APP_CONFIG.name}</span>
           </CardTitle>
-          <CardDescription className="text-neutral-500 font-medium text-xs">
+          <CardDescription className="text-neutral-400 font-medium text-sm leading-relaxed">
             {selectedUser
               ? `Bem-vindo de volta, ${selectedUser.username}`
-              : "Escolha um perfil para iniciar a sessão"}
+              : "Selecione um perfil para acessar seu cofre criptografado."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-8 flex flex-col gap-6">
+        <CardContent className="px-10 flex flex-col gap-6 overflow-y-auto custom-scrollbar flex-1">
           {fetchingUsers ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="w-8 h-8 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-              <p className="text-xs font-medium text-neutral-600">
-                Sincronizando perfis...
+              <div
+                className={`w-10 h-10 border-2 ${theme.bg} border-t-2 border-t-current ${theme.text} rounded-full animate-spin`}
+              />
+              <p className="text-xs font-bold text-neutral-500 uppercase">
+                Sincronizando...
               </p>
             </div>
           ) : !selectedUser ? (
+            /* Seleção de Perfil */
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 max-h-[320px] overflow-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 gap-3 overflow-hidden">
                 {users.map((u) => (
                   <div
                     key={u.id}
-                    className="relative group flex items-center rounded-2xl border border-neutral-900 bg-neutral-900/10 hover:border-amber-500/40 hover:bg-neutral-900/40 transition-all duration-300 overflow-hidden"
+                    className={`relative group flex items-center rounded-xl border border-neutral-800/60 bg-neutral-950/40 ${theme.borderHover.replace("hover:", "group-hover:")} hover:bg-neutral-950/60 transition-all duration-300 overflow-hidden shadow-sm`}
                   >
                     <button
                       type="button"
                       onClick={() => setSelectedUser(u)}
                       className="flex flex-1 items-center gap-4 p-4 text-left cursor-pointer group"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-lg transition-transform group-hover:scale-105">
+                      <div
+                        className={`w-12 h-12 rounded-xl ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text} font-black text-xl transition-all group-hover:${theme.solid} group-hover:text-white group-hover:scale-105`}
+                      >
                         {u.username[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-neutral-200 truncate">
+                        <p className="font-bold text-white text-base truncate">
                           {u.username}
                         </p>
-                        <p className="text-xs font-medium text-neutral-600 truncate mt-0.5">
+                        <p className="text-xs font-semibold text-neutral-500 truncate mt-0.5">
                           {u.email}
                         </p>
                       </div>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteAccount(e, u)}
-                      className="p-2.5 mr-3 rounded-xl text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                      title="Deletar conta"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ToolTip content="Deletar conta">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteAccount(e, u)}
+                        className="p-2.5 mr-3 rounded-xl text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </ToolTip>
                   </div>
                 ))}
 
                 <button
                   type="button"
                   onClick={() => setIsRegistering(true)}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-dashed border-neutral-800 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all text-left group cursor-pointer"
+                  className={`flex items-center gap-4 p-4 rounded-xl border border-dashed border-neutral-800 hover:${theme.border.split(" ")[0]} ${theme.bgHover} transition-all text-left group cursor-pointer shadow-sm`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-neutral-950 border border-dashed border-neutral-800 flex items-center justify-center text-neutral-600 group-hover:text-amber-500 group-hover:border-amber-500/30 transition-all">
-                    <Plus className="w-5 h-5" />
+                  <div
+                    className={`w-12 h-12 rounded-xl bg-neutral-950/60 border border-dashed border-neutral-800 flex items-center justify-center text-neutral-500 group-hover:${theme.text} group-hover:${theme.border.split(" ")[0]} transition-all`}
+                  >
+                    <Plus className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="font-bold text-neutral-500 group-hover:text-amber-500 transition-colors">
-                      Criar novo usuário
+                    <span
+                      className={`font-bold text-neutral-400 group-hover:${theme.text} transition-colors`}
+                    >
+                      Nova Identidade
                     </span>
-                    <p className="text-[10px] font-medium text-neutral-700 mt-0.5">
-                      Provisionar cofre local
+                    <p className="text-[10px] font-bold text-neutral-600 uppercase mt-0.5">
+                      Configurar cofre local
                     </p>
                   </div>
                 </button>
               </div>
             </div>
           ) : (
+            /* Formulário de Senha */
             <form
               onSubmit={handleSubmit}
-              className="space-y-6 animate-in slide-in-from-right-4 duration-300"
+              className="space-y-6 animate-in slide-in-from-right-4 duration-300 pb-2"
             >
               <button
                 type="button"
@@ -247,13 +262,15 @@ export default function LoginComponent() {
                   setPassword("");
                   setError(null);
                 }}
-                className="flex items-center gap-2 text-xs font-medium text-neutral-500 hover:text-amber-500 transition-all cursor-pointer"
+                className={`flex items-center gap-2 text-xs font-medium text-neutral-500 hover:${theme.text} transition-all cursor-pointer`}
               >
                 <ChevronLeft className="w-3.5 h-3.5" /> Alterar perfil
               </button>
 
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-neutral-900/40 border border-neutral-900 shadow-inner">
-                <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-black font-bold text-xl">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-neutral-900/40 border border-neutral-900 shadow-inner">
+                <div
+                  className={`w-12 h-12 rounded-xl ${theme.solid} flex items-center justify-center text-white font-bold text-xl`}
+                >
                   {selectedUser.username[0].toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -267,22 +284,27 @@ export default function LoginComponent() {
               </div>
 
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="password"
-                  className={lc}
-                >
+                <Label htmlFor="password" className={lc}>
                   Senha de acesso
                 </Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="Insira sua senha"
-                  className="bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:border-amber-500/50"
+                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoFocus
                   required
                 />
+                {selectedUser.password_hint && (
+                  <p className="text-[10px] font-medium text-neutral-500 mt-1.5 px-1">
+                    <span className="text-neutral-400 font-bold">
+                      Lembrete:
+                    </span>{" "}
+                    {selectedUser.password_hint}
+                  </p>
+                )}
               </div>
 
               {error && (
@@ -296,7 +318,7 @@ export default function LoginComponent() {
               <div className="flex flex-col gap-2">
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+                  className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer`}
                   disabled={loading}
                 >
                   {loading ? "Descriptografando..." : "Desbloquear cofre"}
@@ -305,18 +327,42 @@ export default function LoginComponent() {
             </form>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 text-center p-8 pt-6 border-t border-neutral-900/50">
-          <button
-            type="button"
-            onClick={() => setShowTerms(true)}
-            className="text-xs font-medium text-neutral-600 hover:text-amber-500 transition-all cursor-pointer"
-          >
-            Protocolos de Privacidade & Termos
-          </button>
-          <div className="flex items-center justify-center gap-1.5 opacity-30">
-            <Shield className="w-3.5 h-3.5 text-amber-500" />
-            <p className="text-[10px] font-bold text-neutral-600">
-              Segurança <span className="text-amber-500/80">Local-First</span>
+        <CardFooter className="flex flex-col gap-5 text-center p-10 pt-6 border-t border-neutral-800/40 shrink-0">
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setShowTerms(true)}
+              className={`text-[11px] font-bold text-neutral-600 hover:${theme.text} transition-all cursor-pointer`}
+            >
+              Protocolos de Segurança & Termos
+            </button>
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-[10px] font-bold text-neutral-700 uppercase">
+                Suporte:
+              </span>
+              <a
+                href={`mailto:${APP_CONFIG.support.email}`}
+                className="text-[10px] font-bold text-neutral-500 hover:text-white transition-colors"
+              >
+                {APP_CONFIG.support.email}
+              </a>
+              <div className="w-1 h-1 rounded-full bg-neutral-800" />
+              <a
+                href={APP_CONFIG.support.discordserver}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-bold text-neutral-500 hover:text-white transition-colors"
+              >
+                Comunidade Discord
+              </a>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 opacity-40">
+            <Shield className={`w-3.5 h-3.5 ${theme.text}`} />
+            <p className="text-[10px] font-black text-neutral-500 uppercase">
+              {APP_CONFIG.name}{" "}
+              <span className={`${theme.text}/80`}>Local-First</span> Security
             </p>
           </div>
         </CardFooter>

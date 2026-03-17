@@ -29,6 +29,7 @@ commands.allow = [
     "list_local_users",
     "delete_account",
     "change_account_password",
+    "change_username",
     "change_vault_password",
     "revert_vault_to_master",
     "has_separate_vault_password",
@@ -66,4 +67,6 @@ commands.allow = [
     "stats_get_cross_metrics",
     "stats_get_performance_summary",
     "open_notes_folder",
+    "apply_internal_command",
+    "get_simulation_status",
 ]

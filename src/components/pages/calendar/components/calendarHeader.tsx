@@ -43,13 +43,22 @@ export function CalendarHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onToday}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-green-400 border border-neutral-800 transition-all text-xs font-bold h-10 cursor-pointer"
+        >
+          Hoje
+        </Button>
+
         {/* Controles de Navegação Mensal */}
-        <div className="flex items-center bg-neutral-800 border border-neutral-700 rounded-xl p-1 gap-1">
+        <div className="flex items-center bg-neutral-950 border border-neutral-800 rounded-xl p-1 gap-1 h-10">
           <Button
             type="button"
             variant="ghost"
             onClick={onPrev}
-            className="w-8 h-8 p-0 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all border-none"
+            className="w-8 h-8 p-0 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all border-none"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -60,7 +69,7 @@ export function CalendarHeader({
             type="button"
             variant="ghost"
             onClick={onNext}
-            className="w-8 h-8 p-0 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all border-none"
+            className="w-8 h-8 p-0 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all border-none"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -68,17 +77,8 @@ export function CalendarHeader({
 
         <Button
           type="button"
-          variant="outline"
-          onClick={onToday}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white border border-neutral-700 transition-all text-xs font-bold h-auto"
-        >
-          Hoje
-        </Button>
-
-        <Button
-          type="button"
           onClick={onNew}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white  font-bold transition-colors border-none h-auto"
+          className="flex items-center gap-2 px-4 rounded-xl bg-green-600 hover:bg-green-500 text-white text-xs font-bold transition-colors border-none h-10 shadow-lg shadow-green-900/10 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Novo Evento
         </Button>
