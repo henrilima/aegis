@@ -114,7 +114,7 @@ export function HistoryTab({
                         </span>
                       </div>
 
-                      {s.focus_score && s.focus_score > 0 && (
+                      {s.focus_score !== undefined && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-neutral-800 group-hover:border-neutral-700 transition-colors">
                           <StudyStars score={s.focus_score} />
                         </div>

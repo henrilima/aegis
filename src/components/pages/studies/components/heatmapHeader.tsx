@@ -7,6 +7,7 @@ interface HeatmapHeaderProps {
   currentYear: number;
   totalQuestions: number;
   totalHours: number;
+  totalSessions: number;
   onPrevYear: () => void;
   onNextYear: () => void;
 }
@@ -16,6 +17,7 @@ export function HeatmapHeader({
   currentYear,
   totalQuestions,
   totalHours,
+  totalSessions,
   onPrevYear,
   onNextYear,
 }: HeatmapHeaderProps) {
@@ -30,7 +32,7 @@ export function HeatmapHeader({
             Mapa de Constância
           </h2>
           <p className="text-xs text-neutral-500 mt-1">
-            Frequência diária de resoluções em {selectedYear}
+            Frequência de sessões de estudo em {selectedYear}
           </p>
         </div>
       </div>
@@ -60,6 +62,14 @@ export function HeatmapHeader({
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end">
             <span className=" font-black text-violet-400 leading-none">
+              {totalSessions}
+            </span>
+            <span className="text-[10px] uppercase font-bold text-neutral-600">
+              Sessões
+            </span>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className=" font-black text-white leading-none">
               {totalQuestions}
             </span>
             <span className="text-[10px] uppercase font-bold text-neutral-600">

@@ -66,7 +66,7 @@ export default function PomodoroPage() {
                 size="lg"
                 onClick={actions.toggleTimer}
                 className={cn(
-                  "px-10 h-14 font-black transition-all rounded-xl text-base font-outfit shadow-none",
+                  "px-6 h-11 font-black transition-all rounded-xl text-sm font-outfit shadow-none",
                   isWork
                     ? "bg-red-500 hover:bg-red-400 text-black"
                     : "bg-teal-500 hover:bg-teal-400 text-black",
@@ -87,9 +87,9 @@ export default function PomodoroPage() {
                 size="lg"
                 onClick={actions.stopTimer}
                 disabled={!state?.is_running && state?.cycles_completed === 0}
-                className="h-14 border border-neutral-800 hover:bg-neutral-800 font-bold px-8 rounded-xl transition-all text-neutral-400 disabled:opacity-30"
+                className="h-11 border border-neutral-800 hover:bg-neutral-800 font-bold px-6 rounded-xl transition-all text-neutral-400 disabled:opacity-30 text-sm"
               >
-                <Square className="w-5 h-5 mr-2.5 fill-current" /> Parar
+                <Square className="w-4 h-4 mr-2 fill-current" /> Parar
               </Button>
             </div>
 
@@ -108,7 +108,7 @@ export default function PomodoroPage() {
                         actions.updateConfig("work_minutes", e.target.value)
                       }
                       disabled={state?.is_running}
-                      className="bg-neutral-950 h-14 border border-neutral-800 focus:border-red-500/50 text-xl font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50 shadow-none"
+                      className="bg-neutral-950 h-11 border border-neutral-800 focus:border-red-500/50 text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50 shadow-none"
                     />
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export default function PomodoroPage() {
                         actions.updateConfig("break_minutes", e.target.value)
                       }
                       disabled={state?.is_running}
-                      className="bg-neutral-950 h-14 border border-neutral-800 focus:border-teal-500/50 text-xl font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50 shadow-none"
+                      className="bg-neutral-950 h-11 border border-neutral-800 focus:border-teal-500/50 text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50 shadow-none"
                     />
                   </div>
                 </div>

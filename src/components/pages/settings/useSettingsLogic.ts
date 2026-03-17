@@ -114,6 +114,7 @@ export function useSettingsLogic() {
     startAtLogin,
     startMinimized,
     weekStartDay,
+    highPriorityNotifications,
     username,
     email,
     updateSystemConfig,

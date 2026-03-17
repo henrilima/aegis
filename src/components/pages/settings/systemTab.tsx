@@ -29,6 +29,7 @@ export function SystemTab({
   handleInternalCommand,
 }: SystemTabProps) {
   const [internalCmd, setInternalCmd] = React.useState("");
+  const theme = getThemeColor();
   return (
     <div className="space-y-3 max-w-2xl">
       <SectionHeading>Comportamento do App</SectionHeading>
@@ -71,16 +72,16 @@ export function SystemTab({
             <button
               type="button"
               onClick={() => updateWeekStart(0)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 0 ? "bg-amber-500/20 text-amber-500 border border-amber-500/30" : "text-neutral-600 hover:text-neutral-400"}`}
+              className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 0 ? `${theme.bg} ${theme.text} border ${theme.border}` : "text-neutral-600 hover:text-neutral-400"}`}
             >
-              Domingo
+              DOM
             </button>
             <button
               type="button"
               onClick={() => updateWeekStart(1)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 1 ? "bg-amber-500/20 text-amber-500 border border-amber-500/30" : "text-neutral-600 hover:text-neutral-400"}`}
+              className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 1 ? `${theme.bg} ${theme.text} border ${theme.border}` : "text-neutral-600 hover:text-neutral-400"}`}
             >
-              Segunda
+              SEG
             </button>
           </div>
         </div>

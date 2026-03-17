@@ -10,9 +10,9 @@ import type { StudySession } from "./types";
 // Utilitários de Data
 function getIntensity(count: number): 0 | 1 | 2 | 3 | 4 {
   if (count === 0) return 0;
-  if (count < 10) return 1;
-  if (count < 30) return 2;
-  if (count < 60) return 3;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  if (count === 3) return 3;
   return 4;
 }
 
@@ -59,14 +59,18 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
   const dates = useMemo(() => getYearDates(selectedYear), [selectedYear]);
 
   const statsMap = useMemo(() => {
-    const m: Record<string, { questions: number; hours: number }> = {};
+    const m: Record<
+      string,
+      { questions: number; hours: number; count: number }
+    > = {};
     const filtered = sessions.filter((s) =>
       s.date.startsWith(String(selectedYear)),
     );
     for (const s of filtered) {
-      if (!m[s.date]) m[s.date] = { questions: 0, hours: 0 };
+      if (!m[s.date]) m[s.date] = { questions: 0, hours: 0, count: 0 };
       m[s.date].questions += s.questions_new + s.questions_review;
       m[s.date].hours += s.hours;
+      m[s.date].count += 1;
     }
     return m;
   }, [sessions, selectedYear]);
@@ -79,6 +83,11 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
 
   const totalHours = useMemo(
     () => Object.values(statsMap).reduce((acc, curr) => acc + curr.hours, 0),
+    [statsMap],
+  );
+
+  const totalSessions = useMemo(
+    () => Object.values(statsMap).reduce((acc, curr) => acc + curr.count, 0),
     [statsMap],
   );
 
@@ -106,6 +115,7 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
         currentYear={currentYear}
         totalQuestions={totalQuestions}
         totalHours={totalHours}
+        totalSessions={totalSessions}
         onPrevYear={() => setSelectedYear((prev) => prev - 1)}
         onNextYear={() => setSelectedYear((prev) => prev + 1)}
       />

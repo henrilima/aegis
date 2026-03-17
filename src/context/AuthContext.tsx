@@ -15,6 +15,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  master_code_index: number;
 }
 
 interface AuthContextType {

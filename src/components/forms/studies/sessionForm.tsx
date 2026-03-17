@@ -217,7 +217,7 @@ export function SessionForm({
           <div className="flex flex-col gap-3">
             <Label className={lc}>Foco e Energia</Label>
             <div className="flex gap-1 p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
-              {[1, 2, 3, 4, 5].map((s) => (
+              {[0, 1, 2, 3, 4, 5].map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -233,9 +233,9 @@ export function SessionForm({
               ))}
             </div>
             <p className="text-center text-[10px] font-bold text-neutral-600 uppercase">
-              {form.focus_score
+              {form.focus_score !== undefined
                 ? [
-                    "",
+                    "Totalmente Improdutivo",
                     "Exausto / Sem Foco",
                     "Cansado / Distraído",
                     "Razoável",

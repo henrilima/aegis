@@ -22,7 +22,7 @@ interface HeatmapGridProps {
   weekLabels: WeekLabel[];
   monthLabels: MonthLabel[];
   selectedYear: number;
-  statsMap: Record<string, { questions: number; hours: number }>;
+  statsMap: Record<string, { questions: number; hours: number; count: number }>;
   intensityColors: Record<0 | 1 | 2 | 3 | 4, string>;
   getIntensity: (count: number) => 0 | 1 | 2 | 3 | 4;
 }
@@ -81,7 +81,8 @@ export function HeatmapGrid({
                       const stats = statsMap[date];
                       const questions = stats?.questions || 0;
                       const hours = stats?.hours || 0;
-                      const intensity = getIntensity(questions);
+                      const sessionsCount = stats?.count || 0;
+                      const intensity = getIntensity(sessionsCount);
 
                       const [y, m, d] = date.split("-").map(Number);
                       const dateObj = new Date(y, m - 1, d);
@@ -92,10 +93,8 @@ export function HeatmapGrid({
                       });
 
                       const tooltipText =
-                        questions > 0 || hours > 0
-                          ? `${questions > 0 ? `${questions} questões` : ""}${
-                              questions > 0 && hours > 0 ? " · " : ""
-                            }${hours > 0 ? `${hours.toFixed(1)}h` : ""}`
+                        sessionsCount > 0
+                          ? `${sessionsCount} ${sessionsCount !== 1 ? "sessões" : "sessão"} · ${hours.toFixed(1)}h · ${questions} questões`
                           : "Sem registros";
 
                       return (
@@ -112,7 +111,7 @@ export function HeatmapGrid({
                           {isSameYear && (
                             <TooltipContent
                               side="top"
-                              className="flex flex-col gap-0.5"
+                              className="flex flex-col gap-0.5 pointer-events-none select-none"
                             >
                               <span className="font-bold text-violet-400 capitalize">
                                 {dateLabel}

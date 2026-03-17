@@ -37,12 +37,15 @@ export default function Settings() {
     minimizeOnClose,
     startAtLogin,
     startMinimized,
+    weekStartDay,
     username,
     email,
     updateSystemConfig,
+    updateWeekStart,
     handleTestNotification,
     handleInternalCommand,
     handleDeleteAccount,
+    user,
   } = useSettingsLogic();
   const theme = getThemeColor();
 
@@ -104,8 +107,8 @@ export default function Settings() {
               startMinimized={startMinimized}
               updateSystemConfig={updateSystemConfig}
               handleInternalCommand={handleInternalCommand}
-              weekStartDay={0} // Default placeholder as it's handled via hook if needed
-              updateWeekStart={async () => {}} // Placeholder
+              weekStartDay={weekStartDay}
+              updateWeekStart={updateWeekStart}
             />
           </div>
         )}
@@ -132,6 +135,7 @@ export default function Settings() {
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <DangerTab
               username={username}
+              masterCodeIndex={user?.master_code_index ?? 0}
               onDeleteAccount={handleDeleteAccount}
             />
           </div>

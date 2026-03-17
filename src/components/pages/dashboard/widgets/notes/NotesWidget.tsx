@@ -37,7 +37,7 @@ export function NotesWidget({
           <div className="flex items-center justify-between">
             <div className="flex gap-[8cqw] @sm:gap-10">
               <div className="text-center">
-                <p className="text-[6cqw] @sm:text-3xl font-black text-white leading-none">
+                <p className="text-[5cqw] @sm:text-2xl font-black text-white leading-none">
                   {pendingNotes.length}
                 </p>
                 <p className="text-[3.5cqw] @sm:text-sm font-bold text-neutral-500 mt-1 uppercase">
@@ -45,7 +45,7 @@ export function NotesWidget({
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[6cqw] @sm:text-3xl font-black text-white leading-none">
+                <p className="text-[5cqw] @sm:text-2xl font-black text-white leading-none">
                   {pinnedNotes.length}
                 </p>
                 <p className="text-[3.5cqw] @sm:text-sm font-bold text-neutral-500 mt-1 uppercase">

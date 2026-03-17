@@ -3,6 +3,36 @@
 version = 3
 
 [[package]]
+name = "Aegis"
+version = "1.0.0"
+dependencies = [
+ "aes-gcm",
+ "argon2",
+ "base64 0.22.1",
+ "chrono",
+ "csv",
+ "log",
+ "rand 0.8.5",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+ "speedtest-rs",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-log",
+ "tauri-plugin-notification",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-store",
+ "uuid",
+ "yaml-front-matter",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -159,36 +189,6 @@ name = "anyhow"
 version = "1.0.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
-
-[[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "argon2",
- "base64 0.22.1",
- "chrono",
- "csv",
- "log",
- "rand 0.8.5",
- "rusqlite",
- "serde",
- "serde_json",
- "serde_yaml 0.9.34+deprecated",
- "speedtest-rs",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-log",
- "tauri-plugin-notification",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-store",
- "uuid",
- "yaml-front-matter",
-]
 
 [[package]]
 name = "argon2"

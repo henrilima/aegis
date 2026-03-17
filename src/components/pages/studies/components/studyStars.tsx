@@ -7,8 +7,6 @@ interface StudyStarsProps {
 }
 
 export function StudyStars({ score }: StudyStarsProps) {
-  if (!score) return null;
-
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (

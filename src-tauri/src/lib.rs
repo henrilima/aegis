@@ -451,16 +451,12 @@ async fn get_simulation_status(state: State<'_, AppState>) -> Result<SimulationS
 async fn set_app_config(state: State<'_, AppState>, app_handle: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
     state.config.set_config(config.clone())?;
 
-    if config.start_at_login && !cfg!(debug_assertions) {
-        app_handle
-            .autolaunch()
-            .enable()
-            .map_err(|e| format!("Falha ao ativar inicialização automática: {e}"))?;
-    } else {
-        app_handle
-            .autolaunch()
-            .disable()
-            .map_err(|e| format!("Falha ao desativar inicialização automática: {e}"))?;
+    if !cfg!(debug_assertions) {
+        if config.start_at_login {
+            let _ = app_handle.autolaunch().enable();
+        } else {
+            let _ = app_handle.autolaunch().disable();
+        }
     }
 
     Ok(())
@@ -654,6 +650,7 @@ pub fn run() {
             let habit = HabitManager::new(app.handle());
             let note = notes::NoteManager::new(app.handle());
             let config = ConfigManager::new(app.handle());
+            let initial_config = config.get_config();
             let studies = StudiesManager::new(app.handle());
             let sleep = SleepManager::new(app.handle());
             let calendar = CalendarManager::new(app.handle());

@@ -6,10 +6,15 @@ import { DeleteAccountModal } from "@/components/forms/DeleteAccountModal";
 
 interface DangerTabProps {
   username: string;
+  masterCodeIndex: number;
   onDeleteAccount: (password: string) => Promise<void>;
 }
 
-export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
+export function DangerTab({
+  username,
+  masterCodeIndex,
+  onDeleteAccount,
+}: DangerTabProps) {
   const [showModal, setShowModal] = useState(false);
 
   return (
@@ -17,6 +22,7 @@ export function DangerTab({ username, onDeleteAccount }: DangerTabProps) {
       {showModal && (
         <DeleteAccountModal
           username={username}
+          masterCodeIndex={masterCodeIndex}
           onConfirm={async (password) => {
             await onDeleteAccount(password);
             setShowModal(false);

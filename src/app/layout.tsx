@@ -10,6 +10,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { TimeProvider } from "@/context/TimeContext";
 
+import { useFullscreen } from "@/hooks/useFullscreen";
+
 const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -21,6 +23,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useFullscreen();
   useEffect(() => {
     // Handler global de erros (Safety Net)
     const handleError = (event: ErrorEvent) => {

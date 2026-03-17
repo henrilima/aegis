@@ -1,10 +1,10 @@
 [package]
-name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+name = "Aegis"
+version = "1.0.0"
+description = "Aegis is a productivity-focused desktop application designed to help users manage their daily tasks, notes, and goals with a modern, intuitive interface."
+authors = ["José Henrique da Silva Lima"]
+license = "MIT"
+repository = "https://github.com/henrilima/aegis"
 edition = "2021"
 rust-version = "1.77.2"
 
@@ -21,7 +21,7 @@ tauri-build = { version = "2.5.4", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.10.0", features = ["tray-icon", "devtools"] }
+tauri = { version = "2.10.0", features = ["tray-icon"] }
 tauri-plugin-log = "2"
 tauri-plugin-single-instance = "2.0.0"
 uuid = { version = "1.8", features = ["v4", "serde"] }
