@@ -451,7 +451,7 @@ async fn get_simulation_status(state: State<'_, AppState>) -> Result<SimulationS
 async fn set_app_config(state: State<'_, AppState>, app_handle: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
     state.config.set_config(config.clone())?;
 
-    if config.start_at_login {
+    if config.start_at_login && !cfg!(debug_assertions) {
         app_handle
             .autolaunch()
             .enable()
@@ -659,8 +659,7 @@ pub fn run() {
             let calendar = CalendarManager::new(app.handle());
             let stats = StatisticsManager::new(app.handle());
 
-            let initial_config = config.get_config();
-            if initial_config.start_at_login {
+            if initial_config.start_at_login && !cfg!(debug_assertions) {
                 let _ = app.autolaunch().enable();
             } else {
                 let _ = app.autolaunch().disable();
