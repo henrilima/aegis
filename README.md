@@ -1,64 +1,48 @@
-# 🛡️ Aegis - Seu Centro de Produtividade & Privacidade
+# 🛡️ Aegis — Seu Centro de Produtividade & Privacidade (v2.0.0 "Medusa")
 
-Aegis é um dashboard de produtividade "all-in-one" desenvolvido para ser rápido, seguro e totalmente focado no usuário. Construído com a robustez do **Rust (Tauri)** e a agilidade do **Next.js**, ele oferece um ambiente centralizado para gerenciar sua rotina, estudos e segurança digital diretamente no seu desktop.
+Aegis é um dashboard de produtividade "all-in-one" desenvolvido para ser rápido, seguro e totalmente focado no usuário. Construído com a robustez do **Rust (Tauri)** e a agilidade do **Next.js**, ele oferece um ambiente centralizado para gerenciar sua rotina diretamente no seu desktop com privacidade absoluta.
 
 ---
 
-## 🚀 Principais Funcionalidades
+## 🚀 Novidades da Versão 2.0.0 "Medusa"
 
-O Aegis foi projetado para cobrir todas as frentes da sua produtividade:
+A versão **Medusa** traz uma evolução completa na experiência do usuário:
 
-- **📊 Dashboard Inteligente**: Visão geral das suas estatísticas, hábitos e metas do dia em um só lugar.
-- **⏲️ Ciclos de Pomodoro**: Timer customizável integrado com notificações de sistema para manter o foco.
-- **💧 Lembrete de Hidratação**: Sistema inteligente de alertas para garantir que você se mantenha hidratado.
-- **✅ Gestor de Hábitos**: Acompanhe sequências (streaks) e progresso de hábitos positivos e negativos.
-- **📝 Notas & Insights**: Bloco de notas rápido com suporte a fixação de itens importantes.
-- **🎓 Foco nos Estudos**: Registro de sessões, matérias estudadas e acompanhamento de desempenho.
-- **🛌 Gestão de Sono**: Controle de horários e qualidade do descanso para melhor recuperação.
-- **🔐 Cofre de Senhas**: Armazenamento local e seguro de credenciais importantes.
-- **⚡ Ferramentas Extras**: Speedtest integrado, conversor de moedas e configurações de sistema.
+- **🎨 Temas Estonteantes**: Suporte nativo a temas dinâmicos como *Midnight*, *Dracula*, *Nordic* e o novo *Cappuccino Cream*.
+- **📚 Módulo de Leitura**: Controle total da sua biblioteca com busca automática por títulos e monitoramento de progresso.
+- **📁 Gerenciador de Notas Pro**: Organização hierárquica por pastas com suporte a *Drag and Drop* para total liberdade.
+- **📅 Calendário Refinado**: Integração automática com feriados nacionais e visualização otimizada.
+- **🏃 Módulo de Tarefas**: Gestão de to-dos rápidos diretamente na sidebar.
+- **✨ Interface Premium**: Transições fluidas, sidebar redesenhada e suporte estendido a monitores wide.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-O projeto utiliza tecnologias de ponta para garantir performance e estética premium:
+O projeto utiliza tecnologias de ponta para garantir performance e estética:
 
-- **Frontend**: [Next.js 16](https://nextjs.org/) (App Router) + [React 19](https://react.dev/)
-- **Core Engine**: [Tauri v2](https://tauri.app/) (Segurança em Rust e frontend em Webview)
+- **Frontend**: [Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/)
+- **Core Engine**: [Tauri v2](https://tauri.app/) (Powered by Rust 🦀)
 - **Estilização**: [Tailwind CSS 4](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
-- **Animações**: [Framer Motion](https://www.framer.com/motion/) & [GSAP](https://gsap.com/)
-- **Backend (Desktop Integration)**: [Rust](https://www.rust-lang.org/)
-- **Linting & Formatação**: [Biome](https://biomejs.dev/)
-
----
-
-## 📜 Licença
-
-Este projeto está sob a licença **MIT**. Isso significa que ele é um software aberto e permissivo, permitindo o uso e estudo do código, desde que os créditos e direitos autorais sejam mantidos ao autor original.
-
----
-
-## 🤖 Uma Observação sobre o Desenvolvimento
-
-Este projeto preza pela clareza e manutenção. Por isso, toda a base de código foi documentada com comentários detalhados em português (PT-BR).
-
-> [!NOTE]
-> Os comentários de código, anotações lógicas, simplificações em trechos de Rust, este **README** e o **changelog** foram gerados com o auxílio de inteligência artificial (IA) para garantir consistência gramatical e clareza técnica. Isso serve como um guia prático para entender as entranhas do sistema sem perder o toque humano na arquitetura, sendo revisados integralmente por um humano para garantir a precisão e integridade do projeto.
-
----
-
-## 🪟 Compatibilidade
-
-Atualmente, o Aegis é **otimizado exclusivamente para Windows**. 
-Isso ocorre devido às integrações profundas com o sistema de notificações nativo (suporte a Alertas Críticos/Foco) e protocolos de sistema desenhados especificamente para a experiência de desktop no Windows 10 e 11. Caso o projeto tenha algum sucesso, pensamos em futuramente expandir para outras plataformas.
+- **Linting**: [Biome](https://biomejs.dev/)
 
 ---
 
 ## 🛡️ Privacidade Primeiro
 
-O Aegis processa seus dados localmente através da infraestrutura do Tauri. Suas métricas de produtividade, notas e senhas não saem do seu computador, garantindo que sua privacidade seja a prioridade número um.
+O Aegis processa todos os seus dados localmente. Suas métricas, notas, leituras e senhas permanecem no seu computador através da infraestrutura segura do Tauri.
+
+## 🪟 Compatibilidade
+
+O Aegis é **otimizado exclusivamente para Windows** (10 e 11), utilizando integrações profundas com as notificações e APIs do sistema para oferecer a melhor performance.
 
 ---
 
-Feito com carinho por [José Henrique](https://github.com/henrilima) e revisado por uma IA.
+## 📜 Licença
+
+Este projeto está sob a licença **MIT**. Sinta-se à vontade para estudar o código e contribuir!
+
+> [!NOTE]
+> Todo o código, documentação e changelog foram revisados por uma IA para garantir consistência e clareza técnica.
+
+Feito com carinho por [José Henrique](https://github.com/henrilima).
