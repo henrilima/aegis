@@ -7,57 +7,63 @@ import {
   User,
 } from "lucide-react";
 import { APP_CONFIG } from "@/app.config";
-import { getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
 
 export function AboutTab() {
-  const theme = getThemeColor();
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h2 className="text-lg font-bold">Sobre o {APP_CONFIG.name}</h2>
-        <p className=" text-neutral-500 mt-1">
+        <p className="text-xl font-bold">Sobre o {APP_CONFIG.name}</p>
+        <p className="text-md text-muted-foreground mt-1">
           Informações sobre a versão atual e suporte do projeto.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Developer Card - Modified */}
-        <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col gap-3">
+        <div className="p-4 bg-card border border-border rounded-xl flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 ${theme.bg} rounded-lg`}>
-              <User className={`w-4 h-4 ${theme.text}`} />
+            <div className={`p-1.5 bg-accent rounded-lg`}>
+              <User className={`w-4 h-4 text-muted-foreground`} />
             </div>
-            <span className=" font-bold text-neutral-300">Desenvolvedor</span>
+            <span className=" font-medium text-muted-foreground">
+              Desenvolvedor
+            </span>
           </div>
-          <p className="text-lg font-black text-white">{APP_CONFIG.author}</p>
-          <p className="text-xs text-neutral-500 italic">
+          <p className="text-lg font-bold text-foreground">
+            {APP_CONFIG.author}
+          </p>
+          <p className="text-xs text-muted-foreground">
             © {APP_CONFIG.year} Todos os direitos reservados
           </p>
         </div>
 
-        <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col gap-3">
+        <div className="p-4 bg-card border border-border rounded-xl flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <div
-              className={`${theme.bg} rounded-lg w-7 h-7 flex items-center justify-center`}
+              className={`bg-accent rounded-lg w-7 h-7 flex items-center justify-center`}
             >
               <span
-                className={`text-[14px] font-semibold ${theme.text} uppercase`}
+                className={`text-[14px] font-medium text-muted-foreground uppercase`}
               >
                 V
               </span>
             </div>
-            <span className=" font-bold text-neutral-300">Versão Atual</span>
+            <span className=" font-medium text-muted-foreground">
+              Versão Atual
+            </span>
           </div>
-          <p className="text-lg font-black text-white">{APP_CONFIG.version}</p>
-          <p className="text-xs text-neutral-500 uppercase">
+          <p className="text-lg font-bold text-foreground">
+            {APP_CONFIG.version}
+          </p>
+          <p className="text-xs text-muted-foreground uppercase">
             {APP_CONFIG.stage} • {APP_CONFIG.codename}
           </p>
         </div>
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-black uppercase text-neutral-500 flex items-center gap-1.5">
-          Canais de Suporte
+        <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+          Canais de suporte
         </p>
 
         <div className="grid grid-cols-1 gap-2">
@@ -82,17 +88,17 @@ export function AboutTab() {
         </div>
       </div>
 
-      {/* Gratitude Section */}
+      {/* Seção de agradecimento */}
       <div
-        className={`mt-8 p-6 border ${theme.border} ${theme.bg} rounded-xl text-center relative overflow-hidden group border-l-4 ${theme.border.replace("border-", "border-l-")}`}
+        className={`mt-8 p-6 rounded-xl text-center relative overflow-hidden group`}
       >
-        <Heart className={`w-8 h-8 ${theme.text} mx-auto mb-3`} />
+        <Heart className={`w-8 h-8 text-foreground mx-auto mb-3`} />
 
         <div className="relative z-10">
-          <h3 className={`text-base font-bold ${theme.text} mb-1`}>
+          <h3 className={`text-base font-bold text-foreground mb-1`}>
             Obrigado por usar o {APP_CONFIG.name}!
           </h3>
-          <p className=" text-neutral-400 leading-relaxed">
+          <p className=" text-muted-foreground leading-relaxed">
             Seu feedback é fundamental para o crescimento deste projeto. Se
             encontrar bugs ou tiver sugestões, não hesite em nos contatar
             através dos canais acima.
@@ -114,26 +120,26 @@ function SupportLink({
   value: string;
   href?: string;
 }) {
-  const theme = getThemeColor(); // Added theme here
+  const { themeStyles: theme } = useTheme();
   const content = (
-    <div className="flex items-center justify-between p-3 bg-neutral-900/50 border border-neutral-800 rounded-xl hover:bg-neutral-800/80 transition-all group cursor-pointer">
+    <div className="flex items-center justify-between p-3 bg-card/50 border border-border rounded-xl hover:bg-accent/50/80 transition-all group cursor-pointer">
       <div className="flex items-center gap-3">
-        {/* SupportLink icon styling - Modified */}
+        {/* Link de suporte */}
         <div
-          className={`p-2 bg-neutral-800 rounded-lg group-hover:${theme.bg} group-hover:${theme.text} transition-colors`}
+          className={`p-2 bg-accent  rounded-lg group-hover:${theme.bg} group-hover:${theme.text} transition-colors`}
         >
           <Icon className="w-4 h-4" />
         </div>
         <div>
-          <p className="text-xs text-neutral-500 font-medium">{label}</p>
-          <p className=" font-bold text-neutral-200">{value}</p>
+          <p className="text-xs text-muted-foreground font-medium">{label}</p>
+          <p className=" font-bold text-foreground">{value}</p>
         </div>
       </div>
       {href && (
         <div
-          className={`text-[10px] font-black text-neutral-600 uppercase group-hover:${theme.text} transition-colors`}
+          className={`text-[10px] font-bold text-muted-foreground group-hover:${theme.text} transition-colors`}
         >
-          Abrir Link
+          Abrir link
         </div>
       )}
     </div>

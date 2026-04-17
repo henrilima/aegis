@@ -25,7 +25,7 @@ export function NoteCard({ note: n, onDelete, onClick }: NoteCardProps) {
   return (
     <Card
       onClick={onClick}
-      className="bg-neutral-900 border-neutral-800 group hover:border-amber-500/30 transition-all cursor-pointer h-full flex flex-col"
+      className="bg-card border-border group hover:border-amber-500/30 transition-all cursor-pointer h-full flex flex-col"
     >
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-bold truncate pr-6">
@@ -44,7 +44,7 @@ export function NoteCard({ note: n, onDelete, onClick }: NoteCardProps) {
         </Button>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
-        <div className="text-neutral-400 text-xs line-clamp-4 w-full pointer-events-none">
+        <div className="text-muted-foreground text-xs line-clamp-4 w-full pointer-events-none">
           {stripMarkdown(n.content)}
         </div>
         <p className="text-[10px] text-neutral-600 mt-auto pt-4 uppercase font-bold">

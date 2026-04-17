@@ -20,17 +20,17 @@ export function MetasTab({
   onWeekStartChange,
 }: MetasTabProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 w-full animate-in fade-in duration-500 shadow-2xl">
-      <div className="flex items-center justify-between border-b border-neutral-800 pb-5">
+    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-6 w-full ">
+      <div className="flex items-center justify-between border-b border-border pb-5">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl">
-            <Target className="w-5 h-5 text-violet-400" />
+            <Target className="w-5 h-5 text-violet-600 dark:text-violet-400" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-white leading-none">
-              Definir Metas
+            <h2 className="text-lg font-bold text-foreground leading-none">
+              Definir metas
             </h2>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Planejamento e objetivos de desempenho
             </p>
           </div>
@@ -38,23 +38,23 @@ export function MetasTab({
 
         {onWeekStartChange !== undefined && (
           <div className="flex flex-col gap-1.5 items-end">
-            <span className="text-[10px] font-black uppercase text-neutral-500">
-              Início da Semana
+            <span className="text-[10px] font-bold text-muted-foreground">
+              Início da semana
             </span>
-            <div className="flex gap-1 p-1 bg-neutral-950 border border-neutral-800 rounded-lg">
+            <div className="flex gap-1 p-1 bg-background border border-border rounded-lg">
               <button
                 type="button"
                 onClick={() => onWeekStartChange(0)}
-                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 0 ? "bg-violet-600/20 text-violet-400 border border-violet-600/30" : "text-neutral-600 hover:text-neutral-400"}`}
+                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 0 ? "bg-violet-600/20 text-violet-600 dark:text-violet-400 border border-violet-600/30" : "text-neutral-600 hover:text-muted-foreground"}`}
               >
-                DOM
+                Dom
               </button>
               <button
                 type="button"
                 onClick={() => onWeekStartChange(1)}
-                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 1 ? "bg-violet-600/20 text-violet-400 border border-violet-600/30" : "text-neutral-600 hover:text-neutral-400"}`}
+                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 1 ? "bg-violet-600/20 text-violet-600 dark:text-violet-400 border border-violet-600/30" : "text-neutral-600 hover:text-muted-foreground"}`}
               >
-                SEG
+                Seg
               </button>
             </div>
           </div>

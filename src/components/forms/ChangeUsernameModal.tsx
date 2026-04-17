@@ -59,8 +59,8 @@ export default function ChangeUsernameModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800 shrink-0">
+      <div className="relative w-full max-w-md bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div
               className={`p-2.5 ${theme.bg} rounded-xl border ${theme.border}`}
@@ -68,10 +68,10 @@ export default function ChangeUsernameModal({
               <User className={`w-5 h-5 ${theme.textSub}`} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white leading-none">
+              <h2 className="text-base font-bold text-foreground leading-none">
                 Alterar Usuário
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Identidade Digital
               </p>
             </div>
@@ -79,7 +79,7 @@ export default function ChangeUsernameModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
+            className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -90,14 +90,14 @@ export default function ChangeUsernameModal({
             <div className="space-y-2">
               <Label
                 htmlFor="newUsername"
-                className="text-xs font-medium text-neutral-400 ml-0.5"
+                className="text-xs font-medium text-muted-foreground ml-0.5"
               >
                 Novo nome de usuário
               </Label>
               <Input
                 id="newUsername"
                 placeholder="Ex: NovoNome"
-                className="bg-neutral-900/50 border-neutral-800 h-12 rounded-xl text-sm font-bold placeholder:text-neutral-700 focus:ring-1 focus:ring-violet-500/50 transition-all px-4"
+                className="bg-card/50 border-border h-12 rounded-xl text-sm font-bold placeholder:text-neutral-700 focus:ring-1 focus:ring-violet-500/50 transition-all px-4"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 autoFocus
@@ -127,7 +127,7 @@ export default function ChangeUsernameModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+              className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
             >
               Agora não
             </button>

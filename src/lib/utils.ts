@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { APP_CONFIG } from "@/app.config";
+import { CHROMATIC_THEMES, type ChromaticThemeId } from "@/themes.config";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -26,7 +27,7 @@ export const THEME_COLORS = {
     textDarkHover: "hover:text-blue-200",
   },
   amber: {
-    text: "text-amber-500",
+    text: "text-amber-600 dark:text-amber-500",
     textSub: "text-amber-400",
     bg: "bg-amber-500/10",
     bgHover: "hover:bg-amber-500/20",
@@ -40,7 +41,7 @@ export const THEME_COLORS = {
   },
   teal: {
     text: "text-teal-500",
-    textSub: "text-teal-400",
+    textSub: "text-teal-600 dark:text-teal-400",
     bg: "bg-teal-600/10",
     bgHover: "hover:bg-teal-600/20",
     active: "bg-teal-500/12",
@@ -53,7 +54,7 @@ export const THEME_COLORS = {
   },
   violet: {
     text: "text-violet-500",
-    textSub: "text-violet-400",
+    textSub: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-600/10",
     bgHover: "hover:bg-violet-600/20",
     active: "bg-violet-500/12",
@@ -79,7 +80,7 @@ export const THEME_COLORS = {
   },
   red: {
     text: "text-red-500",
-    textSub: "text-red-400",
+    textSub: "text-red-600 dark:text-red-400",
     bg: "bg-red-600/10",
     bgHover: "hover:bg-red-600/20",
     active: "bg-red-500/12",
@@ -92,7 +93,7 @@ export const THEME_COLORS = {
   },
   orange: {
     text: "text-orange-500",
-    textSub: "text-orange-400",
+    textSub: "text-orange-600 dark:text-orange-400",
     bg: "bg-orange-600/10",
     bgHover: "hover:bg-orange-600/20",
     active: "bg-orange-500/12",
@@ -116,6 +117,32 @@ export const THEME_COLORS = {
     textDark: "text-sky-300",
     textDarkHover: "hover:text-sky-200",
   },
+  coffee: {
+    text: "text-[#8d7767]",
+    textSub: "text-[#a68d7a]",
+    bg: "bg-[#8d7767]/10",
+    bgHover: "hover:bg-[#8d7767]/20",
+    active: "bg-[#8d7767]/15",
+    border: "border-[#8d7767]/30",
+    borderHover: "hover:border-[#8d7767]",
+    solid: "bg-[#8d7767]",
+    solidHover: "hover:bg-[#a68d7a]",
+    textDark: "text-[#fef3c7]",
+    textDarkHover: "hover:text-white",
+  },
+  carbon: {
+    text: "text-zinc-400",
+    textSub: "text-zinc-500",
+    bg: "bg-zinc-800/40",
+    bgHover: "hover:bg-zinc-800/60",
+    active: "bg-zinc-700/50",
+    border: "border-zinc-700/50",
+    borderHover: "hover:border-zinc-500",
+    solid: "bg-zinc-700",
+    solidHover: "hover:bg-zinc-600",
+    textDark: "text-zinc-300",
+    textDarkHover: "hover:text-zinc-100",
+  },
 };
 
 export function getColorTheme(colorName: string) {
@@ -124,8 +151,17 @@ export function getColorTheme(colorName: string) {
   );
 }
 
-export function getThemeColor() {
-  const primary = APP_CONFIG.theme.primary;
+export function getThemeColor(themeId?: ChromaticThemeId) {
+  let primary = APP_CONFIG.theme.primary;
+
+  // Se um tema cromático for fornecido, usamos a cor primária harmonizada
+  if (themeId) {
+    const config = CHROMATIC_THEMES.find((t) => t.id === themeId);
+    if (config) {
+      primary = config.primary;
+    }
+  }
+
   const theme = getColorTheme(primary);
   return {
     ...theme,

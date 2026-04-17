@@ -51,7 +51,9 @@ export function HabitCard({
     actions,
   } = useHabitLogic(habit, onRefresh);
 
-  const accentColor = isNegative ? "text-red-400" : "text-teal-400";
+  const accentColor = isNegative
+    ? "text-red-600 dark:text-red-600 dark:text-red-400"
+    : "text-teal-600 dark:text-teal-600 dark:text-teal-400";
   const accentBg = isNegative
     ? "bg-red-500/10 border-red-500/20"
     : "bg-teal-500/10 border-teal-500/20";
@@ -60,7 +62,7 @@ export function HabitCard({
   const hasCharges = maxCharges > 0;
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex flex-col gap-4 hover:border-neutral-700 hover:bg-neutral-800/20 transition-all group relative">
+    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-border hover:bg-accent/50/20 transition-all group relative">
       {/* Cabeçalho do Card */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3">
@@ -72,7 +74,7 @@ export function HabitCard({
             )}
           </div>
           <div className="flex flex-col gap-0.5">
-            <h3 className="font-bold text-base leading-tight text-neutral-100">
+            <h3 className="font-bold text-base leading-tight text-foreground">
               {name}
             </h3>
             <p className={`text-xs font-medium ${accentColor} opacity-70`}>
@@ -117,7 +119,7 @@ export function HabitCard({
         <StatBadge
           icon={
             <Trophy
-              className={`w-4 h-4 mb-1 ${recorde > 0 ? "text-amber-500" : "text-neutral-700"}`}
+              className={`w-4 h-4 mb-1 ${recorde > 0 ? "text-amber-600 dark:text-amber-500" : "text-neutral-700"}`}
             />
           }
           label="Recorde"
@@ -127,7 +129,7 @@ export function HabitCard({
         <StatBadge
           icon={
             <Zap
-              className={`w-4 h-4 mb-1 ${currentCharges > 0 ? "text-orange-400" : "text-neutral-700"}`}
+              className={`w-4 h-4 mb-1 ${currentCharges > 0 ? "text-orange-500" : "text-muted-foreground/30"}`}
             />
           }
           label="Cargas"
@@ -140,7 +142,7 @@ export function HabitCard({
       <div className="flex items-center justify-between px-0.5">
         <p className="text-[10px] text-neutral-600 font-medium">
           {isNegative ? "Deslizes" : "Iterações"}:{" "}
-          <span className="text-neutral-400">{totalContagem}</span>
+          <span className="text-muted-foreground">{totalContagem}</span>
         </p>
 
         {/* Timer de próxima carga — aparece aqui para ambos os tipos se NÃO estiver no máximo */}
@@ -148,11 +150,14 @@ export function HabitCard({
           <p className="text-[10px] text-neutral-600 font-medium flex items-center gap-1">
             <Zap className="w-2.5 h-2.5 text-orange-500/60" />
             Próxima carga em:{" "}
-            <span className="text-neutral-400 ml-0.5">{chargeTimeLeft}</span>
+            <span className="text-muted-foreground ml-0.5">
+              {chargeTimeLeft}
+            </span>
           </p>
         ) : !isNegative ? (
           <p className="text-[10px] text-neutral-600 font-medium">
-            Frequência: <span className="text-neutral-400">{intervalo}d</span>
+            Frequência:{" "}
+            <span className="text-muted-foreground">{intervalo}d</span>
           </p>
         ) : null}
       </div>
@@ -165,21 +170,21 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && actions.markDone()}
-              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-600 dark:text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" /> Marcar como feito
             </button>
           ) : (
-            <div className="w-full py-3 rounded-xl bg-neutral-950/50 border border-neutral-800 flex flex-col items-center justify-center gap-0.5">
+            <div className="w-full py-3 rounded-xl bg-background/50 border border-border flex flex-col items-center justify-center gap-0.5">
               <div className="flex items-center gap-1.5 text-teal-500/70">
                 <CheckCheck className="w-3.5 h-3.5" />
                 <span className="text-xs font-semibold">Feito hoje</span>
               </div>
-              <div className="flex items-center gap-1 text-neutral-500">
+              <div className="flex items-center gap-1 text-muted-foreground">
                 <Clock className="w-3 h-3" />
                 <span className="text-[10px] font-medium">
                   Próximo em:{" "}
-                  <span className="text-neutral-300">{timeLeft}</span>
+                  <span className="text-muted-foreground">{timeLeft}</span>
                 </span>
               </div>
             </div>
@@ -190,7 +195,7 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && onOpenResetDialog(habit.id)}
-              className="w-full py-3 rounded-xl border border-red-900/60 text-red-400/80 text-sm font-medium hover:border-red-500/40 hover:text-red-300 hover:bg-red-800/30 bg-red-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl border border-red-500/30 text-red-600 dark:text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-500/10 bg-red-500/5 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <AlertTriangle className="w-3.5 h-3.5" /> Registrar falha
             </button>
@@ -199,7 +204,7 @@ export function HabitCard({
               <button
                 type="button"
                 onClick={() => habit.id && actions.handleUseCharge()}
-                className="w-full py-2 rounded-xl text-yellow-500/60 text-xs font-medium hover:text-yellow-400 hover:bg-yellow-900/20 bg-yellow-800/10 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2 rounded-xl text-orange-600 dark:text-orange-600 dark:text-orange-400 text-xs font-medium hover:bg-orange-500/10 bg-orange-500/5 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Zap className="w-3 h-3" /> Usar carga protetora
               </button>
@@ -227,13 +232,13 @@ function StatBadge({
 }) {
   return (
     <div
-      className={`flex flex-col items-center gap-1 py-3.5 rounded-xl border transition-all ${active ? "bg-neutral-950/40 border-neutral-800" : "bg-transparent border-transparent opacity-30"}`}
+      className={`flex flex-col items-center gap-1 py-3.5 rounded-xl border transition-all ${active ? "bg-background/40 border-border" : "bg-transparent border-transparent opacity-30"}`}
     >
       {icon}
-      <span className="text-lg font-black font-mono leading-none text-neutral-100">
+      <span className="text-lg font-black font-mono leading-none text-foreground">
         {value}
       </span>
-      <span className="text-[9px] text-neutral-600 font-semibold leading-none">
+      <span className="text-[9px] text-muted-foreground/60 font-semibold leading-none">
         {label}
       </span>
     </div>
@@ -261,8 +266,8 @@ function IconBtn({
         onClick={onClick}
         className={`p-1.5 rounded-lg transition-all cursor-pointer border border-transparent ${
           danger
-            ? "text-neutral-700 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
-            : "text-neutral-700 hover:text-neutral-200 hover:bg-neutral-800 hover:border-neutral-700"
+            ? "text-neutral-700 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+            : "text-neutral-700 hover:text-foreground hover:bg-accent/50 hover:border-border"
         }`}
       >
         {children}

@@ -13,7 +13,7 @@ export function CurrencyFooter({
   onFetch,
 }: CurrencyFooterProps) {
   return (
-    <div className="flex justify-between items-center text-xs text-neutral-500 pt-4 border-t mt-6">
+    <div className="flex justify-between items-center text-xs text-muted-foreground pt-4 border-t mt-6">
       <span>
         Atualizado:{" "}
         {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : "---"}

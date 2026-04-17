@@ -23,7 +23,8 @@ pub struct SleepEntry {
 pub struct SleepGoal {
     pub user_id: String,
     pub target_hours: f64,       
-    pub target_bedtime: String,  
+    pub target_bedtime: String,
+    pub reminder_enabled: bool,
 }
 
 
@@ -59,12 +60,14 @@ impl SleepManager {
             );",
         ).ok();
 
+        conn.execute("ALTER TABLE sleep_goals ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 0", []).ok();
+
         Self { db_path }
     }
 
     fn conn(&self) -> Connection {
         let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha ao definir timeout de espera");
         conn
     }
 
@@ -123,12 +126,13 @@ impl SleepManager {
     pub fn upsert_goal(&self, g: SleepGoal) -> Result<(), String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO sleep_goals (user_id, target_hours, target_bedtime)
-             VALUES (?1, ?2, ?3)
+            "INSERT INTO sleep_goals (user_id, target_hours, target_bedtime, reminder_enabled)
+             VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT(user_id) DO UPDATE SET
-                target_hours   = excluded.target_hours,
-                target_bedtime = excluded.target_bedtime",
-            params![g.user_id, g.target_hours, g.target_bedtime],
+                target_hours     = excluded.target_hours,
+                target_bedtime   = excluded.target_bedtime,
+                reminder_enabled = excluded.reminder_enabled",
+            params![g.user_id, g.target_hours, g.target_bedtime, if g.reminder_enabled { 1 } else { 0 }],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -136,17 +140,63 @@ impl SleepManager {
     pub fn get_goal(&self, user_id: &str) -> SleepGoal {
         let conn = self.conn();
         conn.query_row(
-            "SELECT target_hours, target_bedtime FROM sleep_goals WHERE user_id=?1",
+            "SELECT target_hours, target_bedtime, reminder_enabled FROM sleep_goals WHERE user_id=?1",
             params![user_id],
             |row| Ok(SleepGoal {
                 user_id: user_id.to_string(),
                 target_hours: row.get(0)?,
                 target_bedtime: row.get(1)?,
+                reminder_enabled: row.get::<_, i32>(2)? != 0,
             }),
         ).unwrap_or(SleepGoal {
             user_id: user_id.to_string(),
             target_hours: 8.0,
             target_bedtime: "23:00".to_string(),
+            reminder_enabled: false,
         })
+    }
+
+    pub fn export_csv(&self, user_id: &str, dest_path: &str, now: DateTime<Utc>) -> Result<(), String> {
+        let entries = self.list_entries(user_id, 120, now);
+        let mut out = String::from(
+            "data,hora_dormir,hora_acordar,duracao_minutos,qualidade,nota\n"
+        );
+        for e in entries {
+            out.push_str(&format!(
+                "{},{},{},{},{},{}\n",
+                e.date,
+                e.bedtime,
+                e.wake_time,
+                e.duration_minutes,
+                e.quality,
+                e.note.unwrap_or_default().replace(',', ";").replace('\n', " ")
+            ));
+        }
+        std::fs::write(dest_path, out).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn import_csv(&self, user_id: &str, file_path: &str) -> Result<usize, String> {
+        let csv = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
+        let mut count = 0usize;
+        for (i, line) in csv.lines().enumerate() {
+            if i == 0 { continue; } 
+            let cols: Vec<&str> = line.splitn(6, ',').collect();
+            if cols.len() < 5 { continue; }
+            let e = SleepEntry {
+                id: None,
+                user_id: user_id.to_string(),
+                date: cols[0].trim().to_string(),
+                bedtime: cols[1].trim().to_string(),
+                wake_time: cols[2].trim().to_string(),
+                duration_minutes: cols[3].trim().parse().unwrap_or(0),
+                quality: cols[4].trim().parse().unwrap_or(3),
+                note: cols.get(5).map(|s| s.trim().to_string()),
+                created_at: None,
+            };
+            self.upsert_entry(e).ok();
+            count += 1;
+        }
+        Ok(count)
     }
 }

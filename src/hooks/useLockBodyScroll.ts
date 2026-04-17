@@ -8,17 +8,15 @@ import { useEffect } from "react";
  */
 export function useLockBodyScroll(lock = true) {
   useEffect(() => {
-    if (!lock) return;
+    if (!lock) {
+      document.body.style.overflow = "auto";
+      return;
+    }
 
-    // Salva estilo original
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-
-    // Trava scroll
     document.body.style.overflow = "hidden";
 
-    // Destrava ao desmontar
     return () => {
-      document.body.style.overflow = originalStyle;
+      document.body.style.overflow = "auto";
     };
   }, [lock]);
 }

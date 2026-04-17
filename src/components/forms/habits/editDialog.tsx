@@ -16,8 +16,8 @@ export function EditHabitDialog({
   onUpdate,
 }: EditHabitDialogProps) {
   const ic =
-    "bg-neutral-900 border border-neutral-800 text-white rounded-xl outline-none focus:border-teal-500/50 transition-all font-medium text-sm p-3 w-full placeholder:text-neutral-600";
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+    "bg-card border border-border text-foreground rounded-xl outline-none focus:border-teal-500/50 transition-all font-medium text-sm p-3 w-full placeholder:text-muted-foreground/50";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
     <div
@@ -32,18 +32,18 @@ export function EditHabitDialog({
         tabIndex={-1}
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="relative w-full max-w-sm bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-5 border-b border-neutral-800/60">
+        <div className="flex items-center justify-between p-5 border-b border-border/60">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
-              <Edit2 className="w-5 h-5 text-teal-400" />
+              <Edit2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white leading-none">
+              <h2 className="text-base font-bold text-foreground leading-none">
                 Editar hábito
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Ajustar configurações
               </p>
             </div>
@@ -51,7 +51,7 @@ export function EditHabitDialog({
           <button
             type="button"
             onClick={() => setHabit(null)}
-            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -147,7 +147,7 @@ export function EditHabitDialog({
             <button
               type="button"
               onClick={() => setHabit(null)}
-              className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+              className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
             >
               Agora não
             </button>

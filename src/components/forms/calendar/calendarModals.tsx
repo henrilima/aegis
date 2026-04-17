@@ -26,18 +26,18 @@ export function EventModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-neutral-950 border border-neutral-800 rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800/60 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-500/10 rounded-xl border border-green-500/20">
               <Calendar className="w-5 h-5 text-green-400" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white leading-none">
+              <h2 className="text-base font-bold text-foreground leading-none">
                 {editEvent ? "Editar compromisso" : "Agendar evento"}
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Gestão de horários e prazos
               </p>
             </div>
@@ -45,7 +45,7 @@ export function EventModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

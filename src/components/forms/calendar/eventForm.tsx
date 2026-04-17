@@ -25,8 +25,6 @@ interface EventFormProps {
   onCancel: () => void;
 }
 
-// todayIso removed in favor of useTime hook
-
 /**
  * Formulário para criação e edição de eventos e prazos no calendário
  */
@@ -63,9 +61,9 @@ export function EventForm({
   }
 
   const isDeadline = form.event_type === "deadline";
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
   const inputStyle =
-    "w-full bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-green-500/40 transition-all placeholder:text-neutral-700";
+    "w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-green-500/40 transition-all placeholder:text-neutral-700";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
@@ -74,7 +72,7 @@ export function EventForm({
         <div className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label className={lc}>Tipo de registro</Label>
-            <div className="flex p-1 bg-neutral-950 border border-neutral-800 rounded-xl gap-1">
+            <div className="flex p-1 bg-background border border-border rounded-xl gap-1">
               <button
                 key="type-event"
                 type="button"
@@ -82,7 +80,7 @@ export function EventForm({
                 className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border ${
                   !isDeadline
                     ? "bg-green-600/10 text-green-400 border-green-600/30"
-                    : "bg-transparent text-neutral-600 border-transparent hover:text-neutral-400"
+                    : "bg-transparent text-neutral-600 border-transparent hover:text-muted-foreground"
                 }`}
               >
                 <CalendarIcon className="w-3.5 h-3.5" /> Evento
@@ -93,8 +91,8 @@ export function EventForm({
                 onClick={() => set("event_type", "deadline")}
                 className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border ${
                   isDeadline
-                    ? "bg-red-600/10 text-red-400 border-red-600/30"
-                    : "bg-transparent text-neutral-600 border-transparent hover:text-neutral-400"
+                    ? "bg-red-600/10 text-red-600 dark:text-red-400 border-red-600/30"
+                    : "bg-transparent text-neutral-600 border-transparent hover:text-muted-foreground"
                 }`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" /> Deadline
@@ -124,7 +122,7 @@ export function EventForm({
             </Label>
             <Textarea
               id="ef-desc"
-              className="bg-neutral-900 border-neutral-800 rounded-xl min-h-[120px] resize-none text-sm font-medium text-neutral-300 focus:border-green-600/30 placeholder:text-neutral-700 transition-all shadow-none"
+              className="bg-card border-border rounded-xl min-h-[120px] resize-none text-sm font-medium text-muted-foreground focus:border-green-600/30 placeholder:text-neutral-700 transition-all"
               placeholder="Notas, links ou detalhes relevantes..."
               value={form.description ?? ""}
               onChange={(e) => set("description", e.target.value)}
@@ -133,7 +131,7 @@ export function EventForm({
         </div>
 
         {/* Lado Direito: Agendamento e Estilo */}
-        <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 flex flex-col gap-6">
+        <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="ef-date" className={lc}>
@@ -174,8 +172,8 @@ export function EventForm({
                       onClick={() => set("deadline_category", cat)}
                       className={`py-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
                         form.deadline_category === cat
-                          ? "bg-neutral-800 text-white border-neutral-700"
-                          : "bg-neutral-950/40 text-neutral-600 border-neutral-800 hover:text-neutral-400"
+                          ? "bg-neutral-800 text-foreground border-border"
+                          : "bg-background/40 text-neutral-600 border-border hover:text-muted-foreground"
                       }`}
                     >
                       <span
@@ -201,7 +199,7 @@ export function EventForm({
                       onClick={() => set("color", opt.value)}
                       className={`w-7 h-7 rounded-full transition-all cursor-pointer flex items-center justify-center border-2 ${
                         form.color === opt.value
-                          ? "border-white scale-110 shadow-lg"
+                          ? "border-white scale-110"
                           : "border-transparent opacity-60 hover:opacity-100"
                       }`}
                       style={{ backgroundColor: opt.value }}
@@ -219,7 +217,7 @@ export function EventForm({
             </div>
           )}
 
-          <div className="mt-auto p-4 bg-neutral-950/40 border border-neutral-800/60 rounded-xl">
+          <div className="mt-auto p-4 bg-background/40 border border-border/60 rounded-xl">
             <p className="text-[10px] text-neutral-600 font-medium leading-relaxed">
               Registros serão exibidos na grade mensal e no painel lateral de
               próximos compromissos.
@@ -243,7 +241,7 @@ export function EventForm({
         <button
           type="button"
           onClick={onCancel}
-          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
         >
           Agora não
         </button>

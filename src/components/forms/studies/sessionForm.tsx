@@ -108,8 +108,8 @@ export function SessionForm({
   }
 
   const inputStyle =
-    "w-full bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-violet-600/20 transition-all placeholder:text-neutral-700";
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+    "w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-violet-600/20 transition-all placeholder:text-neutral-700";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -119,7 +119,7 @@ export function SessionForm({
           <div className="space-y-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="sf-subject" className={lc}>
-                Matéria
+                Matéria <span className="text-violet-500 ml-1">*</span>
               </Label>
               <SubjectInput
                 value={form.subject}
@@ -132,29 +132,36 @@ export function SessionForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="sf-date" className={lc}>
-                  Data
+                  Data <span className="text-violet-500 ml-1">*</span>
                 </Label>
                 <Input
                   id="sf-date"
                   type="date"
-                  className={inputStyle}
+                  className={`${inputStyle} cursor-pointer`}
                   value={form.date}
+                  onClick={(e) => {
+                    if ("showPicker" in HTMLInputElement.prototype) {
+                      e.currentTarget.showPicker();
+                    }
+                  }}
                   onChange={(e) => setField("date", e.target.value)}
                   required
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className={lc}>Duração</Label>
+                <Label className={lc}>
+                  Duração <span className="text-violet-500 ml-1">*</span>
+                </Label>
                 <div className="flex gap-2">
                   <div
-                    className={`flex-1 flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-11 focus-within:border-violet-600/20 transition-all`}
+                    className={`flex-1 flex items-center gap-2 bg-card border border-border rounded-xl px-3 h-11 focus-within:border-violet-600/20 transition-all`}
                   >
                     <input
                       type="number"
                       min="0"
                       max="24"
-                      className="w-full bg-transparent text-sm text-white focus:outline-none font-bold placeholder:text-neutral-700"
+                      className="w-full bg-transparent text-sm text-foreground focus:outline-none font-bold placeholder:text-neutral-700"
                       placeholder="0"
                       value={durH || ""}
                       onChange={(e) => {
@@ -171,13 +178,13 @@ export function SessionForm({
                     </span>
                   </div>
                   <div
-                    className={`flex-1 flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-11 focus-within:border-violet-600/20 transition-all`}
+                    className={`flex-1 flex items-center gap-2 bg-card border border-border rounded-xl px-3 h-11 focus-within:border-violet-600/20 transition-all`}
                   >
                     <input
                       type="number"
                       min="0"
                       max="59"
-                      className="w-full bg-transparent text-sm text-white focus:outline-none font-bold placeholder:text-neutral-700"
+                      className="w-full bg-transparent text-sm text-foreground focus:outline-none font-bold placeholder:text-neutral-700"
                       placeholder="0"
                       value={durM || ""}
                       onChange={(e) =>
@@ -206,7 +213,7 @@ export function SessionForm({
             </Label>
             <Textarea
               id="sf-note"
-              className={`bg-neutral-900 border-neutral-800 rounded-xl min-h-[140px] resize-none pt-4 text-sm font-medium text-neutral-300 focus:border-violet-600/20 placeholder:text-neutral-700 transition-all shadow-none`}
+              className={`bg-card border-border rounded-xl min-h-[140px] resize-none pt-4 text-sm font-medium text-muted-foreground focus:border-violet-600/20 placeholder:text-neutral-700 transition-all`}
               placeholder="Notas sobre o aprendizado, dificuldades ou revisões futuras..."
               value={form.note || ""}
               onChange={(e) => setField("note", e.target.value)}
@@ -216,7 +223,7 @@ export function SessionForm({
           {/* Seletor de Foco e Energia */}
           <div className="flex flex-col gap-3">
             <Label className={lc}>Foco e Energia</Label>
-            <div className="flex gap-1 p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
+            <div className="flex gap-1 p-1 bg-background border border-border rounded-xl">
               {[0, 1, 2, 3, 4, 5].map((s) => (
                 <button
                   key={s}
@@ -224,8 +231,8 @@ export function SessionForm({
                   onClick={() => setField("focus_score", s)}
                   className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
                     form.focus_score === s
-                      ? "bg-violet-600/10 border-violet-600/30 text-violet-400"
-                      : "bg-transparent border-transparent text-neutral-600 hover:text-neutral-500"
+                      ? "bg-violet-600/10 border-violet-600/30 text-violet-600 dark:text-violet-400"
+                      : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground"
                   }`}
                 >
                   {s}
@@ -251,7 +258,7 @@ export function SessionForm({
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Label className={lc}>Métricas de desempenho</Label>
-            <div className="flex p-1 bg-neutral-950 border border-neutral-800 rounded-xl gap-1">
+            <div className="flex p-1 bg-background border border-border rounded-xl gap-1">
               {[
                 { id: "questions" as const, label: "Questões" },
                 { id: "pages" as const, label: "Páginas" },
@@ -264,7 +271,7 @@ export function SessionForm({
                   className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
                     activeModes.includes(opt.id)
                       ? "bg-violet-600/10 border-violet-500/30 text-violet-500"
-                      : "bg-transparent border-transparent text-neutral-600 hover:text-neutral-500"
+                      : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground"
                   }`}
                 >
                   {opt.label}
@@ -273,7 +280,7 @@ export function SessionForm({
             </div>
           </div>
 
-          <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 flex flex-col gap-6 min-h-[295px]">
+          <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6 min-h-[295px]">
             {activeModes.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
                 <p className="text-xs text-neutral-600 font-medium">
@@ -363,7 +370,7 @@ export function SessionForm({
                 <div className="grid grid-cols-1 gap-4">
                   {activeModes.includes("pages") && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                      <Label className="text-[10px] font-bold text-neutral-500 ml-0.5 uppercase">
+                      <Label className="text-[10px] font-bold text-muted-foreground ml-0.5 uppercase">
                         Páginas lidas
                       </Label>
                       <Input
@@ -383,7 +390,7 @@ export function SessionForm({
                   )}
                   {activeModes.includes("custom") && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                      <Label className="text-[10px] font-bold text-neutral-500 ml-0.5 uppercase">
+                      <Label className="text-[10px] font-bold text-muted-foreground ml-0.5 uppercase">
                         Métrica personalizada
                       </Label>
                       <div className="flex gap-2">
@@ -430,7 +437,7 @@ export function SessionForm({
         <button
           type="button"
           onClick={onCancel}
-          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
         >
           Agora não
         </button>

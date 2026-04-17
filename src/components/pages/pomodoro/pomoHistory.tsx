@@ -9,16 +9,16 @@ interface PomoHistoryProps {
 
 export function PomoHistory({ history, onClear }: PomoHistoryProps) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 h-full">
+    <div className="bg-card border border-border rounded-xl p-5 h-full">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[10px] font-black uppercase  text-neutral-500">
+        <p className="text-[10px] font-black uppercase  text-muted-foreground">
           Histórico
         </p>
         <ToolTip content="Limpar histórico">
           <button
             type="button"
             onClick={onClear}
-            className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-neutral-700 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -34,7 +34,7 @@ export function PomoHistory({ history, onClear }: PomoHistoryProps) {
           {history.map((h) => (
             <li
               key={h.id}
-              className="flex items-center justify-between py-2 border-b border-neutral-800 last:border-0"
+              className="flex items-center justify-between py-2 border-b border-border last:border-0"
             >
               <span className="text-xs font-semibold">
                 {h.cycles_done} ciclo{h.cycles_done !== 1 ? "s" : ""} ·{" "}

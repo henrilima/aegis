@@ -13,7 +13,7 @@ import type { AppConfig } from "../settings/useSettingsLogic";
 import { HistoryTab } from "./components/historyTab";
 import { MetasTab } from "./components/metasTab";
 import { OverviewTab } from "./components/overviewTab";
-import { DesempenhoTab, RelatorioTab } from "./components/reportTab";
+import { RelatorioTab } from "./components/reportTab";
 import { StudiesHeader } from "./components/studiesHeader";
 import { SessionModal } from "./components/studiesModals";
 import { StudiesTabs } from "./components/studiesTabs";
@@ -22,7 +22,6 @@ import type { StudyGoal, StudySession, TabId } from "./types";
 import {
   computeStats,
   computeSubjectMap,
-  generateReport,
   isoDate,
   startOfMonth,
   startOfWeek,
@@ -192,10 +191,6 @@ export default function StudiesPage() {
   );
 
   const subjectMap = useMemo(() => computeSubjectMap(sessions), [sessions]);
-  const monthSubjectMap = useMemo(
-    () => computeSubjectMap(monthSessions),
-    [monthSessions],
-  );
 
   const existingSubjects = useMemo(() => {
     const set = new Set<string>();
@@ -224,21 +219,6 @@ export default function StudiesPage() {
     [sessions, search, filterMonth],
   );
 
-  const copyReport = async () => {
-    try {
-      const text = generateReport({
-        weekStats,
-        monthStats,
-        allStats,
-        goalValue,
-      });
-      await navigator.clipboard.writeText(text);
-      toast.success("Relatório copiado!");
-    } catch {
-      toast.error("Erro ao copiar");
-    }
-  };
-
   if (loading)
     return (
       <div className="h-full flex items-center justify-center">
@@ -250,7 +230,7 @@ export default function StudiesPage() {
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-10 animate-in fade-in duration-500 text-white">
+    <div className="w-full flex flex-col gap-6 pb-10 ">
       <StudiesHeader
         onImportCSV={handleImportCSV}
         onExportCSV={handleExportCSV}
@@ -316,44 +296,30 @@ export default function StudiesPage() {
 
       {tab === "heatmap" && <StudiesHeatmap sessions={sessions} />}
 
-      {tab === "desempenho" && (
-        <DesempenhoTab
-          allStats={monthStats}
-          subjectMap={monthSubjectMap}
-          isMonthly
-        />
-      )}
-
       {tab === "relatorio" && (
         <RelatorioTab
-          reportText={generateReport({
-            weekStats,
-            monthStats,
-            allStats,
-            goalValue,
-          })}
-          onCopy={copyReport}
           sessions={sessions}
           allStats={allStats}
           goalValue={goalValue}
+          weekStartDay={weekStartDay}
         />
       )}
 
       {/* Configurações */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="p-6 border-b border-neutral-800 flex items-center justify-between sticky top-0 bg-neutral-900 z-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm ">
+          <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-violet-600/10 border border-violet-600/20">
-                  <Settings className="w-5 h-5 text-violet-400" />
+                  <Settings className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <h2 className="text-xl font-bold">Metas e Preferências</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
+                className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <Plus className="w-5 h-5 rotate-45" />
               </button>

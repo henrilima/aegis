@@ -18,7 +18,7 @@ export default function PomodoroPage() {
   if (loading)
     return (
       <div className="h-full w-full flex items-center justify-center font-bold">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse font-outfit">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse font-outfit">
           <Timer className="w-4 h-4" /> Sincronizando...
         </div>
       </div>
@@ -28,7 +28,7 @@ export default function PomodoroPage() {
 
   return (
     <div className="h-full w-full flex justify-center overflow-auto animate-in fade-in duration-700">
-      <div className="w-full max-w-5xl flex flex-col gap-8 pb-12">
+      <div className="w-full h-full flex flex-col gap-8 pb-12">
         {/* Cabeçalho */}
         <PomoHeader
           cyclesCompleted={state?.cycles_completed || 0}
@@ -37,7 +37,7 @@ export default function PomodoroPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           {/* Unidade Principal */}
-          <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 rounded-3xl p-12 flex flex-col items-center gap-10">
+          <div className="md:col-span-2 bg-card border border-border rounded-3xl p-12 flex flex-col items-center gap-10">
             {/* Timer */}
             <div className="flex flex-col items-center gap-4">
               <div
@@ -66,7 +66,7 @@ export default function PomodoroPage() {
                 size="lg"
                 onClick={actions.toggleTimer}
                 className={cn(
-                  "px-6 h-11 font-black transition-all rounded-xl text-sm font-outfit shadow-none",
+                  "px-6 h-11 font-black transition-all rounded-xl text-sm font-outfit",
                   isWork
                     ? "bg-red-500 hover:bg-red-400 text-black"
                     : "bg-teal-500 hover:bg-teal-400 text-black",
@@ -87,14 +87,14 @@ export default function PomodoroPage() {
                 size="lg"
                 onClick={actions.stopTimer}
                 disabled={!state?.is_running && state?.cycles_completed === 0}
-                className="h-11 border border-neutral-800 hover:bg-neutral-800 font-bold px-6 rounded-xl transition-all text-neutral-400 disabled:opacity-30 text-sm"
+                className="h-11 border border-border hover:bg-accent/50 font-bold px-6 rounded-xl transition-all text-muted-foreground disabled:opacity-30 text-sm"
               >
                 <Square className="w-4 h-4 mr-2 fill-current" /> Parar
               </Button>
             </div>
 
             {/* Calibração */}
-            <div className="w-full pt-10 border-t border-neutral-800/50">
+            <div className="w-full pt-10 border-t border-border/50">
               <div className="flex gap-6 w-full max-w-sm mx-auto">
                 <div className="flex-1 space-y-2.5">
                   <p className="text-[10px] font-black uppercase text-neutral-600 text-centerer">
@@ -108,7 +108,7 @@ export default function PomodoroPage() {
                         actions.updateConfig("work_minutes", e.target.value)
                       }
                       disabled={state?.is_running}
-                      className="bg-neutral-950 h-11 border border-neutral-800 focus:border-red-500/50 text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50 shadow-none"
+                      className="bg-background h-11 border border-border focus:border-red-500/50 text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export default function PomodoroPage() {
                         actions.updateConfig("break_minutes", e.target.value)
                       }
                       disabled={state?.is_running}
-                      className="bg-neutral-950 h-11 border border-neutral-800 focus:border-teal-500/50 text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50 shadow-none"
+                      className="bg-background h-11 border border-border focus:border-teal-500/50 text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50"
                     />
                   </div>
                 </div>

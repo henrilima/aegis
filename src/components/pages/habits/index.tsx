@@ -10,6 +10,7 @@ import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
+import { cn } from "@/lib/utils";
 import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
 
@@ -155,7 +156,7 @@ export default function HabitsPage() {
   if (loading)
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse font-bold">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse font-bold">
           <Activity className="w-4 h-4" /> Sincronizando hábitos...
         </div>
       </div>
@@ -185,22 +186,31 @@ export default function HabitsPage() {
     },
   ];
 
+  const sortedHabits = [...habits].sort((a, b) => {
+    const priority: Record<string, number> = {
+      Positive: 0,
+      Negative: 1,
+      Bad: 1,
+    };
+    return (priority[a.habit_type] ?? 2) - (priority[b.habit_type] ?? 2);
+  });
+
   const currentList =
-    tab === "all" ? habits : tab === "positive" ? positive : negative;
+    tab === "all" ? sortedHabits : tab === "positive" ? positive : negative;
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12 animate-in fade-in duration-500 text-white">
+    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12  text-foreground">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
-            <Activity className="w-5 h-5 text-teal-400" />
+            <Activity className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold leading-none">
               Hábitos & Disciplina
             </h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {habits.length} ativos · {positive.length} positivos ·{" "}
               {negative.length} controle
             </p>
@@ -209,37 +219,42 @@ export default function HabitsPage() {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white  font-bold transition-colors cursor-pointer"
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold transition-all cursor-pointer active:scale-95",
+            "bg-teal-600 hover:bg-teal-500 dark:bg-teal-500 dark:hover:bg-teal-400",
+          )}
         >
           <Plus className="w-4 h-4" /> Novo Hábito
         </button>
       </div>
 
       {/* Categorias */}
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
+      <div className="flex gap-1 p-1.5 bg-card border border-border rounded-xl w-fit">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
               tab === t.id
                 ? t.color === "teal"
-                  ? "bg-teal-500/25 text-teal-300 border border-teal-500/40 shadow-sm shadow-teal-500/10"
-                  : "bg-red-500/25 text-red-300 border border-red-500/40 shadow-sm shadow-red-500/10"
-                : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5"
-            }`}
+                  ? "bg-teal-500/20 text-teal-600 dark:text-teal-400 border-teal-500/30"
+                  : "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30"
+                : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted",
+            )}
           >
             <t.icon className="w-4 h-4" />
             {t.label}
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+              className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded-md",
                 tab === t.id
                   ? t.color === "teal"
-                    ? "bg-teal-500/20 text-teal-300"
-                    : "bg-red-500/20 text-red-300"
-                  : "bg-neutral-800 text-neutral-600"
-              }`}
+                    ? "bg-teal-500/20 text-teal-600 dark:text-teal-400"
+                    : "bg-red-500/20 text-red-600 dark:text-red-400"
+                  : "bg-muted text-muted-foreground",
+              )}
             >
               {t.count}
             </span>

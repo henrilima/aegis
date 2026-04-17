@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Circle, Pin, PinOff, Trash2 } from "lucide-react";
+import { Pin, PinOff, Trash2 } from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { Note } from "../types";
 
@@ -22,28 +22,24 @@ const stripMarkdown = (text: string) => {
 interface NoteCardProps {
   note: Note;
   onClick: () => void;
-  onToggleStatus: (n: Note) => void;
   onTogglePin: (n: Note) => void;
   onDelete: (id: number) => void;
 }
 
 /**
- * Card individual de nota: Suporta preview limpo, fixação e marcação de conclusão
+ * Card individual de nota: Suporta preview limpo e fixação
  */
 export function NoteCard({
   note: n,
   onClick,
-  onToggleStatus,
   onTogglePin,
   onDelete,
 }: NoteCardProps) {
-  const isDone = n.status === "done";
-
   return (
     <div
-      className={`group relative bg-neutral-900 border rounded-xl p-4 flex flex-col gap-2 transition-all hover:border-neutral-700 text-left ${
-        n.pinned ? "border-orange-500/50" : "border-neutral-800"
-      } ${isDone ? "opacity-60" : ""}`}
+      className={`group relative bg-card border rounded-xl p-4 flex flex-col gap-2 transition-all hover:border-border text-left ${
+        n.pinned ? "border-orange-500/50" : "border-border"
+      }`}
     >
       {/* Clique na área do card */}
       <button
@@ -54,28 +50,8 @@ export function NoteCard({
       />
 
       <div className="flex items-start justify-between gap-2 relative z-10 pointer-events-none">
-        {/* Toggle de Conclusão */}
-        <ToolTip
-          content={isDone ? "Marcar como pendente" : "Marcar como concluída"}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStatus(n);
-            }}
-            className="shrink-0 mt-0.5 text-neutral-600 hover:text-orange-400 transition-colors cursor-pointer pointer-events-auto"
-          >
-            {isDone ? (
-              <CheckCircle className="w-4 h-4 text-green-500" />
-            ) : (
-              <Circle className="w-4 h-4" />
-            )}
-          </button>
-        </ToolTip>
-
         <p
-          className={`font-bold leading-snug flex-1 text-left ${isDone ? "line-through text-neutral-500" : "text-neutral-200"}`}
+          className={"font-bold leading-snug flex-1 text-left text-foreground"}
         >
           {n.title}
         </p>
@@ -91,8 +67,8 @@ export function NoteCard({
               }}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 n.pinned
-                  ? "text-orange-400 hover:bg-orange-500/10"
-                  : "text-neutral-700 hover:text-orange-400 hover:bg-orange-500/10"
+                  ? "text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                  : "text-neutral-700 hover:text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
               }`}
             >
               {n.pinned ? (
@@ -109,7 +85,7 @@ export function NoteCard({
                 e.stopPropagation();
                 if (n.id) onDelete(n.id);
               }}
-              className="p-1.5 rounded-lg text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+              className="p-1.5 rounded-lg text-neutral-700 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -119,13 +95,13 @@ export function NoteCard({
 
       {/* Preview do conteúdo truncado */}
       {n.content && (
-        <div className="relative z-10 text-xs text-neutral-500 line-clamp-3 whitespace-pre-wrap leading-relaxed pl-6 pointer-events-none">
+        <div className="relative z-10 text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed pl-6 pointer-events-none">
           {stripMarkdown(n.content)}
         </div>
       )}
 
       {/* Rodapé do Card */}
-      <p className="relative z-10 text-[10px] text-neutral-700 font-bold uppercase mt-auto pt-2 border-t border-neutral-800 pl-6 pointer-events-none">
+      <p className="relative z-10 text-[10px] text-neutral-700 font-bold uppercase mt-auto pt-2 border-t border-border pl-6 pointer-events-none">
         {new Date(n.created_at).toLocaleDateString("pt-BR")}
       </p>
     </div>

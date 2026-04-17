@@ -15,6 +15,7 @@ export interface SleepGoal {
   user_id: string;
   target_hours: number;
   target_bedtime: string;
+  reminder_enabled: boolean;
 }
 
 export interface WeekStats {

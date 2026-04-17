@@ -9,7 +9,7 @@ export function StatsCard({ count }: StatsCardProps) {
     <Card>
       <CardContent className="p-4 text-center">
         <div className="text-2xl font-bold">{count}</div>
-        <div className="text-xs uppercase text-neutral-500 font-semibold ">
+        <div className="text-xs uppercase text-muted-foreground font-semibold ">
           Hábitos
         </div>
       </CardContent>

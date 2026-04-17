@@ -29,13 +29,13 @@ export function PasswordsWidget({
             <div
               className={`p-2 rounded-xl bg-amber-500/10 border border-amber-500/20`}
             >
-              <Lock className="w-4 h-4 text-amber-500" />
+              <Lock className="w-4 h-4 text-amber-600 dark:text-amber-500" />
             </div>
             <div>
-              <p className="text-xl font-bold text-white leading-none">
+              <p className="text-xl font-bold text-foreground leading-none">
                 {passwords.length}
               </p>
-              <p className="text-[10px] font-medium text-neutral-500 mt-1">
+              <p className="text-[10px] font-medium text-muted-foreground mt-1">
                 Credenciais salvas
               </p>
             </div>
@@ -43,8 +43,8 @@ export function PasswordsWidget({
 
           {vaultExists ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] font-bold text-emerald-400 uppercase">
+              <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
                 Protegido
               </span>
             </div>
@@ -62,10 +62,10 @@ export function PasswordsWidget({
           {passwords.slice(0, 2).map((p, i) => (
             <div
               key={p.id ?? i}
-              className="flex items-center gap-2 p-2 rounded-xl bg-neutral-800/30 border border-neutral-800/50"
+              className="flex items-center gap-2 p-2 rounded-xl bg-neutral-800/30 border border-border/50"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-amber-500/40" />
-              <span className="text-xs font-medium text-neutral-400 truncate flex-1">
+              <span className="text-xs font-medium text-muted-foreground truncate flex-1">
                 {p.site}
               </span>
             </div>

@@ -24,17 +24,17 @@ export function CalendarUpcomingDeadlines({
   if (deadlines.length === 0) return null;
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-5 animate-in slide-in-from-left-4 duration-500 overflow-hidden">
+    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-5 animate-in slide-in-from-left-4 duration-500 overflow-hidden">
       {/* Cabeçalho */}
-      <div className="flex items-center gap-3 border-b border-neutral-800/60 pb-4">
+      <div className="flex items-center gap-3 border-b border-border/60 pb-4">
         <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
-          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
         </div>
         <div>
-          <h2 className="text-base font-bold text-white leading-none">
+          <h2 className="text-base font-bold text-foreground leading-none">
             Fronteiras críticas
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Lembretes de prazo fatal
           </p>
         </div>
@@ -50,14 +50,14 @@ export function CalendarUpcomingDeadlines({
           return (
             <div
               key={ev.id}
-              className="group relative flex items-center gap-4 p-3 rounded-xl bg-neutral-950/40 border border-neutral-800/40 hover:border-neutral-700 transition-all duration-300"
+              className="group relative flex items-center gap-4 p-3 rounded-xl bg-background/40 border border-border/40 hover:border-border transition-all duration-300"
             >
               <div
                 className="w-1.5 h-10 rounded-full shrink-0"
                 style={{ backgroundColor: color }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white truncate">
+                <p className="text-sm font-bold text-foreground truncate">
                   {ev.title}
                 </p>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -67,7 +67,7 @@ export function CalendarUpcomingDeadlines({
                   >
                     {DEADLINE_LABELS[ev.deadline_category as DeadlineCategory]}
                   </span>
-                  <span className="text-[10px] font-medium text-neutral-500">
+                  <span className="text-[10px] font-medium text-muted-foreground">
                     {new Date(`${ev.date}T12:00:00`).toLocaleDateString(
                       "pt-BR",
                       { day: "2-digit", month: "short" },

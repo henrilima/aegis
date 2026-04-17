@@ -22,7 +22,9 @@ export type AppRoute =
   | "settings"
   | "speedtest"
   | "calendar"
-  | "statistics";
+  | "statistics"
+  | "reading"
+  | "tasks";
 
 const VALID_ROUTES = new Set<AppRoute>([
   "dashboard",
@@ -38,6 +40,8 @@ const VALID_ROUTES = new Set<AppRoute>([
   "speedtest",
   "calendar",
   "statistics",
+  "reading",
+  "tasks",
 ]);
 
 function parsePathname(raw: string): AppRoute {

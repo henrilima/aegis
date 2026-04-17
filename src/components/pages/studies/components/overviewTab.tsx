@@ -96,33 +96,33 @@ export function OverviewTab({
         {statCards.map((c) => (
           <div
             key={c.label}
-            className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-2"
+            className="bg-card border border-border rounded-xl p-4 flex flex-col gap-2"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase text-neutral-500">
+              <span className="text-[10px] font-bold text-muted-foreground">
                 {c.label}
               </span>
               <c.icon className="w-3.5 h-3.5 text-violet-500" />
             </div>
-            <span className="text-2xl font-black text-white leading-none">
+            <span className="text-2xl font-bold text-foreground leading-none">
               {c.value}
             </span>
-            <div className="h-1 bg-neutral-800 rounded-full overflow-hidden">
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-violet-500 rounded-full transition-all"
                 style={{ width: `${c.progress}%` }}
               />
             </div>
-            <span className="text-[10px] text-violet-400/80 font-medium">
+            <span className="text-[10px] text-violet-600 dark:text-violet-400/80 font-medium">
               {c.sub}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-        <h2 className=" font-black uppercase text-neutral-400 mb-4">
-          Progresso das Metas
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h2 className=" font-bold text-muted-foreground mb-4">
+          Progresso das metas
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {goalBars.map(({ type, current, fmt }) => {
@@ -133,14 +133,14 @@ export function OverviewTab({
             return (
               <div key={type} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-400">
+                  <span className="text-xs text-muted-foreground">
                     {GOAL_LABELS[type as keyof typeof GOAL_LABELS]}
                   </span>
-                  <span className="text-xs font-bold text-violet-400">
+                  <span className="text-xs font-bold text-violet-600 dark:text-violet-400">
                     {fmt(current)} / {target ? fmt(target) : "—"}
                   </span>
                 </div>
-                <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
                       pct >= 100 ? "bg-green-500" : "bg-violet-500"
@@ -150,9 +150,13 @@ export function OverviewTab({
                 </div>
                 <span className="text-[10px] font-medium">
                   {target ? (
-                    <span className="text-violet-400/90">{pct}% concluído</span>
+                    <span className="text-violet-600 dark:text-violet-400/90">
+                      {pct}% concluído
+                    </span>
                   ) : (
-                    <span className="text-neutral-500">Meta não definida</span>
+                    <span className="text-muted-foreground">
+                      Meta não definida
+                    </span>
                   )}
                 </span>
               </div>
@@ -161,9 +165,9 @@ export function OverviewTab({
         </div>
       </div>
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-        <h2 className=" font-black uppercase text-neutral-400 mb-4">
-          Desempenho por Matéria (3 meses)
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h2 className=" font-bold text-muted-foreground mb-4">
+          Desempenho por matéria (3 meses)
         </h2>
         {Object.keys(subjectMap).length === 0 ? (
           <EmptyState
@@ -183,29 +187,29 @@ export function OverviewTab({
                 return (
                   <div
                     key={subj}
-                    className="flex items-center gap-4 py-2 border-b border-neutral-800 last:border-0"
+                    className="flex items-center gap-4 py-2 border-b border-border last:border-0"
                   >
                     <div className="flex-1 min-w-0">
-                      <span className=" font-semibold text-white truncate block">
+                      <span className=" font-semibold text-foreground truncate block">
                         {subj}
                       </span>
-                      <span className="text-[11px] text-neutral-500">
+                      <span className="text-[11px] text-muted-foreground">
                         {formatHours(d.hours)} · {totalQ} questões
                       </span>
                     </div>
                     <div className="text-right shrink-0">
                       <span
-                        className={` font-black ${
+                        className={`font-bold ${
                           rate >= 70
                             ? "text-green-400"
                             : rate >= 50
                               ? "text-yellow-400"
-                              : "text-red-400"
+                              : "text-red-600 dark:text-red-400"
                         }`}
                       >
                         {rate}%
                       </span>
-                      <p className="text-[10px] text-neutral-400 font-medium uppercaseer">
+                      <p className="text-[10px] text-muted-foreground font-medium">
                         acerto
                       </p>
                     </div>

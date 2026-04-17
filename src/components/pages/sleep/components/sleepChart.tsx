@@ -25,8 +25,8 @@ export function SleepChart({ weekDays, targetMinutes }: SleepChartProps) {
   );
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-      <h2 className=" font-black uppercase text-neutral-400 mb-4">
+    <div className="bg-card border border-border rounded-xl p-5">
+      <h2 className=" font-black uppercase text-muted-foreground mb-4">
         Sono por Dia
       </h2>
       <div className="flex items-end gap-2 h-32">
@@ -66,7 +66,7 @@ export function SleepChart({ weekDays, targetMinutes }: SleepChartProps) {
                     </TooltipContent>
                   </Tooltip>
                 ) : (
-                  <div className="w-full h-1 rounded-full bg-neutral-800 relative z-10" />
+                  <div className="w-full h-1 rounded-full bg-muted relative z-10" />
                 )}
               </div>
               <span className="text-[10px] text-neutral-600 font-bold">

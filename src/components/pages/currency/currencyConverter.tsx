@@ -75,7 +75,7 @@ export function CurrencyConverter({
                 </option>
               ))}
           </select>
-          <div className="flex-1 h-10 px-3 py-2 border rounded-md bg-neutral-50 dark:bg-neutral-900 font-bold flex items-center">
+          <div className="flex-1 h-10 px-3 py-2 border rounded-md bg-neutral-50 dark:bg-card font-bold flex items-center">
             {result.toFixed(2)}
           </div>
         </div>

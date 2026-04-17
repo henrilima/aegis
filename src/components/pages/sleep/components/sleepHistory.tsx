@@ -36,19 +36,21 @@ export function SleepHistory({
         icon={Moon}
         title="Nenhum ciclo registrado"
         description="Seu histórico de sono aparecerá aqui. Comece registrando sua última noite de descanso."
-        className="py-12 bg-neutral-900/20 border border-neutral-800 rounded-xl"
+        className="py-12 bg-card/20 border border-border rounded-xl"
       />
     );
   }
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-      <h2 className=" font-black uppercase text-neutral-400 mb-3">{title}</h2>
+    <div className="bg-card border border-border rounded-xl p-5">
+      <h2 className=" font-black uppercase text-muted-foreground mb-3">
+        {title}
+      </h2>
       <div className="flex flex-col gap-2">
         {entries.map((e) => (
           <div
             key={e.id}
-            className="flex items-center gap-3 py-2 border-b border-neutral-800 last:border-0 hover:bg-neutral-800/10 transition-colors"
+            className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-accent/50/10 transition-colors"
           >
             {/* Indicador visual simples de meta batida (ou não) */}
             <div
@@ -61,14 +63,14 @@ export function SleepHistory({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className=" font-semibold text-white">
+                <span className=" font-semibold text-foreground">
                   {parseDate(e.date).toLocaleDateString("pt-BR", {
                     weekday: "short",
                     day: "2-digit",
                     month: "short",
                   })}
                 </span>
-                <span className="text-[10px] text-neutral-500 font-medium">
+                <span className="text-[10px] text-muted-foreground font-medium">
                   {e.bedtime} → {e.wake_time}
                 </span>
               </div>
@@ -95,13 +97,13 @@ export function SleepHistory({
               )}
             </div>
 
-            {/* Ações */}
-            <div className="flex items-center gap-1">
+            {/* Ações Padronizadas */}
+            <div className="flex bg-background/50 rounded-lg border border-border overflow-hidden shrink-0">
               <ToolTip content="Editar registro">
                 <button
                   type="button"
                   onClick={() => onEdit(e)}
-                  className="p-1.5 rounded-lg text-neutral-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all cursor-pointer"
+                  className="p-2 hover:bg-blue-600/10 hover:text-blue-500 text-neutral-600 transition-all border-r border-border active:scale-95"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
@@ -110,7 +112,7 @@ export function SleepHistory({
                 <button
                   type="button"
                   onClick={() => e.id && onDelete(e.id)}
-                  className="p-1.5 rounded-lg text-neutral-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                  className="p-2 hover:bg-rose-600/10 hover:text-rose-500 text-neutral-600 transition-all active:scale-95"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

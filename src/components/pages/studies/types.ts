@@ -41,12 +41,7 @@ export interface DayStats {
   sessions: StudySession[];
 }
 
-export type TabId =
-  | "visao-geral"
-  | "historico"
-  | "desempenho"
-  | "relatorio"
-  | "heatmap";
+export type TabId = "visao-geral" | "historico" | "relatorio" | "heatmap";
 
 export interface StudyStats {
   hours: number;

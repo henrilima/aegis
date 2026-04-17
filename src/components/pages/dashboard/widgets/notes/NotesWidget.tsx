@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, Pin, Plus, StickyNote } from "lucide-react";
+import { Pin, Plus, StickyNote } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
@@ -21,15 +21,15 @@ export function NotesWidget({
 }: NotesWidgetProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const pendingNotes = notes.filter((n) => n.status === "pending" && !n.pinned);
+  const regularNotes = notes.filter((n) => !n.pinned);
   const pinnedNotes = notes.filter((n) => n.pinned);
 
   return (
     <>
       <BaseWidget
-        title="Notas"
+        title="Anotações"
         icon={StickyNote}
-        iconColor="text-orange-400"
+        iconColor="text-orange-600 dark:text-orange-400"
         route="notes"
         isEditMode={isEditMode}
       >
@@ -37,18 +37,18 @@ export function NotesWidget({
           <div className="flex items-center justify-between">
             <div className="flex gap-[8cqw] @sm:gap-10">
               <div className="text-center">
-                <p className="text-[5cqw] @sm:text-2xl font-black text-white leading-none">
-                  {pendingNotes.length}
+                <p className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
+                  {notes.length}
                 </p>
-                <p className="text-[3.5cqw] @sm:text-sm font-bold text-neutral-500 mt-1 uppercase">
-                  Pendentes
+                <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">
+                  Total
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[5cqw] @sm:text-2xl font-black text-white leading-none">
+                <p className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
                   {pinnedNotes.length}
                 </p>
-                <p className="text-[3.5cqw] @sm:text-sm font-bold text-neutral-500 mt-1 uppercase">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">
                   Fixadas
                 </p>
               </div>
@@ -61,10 +61,10 @@ export function NotesWidget({
                 e.stopPropagation();
                 setIsModalOpen(true);
               }}
-              className="bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 rounded-xl"
+              className="h-7 px-2.5 text-xs bg-orange-600 hover:bg-orange-500 dark:bg-orange-500 dark:hover:bg-orange-400 text-white font-bold rounded-lg border-none gap-1"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Nota rápida
+              <Plus className="w-3 h-3" />
+              <span className="hidden @sm:inline">Nota rápida</span>
             </Button>
           </div>
 
@@ -72,26 +72,27 @@ export function NotesWidget({
             {pinnedNotes.length > 0 && (
               <div className="flex items-center gap-1 mb-1">
                 <Pin className="w-2.5 h-2.5 text-orange-500/60" />
-                <span className="text-[10px] font-bold text-orange-500/60 uppercaseer">
+                <span className="text-[10px] font-bold text-orange-500/60 uppercase">
                   Fixadas
                 </span>
               </div>
             )}
-            {(pinnedNotes.length > 0 ? pinnedNotes : pendingNotes)
+            {pinnedNotes
+              .concat(regularNotes)
               .slice(0, 3)
               .map((n) => (
                 <div
                   key={n.id}
-                  className="flex items-start gap-[2.5cqw] @sm:gap-3 p-[3cqw] @sm:p-3 rounded-xl bg-neutral-800/30 border border-neutral-800/50 group/note"
+                  className="flex items-start gap-[2.5cqw] @sm:gap-3 p-[3cqw] @sm:p-3 rounded-xl bg-muted/50 border border-border/50 group/note"
                 >
-                  <Circle className="w-[3.5cqw] h-[3.5cqw] @sm:w-4 @sm:h-4 text-neutral-700 shrink-0 mt-0.5" />
-                  <span className="text-[3.5cqw] @sm:text-sm font-medium text-neutral-400 truncate flex-1 group-hover/note:text-neutral-200 transition-colors">
+                  <StickyNote className="w-[3.5cqw] h-[3.5cqw] @sm:w-4 @sm:h-4 text-orange-500/70 shrink-0 mt-0.5" />
+                  <span className="text-[3.5cqw] @sm:text-sm font-medium text-muted-foreground truncate flex-1 group-hover/note:text-foreground transition-colors">
                     {n.title}
                   </span>
                 </div>
               ))}
             {notes.length === 0 && (
-              <p className="text-xs text-neutral-600 italic">
+              <p className="text-xs text-muted-foreground italic">
                 Nenhuma nota registrada
               </p>
             )}

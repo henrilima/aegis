@@ -139,30 +139,32 @@ export default function CurrencyPage() {
           </div>
           <h1 className="text-2xl font-bold">Câmbio</h1>
           {isOffline ? (
-            <span className="inline-flex items-center gap-1 text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full font-semibold">
+            <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full font-semibold">
               <WifiOff className="w-3 h-3" /> Offline — dados em cache
             </span>
           ) : (
-            <p className="text-xs text-neutral-500">Taxas em relação ao USD</p>
+            <p className="text-xs text-muted-foreground">
+              Taxas em relação ao USD
+            </p>
           )}
         </div>
 
         {/* Console de Conversão */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-4 shadow-2xl shadow-black/40">
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           {/* Campo de Origem */}
           <div className="space-y-1.5">
             <label
               htmlFor="currency-amount"
-              className="text-xs font-bold text-neutral-500 ml-1 uppercase block"
+              className="text-xs font-bold text-muted-foreground ml-1 uppercase block"
             >
               Moeda Base
             </label>
             <div className="flex gap-2">
               <Select value={baseCurrency} onValueChange={setBaseCurrency}>
-                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
+                <SelectTrigger className="w-24 bg-background border-border rounded-xl h-[46px] font-bold text-xs focus:ring-green-500/30">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-neutral-900 border-neutral-800 max-h-60">
+                <SelectContent className="bg-card border-border max-h-60">
                   {sortedCurrencies.map((c) => (
                     <SelectItem
                       key={c}
@@ -180,7 +182,7 @@ export default function CurrencyPage() {
                 min={0}
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 font-mono font-black text-right text-white outline-none focus:border-green-500/30 transition-all shadow-inner"
+                className="flex-1 bg-background border border-border rounded-xl px-4 py-3 font-mono font-black text-right text-foreground outline-none focus:border-green-500/30 transition-all"
               />
             </div>
           </div>
@@ -191,7 +193,7 @@ export default function CurrencyPage() {
               <button
                 type="button"
                 onClick={handleSwap}
-                className="p-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-400 hover:text-white transition-all cursor-pointer shadow-lg active:scale-90"
+                className="p-3 rounded-xl bg-neutral-800 hover:bg-accent border border-border text-muted-foreground hover:text-foreground transition-all cursor-pointer active:scale-90"
               >
                 <ArrowRightLeft className="w-4 h-4" />
               </button>
@@ -202,16 +204,16 @@ export default function CurrencyPage() {
           <div className="space-y-1.5">
             <label
               htmlFor="currency-target"
-              className="text-xs font-bold text-neutral-500 ml-1 uppercase block"
+              className="text-xs font-bold text-muted-foreground ml-1 uppercase block"
             >
               Resultado
             </label>
             <div className="flex gap-2">
               <Select value={targetCurrency} onValueChange={setTargetCurrency}>
-                <SelectTrigger className="w-24 bg-neutral-950 border-neutral-800 rounded-xl h-[46px] font-bold text-xs focus:ring-green-500/30 shadow-inner">
+                <SelectTrigger className="w-24 bg-background border-border rounded-xl h-[46px] font-bold text-xs focus:ring-green-500/30">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-neutral-900 border-neutral-800 max-h-60">
+                <SelectContent className="bg-card border-border max-h-60">
                   {sortedCurrencies.map((c) => (
                     <SelectItem
                       key={c}
@@ -225,7 +227,7 @@ export default function CurrencyPage() {
               </Select>
               <div
                 id="currency-target"
-                className="flex-1 h-[46px] px-4 rounded-xl bg-neutral-950/50 border border-neutral-800 font-mono font-black text-right flex items-center justify-end text-green-400 text-xl shadow-inner"
+                className="flex-1 h-[46px] px-4 rounded-xl bg-background/50 border border-border font-mono font-black text-right flex items-center justify-end text-green-400 text-xl"
               >
                 {result.toFixed(2)}
               </div>
@@ -254,7 +256,7 @@ export default function CurrencyPage() {
             type="button"
             onClick={() => fetchRates(true)}
             disabled={loading}
-            className="flex items-center gap-2 text-neutral-500 hover:text-white transition-colors cursor-pointer disabled:opacity-30"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-30"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
             Sincronizar

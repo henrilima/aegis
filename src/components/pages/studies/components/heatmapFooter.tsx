@@ -14,8 +14,8 @@ export function HeatmapFooter({
   intensityColors,
 }: HeatmapFooterProps) {
   return (
-    <div className="flex items-center justify-between mt-2 pt-5 border-t border-neutral-800/50">
-      <div className="flex items-center gap-1.5 p-1.5 bg-neutral-950/40 rounded-xl border border-neutral-800 relative z-10">
+    <div className="flex items-center justify-between mt-2 pt-5 border-t border-border/50">
+      <div className="flex items-center gap-1.5 p-1.5 bg-background/40 rounded-xl border border-border relative z-10">
         {years.map((y) => (
           <button
             key={y}
@@ -23,8 +23,8 @@ export function HeatmapFooter({
             onClick={() => onYearSelect(y)}
             className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
               selectedYear === y
-                ? "bg-violet-600 text-white shadow-lg"
-                : "text-neutral-500 hover:text-white hover:bg-neutral-800"
+                ? "bg-violet-600 text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
             }`}
           >
             {y}

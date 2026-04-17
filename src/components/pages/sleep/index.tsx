@@ -1,6 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { BarChart3, Calendar, Moon, Plus, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ export default function SleepPage() {
     user_id: "",
     target_hours: 8,
     target_bedtime: "23:00",
+    reminder_enabled: false,
   });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabId>("semana");
@@ -38,6 +40,7 @@ export default function SleepPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [goalHours, setGoalHours] = useState("8");
   const [goalBedtime, setGoalBedtime] = useState("23:00");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
@@ -64,6 +67,7 @@ export default function SleepPage() {
         setGoal(g);
         setGoalHours(String(g.target_hours));
         setGoalBedtime(g.target_bedtime);
+        setReminderEnabled(g.reminder_enabled);
       }
     } finally {
       setLoading(false);
@@ -107,12 +111,51 @@ export default function SleepPage() {
     }
     try {
       await invoke("sono_upsert_goal", {
-        goal: { user_id: uid, target_hours: h, target_bedtime: goalBedtime },
+        goal: {
+          user_id: uid,
+          target_hours: h,
+          target_bedtime: goalBedtime,
+          reminder_enabled: reminderEnabled,
+        },
       });
       toast.success("Novas metas estabelecidas!");
       await loadData();
     } catch {
       toast.error("Falha ao atualizar metas.");
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const path = await save({
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+        defaultPath: "meu_sono.csv",
+      });
+      if (path) {
+        await invoke("sono_export_csv", { userId: uid, destPath: path });
+        toast.success("CSV exportado com sucesso!");
+      }
+    } catch {
+      toast.error("Erro ao exportar dados do sono.");
+    }
+  };
+
+  const handleImportCSV = async () => {
+    try {
+      const path = await openDialog({
+        multiple: false,
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (path && typeof path === "string") {
+        const count = await invoke<number>("sono_import_csv", {
+          userId: uid,
+          filePath: path,
+        });
+        toast.success(`${count} ciclos de sono importados!`);
+        await loadData();
+      }
+    } catch {
+      toast.error("Erro ao importar CSV.");
     }
   };
 
@@ -174,7 +217,7 @@ export default function SleepPage() {
   if (loading)
     return (
       <div className="h-full flex items-center justify-center font-bold">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
           <Moon className="w-5 h-5 text-blue-400" />
           <span>Sincronizando ciclos de sono...</span>
         </div>
@@ -182,7 +225,7 @@ export default function SleepPage() {
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white">
+    <div className="w-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700">
       {/* Cabeçalho */}
       <SleepHeader
         onNew={() => {
@@ -191,6 +234,8 @@ export default function SleepPage() {
         }}
         onOpenSettings={() => setShowSettings(true)}
         onOpenInfo={() => setShowInfo(true)}
+        onExportCSV={handleExportCSV}
+        onImportCSV={handleImportCSV}
       />
 
       {/* Modais */}
@@ -216,7 +261,7 @@ export default function SleepPage() {
       )}
 
       {/* Abas */}
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
+      <div className="flex gap-1 p-1.5 bg-background border border-border/60 rounded-xl w-fit">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -224,8 +269,8 @@ export default function SleepPage() {
             onClick={() => setTab(t.id as TabId)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               tab === t.id
-                ? "bg-blue-500/25 text-blue-300 border border-blue-500/40 shadow-sm shadow-blue-500/10"
-                : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5"
+                ? "bg-blue-500/25 text-blue-300 border border-blue-500/40"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -260,7 +305,7 @@ export default function SleepPage() {
       )}
 
       {tab === "historico" && (
-        <div className="animate-in fade-in duration-500">
+        <div className="">
           <SleepHistory
             entries={entries}
             targetMinutes={targetMinutes}
@@ -275,9 +320,9 @@ export default function SleepPage() {
 
       {/* Configurações */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
-            <div className="p-6 border-b border-neutral-800 flex items-center justify-between sticky top-0 bg-neutral-900 z-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm ">
+          <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 overflow-hidden">
+            <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-600/10 border border-blue-600/20">
                   <Settings className="w-5 h-5 text-blue-400" />
@@ -287,7 +332,7 @@ export default function SleepPage() {
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
+                className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <Plus className="w-6 h-6 rotate-45" />
               </button>
@@ -298,6 +343,8 @@ export default function SleepPage() {
                 setGoalHours={setGoalHours}
                 goalBedtime={goalBedtime}
                 setGoalBedtime={setGoalBedtime}
+                reminderEnabled={reminderEnabled}
+                setReminderEnabled={setReminderEnabled}
                 onSave={async () => {
                   await handleGoalSave();
                   setShowSettings(false);

@@ -13,6 +13,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
   // Encontra os limites para cálculo das escalas
   const maxStudy = Math.max(...metrics.map((m) => m.study_hours), 0.1);
   const maxSleep = Math.max(...metrics.map((m) => m.sleep_hours), 0.1);
+  const maxReading = Math.max(...metrics.map((m) => m.reading_pages), 1);
 
   if (metrics.length === 0) {
     return (
@@ -25,27 +26,34 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Legenda simples */}
-      <div className="flex items-center gap-4 text-[10px] font-bold text-neutral-500">
+      <div className="flex items-center gap-4 text-[10px] font-bold text-muted-foreground">
         <span
           className="flex items-center gap-1.5 cursor-help"
           title="Média de horas de estudo por dia"
         >
-          <span className="w-2 h-2 rounded-full bg-violet-500 shadow-sm" />
+          <span className="w-2 h-2 rounded-full bg-violet-500" />
           Estudo
         </span>
         <span
           className="flex items-center gap-1.5 cursor-help"
           title="Média de horas de sono por dia"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
+          <span className="w-2 h-2 rounded-full bg-blue-500" />
           Sono
         </span>
         <span
           className="flex items-center gap-1.5 cursor-help"
           title="Porcentagem de acerto em questões"
         >
-          <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm" />
+          <span className="w-2 h-2 rounded-full bg-green-500" />
           Acerto
+        </span>
+        <span
+          className="flex items-center gap-1.5 cursor-help"
+          title="Quantidade de páginas lidas por dia"
+        >
+          <span className="w-2 h-2 rounded-full bg-orange-500" />
+          Leitura
         </span>
       </div>
 
@@ -57,6 +65,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
           {metrics.slice(-30).map((m) => {
             const studyPct = (m.study_hours / maxStudy) * 100;
             const sleepPct = (m.sleep_hours / maxSleep) * 100;
+            const readingPct = (m.reading_pages / maxReading) * 100;
             const hitPct = m.study_hit_rate;
             const day = m.date.slice(8, 10);
 
@@ -87,9 +96,15 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
                       title={`Acerto: ${m.study_hit_rate}%`}
                     />
                   )}
+                  {/* Barra: Leitura */}
+                  <div
+                    className="flex-1 rounded-t-sm bg-orange-500/40 hover:bg-orange-500/80 transition-all duration-300"
+                    style={{ height: `${readingPct}%` }}
+                    title={`Leitura: ${m.reading_pages} pág.`}
+                  />
                 </div>
                 {/* Rótulo do eixo X */}
-                <span className="text-[10px] text-neutral-700 font-bold group-hover:text-neutral-400 transition-colors">
+                <span className="text-[10px] text-neutral-700 font-bold group-hover:text-muted-foreground transition-colors">
                   {day}
                 </span>
               </div>

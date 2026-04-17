@@ -15,6 +15,9 @@ pub struct CrossMetric {
     pub study_hit_rate: f64,   // Taxa de acerto global (%)
     pub questions_total: i32,
     pub focus_score: Option<f64>,
+    pub reading_pages: i32,
+    pub reading_minutes: i32,
+    pub reading_ppm: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -36,7 +39,11 @@ pub struct PerformanceSummary {
     pub total_days_analyzed: i32,
     pub study_streak_days: i32,
     pub sleep_streak_days: i32,
+    pub reading_streak_days: i32,
     pub peak_study_subject: Option<String>,
+    pub avg_reading_pages: f64,
+    pub avg_reading_minutes: f64,
+    pub avg_ppm: f64,
     // Métricas calculadas
     pub consistency_score: f64,     // % de dias com atividade
     pub study_efficiency: f64,      // Questões resolvidas por hora
@@ -73,62 +80,63 @@ impl StatisticsManager {
     #[allow(clippy::cast_precision_loss)]
     pub fn get_cross_metrics(&self, user_id: &str, days: i32, now: DateTime<Utc>) -> Vec<CrossMetric> {
         let conn = self.conn();
-        let cutoff_date = (now - chrono::Duration::days(days as i64)).format("%Y-%m-%d").to_string();
+        let mut metrics = Vec::new();
 
-        // Busca sessões de estudo agrupadas por data
-        let mut study_stmt = conn.prepare(
-            "SELECT date,
-                    SUM(hours) as total_hours,
-                    SUM(questions_new + questions_review) as total_q,
-                    SUM(correct_new + correct_review) as total_c,
-                    AVG(focus_score) as avg_focus
-             FROM study_sessions
-             WHERE user_id=?1 AND date >= ?2
-             GROUP BY date
-             ORDER BY date ASC"
-        ).unwrap();
+        // Gera lista de datas para o período
+        for i in (0..days).rev() {
+            let date = (now - chrono::Duration::days(i as i64)).format("%Y-%m-%d").to_string();
+            
+            // Busca dados de estudo para este dia
+            let study_data: (f64, i32, i32, Option<f64>) = conn.query_row(
+                "SELECT SUM(hours), SUM(questions_new + questions_review), SUM(correct_new + correct_review), AVG(focus_score)
+                 FROM study_sessions WHERE user_id=?1 AND date=?2",
+                params![user_id, date],
+                |row| {
+                    Ok((
+                        row.get::<_, Option<f64>>(0)?.unwrap_or(0.0),
+                        row.get::<_, Option<i32>>(1)?.unwrap_or(0),
+                        row.get::<_, Option<i32>>(2)?.unwrap_or(0),
+                        row.get::<_, Option<f64>>(3)?,
+                    ))
+                }
+            ).unwrap_or((0.0, 0, 0, None));
 
-        let study_rows: Vec<(String, f64, i32, i32, Option<f64>)> = study_stmt
-            .query_map(params![user_id, cutoff_date], |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, f64>(1)?,
-                    row.get::<_, i32>(2)?,
-                    row.get::<_, i32>(3)?,
-                    row.get::<_, Option<f64>>(4)?,
-                ))
-            }).unwrap()
-            .filter_map(|r| r.ok())
-            .collect();
+            // Busca dados de sono
+            let sleep_hours: f64 = conn.query_row(
+                "SELECT duration_minutes FROM sleep_entries WHERE user_id=?1 AND date=?2",
+                params![user_id, date],
+                |row| Ok(row.get::<_, i32>(0)? as f64 / 60.0)
+            ).unwrap_or(0.0);
 
-        // Busca entradas de sono
-        let mut sleep_stmt = conn.prepare(
-            "SELECT date, duration_minutes FROM sleep_entries
-             WHERE user_id=?1 AND date >= ?2
-             ORDER BY date ASC"
-        ).unwrap();
+            // Busca dados de leitura
+            let reading_data: (i32, i32) = conn.query_row(
+                "SELECT SUM(pages_read), SUM(duration_minutes) FROM reading_sessions WHERE user_id=?1 AND date=?2",
+                params![user_id, date],
+                |row| {
+                    Ok((
+                        row.get::<_, Option<i32>>(0)?.unwrap_or(0),
+                        row.get::<_, Option<i32>>(1)?.unwrap_or(0),
+                    ))
+                }
+            ).unwrap_or((0, 0));
 
-        let sleep_map: std::collections::HashMap<String, f64> = sleep_stmt
-            .query_map(params![user_id, cutoff_date], |row| {
-                let date: String = row.get(0)?;
-                let mins: i32 = row.get(1)?;
-                Ok((date, mins as f64 / 60.0))
-            }).unwrap()
-            .filter_map(|r| r.ok())
-            .collect();
+            let hit_rate = if study_data.1 > 0 { (study_data.2 as f64 / study_data.1 as f64) * 100.0 } else { 0.0 };
+            let ppm = if reading_data.1 > 0 { reading_data.0 as f64 / reading_data.1 as f64 } else { 0.0 };
 
-        study_rows.into_iter().map(|(date, sh, tq, tc, fs)| {
-            let sleep_hours = sleep_map.get(&date).copied().unwrap_or(0.0);
-            let hit_rate = if tq > 0 { (tc as f64 / tq as f64) * 100.0 } else { 0.0 };
-            CrossMetric {
+            metrics.push(CrossMetric {
                 date,
                 sleep_hours,
-                study_hours: sh,
+                study_hours: study_data.0,
                 study_hit_rate: (hit_rate * 10.0).round() / 10.0,
-                questions_total: tq,
-                focus_score: fs,
-            }
-        }).collect()
+                questions_total: study_data.1,
+                focus_score: study_data.3,
+                reading_pages: reading_data.0,
+                reading_minutes: reading_data.1,
+                reading_ppm: (ppm * 10.0).round() / 10.0,
+            });
+        }
+
+        metrics
     }
 
     /// Gera resumo geral de desempenho
@@ -149,7 +157,11 @@ impl StatisticsManager {
                 total_days_analyzed: 0,
                 study_streak_days: 0,
                 sleep_streak_days: 0,
+                reading_streak_days: 0,
                 peak_study_subject: None,
+                avg_reading_pages: 0.0,
+                avg_reading_minutes: 0.0,
+                avg_ppm: 0.0,
                 consistency_score: 0.0,
                 study_efficiency: 0.0,
                 rested_hit_rate: 0.0,
@@ -164,10 +176,14 @@ impl StatisticsManager {
         let n = metrics.len() as f64;
         let total_sleep: f64 = metrics.iter().map(|m| m.sleep_hours).sum();
         let total_study: f64 = metrics.iter().map(|m| m.study_hours).sum();
+        let total_reading_pages: i32 = metrics.iter().map(|m| m.reading_pages).sum();
+        let total_reading_minutes: i32 = metrics.iter().map(|m| m.reading_minutes).sum();
         let total_questions: i32 = metrics.iter().map(|m| m.questions_total).sum();
         
         let avg_sleep = total_sleep / n;
         let avg_study = total_study / n;
+        let avg_reading_p = total_reading_pages as f64 / n;
+        let avg_reading_m = total_reading_minutes as f64 / n;
         let avg_hit = metrics.iter().filter(|m| m.questions_total > 0).map(|m| m.study_hit_rate).sum::<f64>()
             / metrics.iter().filter(|m| m.questions_total > 0).count().max(1) as f64;
 
@@ -254,10 +270,21 @@ impl StatisticsManager {
         // Streaks
         let study_streak = self.calculate_streak(user_id, "study_sessions", &cutoff_date, now);
         let sleep_streak = self.calculate_streak(user_id, "sleep_entries", &cutoff_date, now);
+        let reading_streak = self.calculate_streak(user_id, "reading_sessions", &cutoff_date, now);
+
+        let active_reading_days = metrics.iter().filter(|m| m.reading_minutes > 0).count();
+        let avg_ppm = if active_reading_days > 0 {
+            metrics.iter().map(|m| m.reading_ppm).sum::<f64>() / active_reading_days as f64
+        } else {
+            0.0
+        };
 
         PerformanceSummary {
             avg_sleep_hours: (avg_sleep * 100.0).round() / 100.0,
             avg_study_hours: (avg_study * 100.0).round() / 100.0,
+            avg_reading_pages: (avg_reading_p * 10.0).round() / 10.0,
+            avg_reading_minutes: (avg_reading_m * 10.0).round() / 10.0,
+            avg_ppm: (avg_ppm * 10.0).round() / 10.0,
             avg_hit_rate: (avg_hit * 10.0).round() / 10.0,
             best_sleep_day: best_sleep,
             best_study_day: best_study,
@@ -265,6 +292,7 @@ impl StatisticsManager {
             total_days_analyzed: metrics.len() as i32,
             study_streak_days: study_streak,
             sleep_streak_days: sleep_streak,
+            reading_streak_days: reading_streak,
             peak_study_subject: peak_subject,
             consistency_score: (consistency_score * 10.0).round() / 10.0,
             study_efficiency: (study_efficiency * 10.0).round() / 10.0,

@@ -12,6 +12,7 @@ pub struct AppConfig {
     pub high_priority_notifications: bool,
     pub start_minimized: bool,
     pub week_start_day: i32,
+    pub show_holidays: bool,
 }
 
 pub struct ConfigManager {
@@ -41,6 +42,7 @@ impl ConfigManager {
             ("start_minimized", "false"),
             ("week_start_day", "1"),
             ("debug_time_offset", "0"),
+            ("show_holidays", "true"),
         ];
 
         for (key, val) in defaults {
@@ -106,12 +108,22 @@ impl ConfigManager {
             }
         ).unwrap_or(1);
 
+        let show_holidays: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'show_holidays'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
         AppConfig {
             minimize_on_close,
             start_at_login,
             high_priority_notifications,
             start_minimized,
             week_start_day,
+            show_holidays,
         }
     }
 
@@ -140,6 +152,11 @@ impl ConfigManager {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES ('week_start_day', ?1)",
             params![config.week_start_day.to_string()],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_holidays', ?1)",
+            params![if config.show_holidays { "true" } else { "false" }],
         ).map_err(|e| e.to_string())?;
 
         Ok(())

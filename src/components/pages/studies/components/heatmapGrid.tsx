@@ -60,7 +60,7 @@ export function HeatmapGrid({
               {monthLabels.map((ml) => (
                 <div
                   key={ml.label + ml.colIdx}
-                  className="absolute text-[10px] text-neutral-500 font-black uppercaseer"
+                  className="absolute text-[10px] text-muted-foreground font-black uppercaseer"
                   style={{ left: `${(ml.colIdx / (dates.length / 7)) * 100}%` }}
                 >
                   {ml.label}
@@ -113,7 +113,7 @@ export function HeatmapGrid({
                               side="top"
                               className="flex flex-col gap-0.5 pointer-events-none select-none"
                             >
-                              <span className="font-bold text-violet-400 capitalize">
+                              <span className="font-bold text-violet-600 dark:text-violet-400 capitalize">
                                 {dateLabel}
                               </span>
                               <span>{tooltipText}</span>

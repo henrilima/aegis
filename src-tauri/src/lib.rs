@@ -9,6 +9,9 @@ mod studies;
 mod sleep;
 mod calendar;
 mod statistics;
+mod reading;
+mod tasks;
+mod notifications;
 
 use passwords::{PasswordEntry, DecryptedEntry, PasswordManager};
 use pomodoro::{PomodoroState, PomodoroManager, PomodoroHistory};
@@ -20,6 +23,9 @@ use studies::{StudiesManager, StudySession, StudyGoal};
 use sleep::{SleepManager, SleepEntry, SleepGoal};
 use calendar::{CalendarManager, CalendarEvent};
 use statistics::{StatisticsManager, CrossMetric, PerformanceSummary};
+use reading::{ReadingManager, ReadingBook, ReadingSession, ReadingGoal};
+use tasks::{Task, TaskManager};
+use notifications::NotificationsManager;
 use speedtest_rs::speedtest;
 use tauri::{Emitter, Manager, Window, State, tray::TrayIconBuilder};
 use std::thread;
@@ -47,6 +53,9 @@ pub struct AppState {
     sleep: SleepManager,
     calendar: CalendarManager,
     stats: StatisticsManager,
+    reading: ReadingManager,
+    tasks: TaskManager,
+    notif: NotificationsManager,
 }
 
 #[tauri::command]
@@ -363,6 +372,11 @@ async fn list_notes(state: State<'_, AppState>, user_id: String) -> Result<Vec<n
 }
 
 #[tauri::command]
+async fn list_note_items(state: State<'_, AppState>, user_id: String) -> Result<Vec<notes::FileSystemItem>, String> {
+    Ok(state.note.list_items(&user_id))
+}
+
+#[tauri::command]
 async fn add_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), String> {
     state.note.add_note(note)
 }
@@ -370,6 +384,21 @@ async fn add_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), S
 #[tauri::command]
 async fn update_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), String> {
     state.note.update_note(note)
+}
+
+#[tauri::command]
+async fn create_note_folder(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    state.note.create_folder(path)
+}
+
+#[tauri::command]
+async fn delete_note_folder(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    state.note.delete_folder(path)
+}
+
+#[tauri::command]
+async fn move_note_item(state: State<'_, AppState>, source_path: String, dest_path: String) -> Result<(), String> {
+    state.note.move_item(source_path, dest_path)
 }
 
 #[tauri::command]
@@ -384,10 +413,6 @@ async fn delete_note(state: State<'_, AppState>, id: i32) -> Result<(), String> 
     state.note.delete_note(id)
 }
 
-#[tauri::command]
-async fn update_note_status(state: State<'_, AppState>, id: i32, status: String) -> Result<(), String> {
-    state.note.update_note_status(id, &status)
-}
 
 #[tauri::command]
 async fn update_note_pinned(state: State<'_, AppState>, id: i32, pinned: bool) -> Result<(), String> {
@@ -534,6 +559,17 @@ async fn sono_get_goal(state: State<'_, AppState>, user_id: String) -> Result<Sl
     Ok(state.sleep.get_goal(&user_id))
 }
 
+#[tauri::command]
+async fn sono_export_csv(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.sleep.export_csv(&user_id, &dest_path, now)
+}
+
+#[tauri::command]
+async fn sono_import_csv(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
+    state.sleep.import_csv(&user_id, &file_path)
+}
+
 
 
 #[tauri::command]
@@ -552,6 +588,11 @@ async fn calendar_add_event(state: State<'_, AppState>, event: CalendarEvent) ->
 #[tauri::command]
 async fn calendar_update_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<(), String> {
     state.calendar.update_event(event)
+}
+
+#[tauri::command]
+async fn sync_br_holidays(state: State<'_, AppState>, user_id: String, year: i32) -> Result<i32, String> {
+    state.calendar.sync_holidays(&user_id, year).await
 }
 
 #[tauri::command]
@@ -584,6 +625,150 @@ async fn stats_get_performance_summary(state: State<'_, AppState>, user_id: Stri
     let now = state.config.get_now();
     Ok(state.stats.get_performance_summary(&user_id, days, now))
 }
+
+// Comandos de Leitura
+#[tauri::command]
+async fn reading_list_books(state: State<'_, AppState>, user_id: String) -> Result<Vec<ReadingBook>, String> {
+    Ok(state.reading.list_books(&user_id))
+}
+
+#[tauri::command]
+async fn reading_upsert_book(state: State<'_, AppState>, book: ReadingBook) -> Result<i64, String> {
+    state.reading.upsert_book(book)
+}
+
+#[tauri::command]
+async fn reading_delete_book(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.reading.delete_book(id, &user_id)
+}
+
+#[tauri::command]
+async fn reading_upsert_session(state: State<'_, AppState>, session: ReadingSession) -> Result<i64, String> {
+    state.reading.upsert_session(session)
+}
+
+#[tauri::command]
+async fn reading_list_sessions(state: State<'_, AppState>, user_id: String, months_back: i32) -> Result<Vec<ReadingSession>, String> {
+    let now = state.config.get_now();
+    Ok(state.reading.list_sessions(&user_id, months_back, now))
+}
+
+#[tauri::command]
+async fn reading_delete_session(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.reading.delete_session(id, &user_id)
+}
+
+#[tauri::command]
+async fn reading_upsert_goal(state: State<'_, AppState>, goal: ReadingGoal) -> Result<(), String> {
+    state.reading.upsert_goal(goal)
+}
+
+#[tauri::command]
+async fn reading_list_goals(state: State<'_, AppState>, user_id: String) -> Result<Vec<ReadingGoal>, String> {
+    Ok(state.reading.list_goals(&user_id))
+}
+
+#[tauri::command]
+async fn reading_import_json(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
+    state.reading.import_json(&user_id, &file_path)
+}
+
+#[tauri::command]
+async fn reading_export_json(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.reading.export_json(&user_id, &dest_path, now)
+}
+
+#[tauri::command]
+async fn reading_search_books(query: String) -> Result<serde_json::Value, String> {
+    let url = format!(
+        "https://openlibrary.org/search.json?q={}&limit=5&fields=title,author_name,number_of_pages_median,cover_i,subject,isbn",
+        urlencoding::encode(&query)
+    );
+    
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Falha ao configurar cliente HTTP: {}", e))?;
+
+    let res = client.get(&url)
+        .send()
+        .await
+        .map_err(|e| {
+            if e.is_timeout() {
+                "A busca demorou muito para responder. Tente novamente.".to_string()
+            } else {
+                format!("Erro de conexão com o servidor: {}", e)
+            }
+        })?;
+
+    if !res.status().is_success() {
+        return Err(format!("O servidor retornou um erro: Código {}", res.status()));
+    }
+
+    let json: serde_json::Value = res.json().await.map_err(|e| format!("Erro ao processar dados do livro: {}", e))?;
+    Ok(json)
+}
+
+// Comandos de Tarefas
+#[tauri::command]
+async fn tasks_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<Task>, String> {
+    Ok(state.tasks.list_tasks(&user_id))
+}
+
+#[tauri::command]
+async fn tasks_upsert(state: State<'_, AppState>, task: Task) -> Result<(), String> {
+    state.tasks.upsert_task(task)
+}
+
+#[tauri::command]
+async fn tasks_toggle(state: State<'_, AppState>, id: i32, completed: bool) -> Result<(), String> {
+    state.tasks.toggle_task(id, completed)
+}
+
+#[tauri::command]
+async fn tasks_delete(state: State<'_, AppState>, id: i32) -> Result<(), String> {
+    state.tasks.delete_task(id)
+}
+
+// Comandos de Notificações In-App
+#[tauri::command]
+async fn notif_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<notifications::AppNotification>, String> {
+    Ok(state.notif.list(&user_id))
+}
+
+#[tauri::command]
+async fn notif_unread_count(state: State<'_, AppState>, user_id: String) -> Result<i64, String> {
+    Ok(state.notif.unread_count(&user_id))
+}
+
+#[tauri::command]
+async fn notif_mark_read(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.notif.mark_read(id, &user_id)
+}
+
+#[tauri::command]
+async fn notif_mark_all_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    state.notif.mark_all_read(&user_id)
+}
+
+#[tauri::command]
+async fn notif_delete(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.notif.delete(id, &user_id)
+}
+
+#[tauri::command]
+async fn notif_clear_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    state.notif.clear_read(&user_id)
+}
+
+#[tauri::command]
+async fn ensure_discord_invite(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    state.notif.check_and_push_discord_invitation(&user_id)
+}
+
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -655,6 +840,9 @@ pub fn run() {
             let sleep = SleepManager::new(app.handle());
             let calendar = CalendarManager::new(app.handle());
             let stats = StatisticsManager::new(app.handle());
+            let reading = ReadingManager::new(app.handle());
+            let tasks = TaskManager::new(app.handle());
+            let notif = NotificationsManager::new(app.handle());
 
             if initial_config.start_at_login && !cfg!(debug_assertions) {
                 let _ = app.autolaunch().enable();
@@ -668,6 +856,9 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let hydra_clone = HydrationManager::new(app.handle());
             let pomo_clone = PomodoroManager::new(app.handle());
+            let sleep_clone = SleepManager::new(app.handle());
+            let pm_clone = PasswordManager::new(app.handle());
+            let notif_clone = NotificationsManager::new(app.handle());
             
             thread::spawn(move || {
                 let mut last_notified_min = -1;
@@ -702,10 +893,51 @@ pub fn run() {
                                 }
                             }
                             if should_notify {
-                                notify_critical(&app_handle, "Aegis: Hidratação", "Hora de beber água!");
+                                let title = "Aegis: Hidratação";
+                                let body = "Hora de beber água! Mantenha seu corpo funcionando em alto nível.";
+                                // Apenas notifica o sistema operacional (não salva no painel in-app)
+                                // para evitar acumular lembretes obsoletos quando o app está fechado
+                                notify_critical(&app_handle, title, body);
                                 notified_this_round = true;
                             }
                         }
+                        
+                        if let Ok(users) = pm_clone.list_users() {
+                            for user_val in users {
+                                if let Some(uid_val) = user_val.get("id") {
+                                    if let Some(uid) = uid_val.as_str() {
+                                        let goal = sleep_clone.get_goal(uid);
+                                        // Lembrete de hora de dormir
+                                        if goal.reminder_enabled && goal.target_bedtime == now_str {
+                                            let title = "Aegis: Controle de Sono";
+                                            let body = "Seu ponto de recolhimento ideal chegou. Bom descanso e não esqueça de registrar seu ciclo ao acordar!";
+                                            notify_critical(&app_handle, title, body);
+                                            let _ = notif_clone.push(uid, title, body, "sleep", None);
+                                            let _ = app_handle.emit("new-notification", ());
+                                            notified_this_round = true;
+                                        }
+                                        // Verifica se o sono de hoje não foi registrado (aviso matinal às 09:00)
+                                        if now_str == "09:00" {
+                                            let today = Local::now().format("%Y-%m-%d").to_string();
+                                            let yesterday = (Local::now() - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+                                            let entries = sleep_clone.list_entries(uid, 1, Utc::now());
+                                            let has_yesterday = entries.iter().any(|e| e.date == yesterday);
+                                            let has_today = entries.iter().any(|e| e.date == today);
+                                            if !has_yesterday && !has_today {
+                                                let title = "Aegis: Sono não registrado";
+                                                if !notif_clone.has_unread_today(uid, title) {
+                                                    notify_critical(&app_handle, title, "Você esqueceu de registrar seu ciclo de sono! Acesse o módulo de Sono para manter seu histórico.");
+                                                    let _ = notif_clone.push(uid, title, "Você não registrou o sono de ontem. Acesse o módulo de Sono para manter seu histórico atualizado.", "sleep", None);
+                                                    let _ = app_handle.emit("new-notification", ());
+                                                    notified_this_round = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if notified_this_round { last_notified_min = now_min; }
                     }
 
@@ -741,7 +973,7 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, studies, sleep, calendar, stats });
+            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif });
             
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -833,10 +1065,13 @@ pub fn run() {
             has_separate_vault_password,
             setup_local_vault,
             list_notes,
+            list_note_items,
             add_note,
             update_note,
             delete_note,
-            update_note_status,
+            create_note_folder,
+            delete_note_folder,
+            move_note_item,
             update_note_pinned,
             open_notes_folder,
             get_app_config,
@@ -859,15 +1094,41 @@ pub fn run() {
             sono_list_entries,
             sono_upsert_goal,
             sono_get_goal,
+            sono_export_csv,
+            sono_import_csv,
 
             calendar_add_event,
             calendar_update_event,
             calendar_delete_event,
+            sync_br_holidays,
             calendar_list_events,
             calendar_list_upcoming_deadlines,
 
             stats_get_cross_metrics,
-            stats_get_performance_summary
+            stats_get_performance_summary,
+
+            reading_list_books,
+            reading_upsert_book,
+            reading_delete_book,
+            reading_upsert_session,
+            reading_list_sessions,
+            reading_delete_session,
+            reading_upsert_goal,
+            reading_list_goals,
+            reading_export_json,
+            reading_import_json,
+            reading_search_books,
+            tasks_list,
+            tasks_upsert,
+            tasks_toggle,
+            tasks_delete,
+            notif_list,
+            notif_unread_count,
+            notif_mark_read,
+            notif_mark_all_read,
+            notif_delete,
+            notif_clear_read,
+            ensure_discord_invite
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

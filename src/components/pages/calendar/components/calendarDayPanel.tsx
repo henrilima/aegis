@@ -4,184 +4,221 @@ import {
   AlertTriangle,
   Calendar,
   Clock,
+  Flag,
   Pencil,
   Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { useAuth } from "@/context/AuthContext";
+import { cn, getColorTheme } from "@/lib/utils";
 import type { CalendarEvent, DeadlineCategory } from "../types";
-import {
-  DEADLINE_COLORS,
-  DEADLINE_LABELS,
-  daysUntil,
-  formatDaysUntil,
-} from "../types";
+import { DEADLINE_COLORS, DEADLINE_LABELS, daysUntil } from "../types";
 
 interface CalendarDayPanelProps {
   date: string;
-  events: CalendarEvent[];
+  onClose: () => void;
+  dayEvents?: CalendarEvent[];
   onEdit: (ev: CalendarEvent) => void;
   onDelete: (id: number) => void;
-  onClose: () => void;
 }
 
 /**
- * Painel Lateral de Agenda: Detalhamento de compromissos para a data selecionada
+ * Painel lateral que exibe os detalhes de um dia específico
  */
 export function CalendarDayPanel({
   date,
-  events,
+  onClose,
+  dayEvents = [],
   onEdit,
   onDelete,
-  onClose,
 }: CalendarDayPanelProps) {
-  const [y, m, d] = date.split("-").map(Number);
-  const label = new Date(y, m - 1, d).toLocaleDateString("pt-BR", {
-    weekday: "long",
+  const themeStyles = getColorTheme("green");
+  const { user } = useAuth();
+  const _uid = user ? String(user.id) : "";
+
+  const displayDate = new Date(`${date}T12:00:00`).toLocaleDateString("pt-BR", {
     day: "numeric",
     month: "long",
+    year: "numeric",
+    weekday: "long",
   });
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 sticky top-4 shadow-2xl animate-in slide-in-from-right-4 duration-500 overflow-hidden">
-      {/* Cabeçalho do Painel */}
-      <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-neutral-950 rounded-xl border border-neutral-800">
-            <Calendar className="w-4 h-4 text-neutral-400" />
+    <div className="flex flex-col h-full animate-in slide-in-from-right-10 duration-500">
+      {/* Header do Painel */}
+      <div className="p-6 border-b border-border">
+        <div className="flex items-start justify-between mb-2">
+          <div
+            className={`p-3 rounded-2xl ${themeStyles.bg} border ${themeStyles.border}`}
+          >
+            <Calendar className={`w-5 h-5 ${themeStyles.textSub}`} />
           </div>
-          <span className="text-[10px] font-black text-white uppercase truncate max-w-[180px]">
-            {label}
-          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            className="w-8 h-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all border-none"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onClose}
-          className="w-8 h-8 p-0 rounded-lg text-neutral-600 hover:text-white hover:bg-neutral-800 transition-all border-none"
-        >
-          <X className="w-4 h-4" />
-        </Button>
+        <h2 className="text-xl font-bold text-foreground capitalize">
+          {displayDate}
+        </h2>
+        <p className="text-xs font-bold text-muted-foreground mt-1 uppercase">
+          {dayEvents.length === 0
+            ? "Nenhum compromisso registrado"
+            : dayEvents.length === 1
+              ? "1 compromisso registrado"
+              : `${dayEvents.length} compromissos registrados`}
+        </p>
       </div>
 
-      {events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-30">
-          <Clock className="w-10 h-10 text-neutral-600" />
-          <p className="text-[10px] font-black uppercase text-neutral-600 text-center">
-            Sem Registros Cronológicos
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {events.map((ev) => {
-            const isDeadline = ev.event_type === "deadline";
-            const color = isDeadline
-              ? DEADLINE_COLORS[
-                  (ev.deadline_category ?? "prova") as DeadlineCategory
-                ]
-              : (ev.color ?? "#6366f1");
-            const days = daysUntil(ev.date);
+      {/* Lista de Registros */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+        {dayEvents.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+            <div className="w-16 h-16 rounded-full bg-card flex items-center justify-center mb-4">
+              <Clock className="w-8 h-8 text-neutral-600" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground max-w-[200px]">
+              Tudo limpo por aqui. Aproveite seu dia!
+            </p>
+          </div>
+        ) : (
+          [...dayEvents]
+            .sort((a, b) =>
+              (a.time || "00:00").localeCompare(b.time || "00:00"),
+            )
+            .map((ev) => {
+              const isDeadline = ev.event_type === "deadline";
+              const color = isDeadline
+                ? DEADLINE_COLORS[
+                    (ev.deadline_category ?? "prova") as DeadlineCategory
+                  ]
+                : (ev.color ?? "#6366f1");
+              const days = daysUntil(ev.date);
 
-            return (
-              <div
-                key={ev.id}
-                className="group relative rounded-xl p-4 flex flex-col gap-3 border transition-all hover:translate-x-1 duration-300"
-                style={{
-                  backgroundColor: `${color}08`,
-                  borderColor: `${color}20`,
-                }}
-              >
-                {/* Indicador de Tipo */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {isDeadline && (
-                        <AlertTriangle
-                          className="w-3.5 h-3.5"
-                          style={{ color }}
-                        />
+              return (
+                <div
+                  key={ev.id}
+                  className="group relative rounded-xl p-4 flex flex-col gap-3 border transition-all hover:translate-x-1 duration-300"
+                  style={{
+                    backgroundColor:
+                      ev.is_holiday || ev.event_type === "holiday"
+                        ? "#71717a08"
+                        : `${color}08`,
+                    borderColor:
+                      ev.is_holiday || ev.event_type === "holiday"
+                        ? "#71717a20"
+                        : `${color}20`,
+                  }}
+                >
+                  {/* Indicador de Tipo */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {ev.is_holiday || ev.event_type === "holiday" ? (
+                          <Flag className="w-3.5 h-3.5 text-zinc-500" />
+                        ) : (
+                          isDeadline && (
+                            <AlertTriangle
+                              className="w-3.5 h-3.5"
+                              style={{ color }}
+                            />
+                          )
+                        )}
+                        <span className="font-black text-foreground truncate">
+                          {ev.title}
+                        </span>
+                      </div>
+                      {ev.is_holiday || ev.event_type === "holiday" ? (
+                        <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md inline-block bg-zinc-500/15 text-zinc-500">
+                          Feriado Nacional
+                        </span>
+                      ) : (
+                        isDeadline &&
+                        ev.deadline_category && (
+                          <span
+                            className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md inline-block"
+                            style={{ backgroundColor: `${color}15`, color }}
+                          >
+                            {
+                              DEADLINE_LABELS[
+                                ev.deadline_category as DeadlineCategory
+                              ]
+                            }
+                          </span>
+                        )
                       )}
-                      <span
-                        className=" font-black text-white truncate"
-                        style={{ textShadow: `0 0 10px ${color}20` }}
-                      >
-                        {ev.title}
-                      </span>
                     </div>
-                    {isDeadline && ev.deadline_category && (
-                      <span
-                        className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md inline-block"
-                        style={{ backgroundColor: `${color}15`, color }}
-                      >
-                        {
-                          DEADLINE_LABELS[
-                            ev.deadline_category as DeadlineCategory
-                          ]
-                        }
-                      </span>
-                    )}
+
+                    {/* Ações do Registro */}
+                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ToolTip content="Editar registro">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => onEdit(ev)}
+                          className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-foreground hover:bg-accent/50 transition-all border-none"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </ToolTip>
+                      {!ev.is_holiday && (
+                        <ToolTip content="Remover registro">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => ev.id && onDelete(ev.id as number)}
+                            className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all border-none"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </ToolTip>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Ações do Registro */}
-                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ToolTip content="Editar registro">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => onEdit(ev)}
-                        className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-white hover:bg-neutral-800 transition-all border-none"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                    </ToolTip>
-                    <ToolTip content="Excluir registro">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => ev.id != null && onDelete(ev.id)}
-                        className="w-7 h-7 p-0 rounded-lg text-neutral-700 hover:text-red-500 hover:bg-red-500/10 transition-all border-none"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </ToolTip>
+                  {/* Descrição e Hora */}
+                  {ev.description && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                      {ev.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-3 mt-1 pt-3 border-t border-border/50">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      {ev.time || "Dia todo"}
+                    </div>
+                    <div className="w-1 h-1 rounded-full bg-neutral-800" />
+                    <div
+                      className={cn(
+                        "text-[10px] font-black uppercase",
+                        days === 0
+                          ? themeStyles.textSub
+                          : days > 0
+                            ? "text-muted-foreground"
+                            : "text-amber-600 dark:text-amber-500",
+                      )}
+                    >
+                      {days === 0
+                        ? "Hoje"
+                        : days === 1
+                          ? "Amanhã"
+                          : days > 1
+                            ? `Em ${days} dias`
+                            : "Concluído"}
+                    </div>
                   </div>
                 </div>
-
-                {/* Metadados do Registro */}
-                <div className="space-y-2">
-                  {(ev.time || ev.description) && (
-                    <div className="flex flex-col gap-1.5">
-                      {ev.time && (
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-500">
-                          <Clock className="w-3 h-3 opacity-50" />
-                          <span className="uppercase">{ev.time}</span>
-                        </div>
-                      )}
-                      {ev.description && (
-                        <p className="text-[11px] font-bold text-neutral-500 leading-relaxed italic border-l-2 border-neutral-800 pl-3">
-                          {ev.description}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {isDeadline && (
-                    <div className="pt-2 border-t border-neutral-800/30 flex items-center justify-between">
-                      <span
-                        className="text-[9px] font-black uppercase"
-                        style={{ color }}
-                      >
-                        Vetor Temporal: {formatDaysUntil(days)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })
+        )}
+      </div>
     </div>
   );
 }

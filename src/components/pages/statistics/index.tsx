@@ -62,7 +62,7 @@ export default function StatisticsPage() {
   if (loading)
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse font-bold">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse font-bold">
           <BarChart3 className="w-4 h-4" />
           <span>Processando Matriz de Dados...</span>
         </div>
@@ -70,14 +70,14 @@ export default function StatisticsPage() {
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white px-1">
+    <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground px-1">
       {/* Cabeçalho */}
       <StatisticsHeader days={days} onDaysChange={setDays} />
 
       {summary && summary.total_days_analyzed > 0 ? (
         <>
           {/* Métricas Principais */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <MetricCard
               icon={Moon}
               label="Eficiência Sono"
@@ -138,6 +138,16 @@ export default function StatisticsPage() {
               borderColor="#f43f5e25"
               tooltip="Avaliação média do seu nível de foco e energia durante as sessões de estudo (1 a 5)."
             />
+            <MetricCard
+              icon={BookOpen}
+              label="Páginas Lidas"
+              value={`${summary.avg_reading_pages.toFixed(0)}`}
+              sub={`${summary.avg_ppm.toFixed(1)} PPM · ${summary.reading_streak_days}d`}
+              color="#f97316"
+              bgColor="#f9731615"
+              borderColor="#f9731625"
+              tooltip="Média de páginas lidas por dia, ritmo médio (PPM) e sequência de dias com registros de leitura."
+            />
           </div>
 
           {/* Impacto e Distribuição */}
@@ -150,15 +160,17 @@ export default function StatisticsPage() {
           <CorrelationInsight summary={summary} />
 
           {/* Gráfico Temporal */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-xl">
+          <div className="bg-card border border-border rounded-xl p-8">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-red-400/10 rounded-xl border border-red-400/20">
                 <Brain className="w-5 h-5 text-red-100" />
               </div>
               <div>
-                <h2 className="font-bold text-white">Cruzamento Temporal</h2>
+                <h2 className="font-bold text-foreground">
+                  Cruzamento Temporal
+                </h2>
                 <p className="text-[10px] font-bold text-neutral-600 mt-0.5">
-                  Sono · Estudo · Acerto
+                  Sono · Estudo · Leitura · Acerto
                 </p>
               </div>
             </div>
@@ -166,13 +178,15 @@ export default function StatisticsPage() {
           </div>
 
           {/* Dados Brutos */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-xl">
+          <div className="bg-card border border-border rounded-xl p-8">
             <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 bg-neutral-800 rounded-xl border border-neutral-700">
-                <BarChart3 className="w-5 h-5 text-neutral-400" />
+              <div className="p-2 bg-neutral-800 rounded-xl border border-border">
+                <BarChart3 className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <h2 className="font-bold text-white">Log de Processamento</h2>
+                <h2 className="font-bold text-foreground">
+                  Log de Processamento
+                </h2>
                 <p className="text-[10px] font-bold text-neutral-600 mt-0.5">
                   Dados Brutos (Últimos {days} dias)
                 </p>

@@ -14,7 +14,8 @@ interface ReportCanvasProps {
   goalValue: (type: string) => number;
   periodTitle: string;
   periodRange: string;
-  reportMode: "weekly" | "monthly";
+  reportMode: "daily" | "weekly" | "monthly";
+  accentColor?: string;
 }
 
 export function ReportCanvas({
@@ -24,6 +25,7 @@ export function ReportCanvas({
   periodTitle,
   periodRange,
   reportMode,
+  accentColor = "#a78bfa",
 }: ReportCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fileName, setFileName] = useState("");
@@ -38,9 +40,8 @@ export function ReportCanvas({
       canvas.height = 1920;
 
       // Determinando prefixo da meta
-      const goalPrefix = reportMode === "weekly" ? "weekly_" : "monthly_";
+      const goalPrefix = reportMode === "monthly" ? "monthly_" : "weekly_";
 
-      // 1. FUNDOS
       if (img) {
         ctx.save();
         ctx.filter = "grayscale(100%) brightness(0.3)";
@@ -72,13 +73,13 @@ export function ReportCanvas({
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. HEADER
+      const accent = accentColor;
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "900 120px Montserrat, sans-serif";
       ctx.fillText("AEGIS", canvas.width / 2, 200);
 
-      ctx.fillStyle = "#a78bfa";
+      ctx.fillStyle = accent;
       ctx.font = "800 38px Montserrat, sans-serif";
       ctx.fillText(periodTitle.toUpperCase(), canvas.width / 2, 280);
 
@@ -86,7 +87,15 @@ export function ReportCanvas({
       ctx.font = "600 32px Montserrat, sans-serif";
       ctx.fillText(periodRange, canvas.width / 2, 340);
 
-      // 3. MÉTRICA FOCO
+      const hasPages = periodStats.pages > 0;
+
+      // Rótulo da meta para modo diário
+      const metaPrefix = reportMode === "daily" ? "META SEM." : "META";
+
+      // Horas: posição Y muda conforme se há páginas ou não
+      const hoursY = hasPages ? 640 : 700;
+      const perfY = hasPages ? 715 : 780;
+
       ctx.fillStyle = "#ffffff";
       const hoursText = formatHours(periodStats.hours);
       let fontSize = 280;
@@ -98,28 +107,35 @@ export function ReportCanvas({
         ctx.font = `900 ${fontSize}px Montserrat, sans-serif`;
       }
 
-      ctx.fillText(hoursText, canvas.width / 2, 640);
+      ctx.fillText(hoursText, canvas.width / 2, hoursY);
 
       const hrGoal = goalValue(`${goalPrefix}hours`);
-      ctx.font = "800 38px Montserrat, sans-serif";
-      ctx.fillStyle = "#a78bfa";
+      ctx.fillStyle = accent;
       const perfText =
         hrGoal > 0
-          ? `PERFORMANCE: ${Math.round((periodStats.hours / hrGoal) * 100)}% DA META`
-          : reportMode === "weekly"
-            ? "ESTUDOS DA SEMANA"
-            : "ESTUDOS DO MÊS";
-      ctx.fillText(perfText, canvas.width / 2, 715);
+          ? `PERFORMANCE: ${Math.round((periodStats.hours / hrGoal) * 100)}% DA ${metaPrefix}`
+          : reportMode === "monthly"
+            ? "ESTUDOS DO MÊS"
+            : reportMode === "daily"
+              ? "ESTUDOS DO DIA"
+              : "ESTUDOS DA SEMANA";
 
-      // 4. HELPERS DE CARD
+      // Ajuste dinâmico da fonte do perfText para não vazar
+      let perfFontSize = 34;
+      ctx.font = `800 ${perfFontSize}px Montserrat, sans-serif`;
+      while (ctx.measureText(perfText).width > 960 && perfFontSize > 20) {
+        perfFontSize -= 2;
+        ctx.font = `800 ${perfFontSize}px Montserrat, sans-serif`;
+      }
+      ctx.fillText(perfText, canvas.width / 2, perfY);
+
       const cardColor = "rgba(15, 15, 15, 0.85)";
       const borderColor = "rgba(255, 255, 255, 0.1)";
-      const accentColor = "#a78bfa";
       const centerX = canvas.width / 2;
 
       const drawIcon = (type: string, x: number, y: number) => {
         ctx.save();
-        ctx.strokeStyle = accentColor;
+        ctx.strokeStyle = accent;
         ctx.lineWidth = 5;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
@@ -186,7 +202,7 @@ export function ReportCanvas({
         ctx.fillText(label.toUpperCase(), centerX - 280, y + ch / 2 + 55);
 
         ctx.textAlign = "right";
-        ctx.fillStyle = accentColor;
+        ctx.fillStyle = accent;
         ctx.font = "800 32px Montserrat, sans-serif";
         ctx.fillText(sub.toUpperCase(), centerX + 400, y + ch / 2 + 55);
         ctx.restore();
@@ -201,7 +217,7 @@ export function ReportCanvas({
         value: string,
       ) => {
         const cw = 460,
-          ch = 380,
+          ch = 310,
           r = 40;
         ctx.save();
         ctx.fillStyle = cardColor;
@@ -213,51 +229,18 @@ export function ReportCanvas({
         ctx.stroke();
 
         // Layout em Coluna
-        drawIcon(type, x + cw / 2, y + 100);
+        drawIcon(type, x + cw / 2, y + 82);
 
         ctx.textAlign = "center";
         ctx.fillStyle = "#ffffff";
-        ctx.font = "900 75px Montserrat, sans-serif";
-        ctx.fillText(value, x + cw / 2, y + 245);
+        ctx.font = "900 68px Montserrat, sans-serif";
+        ctx.fillText(value, x + cw / 2, y + 190);
 
         ctx.fillStyle = "rgba(255,255,255,0.4)";
-        ctx.font = "700 28px Montserrat, sans-serif";
-        ctx.fillText(label.toUpperCase(), x + cw / 2, y + 300);
+        ctx.font = "700 27px Montserrat, sans-serif";
+        ctx.fillText(label.toUpperCase(), x + cw / 2, y + 240);
         ctx.restore();
       };
-
-      const startY = 820,
-        spacing = 280;
-
-      // Card 1: Questões
-      const qGoal = goalValue(`${goalPrefix}questions`);
-      drawFullCard(
-        startY,
-        "q",
-        "Questões Resolvidas",
-        `${periodStats.questions}`,
-        qGoal > 0 ? `META: ${qGoal}` : "",
-      );
-
-      // Card 2: Páginas
-      const pGoal = goalValue(`${goalPrefix}pages`);
-      drawFullCard(
-        startY + spacing,
-        "p",
-        "Páginas Lidas",
-        `${periodStats.pages}`,
-        pGoal > 0 ? `META: ${pGoal}` : "",
-      );
-
-      // Cards 3 e 4: Sessões e Eficiência (Lado a Lado)
-      const subCardY = startY + spacing * 2;
-      drawHalfCard(
-        centerX - 960 / 2,
-        subCardY,
-        "s",
-        "Sessões",
-        `${periodStats.sessionsCount}`,
-      );
 
       // Cálculo de Eficiência: Apenas sessões que tiveram questões
       const sessionsWithQuestions = periodSessions.filter(
@@ -277,15 +260,74 @@ export function ReportCanvas({
           ? Math.round(totalQuestions / totalHoursWithQuestions)
           : 0;
 
-      drawHalfCard(
-        centerX + 20,
-        subCardY,
-        "e",
-        "Questões / H",
-        `${efficiency}`,
-      );
+      const qGoal = goalValue(`${goalPrefix}questions`);
+      const pGoal = goalValue(`${goalPrefix}pages`);
 
-      // 6. FOOTER
+      if (hasPages) {
+        // Layout completo: questões em 900, páginas em 1180, half-cards em 1460
+        const spacing = 280;
+        const startY = 900;
+
+        drawFullCard(
+          startY,
+          "q",
+          "Questões Resolvidas",
+          `${periodStats.questions}`,
+          qGoal > 0 ? `${metaPrefix}: ${qGoal}` : "",
+        );
+
+        drawFullCard(
+          startY + spacing,
+          "p",
+          "Páginas Lidas",
+          `${periodStats.pages}`,
+          pGoal > 0 ? `${metaPrefix}: ${pGoal}` : "",
+        );
+
+        const subCardY = startY + spacing * 2;
+        drawHalfCard(
+          centerX - 960 / 2,
+          subCardY,
+          "s",
+          "Sessões",
+          `${periodStats.sessionsCount}`,
+        );
+        drawHalfCard(
+          centerX + 20,
+          subCardY,
+          "e",
+          "Questões / H",
+          `${efficiency}`,
+        );
+      } else {
+        // Sem páginas: questões desce para o centro, half-cards logo abaixo
+        const startY = 1030;
+        const halfCardY = startY + 320;
+
+        drawFullCard(
+          startY,
+          "q",
+          "Questões Resolvidas",
+          `${periodStats.questions}`,
+          qGoal > 0 ? `${metaPrefix}: ${qGoal}` : "",
+        );
+
+        drawHalfCard(
+          centerX - 960 / 2,
+          halfCardY,
+          "s",
+          "Sessões",
+          `${periodStats.sessionsCount}`,
+        );
+        drawHalfCard(
+          centerX + 20,
+          halfCardY,
+          "e",
+          "Questões / H",
+          `${efficiency}`,
+        );
+      }
+
       ctx.textAlign = "center";
       ctx.fillStyle = "rgba(255,255,255,0.3)";
       ctx.font = "600 30px Montserrat, sans-serif";
@@ -296,10 +338,10 @@ export function ReportCanvas({
       );
 
       setFileName(
-        `relatorio-${reportMode === "weekly" ? "semanal" : "mensal"}-${periodRange
+        `relatorio-${reportMode === "daily" ? "diario" : reportMode === "weekly" ? "semanal" : "mensal"}-${periodRange
           .toLowerCase()
-          .replace(/ \/ | - /g, "-")
-          .replace(/ /g, ".")}`,
+          .replace(/ \/ | - |, |\/| /g, "-")
+          .replace(/-+/g, "-")}`,
       );
     },
     [
@@ -309,6 +351,7 @@ export function ReportCanvas({
       periodTitle,
       periodRange,
       reportMode,
+      accentColor,
     ],
   );
 
@@ -355,25 +398,25 @@ export function ReportCanvas({
   };
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-2xl h-full flex flex-col">
-      <div className="p-6 border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between">
+    <div className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col">
+      <div className="p-6 border-b border-border bg-card/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <TrendingUp className="w-4 h-4 text-violet-500" />
-          <h2 className=" font-black uppercase text-neutral-400">
+          <h2 className=" font-black uppercase text-muted-foreground">
             Relatório Visual (Story)
           </h2>
         </div>
         <button
           type="button"
           onClick={downloadCanvas}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/20 text-violet-400 text-[10px] font-black uppercase transition-all cursor-pointer border border-violet-600/30 hover:bg-violet-600/30"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/20 text-violet-600 dark:text-violet-400 text-[10px] font-black uppercase transition-all cursor-pointer border border-violet-600/30 hover:bg-violet-600/30"
         >
           <Download className="w-3.5 h-3.5" /> Baixar
         </button>
       </div>
 
-      <div className="p-4 flex-1 flex items-center justify-center bg-neutral-950/20">
-        <div className="relative aspect-9/16 w-full max-w-[303px] mx-auto rounded-xl border border-neutral-800 overflow-hidden shadow-2xl bg-black">
+      <div className="p-4 flex-1 flex items-center justify-center bg-background/20">
+        <div className="relative aspect-9/16 w-full max-w-[303px] mx-auto rounded-xl border border-border overflow-hidden bg-black">
           <canvas
             ref={canvasRef}
             className="w-full h-full object-cover"

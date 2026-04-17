@@ -12,8 +12,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { useTheme } from "@/context/ThemeContext";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
-import { cn, getThemeColor } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { WIDGET_METADATA } from "../../pages/dashboard/widgets/registry";
 
 interface DashboardConfigModalProps {
@@ -30,7 +31,7 @@ export function DashboardConfigModal({
   onClose,
 }: DashboardConfigModalProps) {
   useLockBodyScroll();
-  const theme = getThemeColor();
+  const { themeStyles: theme } = useTheme();
   const [internalActiveIds, setInternalActiveIds] =
     useState<string[]>(activeWidgetIds);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -89,9 +90,8 @@ export function DashboardConfigModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <Card className="relative w-full max-w-xl bg-neutral-950 border border-neutral-800 rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[85vh] shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-800/60 shrink-0 select-none">
+      <Card className="relative w-full max-w-xl bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="flex items-center justify-between p-4 border-b border-border/60 shrink-0 select-none">
           <div className="flex items-center gap-2.5 font-outfit">
             <div
               className={`p-1.5 ${theme.bg} rounded-lg border ${theme.border}`}
@@ -99,10 +99,10 @@ export function DashboardConfigModal({
               <Layout className={`w-4 h-4 ${theme.text}`} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white leading-none">
+              <h2 className="text-base font-bold text-foreground leading-none">
                 Configurar Dashboard
               </h2>
-              <p className="text-[10px] text-neutral-500 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 {selectedIndex !== null
                   ? "Selecione a nova posição para o item"
                   : "Organize a ordem dos seus widgets"}
@@ -112,19 +112,17 @@ export function DashboardConfigModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* List of Widgets */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
           <div className="space-y-5">
-            {/* Active Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1 select-none">
-                <p className="text-[9px] font-bold text-neutral-500">
+                <p className="text-[9px] font-bold text-muted-foreground">
                   Widgets Ativos ({internalActiveIds.length})
                 </p>
                 {selectedIndex !== null && (
@@ -160,8 +158,8 @@ export function DashboardConfigModal({
                         className={cn(
                           "shrink-0 p-2 rounded-lg transition-all border outline-none",
                           isSelected
-                            ? "bg-emerald-500 border-emerald-400 text-black scale-105 shadow-lg shadow-emerald-500/20"
-                            : "bg-neutral-900 border-neutral-800 text-neutral-700 hover:text-neutral-500 hover:border-neutral-700 active:scale-95 cursor-pointer",
+                            ? "bg-emerald-500 border-emerald-400 text-black scale-105"
+                            : "bg-card border-border text-neutral-700 hover:text-muted-foreground hover:border-border active:scale-95 cursor-pointer",
                           isMoveTarget &&
                             "bg-neutral-800 border-dashed border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 animate-pulse cursor-pointer",
                         )}
@@ -175,7 +173,7 @@ export function DashboardConfigModal({
 
                       <div
                         className={cn(
-                          "flex-1 flex items-center justify-between p-2.5 rounded-lg border transition-all bg-neutral-900/50 border-neutral-800 shadow-sm",
+                          "flex-1 flex items-center justify-between p-2.5 rounded-lg border transition-all bg-card/50 border-border",
                           isSelected &&
                             "border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/10",
                           isMoveTarget && "opacity-40 grayscale-[0.8]",
@@ -201,7 +199,7 @@ export function DashboardConfigModal({
                             handleToggle(w.id);
                           }}
                           className={cn(
-                            "w-6 h-6 rounded-full flex items-center justify-center transition-all bg-emerald-500 text-black shadow-lg shadow-emerald-500/10 cursor-pointer hover:scale-105 active:scale-95",
+                            "w-6 h-6 rounded-full flex items-center justify-center transition-all bg-emerald-500 text-black cursor-pointer hover:scale-105 active:scale-95",
                           )}
                         >
                           <Check className="w-3 h-3" strokeWidth={3} />
@@ -214,7 +212,7 @@ export function DashboardConfigModal({
                             type="button"
                             disabled={idx === 0}
                             onClick={() => move(w.id, "up")}
-                            className="p-1 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700 disabled:opacity-20 cursor-pointer transition-all"
+                            className="p-1 rounded-md bg-card border border-border text-neutral-600 hover:text-foreground hover:border-border disabled:opacity-20 cursor-pointer transition-all"
                           >
                             <ChevronUp className="w-3 h-3" />
                           </button>
@@ -222,7 +220,7 @@ export function DashboardConfigModal({
                             type="button"
                             disabled={idx === internalActiveIds.length - 1}
                             onClick={() => move(w.id, "down")}
-                            className="p-1 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-600 hover:text-white hover:border-neutral-700 disabled:opacity-20 cursor-pointer transition-all"
+                            className="p-1 rounded-md bg-card border border-border text-neutral-600 hover:text-foreground hover:border-border disabled:opacity-20 cursor-pointer transition-all"
                           >
                             <ChevronDown className="w-3 h-3" />
                           </button>
@@ -234,7 +232,6 @@ export function DashboardConfigModal({
               </ul>
             </div>
 
-            {/* Inactive Section */}
             {inactiveWidgets.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[9px] font-bold text-neutral-600 px-1 select-none">
@@ -246,14 +243,14 @@ export function DashboardConfigModal({
                       <button
                         type="button"
                         onClick={() => handleToggle(w.id)}
-                        className="flex items-center justify-between p-2 rounded-lg border transition-all text-left bg-neutral-950/20 border-neutral-800/40 hover:border-neutral-700 hover:bg-neutral-900/30 w-full group/btn cursor-pointer"
+                        className="flex items-center justify-between p-2 rounded-lg border transition-all text-left bg-background/20 border-border/40 hover:border-border hover:bg-card/30 w-full group/btn cursor-pointer"
                       >
                         <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-xs font-bold text-neutral-500 group-hover/btn:text-neutral-400 transition-colors font-outfit truncate">
+                          <span className="text-xs font-bold text-muted-foreground group-hover/btn:text-muted-foreground transition-colors font-outfit truncate">
                             {w.name}
                           </span>
                         </div>
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center transition-all bg-neutral-800/30 border border-neutral-700/30 text-neutral-600 group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 group-hover/btn:border-emerald-500/20 shrink-0">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center transition-all bg-neutral-800/30 border border-border/30 text-neutral-600 group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 group-hover/btn:border-emerald-500/20 shrink-0">
                           <Plus className="w-3 h-3" />
                         </div>
                       </button>
@@ -265,13 +262,12 @@ export function DashboardConfigModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex flex-col gap-1 p-4 border-t border-neutral-800/60 bg-neutral-950/50 select-none">
+        <div className="flex flex-col gap-1 p-4 border-t border-border/60 bg-background/50 select-none">
           <button
             type="button"
             onClick={onClose}
             className={cn(
-              "w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all active:scale-[0.98] cursor-pointer shadow-lg font-outfit border",
+              "w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all active:scale-[0.98] cursor-pointer font-outfit border",
               theme.bg,
               theme.bgHover,
               theme.border,
@@ -285,7 +281,7 @@ export function DashboardConfigModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-bold cursor-pointer transition-colors"
+            className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-bold cursor-pointer transition-colors"
           >
             Agora não
           </button>

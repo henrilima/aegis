@@ -25,7 +25,7 @@ export function CorrelationInsight({ summary }: CorrelationInsightProps) {
       style={{ backgroundColor: `${color}08`, borderColor: `${color}25` }}
     >
       <div
-        className="p-2.5 rounded-xl shrink-0 shadow-sm"
+        className="p-2.5 rounded-xl shrink-0"
         style={{ backgroundColor: `${color}15` }}
       >
         <Icon className="w-5 h-5" style={{ color }} />
@@ -37,12 +37,12 @@ export function CorrelationInsight({ summary }: CorrelationInsightProps) {
             Correlação {summary.correlation_label}: Sono x Acerto
           </span>
           <ToolTip content="Análise automatizada que identifica tendências entre seus hábitos e seu rendimento acadêmico.">
-            <div className="text-[10px] text-neutral-600 cursor-help hover:text-neutral-400 transition-colors">
+            <div className="text-[10px] text-neutral-600 cursor-help hover:text-muted-foreground transition-colors">
               Como funciona?
             </div>
           </ToolTip>
         </div>
-        <p className=" text-neutral-500 leading-relaxed font-medium">
+        <p className=" text-muted-foreground leading-relaxed font-medium">
           {isPositive
             ? "Métricas indicam que maiores períodos de sono impactam positivamente sua produtividade. Priorizar o descanso está rendendo resultados diretos nos estudos!"
             : isNegative

@@ -35,13 +35,13 @@ export function NoteExpandModal({
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className={`bg-neutral-950 border border-neutral-800 flex flex-col overflow-hidden transition-all duration-500 relative ${isFullscreen ? "w-full h-full rounded-none" : "w-full max-w-6xl h-[90vh] rounded-xl"}`}
+        className={`bg-background border border-border flex flex-col overflow-hidden transition-all duration-500 relative ${isFullscreen ? "w-full h-full rounded-none" : "w-full max-w-6xl h-[90vh] rounded-xl"}`}
       >
         {/* Barra de Ferramentas Superior */}
-        <div className="flex items-center justify-between p-5 border-b border-neutral-900 bg-neutral-950/50 backdrop-blur-xl z-20">
+        <div className="flex items-center justify-between p-5 border-b border-neutral-900 bg-background/50 backdrop-blur-xl z-20">
           <div className="flex items-center gap-4 flex-1 mr-4">
-            <div className="p-2.5 bg-neutral-900 rounded-xl border border-neutral-800 hidden sm:block">
-              <FileText className="w-5 h-5 text-neutral-400" />
+            <div className="p-2.5 bg-card rounded-xl border border-border hidden sm:block">
+              <FileText className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="flex-1">
               {isEditing ? (
@@ -49,12 +49,12 @@ export function NoteExpandModal({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-transparent border-none text-lg font-bold outline-none text-white placeholder-neutral-800 p-0 h-auto focus-visible:ring-0 -ml-0.5"
+                  className="w-full bg-transparent border-none text-lg font-bold outline-none text-foreground placeholder-neutral-800 p-0 h-auto focus-visible:ring-0 -ml-0.5"
                   placeholder="Título da nota..."
                   autoFocus
                 />
               ) : (
-                <h2 className="text-lg font-bold truncate text-neutral-100">
+                <h2 className="text-lg font-bold truncate text-foreground">
                   {title}
                 </h2>
               )}
@@ -74,7 +74,7 @@ export function NoteExpandModal({
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all cursor-pointer"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -86,7 +86,7 @@ export function NoteExpandModal({
               <button
                 type="button"
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all cursor-pointer"
               >
                 {isFullscreen ? (
                   <Minimize2 className="w-4 h-4" />
@@ -99,7 +99,7 @@ export function NoteExpandModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-all cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-card border border-border text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-accent/50 transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -116,11 +116,11 @@ export function NoteExpandModal({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="flex-1 h-full w-full lg:w-1/2 p-8 lg:p-12 bg-neutral-950 resize-none outline-none text-neutral-300 font-medium  leading-relaxed border-b lg:border-b-0 lg:border-r border-neutral-900 custom-scrollbar "
+                className="flex-1 h-full w-full lg:w-1/2 p-8 lg:p-12 bg-background resize-none outline-none text-muted-foreground font-medium  leading-relaxed border-b lg:border-b-0 lg:border-r border-neutral-900 custom-scrollbar "
                 placeholder="Escreva sua nota aqui..."
               />
               {/* Preview */}
-              <div className="flex-1 h-full w-full lg:w-1/2 overflow-auto p-8 lg:p-12 custom-scrollbar bg-neutral-900/10">
+              <div className="flex-1 h-full w-full lg:w-1/2 overflow-auto p-8 lg:p-12 custom-scrollbar bg-card/10">
                 <div className="markdown-preview max-w-none prose prose-invert prose-teal">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkBreaks]}
@@ -132,7 +132,7 @@ export function NoteExpandModal({
                             e.preventDefault();
                             if (props.href) open(props.href);
                           }}
-                          className="text-teal-400 hover:text-teal-300 underline cursor-pointer font-bold inline-block border-none bg-transparent p-0"
+                          className="text-teal-600 dark:text-teal-400 hover:text-teal-300 underline cursor-pointer font-bold inline-block border-none bg-transparent p-0"
                         >
                           {props.children}
                         </button>
@@ -159,7 +159,7 @@ export function NoteExpandModal({
                             e.preventDefault();
                             if (props.href) open(props.href);
                           }}
-                          className="text-teal-400 hover:text-teal-300 underline cursor-pointer font-bold transition-colors inline-block border-none bg-transparent p-0"
+                          className="text-teal-600 dark:text-teal-400 hover:text-teal-300 underline cursor-pointer font-bold transition-colors inline-block border-none bg-transparent p-0"
                         >
                           {props.children}
                         </button>

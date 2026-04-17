@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
-import { getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { TermsContent } from "./TermsContent";
@@ -23,7 +23,7 @@ interface RegisterProps {
 }
 
 export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
-  const theme = getThemeColor();
+  const { themeStyles: theme } = useTheme();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
@@ -101,28 +101,28 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
     }
   };
 
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
     <>
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-5 border-b border-neutral-800 shrink-0">
+          <div className="relative w-full max-w-lg bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
               <div className="flex items-center gap-3">
                 <div
                   className={`p-2 ${theme.bg} rounded-xl border ${theme.border}`}
                 >
                   <Shield className={`w-5 h-5 ${theme.textSub}`} />
                 </div>
-                <h2 className="text-base font-bold text-white">
+                <h2 className="text-base font-bold text-foreground">
                   Privacidade & Termos
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTermsModal(false)}
-                className="p-2 hover:bg-neutral-800 rounded-xl transition-colors text-neutral-500 hover:text-white cursor-pointer"
+                className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -130,17 +130,17 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
             <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
               <TermsContent className="custom-scrollbar" />
 
-              <div className="flex items-start gap-3 p-4 bg-neutral-900/40 border border-neutral-800 rounded-xl">
+              <div className="flex items-start gap-3 p-4 bg-card/40 border border-border rounded-xl">
                 <input
                   id="modal-terms"
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className={`w-5 h-5 mt-0.5 rounded-lg border-neutral-700 bg-neutral-800 ${theme.text} focus:ring-${theme.text.split("-")[1]}-500 cursor-pointer`}
+                  className={`w-5 h-5 mt-0.5 rounded-lg border-border bg-neutral-800 ${theme.text} focus:ring-${theme.text.split("-")[1]}-500 cursor-pointer`}
                 />
                 <Label
                   htmlFor="modal-terms"
-                  className="text-xs font-semibold text-neutral-400 cursor-pointer select-none leading-relaxed"
+                  className="text-xs font-semibold text-muted-foreground cursor-pointer select-none leading-relaxed"
                 >
                   Confirmo que meus dados são armazenados localmente e aceito os
                   termos da versão Aegis Beta.
@@ -151,7 +151,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 <button
                   type="button"
                   onClick={handleConfirmRegister}
-                  className={`w-full py-4 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover.replace("hover:", "hover:border-")} ${theme.text} ${theme.textDarkHover.replace("hover:", "hover:text-")} text-sm font-black uppercase transition-all active:scale-[0.98] disabled:opacity-30 cursor-pointer shadow-lg shadow-${theme.text.split("-")[1]}-500/5`}
+                  className={`w-full py-4 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover.replace("hover:", "hover:border-")} ${theme.text} ${theme.textDarkHover.replace("hover:", "hover:text-")} text-sm font-black uppercase transition-all active:scale-[0.98] disabled:opacity-30 cursor-pointer`}
                   disabled={!acceptedTerms}
                 >
                   Criar Identidade
@@ -159,7 +159,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 <button
                   type="button"
                   onClick={() => setShowTermsModal(false)}
-                  className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+                  className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
                 >
                   Agora não
                 </button>
@@ -169,12 +169,12 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
         </div>
       )}
 
-      <Card className="w-full bg-neutral-900/50 backdrop-blur-xl border-neutral-800/50 shadow-2xl shadow-black/40 rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 flex flex-col max-h-[90vh]">
+      <Card className="w-full bg-card/50 backdrop-blur-xl border-border/50 rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 flex flex-col max-h-[90vh]">
         <CardHeader className="space-y-1.5 pb-8 p-10 shrink-0 text-center md:text-left">
-          <CardTitle className="text-3xl font-black text-white">
+          <CardTitle className="text-3xl font-black text-foreground">
             Nova <span className={theme.text}>Identidade</span>
           </CardTitle>
-          <CardDescription className="text-neutral-400 font-medium text-sm leading-relaxed">
+          <CardDescription className="text-muted-foreground font-medium text-sm leading-relaxed">
             Configure seu cofre criptografado para iniciar o ecossistema Aegis
           </CardDescription>
         </CardHeader>
@@ -188,7 +188,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 <Input
                   id="username"
                   placeholder="Seu nome de usuário"
-                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
+                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
                   value={formData.username}
                   onChange={handleChange}
                   required
@@ -202,7 +202,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                   id="email"
                   type="email"
                   placeholder="exemplo@email.com"
-                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
+                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -216,7 +216,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                   id="password"
                   type="password"
                   placeholder="Defina uma senha"
-                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
+                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
                   value={formData.password}
                   onChange={handleChange}
                   required
@@ -229,7 +229,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 <Input
                   id="passwordHint"
                   placeholder="Um lembrete para sua senha"
-                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
+                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
                   value={formData.passwordHint}
                   onChange={handleChange}
                   required
@@ -258,8 +258,8 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4 text-center p-10 pt-6 border-t border-neutral-800/40 shrink-0">
-          <p className="text-[11px] font-bold text-neutral-500 uppercase leading-relaxed">
+        <CardFooter className="flex flex-col gap-4 text-center p-10 pt-6 border-t border-border/40 shrink-0">
+          <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed">
             Já possui acesso?{" "}
             <button
               type="button"

@@ -1,6 +1,6 @@
 import { Database, Info, Lock, Shield, ShieldAlert } from "lucide-react";
 import { APP_CONFIG } from "@/app.config";
-import { getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
 import { Separator } from "../ui/separator";
 
 interface TermsContentProps {
@@ -9,20 +9,20 @@ interface TermsContentProps {
 }
 
 export function FeedbackSection() {
-  const theme = getThemeColor();
+  const { themeStyles: theme } = useTheme();
   return (
     <div className="flex items-start gap-4">
       <div>
         <div>
-          <div className="flex gap-4 py-4 border-neutral-800 items-start">
-            <div className={`mt-1 p-2 ${theme.bg} rounded-xl shrink-0`}>
-              <ShieldAlert className={`w-4 h-4 ${theme.text}`} />
+          <div className="flex gap-4 py-4 border-border items-start">
+            <div className={`mt-1 p-2 bg-accent rounded-xl shrink-0`}>
+              <ShieldAlert className={`w-5 h-5 text-muted-foreground`} />
             </div>
             <div>
-              <p className="font-bold text-neutral-200 mb-1">
+              <p className="font-bold text-foreground mb-1">
                 Feedback e Suporte
               </p>
-              <p className=" text-neutral-400">
+              <p className=" text-muted-foreground">
                 O Aegis é um software em constante evolução. Embora nos
                 esforcemos para garantir estabilidade, bugs podem ocorrer.
                 Recomendamos que mantenha backups de dados críticos externos ao
@@ -51,15 +51,15 @@ export function FeedbackSection() {
         </div>
         <Separator />
         <div>
-          <div className="flex gap-4 py-4 border-t border-neutral-800 items-start">
-            <div className="mt-1 p-2 bg-green-500/10 rounded-xl shrink-0">
-              <Shield className="w-4 h-4 text-green-500" />
+          <div className="flex gap-4 py-4 border-t border-border items-start">
+            <div className="mt-1 p-2 bg-accent rounded-xl shrink-0">
+              <Shield className="w-5 h-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-bold text-neutral-200 mb-1">
+              <p className="font-bold text-foreground mb-1">
                 Compromisso com a Transparência
               </p>
-              <p className=" text-neutral-400">
+              <p className=" text-muted-foreground">
                 A perda da senha mestre impossibilita a recuperação dos dados.
                 Você é o único responsável pela sua senha.
               </p>
@@ -77,15 +77,15 @@ export function TermsContent({
 }: TermsContentProps) {
   return (
     <div
-      className={`space-y-6  text-neutral-400 overflow-auto pr-3 custom-scrollbar ${className}`}
+      className={`space-y-6  text-muted-foreground overflow-auto pr-3 custom-scrollbar ${className}`}
     >
       <div className="space-y-5">
         <div className="flex gap-4 items-start">
-          <div className="mt-1 p-2 bg-neutral-800 rounded-xl shrink-0 border border-neutral-700">
-            <Database className="w-4 h-4 text-amber-500" />
+          <div className="mt-1 p-2 bg-accent rounded-xl shrink-0">
+            <Database className="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-bold text-neutral-200 mb-1">
+            <p className="font-bold text-foreground mb-1">
               Soberania dos Dados (Local-First)
             </p>
             <p className="leading-relaxed">
@@ -98,11 +98,11 @@ export function TermsContent({
         </div>
 
         <div className="flex gap-4 items-start">
-          <div className="mt-1 p-2 bg-neutral-800 rounded-xl shrink-0 border border-neutral-700">
-            <Lock className="w-4 h-4 text-blue-500" />
+          <div className="mt-1 p-2 bg-accent rounded-xl shrink-0">
+            <Lock className="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-bold text-neutral-200 mb-1">
+            <p className="font-bold text-foreground mb-1">
               Criptografia de Ponta a Ponta
             </p>
             <p className="leading-relaxed">
@@ -114,11 +114,11 @@ export function TermsContent({
         </div>
 
         <div className="flex gap-4 items-start">
-          <div className="mt-1 p-2 bg-neutral-800 rounded-xl shrink-0 border border-neutral-700">
-            <Info className="w-4 h-4 text-violet-500" />
+          <div className="mt-1 p-2 bg-accent rounded-xl shrink-0">
+            <Info className="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-bold text-neutral-200 mb-1">
+            <p className="font-bold text-foreground mb-1">
               Identificação de Perfil
             </p>
             <p className="leading-relaxed">
@@ -130,7 +130,7 @@ export function TermsContent({
         </div>
 
         {!hideFeedback && (
-          <div className="pt-4 border-t border-neutral-800/50">
+          <div className="pt-4 border-t border-border/50">
             <FeedbackSection />
           </div>
         )}

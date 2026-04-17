@@ -8,6 +8,7 @@ import { HydrationForm } from "@/components/forms/hydration/hydrationForm";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 import type { HydrationReminder } from "./types";
 
 /**
@@ -79,14 +80,14 @@ export default function HydrationPage() {
   if (loading)
     return (
       <div className="h-full w-full flex items-center justify-center font-bold">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
           <Droplet className="w-4 h-4" /> Sincronizando dados...
         </div>
       </div>
     );
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white px-1">
+    <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground px-1">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -95,7 +96,7 @@ export default function HydrationPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold leading-none">Hidratação</h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {reminders.length} alerta{reminders.length !== 1 ? "s" : ""} ativo
               {reminders.length !== 1 ? "s" : ""}
             </p>
@@ -104,7 +105,10 @@ export default function HydrationPage() {
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white  font-bold transition-colors cursor-pointer"
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold transition-all cursor-pointer active:scale-95",
+            "bg-blue-600 hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400",
+          )}
         >
           <Plus className="w-4 h-4" /> Novo Lembrete
         </button>
@@ -138,14 +142,14 @@ export default function HydrationPage() {
           {reminders.map((r) => (
             <div
               key={r.id}
-              className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-neutral-700 transition-all group"
+              className="bg-card border border-border rounded-xl overflow-hidden hover:border-border transition-all group"
             >
               {/* Tag de tipo */}
               <div
                 className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold ${
                   r.reminder_type === "Interval"
-                    ? "bg-blue-500/10 text-blue-400 border-b border-blue-500/10"
-                    : "bg-amber-500/10 text-amber-500 border-b border-amber-500/10"
+                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-b border-blue-500/10"
+                    : "bg-amber-500/10 text-amber-700 dark:text-amber-500 border-b border-amber-500/10"
                 }`}
               >
                 {r.reminder_type === "Interval" ? (
@@ -160,15 +164,17 @@ export default function HydrationPage() {
 
               <div className="flex items-center justify-between p-4">
                 <div>
-                  <p className="font-bold text-base text-neutral-200 leading-none">
+                  <p className="font-bold text-base text-foreground leading-none">
                     {r.reminder_type === "Interval"
                       ? `A cada ${r.value} min`
                       : `Às ${r.value}`}
                   </p>
                   {r.reminder_type === "Interval" && (
-                    <p className="text-xs text-neutral-500 mt-1.5">
+                    <p className="text-xs text-muted-foreground mt-1.5">
                       Início:{" "}
-                      <span className="text-neutral-400">{r.start_time}</span>
+                      <span className="text-muted-foreground">
+                        {r.start_time}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -176,7 +182,7 @@ export default function HydrationPage() {
                   <button
                     type="button"
                     onClick={() => r.id && handleDelete(r.id)}
-                    className="p-2.5 rounded-xl border border-transparent text-neutral-600 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all cursor-pointer"
+                    className="p-2.5 rounded-xl border border-transparent text-neutral-600 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

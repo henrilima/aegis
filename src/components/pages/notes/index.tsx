@@ -1,20 +1,18 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { CheckCheck, Clock, Pin, StickyNote } from "lucide-react";
+import { StickyNote } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
 import { NoteExpandModal } from "@/components/forms/notes/noteExpandModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
-import { NoteCard } from "./components/noteCard";
+import { FileManager } from "./components/FileManager";
 import { NotesHeader } from "./components/notesHeader";
 import type { Note } from "./types";
 
 const MAX_PINS = 3;
-type TabId = "pending" | "done";
 
 /**
  * Módulo de Notas: Gestão de anotações com suporte a markdown, fixação e status
@@ -25,8 +23,13 @@ export default function NotesPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [creationPath, setCreationPath] = useState("");
   const [expandedNote, setExpandedNote] = useState<Note | null>(null);
-  const [tab, setTab] = useState<TabId>("pending");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Estados compartilhados com o Header e FileManager
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -55,11 +58,13 @@ export default function NotesPage() {
           title: title.trim(),
           content: content.trim(),
           created_at: new Date().toISOString(),
-          status: "pending",
           pinned: false,
-        } satisfies Omit<Note, "id">,
+          path: creationPath || undefined,
+        },
       });
       setIsNoteModalOpen(false);
+      setCreationPath("");
+      setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota salva com sucesso!");
     } catch {
@@ -70,6 +75,7 @@ export default function NotesPage() {
   const handleUpdate = async (note: Note) => {
     try {
       await invoke("update_note", { note });
+      setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota atualizada!");
       setExpandedNote(null);
@@ -81,6 +87,7 @@ export default function NotesPage() {
   const handleDelete = async (id: number) => {
     try {
       await invoke("delete_note", { id });
+      setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota removida");
       if (expandedNote?.id === id) setExpandedNote(null);
@@ -91,72 +98,33 @@ export default function NotesPage() {
     }
   };
 
-  const handleToggleStatus = async (note: Note) => {
-    if (!note.id) return;
-    const newStatus = note.status === "done" ? "pending" : "done";
-    try {
-      await invoke("update_note_status", { id: note.id, status: newStatus });
-      fetchNotes();
-    } catch {
-      toast.error("Erro ao atualizar status");
-    }
-  };
-
-  const handleTogglePin = async (note: Note) => {
-    if (!note.id) return;
-    const pinnedCount = notes.filter((n) => n.pinned).length;
-    if (!note.pinned && pinnedCount >= MAX_PINS) {
-      toast.warning(`Limite de ${MAX_PINS} notas fixadas atingido.`);
-      return;
-    }
-    try {
-      await invoke("update_note_pinned", { id: note.id, pinned: !note.pinned });
-      fetchNotes();
-    } catch {
-      toast.error("Erro ao fixar nota");
-    }
-  };
-
-  const pinnedNotes = notes.filter((n) => n.pinned);
-  const pendingNotes = notes.filter((n) => !n.pinned && n.status === "pending");
-  const doneNotes = notes.filter((n) => !n.pinned && n.status === "done");
-
-  const TABS = [
-    {
-      id: "pending" as const,
-      label: "Pendentes",
-      icon: Clock,
-      count: pendingNotes.length,
-    },
-    {
-      id: "done" as const,
-      label: "Concluídas",
-      icon: CheckCheck,
-      count: doneNotes.length,
-    },
-  ];
-
-  const currentList = tab === "pending" ? pendingNotes : doneNotes;
-
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
+      <div className="w-full flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
           <StickyNote className="w-4 h-4" />
-          <span className="font-bold">Sincronizando notas...</span>
+          <span className="font-semibold text-muted-foreground">
+            Sincronizando notas...
+          </span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 animate-in fade-in duration-500 text-white">
+    <div className="w-full flex flex-col gap-6  text-foreground">
       <NotesHeader
         totalNotes={notes.length}
-        pinnedCount={pinnedNotes.length}
+        pinnedCount={notes.filter((n) => n.pinned).length}
         maxPins={MAX_PINS}
-        onNewNote={() => setIsNoteModalOpen(true)}
+        onNewNote={() => {
+          setCreationPath("");
+          setIsNoteModalOpen(true);
+        }}
         onOpenFolder={() => invoke("open_notes_folder")}
+        onNewFolder={() => setIsFolderModalOpen(true)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
       {isNoteModalOpen && (
@@ -174,79 +142,17 @@ export default function NotesPage() {
         />
       )}
 
-      {/* Fixadas */}
-      {pinnedNotes.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] font-black uppercase text-orange-500 flex items-center gap-2">
-            <Pin className="w-3 h-3" /> Fixadas ({pinnedNotes.length}/{MAX_PINS}
-            )
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pinnedNotes.map((n) => (
-              <NoteCard
-                key={n.id}
-                note={n}
-                onClick={() => setExpandedNote(n)}
-                onToggleStatus={handleToggleStatus}
-                onTogglePin={handleTogglePin}
-                onDelete={(id) => setDeletingId(id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Status */}
-      <div className="flex gap-1 p-1.5 bg-neutral-950 border border-neutral-700/60 rounded-xl w-fit shadow-lg shadow-black/30">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              tab === t.id
-                ? "bg-orange-500/25 text-orange-300 border border-orange-500/40 shadow-sm shadow-orange-500/10"
-                : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5"
-            }`}
-          >
-            <t.icon className="w-4 h-4" />
-            {t.label}
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${tab === t.id ? "bg-orange-500/20 text-orange-300" : "bg-neutral-800 text-neutral-600"}`}
-            >
-              {t.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Listagem */}
-      {currentList.length === 0 ? (
-        <EmptyState
-          icon={StickyNote}
-          title={
-            tab === "pending" ? "Nenhuma nota pendente" : "Histórico vazio"
-          }
-          description={
-            tab === "pending"
-              ? "Capture suas primeiras ideias ou lembretes clicando no botão de nova nota."
-              : "Suas notas concluídas aparecerão aqui para referência futura."
-          }
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentList.map((n) => (
-            <NoteCard
-              key={n.id}
-              note={n}
-              onClick={() => setExpandedNote(n)}
-              onToggleStatus={handleToggleStatus}
-              onTogglePin={handleTogglePin}
-              onDelete={(id) => setDeletingId(id)}
-            />
-          ))}
-        </div>
-      )}
+      <FileManager
+        onNoteClick={(note) => setExpandedNote(note)}
+        onNewNote={(path) => {
+          setCreationPath(path);
+          setIsNoteModalOpen(true);
+        }}
+        refreshTrigger={refreshTrigger}
+        searchQuery={searchQuery}
+        externalFolderTrigger={isFolderModalOpen}
+        onFolderModalClose={() => setIsFolderModalOpen(false)}
+      />
 
       {/* Confirmação */}
       {deletingId !== null && (

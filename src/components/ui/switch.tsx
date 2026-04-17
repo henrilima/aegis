@@ -2,13 +2,14 @@
 
 import { Switch as SwitchPrimitive } from "radix-ui";
 import * as React from "react";
-import { cn, getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
+import { cn } from "@/lib/utils";
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const theme = getThemeColor();
+  const { themeStyles: theme } = useTheme();
 
   // Mapeamento explícito para garantir que o Tailwind gere as classes do estado 'checked'
   const checkedColors: Record<string, string> = {
@@ -20,6 +21,12 @@ const Switch = React.forwardRef<
     red: "data-[state=checked]:bg-red-600",
     orange: "data-[state=checked]:bg-orange-600",
     sky: "data-[state=checked]:bg-sky-600",
+    nordic: "data-[state=checked]:bg-sky-600",
+    carbon: "data-[state=checked]:bg-zinc-600",
+    indigo: "data-[state=checked]:bg-indigo-600",
+    coffee: "data-[state=checked]:bg-[#8d7767]",
+    purple: "data-[state=checked]:bg-purple-600",
+    graphite: "data-[state=checked]:bg-neutral-600",
   };
 
   const ringColors: Record<string, string> = {
@@ -31,6 +38,12 @@ const Switch = React.forwardRef<
     red: "focus-visible:ring-red-500",
     orange: "focus-visible:ring-orange-500",
     sky: "focus-visible:ring-sky-500",
+    nordic: "focus-visible:ring-sky-500",
+    carbon: "focus-visible:ring-zinc-500",
+    indigo: "focus-visible:ring-indigo-500",
+    coffee: "focus-visible:ring-[#8d7767]",
+    purple: "focus-visible:ring-purple-500",
+    graphite: "focus-visible:ring-neutral-500",
   };
 
   const checkedClass = checkedColors[theme.name] || checkedColors.blue;
@@ -49,7 +62,7 @@ const Switch = React.forwardRef<
     >
       <SwitchPrimitive.Thumb
         className={cn(
-          "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
+          "pointer-events-none block h-5 w-5 rounded-full bg-white ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
         )}
       />
     </SwitchPrimitive.Root>

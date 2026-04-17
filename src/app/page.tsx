@@ -24,7 +24,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-neutral-950 p-6 md:flex-row md:gap-16 md:p-0">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background p-6 md:flex-row md:gap-16 md:p-0">
       <Image
         src="/images/version-control.png"
         alt="Version Control"

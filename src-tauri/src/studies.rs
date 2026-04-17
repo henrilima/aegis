@@ -81,7 +81,7 @@ impl StudiesManager {
 
     fn conn(&self) -> Connection {
         let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha ao definir timeout de espera");
         conn
     }
 
@@ -101,7 +101,7 @@ impl StudiesManager {
 
     pub fn update_session(&self, s: StudySession) -> Result<(), String> {
         let conn = self.conn();
-        let id = s.id.ok_or("missing id")?;
+        let id = s.id.ok_or("id ausente")?;
         conn.execute(
             "UPDATE study_sessions SET date=?2, subject=?3, hours=?4,
              questions_new=?5, questions_review=?6, correct_new=?7, correct_review=?8, note=?9,
@@ -181,13 +181,13 @@ impl StudiesManager {
     }
 
     pub fn export_csv(&self, user_id: &str, dest_path: &str, now: DateTime<Utc>) -> Result<(), String> {
-        let sessions = self.list_sessions(user_id, 3, now);
+        let sessions = self.list_sessions(user_id, 120, now); // Exporta um intervalo maior
         let mut out = String::from(
-            "data,materia,horas,questoes_ineditas,questoes_refeitas,acertos_ineditas,acertos_refeitas,nota\n"
+            "data,materia,horas,questoes_ineditas,questoes_refeitas,acertos_ineditas,acertos_refeitas,nota,paginas_lidas,foco,custom_label,custom_value\n"
         );
         for s in sessions {
             out.push_str(&format!(
-                "{},{},{:.2},{},{},{},{},{}\n",
+                "{},{},{:.2},{},{},{},{},{},{},{},{},{}\n",
                 s.date,
                 s.subject.replace(',', ";"),
                 s.hours,
@@ -195,7 +195,11 @@ impl StudiesManager {
                 s.questions_review,
                 s.correct_new,
                 s.correct_review,
-                s.note.unwrap_or_default().replace(',', ";").replace('\n', " ")
+                s.note.unwrap_or_default().replace(',', ";").replace('\n', " "),
+                s.pages_read.unwrap_or(0),
+                s.focus_score.unwrap_or(0),
+                s.custom_metric_label.unwrap_or_default().replace(',', ";"),
+                s.custom_metric_value.unwrap_or(0.0)
             ));
         }
         std::fs::write(dest_path, out).map_err(|e| e.to_string())?;
@@ -205,27 +209,51 @@ impl StudiesManager {
     #[allow(clippy::cast_precision_loss)]
     pub fn import_csv(&self, user_id: &str, file_path: &str) -> Result<usize, String> {
         let csv = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
+        let conn = self.conn();
         let mut count = 0usize;
         for (i, line) in csv.lines().enumerate() {
             if i == 0 { continue; } 
-            let cols: Vec<&str> = line.splitn(8, ',').collect();
+            let cols: Vec<&str> = line.split(',').collect();
             if cols.len() < 7 { continue; }
+            
+            let date = cols[0].trim();
+            let subject = cols[1].trim();
+            let hours: f64 = cols[2].trim().parse().unwrap_or(0.0);
+            let q_new: i32 = cols[3].trim().parse().unwrap_or(0);
+            let q_rev: i32 = cols[4].trim().parse().unwrap_or(0);
+            let c_new: i32 = cols[5].trim().parse().unwrap_or(0);
+            let c_rev: i32 = cols[6].trim().parse().unwrap_or(0);
+            let note = cols.get(7).map(|s| s.trim().to_string());
+            let pages: i32 = cols.get(8).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+            let focus: i32 = cols.get(9).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+            let c_label = cols.get(10).map(|s| s.trim().to_string());
+            let c_value: f64 = cols.get(11).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
+
+            // Verifica duplicatas INCLUINDO focus_score, pages_read e métricas customizadas
+            let exists: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM study_sessions WHERE user_id=?1 AND date=?2 AND subject=?3 AND abs(hours - ?4) < 0.001 AND questions_new=?5 AND questions_review=?6 AND correct_new=?7 AND correct_review=?8 AND (note=?9 OR (note IS NULL AND ?9 IS NULL)) AND (focus_score=?10 OR (focus_score IS NULL AND ?10=0)) AND (pages_read=?11 OR (pages_read IS NULL AND ?11=0)) AND (custom_metric_label=?12 OR (custom_metric_label IS NULL AND ?12 IS NULL)) AND (abs(custom_metric_value - ?13) < 0.001 OR (custom_metric_value IS NULL AND ?13=0.0)))",
+                params![user_id, date, subject, hours, q_new, q_rev, c_new, c_rev, note, focus, pages, c_label, c_value],
+                |row| row.get(0)
+            ).unwrap_or(false);
+
+            if exists { continue; }
+
             let s = StudySession {
                 id: None,
                 user_id: user_id.to_string(),
-                date: cols[0].trim().to_string(),
-                subject: cols[1].trim().to_string(),
-                hours: cols[2].trim().parse().unwrap_or(0.0),
-                questions_new: cols[3].trim().parse().unwrap_or(0),
-                questions_review: cols[4].trim().parse().unwrap_or(0),
-                correct_new: cols[5].trim().parse().unwrap_or(0),
-                correct_review: cols[6].trim().parse().unwrap_or(0),
-                note: cols.get(7).map(|s| s.trim().to_string()),
+                date: date.to_string(),
+                subject: subject.to_string(),
+                hours,
+                questions_new: q_new,
+                questions_review: q_rev,
+                correct_new: c_new,
+                correct_review: c_rev,
+                note,
                 created_at: None,
-                pages_read: None,
-                custom_metric_label: None,
-                custom_metric_value: None,
-                focus_score: None,
+                pages_read: Some(pages),
+                custom_metric_label: c_label,
+                custom_metric_value: Some(c_value),
+                focus_score: Some(focus),
             };
             self.add_session(s).ok();
             count += 1;

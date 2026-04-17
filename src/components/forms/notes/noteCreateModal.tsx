@@ -1,12 +1,16 @@
 "use client";
 
-import { FileText, Plus, X } from "lucide-react";
+import { Eye, FileText, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface NoteCreateModalProps {
   onAdd: (title: string, content: string) => void;
@@ -14,8 +18,7 @@ interface NoteCreateModalProps {
 }
 
 /**
- * Modal para criação de novas notas com suporte a Markdown.
- * Utiliza Portals para garantir que fique acima de qualquer elemento do grid.
+ * Modal para criação de novas notas com visualização em tempo real (Markdown).
  */
 export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -34,8 +37,8 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
   };
 
   const ic =
-    "bg-neutral-900 border-neutral-800 text-sm font-medium focus:border-orange-500/50 transition-all placeholder:text-neutral-700";
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+    "bg-card border-border text-sm font-medium focus:border-orange-500/50 transition-all placeholder:text-neutral-700";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   const modalContent = (
     <div
@@ -44,22 +47,22 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
       aria-modal="true"
       aria-labelledby="note-create-title"
     >
-      <div className="relative w-full max-w-md bg-neutral-950 border border-neutral-800 rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+      <div className="relative w-full max-w-5xl bg-background border border-border rounded-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800/60 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0 bg-background/50 backdrop-blur-sm z-10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-orange-500/10 rounded-xl border border-orange-500/20">
-              <FileText className="w-5 h-5 text-orange-400" />
+              <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
               <h2
                 id="note-create-title"
-                className="text-lg font-bold text-white leading-none"
+                className="text-lg font-bold text-foreground leading-none"
               >
                 Nova Nota
               </h2>
-              <p className="text-xs text-neutral-500 mt-1">
-                Captura rápida de conhecimento
+              <p className="text-xs text-muted-foreground mt-1">
+                Captura rápida de conhecimento com visualização em tempo real
               </p>
             </div>
           </div>
@@ -67,16 +70,20 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all cursor-pointer"
+              className="p-2 rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </ToolTip>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            {/* Título */}
+        {/* Área de Conteúdo Split */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+          {/* Esquerda: Editor */}
+          <form
+            onSubmit={handleSubmit}
+            className="flex-1 flex flex-col p-6 space-y-5 border-r border-border/50 overflow-y-auto custom-scrollbar"
+          >
             <div className="space-y-2">
               <Label htmlFor="ncm-title" className={lc}>
                 Título da Nota
@@ -86,14 +93,13 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ex: Resumo de estudo, ideias de projeto..."
-                className={`${ic} h-12 rounded-xl px-4`}
+                className={cn(ic, "h-12 rounded-xl px-4")}
                 autoFocus
                 required
               />
             </div>
 
-            {/* Conteúdo */}
-            <div className="space-y-2">
+            <div className="flex-1 flex flex-col space-y-2 pb-2">
               <Label htmlFor="ncm-content" className={lc}>
                 Conteúdo{" "}
                 <span className="text-neutral-600 font-normal">(Markdown)</span>
@@ -103,29 +109,66 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Escreva livremente aqui..."
-                className={`${ic} rounded-xl min-h-[200px] resize-none leading-relaxed p-4`}
+                className={cn(
+                  ic,
+                  "flex-1 rounded-xl min-h-[300px] resize-none leading-relaxed p-4",
+                )}
                 required
               />
             </div>
 
-            {/* Ações */}
-            <div className="flex flex-col gap-3 pt-2">
+            <div className="pt-2 flex flex-col gap-2">
               <button
                 type="submit"
                 disabled={!title.trim() || !content.trim()}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 hover:border-orange-400 text-orange-300 hover:text-orange-200 text-sm font-black transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 hover:border-orange-400 text-orange-300 hover:text-orange-200 text-sm font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
               >
                 <Plus className="w-4 h-4" /> Criar nota
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-xs font-bold cursor-pointer transition-colors"
+                className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-xs font-bold cursor-pointer transition-colors"
               >
-                Cancelar
+                Agora não
               </button>
             </div>
           </form>
+
+          {/* Direita: Preview */}
+          <div className="flex-1 bg-black/20 flex flex-col overflow-hidden">
+            <div className="px-6 py-3 border-b border-border/40 flex items-center gap-2 shrink-0">
+              <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                Visualização prévia
+              </span>
+            </div>
+
+            <ScrollArea className="flex-1 p-8">
+              <div className="prose prose-invert prose-orange max-w-none">
+                {title && (
+                  <h1 className="text-2xl font-bold mb-6 text-foreground leading-tight">
+                    {title}
+                  </h1>
+                )}
+                {content ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {content}
+                  </ReactMarkdown>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-neutral-700 py-20 bg-card/10 rounded-3xl border-2 border-dashed border-border/30">
+                    <FileText className="w-12 h-12 mb-4 opacity-10" />
+                    <p className="text-sm font-medium">
+                      O preview aparecerá aqui
+                    </p>
+                    <p className="text-[10px] mt-1 opacity-50">
+                      Comece a escrever no editor ao lado
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       </div>
     </div>

@@ -31,12 +31,12 @@ export function EmptyState({
         {/* Efeito de brilho sutil no fundo */}
         <div className="absolute inset-0 bg-neutral-500/5 blur-3xl rounded-full scale-150" />
 
-        <div className="relative p-6 rounded-xl bg-neutral-900/30 border border-neutral-800 shadow-inner group-hover:border-neutral-700 transition-colors">
+        <div className="relative p-6 rounded-xl bg-card/30 border border-border group-hover:border-border transition-colors">
           <Icon className="w-12 h-12 text-neutral-600/60" />
         </div>
       </div>
 
-      <h3 className="text-lg font-bold text-neutral-400 mb-2">{title}</h3>
+      <h3 className="text-lg font-bold text-muted-foreground mb-2">{title}</h3>
 
       {description && (
         <p className="text-xs text-neutral-600 max-w-[240px] leading-relaxed font-medium">

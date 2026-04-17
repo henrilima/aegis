@@ -14,7 +14,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="input-group"
       role="group"
       className={cn(
-        "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border shadow-xs transition-[color,box-shadow] outline-none",
+        "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border transition-[color,box-shadow] outline-none",
         "h-9 min-w-0 has-[>textarea]:h-auto",
 
         "has-[>[data-align=inline-start]]:[&>input]:pl-2",
@@ -85,7 +85,7 @@ function InputGroupAddon({
   );
 }
 
-const inputGroupButtonVariants = cva(" shadow-none flex gap-2 items-center", {
+const inputGroupButtonVariants = cva(" flex gap-2 items-center", {
   variants: {
     size: {
       xs: "h-6 gap-1 px-2 rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-3.5 has-[>svg]:px-2",
@@ -138,7 +138,7 @@ function InputGroupInput({
     <Input
       data-slot="input-group-control"
       className={cn(
-        "flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
+        "flex-1 rounded-none border-0 bg-transparent focus-visible:ring-0 dark:bg-transparent",
         className,
       )}
       {...props}
@@ -154,7 +154,7 @@ function InputGroupTextarea({
     <Textarea
       data-slot="input-group-control"
       className={cn(
-        "flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent",
+        "flex-1 resize-none rounded-none border-0 bg-transparent py-3 focus-visible:ring-0 dark:bg-transparent",
         className,
       )}
       {...props}

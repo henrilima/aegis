@@ -9,18 +9,18 @@ interface ReminderCardProps {
 
 export function ReminderCard({ reminder: r, onDelete }: ReminderCardProps) {
   return (
-    <div className="flex items-center justify-between p-3 border border-neutral-800 bg-neutral-900 rounded-xl transition-all hover:border-neutral-700 hover:bg-neutral-800/20">
+    <div className="flex items-center justify-between p-3 border border-border bg-card rounded-xl transition-all hover:border-border hover:bg-accent/50/20">
       <div className="flex items-center gap-3">
         {r.reminder_type === "Interval" ? (
           <Timer className="w-4 h-4 text-blue-500" />
         ) : (
-          <Clock className="w-4 h-4 text-amber-500" />
+          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-500" />
         )}
         <div>
           <div className="font-bold ">
             {r.reminder_type === "Interval" ? `${r.value} min` : r.value}
           </div>
-          <div className="text-[10px] text-neutral-500 uppercase font-semibold">
+          <div className="text-[10px] text-muted-foreground uppercase font-semibold">
             {/* Exibe o horário de início se for intervalo ou apenas 'Fixo' */}
             {r.reminder_type === "Interval"
               ? `Início: ${r.start_time}`

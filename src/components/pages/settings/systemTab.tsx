@@ -1,10 +1,21 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Power } from "lucide-react";
+import {
+  Bell,
+  ExternalLink,
+  type LucideIcon,
+  Power,
+  Settings as SettingsIcon,
+  ShieldAlert,
+} from "lucide-react";
 import * as React from "react";
 import { APP_CONFIG } from "@/app.config";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
+import type { getThemeColor } from "@/lib/utils";
+import { CHROMATIC_THEMES } from "@/themes.config";
+
+type ThemeStyles = ReturnType<typeof getThemeColor>;
 
 interface SystemTabProps {
   startAtLogin: boolean;
@@ -17,6 +28,7 @@ interface SystemTabProps {
   weekStartDay: number;
   updateWeekStart: (value: number) => Promise<void>;
   handleInternalCommand: (command: string) => Promise<void>;
+  handleTestNotification: () => void;
 }
 
 export function SystemTab({
@@ -27,90 +39,186 @@ export function SystemTab({
   weekStartDay,
   updateWeekStart,
   handleInternalCommand,
+  handleTestNotification,
 }: SystemTabProps) {
   const [internalCmd, setInternalCmd] = React.useState("");
-  const theme = getThemeColor();
+  const { theme, setTheme, themeStyles } = useTheme();
+
   return (
-    <div className="space-y-3 max-w-2xl">
-      <SectionHeading>Comportamento do App</SectionHeading>
-      <p className=" text-neutral-500 mb-4">
-        Configure como o {APP_CONFIG.name} interage com o Windows.
-      </p>
+    <div className="max-w-2xl space-y-6">
+      {/* Comportamento do Aplicativo */}
+      <section className="space-y-4">
+        <div>
+          <SectionHeading>Comportamento do app</SectionHeading>
+          <p className="text-xs text-muted-foreground mt-1">
+            Configure como o {APP_CONFIG.name} se comporta no Windows.
+          </p>
+        </div>
 
-      <ToggleRow
-        label="Auto-start (Login)"
-        description="Iniciar automaticamente ao ligar o PC."
-        checked={startAtLogin}
-        onChange={(v) => updateSystemConfig("autostart", v)}
-      />
+        <div className="space-y-2">
+          <ToggleRow
+            label="Auto-start (Login)"
+            description="Iniciar automaticamente ao ligar o PC."
+            checked={startAtLogin}
+            onChange={(v) => updateSystemConfig("autostart", v)}
+            themeStyles={themeStyles}
+          />
+          <ToggleRow
+            label="Iniciar Minimizado"
+            description="Abre no Tray sem mostrar a janela principal."
+            checked={startMinimized}
+            onChange={(v) => updateSystemConfig("minimized", v)}
+            themeStyles={themeStyles}
+          />
+          <ToggleRow
+            label="Executar em Segundo Plano"
+            description="Minimiza para o Tray ao clicar no botão de fechar (X)."
+            checked={minimizeOnClose}
+            onChange={(v) => updateSystemConfig("minimize", v)}
+            themeStyles={themeStyles}
+          />
+        </div>
 
-      <ToggleRow
-        label="Iniciar Minimizado"
-        description="Ao iniciar com o Windows, abre no Tray sem mostrar a janela."
-        checked={startMinimized}
-        onChange={(v) => updateSystemConfig("minimized", v)}
-      />
-
-      <ToggleRow
-        label="Executar em Segundo Plano"
-        description="Minimiza para o Tray ao clicar no X."
-        checked={minimizeOnClose}
-        onChange={(v) => updateSystemConfig("minimize", v)}
-      />
-
-      <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
-        <div className="flex items-center justify-between">
+        <SettingBox>
           <div className="flex-1">
-            <span className="text-sm font-bold text-neutral-200">
-              Início da Semana
-            </span>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Define qual o primeiro dia exibido nos módulos de estudo.
+            <span className="text-sm font-bold">Início da Semana</span>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Primeiro dia exibido nos módulos de organização.
             </p>
           </div>
-          <div className="flex gap-1 p-1 bg-neutral-950 border border-neutral-800 rounded-lg shrink-0">
-            <button
-              type="button"
-              onClick={() => updateWeekStart(0)}
-              className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 0 ? `${theme.bg} ${theme.text} border ${theme.border}` : "text-neutral-600 hover:text-neutral-400"}`}
-            >
-              DOM
-            </button>
-            <button
-              type="button"
-              onClick={() => updateWeekStart(1)}
-              className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${weekStartDay === 1 ? `${theme.bg} ${theme.text} border ${theme.border}` : "text-neutral-600 hover:text-neutral-400"}`}
-            >
-              SEG
-            </button>
+          <div className="flex gap-1 p-1 bg-background border border-border rounded-lg">
+            {[
+              { id: 0, label: "Dom" },
+              { id: 1, label: "Seg" },
+            ].map((day) => (
+              <button
+                key={day.id}
+                type="button"
+                onClick={() => updateWeekStart(day.id)}
+                className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                  weekStartDay === day.id
+                    ? `${themeStyles.bg} ${themeStyles.text} border ${themeStyles.border}`
+                    : "text-neutral-500 hover:text-muted-foreground"
+                }`}
+              >
+                {day.label}
+              </button>
+            ))}
           </div>
-        </div>
-      </div>
+        </SettingBox>
+      </section>
 
-      <div className="pt-4 border-t border-neutral-800 mt-2">
-        <SectionHeading>Processo</SectionHeading>
-        <p className=" text-neutral-500 mb-4">
-          Encerre o {APP_CONFIG.name} completamente. O processo será reiniciado
-          automaticamente se estiver configurado para iniciar com o Windows.
+      {/* Aparência */}
+      <section className="pt-4 border-t border-border space-y-4">
+        <SectionHeading>Temas do Aegis</SectionHeading>
+        <p className="text-xs text-muted-foreground mt-1">
+          Escolha a paleta de cores que define a identidade visual do Aegis.
         </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {CHROMATIC_THEMES.map((themeOption) => (
+            <button
+              key={themeOption.id}
+              type="button"
+              onClick={() => setTheme(themeOption.id)}
+              className={`p-4 rounded-xl border transition-all text-left flex gap-3 group cursor-pointer ${
+                theme === themeOption.id
+                  ? `${themeStyles.bg} ${themeStyles.border.replace("20", "50")}`
+                  : "bg-card border-border hover:border-border"
+              }`}
+            >
+              <div
+                className="w-10 h-10 rounded-lg shrink-0 border border-border"
+                style={{ backgroundColor: themeOption.previewColor }}
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-bold ${theme === themeOption.id ? themeStyles.text : "text-foreground"}`}
+                  >
+                    {themeOption.label}
+                  </span>
+                  {theme === themeOption.id && (
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${themeStyles.solid}`}
+                    />
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                  {themeOption.description}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Notificações */}
+      <section className="pt-4 border-t border-border space-y-4">
+        <SectionHeading>Notificações</SectionHeading>
+        <div className="p-4 bg-card border border-border rounded-xl space-y-4">
+          <ActionRow
+            icon={ShieldAlert}
+            title="Prioridade Crítica (Windows)"
+            description="Exibir alertas mesmo em modo Foco."
+            action={
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => invoke("open_notification_settings")}
+                className="h-8 text-xs font-bold bg-accent text-foreground cursor-pointer hover:bg-accent/80"
+              >
+                <ExternalLink className="w-3 h-3 mr-1.5" /> Windows
+              </Button>
+            }
+          />
+          <div className="h-px bg-border my-2" />
+          <ActionRow
+            icon={Bell}
+            title="Sinal de Teste"
+            description="Verificar entrega de notificações."
+            action={
+              <Button
+                size="sm"
+                onClick={handleTestNotification}
+                className="h-8 text-xs font-bold bg-accent text-foreground cursor-pointer hover:bg-accent/80"
+              >
+                Enviar Teste
+              </Button>
+            }
+          />
+        </div>
+        <div className="flex gap-2 p-3 border border-dashed border-border rounded-xl text-[10px] text-muted-foreground italic">
+          <SettingsIcon className="w-3.5 h-3.5 shrink-0" />
+          <p>
+            Recomendado ativar a prioridade alta no Windows para não perder
+            lembretes importantes de saúde ou final de Pomodoro.
+          </p>
+        </div>
+      </section>
+
+      {/* Operações */}
+      <section className="pt-4 border-t border-border space-y-4 text-center">
+        <div className="text-left">
+          <SectionHeading>Sistema</SectionHeading>
+          <p className="text-xs text-muted-foreground mt-1">
+            Operações de encerramento do processo.
+          </p>
+        </div>
         <Button
           onClick={() => invoke("quit_app")}
           variant="secondary"
-          className="w-full mt-3 justify-center gap-2 text-red-500 hover:text-red-500 bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 font-bold cursor-pointer"
+          className="w-full justify-center gap-2 text-red-500 hover:text-red-500 bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 font-bold cursor-pointer"
         >
           <Power className="w-4 h-4" />
-          Encerrar Completamente
+          Encerrar Aegis
         </Button>
-      </div>
+      </section>
 
-      <div className="pt-4 border-t border-neutral-800 mt-2 opacity-30 focus-within:opacity-100 transition-opacity">
-        <SectionHeading>Configurações Internas</SectionHeading>
-        <p className="text-sm text-neutral-200 mb-2">
-          <span className="font-bold text-amber-500">
-            Área restrita para manutenção e testes do sistema
-          </span>
-          , não tente utilizar se não for orientado nem souber o que está
-          fazendo, pois pode causar instabilidade e perda de dados.
+      {/* Manutenção (Debug) */}
+      <section className="pt-4 border-t border-border opacity-30 focus-within:opacity-100 transition-opacity space-y-3">
+        <SectionHeading>Área Restrita</SectionHeading>
+        <p className="text-[11px] text-red-500/80 font-medium">
+          Apenas para manutenção e suporte técnico.
         </p>
         <input
           type="text"
@@ -122,29 +230,25 @@ export function SystemTab({
               setInternalCmd("");
             }
           }}
-          placeholder="Aguardando comando..."
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs font-mono text-neutral-400 focus:outline-none focus:border-neutral-700 transition-all"
+          placeholder="Comando de sistema..."
+          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono text-muted-foreground focus:outline-none focus:border-border transition-all"
         />
-      </div>
+      </section>
     </div>
   );
 }
 
-function SectionHeading({
-  children,
-  icon: Icon,
-}: {
-  children: React.ReactNode;
-  icon?: React.ElementType;
-}) {
-  const theme = getThemeColor();
+// Subcomponentes para Limpeza
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-sm font-bold text-foreground">{children}</h3>;
+}
+
+function SettingBox({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      className={`text-xs font-black uppercase ${theme.text} flex items-center gap-1.5`}
-    >
-      {Icon && <Icon className="w-3 h-3" />}
+    <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
       {children}
-    </p>
+    </div>
   );
 }
 
@@ -153,28 +257,52 @@ function ToggleRow({
   description,
   checked,
   onChange,
+  themeStyles,
 }: {
   label: string;
   description: string;
   checked: boolean;
   onChange: (v: boolean) => void;
+  themeStyles: ThemeStyles;
 }) {
-  const theme = getThemeColor();
   const id = React.useId();
   return (
     <label
       htmlFor={id}
-      className={`flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:bg-neutral-900/80 hover:${theme.border.replace("20", "40")} transition-all group cursor-pointer`}
+      className={`w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:bg-card/80 hover:${themeStyles.border.replace("20", "40")} transition-all cursor-pointer`}
     >
-      <div className="flex-1">
-        <span
-          className={`text-sm font-bold transition-colors text-neutral-200`}
-        >
-          {label}
-        </span>
-        <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
+      <div className="flex-1 pr-4">
+        <span className="text-sm font-bold">{label}</span>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
       </div>
       <Switch id={id} checked={checked} onCheckedChange={onChange} />
     </label>
+  );
+}
+
+function ActionRow({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-accent rounded-xl shrink-0">
+          <Icon className="w-4 h-4 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-sm font-bold">{title}</p>
+          <p className="text-[11px] text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {action}
+    </div>
   );
 }

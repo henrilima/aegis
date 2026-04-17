@@ -35,18 +35,20 @@ export function PasswordTable({
   copyToClipboard,
 }: PasswordTableProps) {
   return (
-    <div className="flex-1 overflow-auto border border-neutral-800 bg-neutral-950/20 rounded-xl backdrop-blur-sm">
+    <div className="flex-1 overflow-auto border border-border bg-background/20 rounded-xl backdrop-blur-sm">
       <table className="w-full text-left border-collapse">
-        <thead className="sticky top-0 bg-neutral-900 z-10 border-b border-neutral-800">
+        <thead className="sticky top-0 bg-card z-10 border-b border-border">
           <tr>
-            <th className="p-4 text-xs font-medium text-neutral-400">
+            <th className="p-4 text-xs font-medium text-muted-foreground">
               Serviço
             </th>
-            <th className="p-4 text-xs font-medium text-neutral-400">
+            <th className="p-4 text-xs font-medium text-muted-foreground">
               Usuário
             </th>
-            <th className="p-4 text-xs font-medium text-neutral-400">Senha</th>
-            <th className="p-4 text-xs font-medium text-neutral-400 text-right pr-6">
+            <th className="p-4 text-xs font-medium text-muted-foreground">
+              Senha
+            </th>
+            <th className="p-4 text-xs font-medium text-muted-foreground text-right pr-6">
               Ações
             </th>
           </tr>
@@ -67,27 +69,27 @@ export function PasswordTable({
             filteredPasswords.map((p) => (
               <tr
                 key={p.id}
-                className="hover:bg-neutral-900/40 transition-colors group"
+                className="hover:bg-card/40 transition-colors group"
               >
                 <td className="p-4">
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-neutral-200 group-hover:text-amber-400 transition-colors">
+                    <span className="text-sm font-bold text-foreground group-hover:text-amber-400 transition-colors">
                       {String(p.name)}
                     </span>
-                    <span className="text-[10px] text-neutral-500 truncate max-w-[180px] font-medium">
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[180px] font-medium">
                       {p.url}
                     </span>
                   </div>
                 </td>
                 <td className="p-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-neutral-400 font-medium">
+                    <span className="text-sm text-muted-foreground font-medium">
                       {p.username}
                     </span>
                     <ToolTip content="Copiar usuário">
                       <button
                         type="button"
-                        className="p-1 rounded-md text-neutral-600 hover:text-amber-500 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                        className="p-1 rounded-md text-neutral-600 hover:text-amber-600 dark:text-amber-500 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
                         onClick={() => copyToClipboard(p.username, "Usuário")}
                       >
                         <Copy className="w-3 h-3" />
@@ -104,7 +106,7 @@ export function PasswordTable({
                       <ToolTip content="Copiar senha">
                         <button
                           type="button"
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-all cursor-pointer"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-all cursor-pointer"
                           onClick={() =>
                             decryptedData &&
                             copyToClipboard(decryptedData.password, "Senha")
@@ -133,7 +135,7 @@ export function PasswordTable({
                         className={`p-2 rounded-xl transition-all cursor-pointer ${
                           decryptedId === p.id
                             ? "text-amber-400 bg-amber-500/10 border border-amber-500/20"
-                            : "text-neutral-500 hover:text-white hover:bg-neutral-800"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                         }`}
                       >
                         {decryptedId === p.id ? (
@@ -147,7 +149,7 @@ export function PasswordTable({
                       <ToolTip content="Abrir link">
                         <button
                           type="button"
-                          className="p-2 rounded-xl text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-all cursor-pointer"
+                          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all cursor-pointer"
                           onClick={() => {
                             const targetUrl = p.url.startsWith("http")
                               ? p.url
@@ -163,7 +165,7 @@ export function PasswordTable({
                       <button
                         type="button"
                         onClick={() => handleEditStart(p.id)}
-                        className="p-2 rounded-xl text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all cursor-pointer"
+                        className="p-2 rounded-xl text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-all cursor-pointer"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -171,7 +173,7 @@ export function PasswordTable({
                     <ToolTip content="Excluir credencial">
                       <button
                         type="button"
-                        className="p-2 rounded-xl text-neutral-700 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="p-2 rounded-xl text-neutral-700 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
                         onClick={() => handleDelete(p.id)}
                       >
                         <Trash2 className="w-4 h-4" />

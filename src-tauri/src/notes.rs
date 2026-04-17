@@ -10,8 +10,16 @@ pub struct Note {
     pub title: String,
     pub content: String,
     pub created_at: String,
-    pub status: String,
     pub pinned: bool,
+    pub path: Option<String>, // Caminho relativo a partir de notes_dir
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileSystemItem {
+    pub name: String,
+    pub is_dir: bool,
+    pub path: String, // Caminho relativo a partir de notes_dir
+    pub note: Option<Note>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -19,7 +27,6 @@ struct NoteMeta {
     pub id: i32,
     pub user_id: String,
     pub created_at: String,
-    pub status: String,
     pub pinned: bool,
 }
 
@@ -46,19 +53,33 @@ impl NoteManager {
     }
 
     fn sanitize_filename(name: &str) -> String {
-        name.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect()
+        name.chars().map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { '_' }).collect()
     }
 
-    fn get_note_path(&self, id: i32, title: &str) -> PathBuf {
+    fn get_note_path(&self, id: i32, title: &str, parent_path: Option<&str>) -> PathBuf {
         let safe_title = Self::sanitize_filename(title);
-        self.notes_dir.join(format!("{}_{}.md", id, safe_title))
+        let mut path = self.notes_dir.clone();
+        if let Some(p) = parent_path {
+            if !p.is_empty() {
+                path = path.join(p);
+            }
+        }
+        path.join(format!("{}_{}.md", id, safe_title))
     }
 
     fn find_note_file(&self, id: i32) -> Option<PathBuf> {
-        if let Ok(entries) = fs::read_dir(&self.notes_dir) {
+        self.find_note_file_recursive(&self.notes_dir, id)
+    }
+
+    fn find_note_file_recursive(&self, dir: &PathBuf, id: i32) -> Option<PathBuf> {
+        if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                if path.is_dir() {
+                    if let Some(found) = self.find_note_file_recursive(&path, id) {
+                        return Some(found);
+                    }
+                } else if path.extension().and_then(|s| s.to_str()) == Some("md") {
                     if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
                         if file_name.starts_with(&format!("{}_", id)) {
                             return Some(path);
@@ -91,14 +112,19 @@ impl NoteManager {
                     }
                 }
                 
+                let relative_path = path.strip_prefix(&self.notes_dir)
+                    .ok()
+                    .and_then(|p| p.parent())
+                    .map(|p| p.to_string_lossy().to_string());
+
                 return Ok(Note {
                     id: Some(meta.id),
                     user_id: meta.user_id,
                     title,
                     content: stripped_body.trim().to_string(),
                     created_at: meta.created_at,
-                    status: meta.status,
                     pinned: meta.pinned,
+                    path: relative_path,
                 });
             }
         }
@@ -108,13 +134,17 @@ impl NoteManager {
 
     fn write_note_file(&self, note: &Note) -> Result<(), String> {
         let id = note.id.unwrap_or(0);
-        let path = self.get_note_path(id, &note.title);
+        let path = self.get_note_path(id, &note.title, note.path.as_deref());
         
+        // Garante que o diretório pai existe
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+
         let meta = NoteMeta {
             id,
             user_id: note.user_id.clone(),
             created_at: note.created_at.clone(),
-            status: note.status.clone(),
             pinned: note.pinned,
         };
         
@@ -125,37 +155,66 @@ impl NoteManager {
         Ok(())
     }
 
-    pub fn list_notes(&self, user_id: &str) -> Vec<Note> {
-        let mut notes = Vec::new();
-        if let Ok(entries) = fs::read_dir(&self.notes_dir) {
+    pub fn list_items(&self, user_id: &str) -> Vec<FileSystemItem> {
+        let mut items = Vec::new();
+        self.list_items_recursive(&self.notes_dir, user_id, &mut items);
+        items
+    }
+
+    fn list_items_recursive(&self, dir: &PathBuf, user_id: &str, items: &mut Vec<FileSystemItem>) {
+        if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                let rel_path = path.strip_prefix(&self.notes_dir)
+                    .unwrap_or(&path)
+                    .to_string_lossy()
+                    .to_string();
+
+                if path.is_dir() {
+                    items.push(FileSystemItem {
+                        name: path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                        is_dir: true,
+                        path: rel_path,
+                        note: None,
+                    });
+                    self.list_items_recursive(&path, user_id, items);
+                } else if path.extension().and_then(|s| s.to_str()) == Some("md") {
                     if let Ok(note) = self.parse_note_file(&path) {
                         if note.user_id == user_id {
-                            notes.push(note);
+                            items.push(FileSystemItem {
+                                name: note.title.clone(),
+                                is_dir: false,
+                                path: rel_path,
+                                note: Some(note),
+                            });
                         }
                     }
                 }
             }
         }
-        notes.sort_by(|a, b| {
-            b.pinned.cmp(&a.pinned).then(b.id.cmp(&a.id))
-        });
-        notes
     }
 
     pub fn add_note(&self, note: Note) -> Result<(), String> {
         let mut next_id = 1;
-        if let Ok(entries) = fs::read_dir(&self.notes_dir) {
+        self.find_max_id(&self.notes_dir, &mut next_id);
+        
+        let mut new_note = note.clone();
+        new_note.id = Some(next_id);
+        self.write_note_file(&new_note)
+    }
+
+    fn find_max_id(&self, dir: &PathBuf, max_id: &mut i32) {
+        if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                if path.is_dir() {
+                    self.find_max_id(&path, max_id);
+                } else if path.extension().and_then(|s| s.to_str()) == Some("md") {
                     if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
                         if let Some(id_str) = file_name.split('_').next() {
                             if let Ok(id) = id_str.parse::<i32>() {
-                                if id >= next_id {
-                                    next_id = id + 1;
+                                if id >= *max_id {
+                                    *max_id = id + 1;
                                 }
                             }
                         }
@@ -163,27 +222,12 @@ impl NoteManager {
                 }
             }
         }
-        
-        let mut new_note = note.clone();
-        new_note.id = Some(next_id);
-        self.write_note_file(&new_note)
     }
 
     pub fn update_note(&self, note: Note) -> Result<(), String> {
         if let Some(id) = note.id {
             if let Some(path) = self.find_note_file(id) {
                 let _ = fs::remove_file(&path);
-                return self.write_note_file(&note);
-            }
-        }
-        Err("Not found".to_string())
-    }
-
-    pub fn update_note_status(&self, id: i32, status: &str) -> Result<(), String> {
-        if let Some(path) = self.find_note_file(id) {
-            if let Ok(mut note) = self.parse_note_file(&path) {
-                let _ = fs::remove_file(&path);
-                note.status = status.to_string();
                 return self.write_note_file(&note);
             }
         }
@@ -208,6 +252,68 @@ impl NoteManager {
         Ok(())
     }
 
+    pub fn create_folder(&self, path: String) -> Result<(), String> {
+        let full_path = self.notes_dir.join(path);
+        fs::create_dir_all(full_path).map_err(|e| e.to_string())
+    }
+
+    pub fn delete_folder(&self, path: String) -> Result<(), String> {
+        let full_path = self.notes_dir.join(path);
+        if full_path.exists() && full_path.is_dir() {
+            fs::remove_dir_all(full_path).map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
+
+    pub fn move_item(&self, source_path: String, dest_path: String) -> Result<(), String> {
+        let source = self.notes_dir.join(&source_path);
+        let mut dest = self.notes_dir.join(&dest_path);
+        
+        if !source.exists() {
+            return Err("Origem não encontrada".to_string());
+        }
+
+        // Se o destino for um diretório, movemos a origem para dentro dele
+        if dest.exists() && dest.is_dir() {
+            if let Some(file_name) = source.file_name() {
+                dest = dest.join(file_name);
+            }
+        }
+
+        // Garante que o diretório pai do destino existe
+        if let Some(parent) = dest.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+
+        fs::rename(source, dest).map_err(|e| e.to_string())
+    }
+
+    pub fn list_notes(&self, user_id: &str) -> Vec<Note> {
+        let mut notes = Vec::new();
+        self.list_notes_recursive(&self.notes_dir, user_id, &mut notes);
+        notes.sort_by(|a, b| {
+            b.pinned.cmp(&a.pinned).then(b.id.cmp(&a.id))
+        });
+        notes
+    }
+
+    fn list_notes_recursive(&self, dir: &PathBuf, user_id: &str, notes: &mut Vec<Note>) {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    self.list_notes_recursive(&path, user_id, notes);
+                } else if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                    if let Ok(note) = self.parse_note_file(&path) {
+                        if note.user_id == user_id {
+                            notes.push(note);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn open_folder(&self) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         {
@@ -220,3 +326,4 @@ impl NoteManager {
         Ok(())
     }
 }
+

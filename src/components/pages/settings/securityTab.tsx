@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
 
 function PwdInput({
   id,
@@ -25,7 +25,7 @@ function PwdInput({
   disabled?: boolean;
 }) {
   const [show, setShow] = useState(false);
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className={lc}>
@@ -39,12 +39,12 @@ function PwdInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-600 pr-10"
+          className="bg-card border-border text-foreground placeholder:text-muted-foreground/50 pr-10"
         />
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-300 cursor-pointer transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-muted-foreground cursor-pointer transition-colors"
         >
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
@@ -54,11 +54,11 @@ function PwdInput({
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-bold text-neutral-500">{children}</p>;
+  return <p className="font-bold text-foreground">{children}</p>;
 }
 
 export function SecurityTab() {
-  const theme = getThemeColor();
+  const { themeStyles: theme } = useTheme();
   const { user } = useAuth();
 
   const [acpCurrent, setAcpCurrent] = useState("");
@@ -167,12 +167,12 @@ export function SecurityTab() {
     <div className="space-y-8 max-w-2xl">
       <section className="space-y-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-neutral-800 rounded-lg border border-neutral-700 shrink-0">
-            <KeyRound className={`w-4 h-4 ${theme.text}`} />
+          <div className="p-2 bg-accent rounded-lg shrink-0">
+            <KeyRound className={`w-5 h-5 text-muted-foreground`} />
           </div>
           <div>
-            <SectionLabel>Senha da Conta</SectionLabel>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <SectionLabel>Senha da conta</SectionLabel>
+            <p className="text-xs text-muted-foreground mt-0.5">
               Usada para fazer login. Se o cofre não tiver senha isolada, os
               registros serão re-encriptados automaticamente.
             </p>
@@ -182,7 +182,7 @@ export function SecurityTab() {
         <form
           id="change-account-pwd-form"
           onSubmit={handleChangeAccountPassword}
-          className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-4"
+          className="p-5 bg-card border border-border rounded-xl space-y-4"
         >
           <PwdInput
             id="acp-current"
@@ -210,7 +210,7 @@ export function SecurityTab() {
           />
           <button
             type="submit"
-            className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40`}
+            className={`w-full py-3 rounded-xl bg-accent text-foreground font-bold text-xs cursor-pointer hover:bg-accent/80`}
             disabled={acpLoading || !acpCurrent || !acpNew || !acpConfirm}
           >
             {acpLoading ? "Alterando..." : "Alterar senha da conta"}
@@ -220,25 +220,23 @@ export function SecurityTab() {
 
       <section className="space-y-4">
         <div className="flex items-center gap-3">
-          <div
-            className={`p-2 rounded-lg border shrink-0 ${hasVaultPwd ? "bg-green-500/10 border-green-500/20" : "bg-neutral-800 border-neutral-700"}`}
-          >
+          <div className={`p-2 rounded-lg shrink-0 bg-accent`}>
             {hasVaultPwd ? (
-              <ShieldCheck className="w-4 h-4 text-green-400" />
+              <ShieldCheck className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ShieldOff className="w-4 h-4 text-neutral-500" />
+              <ShieldOff className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <SectionLabel>Senha Isolada do Cofre</SectionLabel>
+              <SectionLabel>Senha isolada do cofre</SectionLabel>
               {hasVaultPwd && (
                 <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full ml-1">
                   Ativa
                 </span>
               )}
             </div>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {hasVaultPwd
                 ? "Cofre usa senha diferente da senha de login."
                 : "Por padrão o cofre usa a mesma senha de login. Você pode definir uma senha exclusiva."}
@@ -247,13 +245,13 @@ export function SecurityTab() {
         </div>
 
         {hasVaultPwd ? (
-          <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-6">
+          <div className="p-5 bg-card border border-border rounded-xl space-y-6">
             <form
               id="update-vault-pwd-form"
               onSubmit={handleSetVaultPassword}
               className="space-y-4"
             >
-              <p className="text-xs font-bold text-neutral-500">
+              <p className="text-xs font-bold text-muted-foreground">
                 Alterar senha do cofre
               </p>
               <PwdInput
@@ -282,7 +280,7 @@ export function SecurityTab() {
               />
               <button
                 type="submit"
-                className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40`}
+                className={`w-full py-3 rounded-xl bg-accent text-foreground font-bold text-xs cursor-pointer hover:bg-accent/80`}
                 disabled={
                   vaultLoading || !vaultCurrent || !vaultNew || !vaultConfirm
                 }
@@ -294,9 +292,9 @@ export function SecurityTab() {
             <form
               id="revert-vault-form"
               onSubmit={handleRevertVault}
-              className="space-y-4 pt-5 border-t border-neutral-800"
+              className="space-y-4 pt-5 border-t border-border"
             >
-              <p className="text-xs font-bold text-neutral-500">
+              <p className="text-xs font-bold text-muted-foreground">
                 Remover senha isolada (voltar ao padrão)
               </p>
               <PwdInput
@@ -317,7 +315,7 @@ export function SecurityTab() {
               />
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl text-neutral-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all font-semibold text-sm cursor-pointer"
+                className="w-full py-3 rounded-xl text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all font-bold text-xs cursor-pointer"
                 disabled={vaultLoading || !vaultCurrent || !revertMaster}
               >
                 {vaultLoading ? "Processando..." : "Remover senha isolada"}
@@ -328,7 +326,7 @@ export function SecurityTab() {
           <form
             id="set-vault-pwd-form"
             onSubmit={handleSetVaultPassword}
-            className="p-5 bg-neutral-900 border border-neutral-800 rounded-xl space-y-4"
+            className="p-5 bg-card border border-border rounded-xl space-y-4"
           >
             <PwdInput
               id="vault-cur-n"
@@ -362,7 +360,7 @@ export function SecurityTab() {
             </p>
             <button
               type="submit"
-              className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer`}
+              className={`w-full py-3 rounded-xl bg-accent hover:bg-accent/80 text-xs font-semibold cursor-pointer`}
               disabled={
                 vaultLoading || !vaultCurrent || !vaultNew || !vaultConfirm
               }

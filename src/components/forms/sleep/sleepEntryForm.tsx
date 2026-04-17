@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTime } from "@/context/TimeContext";
 import type { SleepEntry } from "../../pages/sleep/types";
 
-// ─── Funções Utilitárias Internas ───────────────────────────────────────────
+// Funções Utilitárias Internas
 
 export function isoDate(d: Date) {
   const y = d.getFullYear();
@@ -49,7 +49,7 @@ export function Stars({ q }: { q: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`w-3.5 h-3.5 ${i <= q ? "fill-blue-400 text-blue-400" : "text-neutral-800"}`}
+          className={`w-3.5 h-3.5 ${i <= q ? "fill-blue-400 text-blue-400" : "text-muted"}`}
         />
       ))}
     </div>
@@ -91,6 +91,20 @@ export function SleepEntryForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!form.date) {
+      alert("Campo Obrigatório: Data do registro");
+      return;
+    }
+    if (!form.bedtime) {
+      alert("Campo Obrigatório: Horário de dormir");
+      return;
+    }
+    if (!form.wake_time) {
+      alert("Campo Obrigatório: Horário de acordar");
+      return;
+    }
+
     onSave({
       ...form,
       user_id: userId,
@@ -101,8 +115,8 @@ export function SleepEntryForm({
   }
 
   const inputStyle =
-    "bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+    "bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
@@ -111,7 +125,7 @@ export function SleepEntryForm({
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="ef-date" className={lc}>
-              Data do registro
+              Data do registro <span className="text-blue-500 ml-1">*</span>
             </Label>
             <Input
               id="ef-date"
@@ -126,7 +140,7 @@ export function SleepEntryForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ef-bedtime" className={lc}>
-                Hora de dormir
+                Hora de dormir <span className="text-blue-500 ml-1">*</span>
               </Label>
               <Input
                 id="ef-bedtime"
@@ -139,7 +153,7 @@ export function SleepEntryForm({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ef-wake" className={lc}>
-                Hora de acordar
+                Hora de acordar <span className="text-blue-500 ml-1">*</span>
               </Label>
               <Input
                 id="ef-wake"
@@ -153,10 +167,10 @@ export function SleepEntryForm({
           </div>
 
           {/* Seção de Soneca */}
-          <div className="flex flex-col gap-1.5 border-t border-neutral-900/50 pt-5">
+          <div className="flex flex-col gap-1.5 border-t border-border pt-5">
             <Label className={lc}>Adicionar Soneca (Extra do dia)</Label>
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-11">
+              <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 h-11">
                 <Input
                   type="number"
                   min={0}
@@ -174,7 +188,7 @@ export function SleepEntryForm({
                   h
                 </span>
               </div>
-              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-11">
+              <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 h-11">
                 <Input
                   type="number"
                   min={0}
@@ -214,10 +228,10 @@ export function SleepEntryForm({
         </div>
 
         {/* Lado Direito: Qualidade e Notas */}
-        <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 flex flex-col gap-6">
+        <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <Label className={lc}>Qualidade percebida</Label>
-            <div className="flex gap-1 p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
+            <div className="flex gap-1 p-1 bg-background border border-border rounded-xl">
               {[1, 2, 3, 4, 5].map((q) => (
                 <button
                   key={q}
@@ -226,7 +240,7 @@ export function SleepEntryForm({
                   className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
                     form.quality === q
                       ? "bg-blue-600/10 border-blue-600/30 text-blue-400"
-                      : "bg-transparent border-transparent text-neutral-600 hover:text-neutral-500"
+                      : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground"
                   }`}
                 >
                   {q}
@@ -244,7 +258,7 @@ export function SleepEntryForm({
             </Label>
             <Textarea
               id="ef-note"
-              className="bg-neutral-900 border-neutral-800 rounded-xl min-h-[105px] resize-none pt-4 text-sm font-medium text-neutral-300 focus:border-blue-600/30 placeholder:text-neutral-700 transition-all shadow-none"
+              className="bg-card border-border rounded-xl min-h-[105px] resize-none pt-4 text-sm font-medium text-muted-foreground focus:border-blue-600/30 placeholder:text-neutral-700 transition-all"
               placeholder="Fatores externos, sonhos, interrupções..."
               value={form.note}
               onChange={(e) => setField("note", e.target.value)}
@@ -254,7 +268,7 @@ export function SleepEntryForm({
       </div>
 
       {/* Ações do Formulário */}
-      <div className="flex flex-col gap-2 pt-6 border-t border-neutral-900/50">
+      <div className="flex flex-col gap-2 pt-6 border-t border-border">
         <button
           type="submit"
           className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-bold transition-all active:scale-[0.98] cursor-pointer"
@@ -264,7 +278,7 @@ export function SleepEntryForm({
         <button
           type="button"
           onClick={onCancel}
-          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
         >
           Agora não
         </button>

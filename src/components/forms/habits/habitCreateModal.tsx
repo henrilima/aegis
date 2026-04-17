@@ -43,8 +43,8 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
   };
 
   const theme = getColorTheme("teal");
-  const ic = `w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:${theme.border.split(" ")[0]} transition-all placeholder:text-neutral-700 font-medium`;
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const ic = `w-full bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:${theme.border.split(" ")[0]} transition-all placeholder:text-neutral-700 font-medium`;
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
     <div
@@ -53,9 +53,9 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
       aria-modal="true"
       aria-labelledby="habit-create-title"
     >
-      <div className="relative w-full max-w-2xl bg-neutral-950 border border-neutral-800 rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800/60 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-3">
             <div
               className={`p-2 ${theme.bg} rounded-xl border ${theme.border}`}
@@ -65,11 +65,11 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
             <div>
               <h2
                 id="habit-create-title"
-                className="text-base font-bold text-white leading-none"
+                className="text-base font-bold text-foreground leading-none"
               >
                 Configurar Hábito
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Defina suas regras de disciplina
               </p>
             </div>
@@ -77,7 +77,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
             aria-label="Fechar modal"
           >
             <X className="w-4 h-4" />
@@ -118,11 +118,11 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                   >
                     <SelectTrigger
                       id="hcm-type"
-                      className={`w-full bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium shadow-none focus:ring-0 focus:${theme.border.split(" ")[0]}`}
+                      className={`w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:ring-0 focus:${theme.border.split(" ")[0]}`}
                     >
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-neutral-800">
+                    <SelectContent className="bg-card border-border">
                       <SelectItem
                         value="Positive"
                         className="text-sm font-medium"
@@ -141,7 +141,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
               </div>
 
               {/* Coluna Direita: Lógica de Recorrência */}
-              <div className="bg-neutral-900/40 border border-neutral-800/60 rounded-xl p-5 flex flex-col gap-6">
+              <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label htmlFor="hcm-cooldown" className={lc}>
@@ -210,7 +210,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                     </p>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-neutral-800 rounded-xl">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-border rounded-xl">
                     <p className="text-[10px] text-neutral-600 font-medium leading-relaxed">
                       Defina cargas para permitir
                       <br />
@@ -233,7 +233,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+                className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
               >
                 Agora não
               </button>

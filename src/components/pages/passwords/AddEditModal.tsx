@@ -35,28 +35,28 @@ export function AddEditModal({
   onClose,
   onSave,
 }: AddEditModalProps) {
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
   const inputStyle =
-    "bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:border-amber-500/40 transition-all placeholder:text-neutral-700";
+    "bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-amber-500/40 transition-all placeholder:text-neutral-700";
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         {/* Cabeçalho - Fixo */}
-        <div className="flex items-center justify-between p-5 border-b border-neutral-800/60 shrink-0">
+        <div className="flex items-center justify-between p-5 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
               {isEditing ? (
-                <Edit2 className="w-5 h-5 text-amber-500" />
+                <Edit2 className="w-5 h-5 text-amber-600 dark:text-amber-500" />
               ) : (
-                <Plus className="w-5 h-5 text-amber-500" />
+                <Plus className="w-5 h-5 text-amber-600 dark:text-amber-500" />
               )}
             </div>
             <div>
-              <h2 className="text-base font-bold text-white leading-none">
+              <h2 className="text-base font-bold text-foreground leading-none">
                 {isEditing ? "Editar credencial" : "Nova credencial"}
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Gestão de acesso
               </p>
             </div>
@@ -64,7 +64,7 @@ export function AddEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-500 transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-accent/50 text-muted-foreground transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -146,7 +146,7 @@ export function AddEditModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+                className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
               >
                 Agora não
               </button>

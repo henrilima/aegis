@@ -27,15 +27,17 @@ export function CrossTable({ metrics }: CrossTableProps) {
     <div className="overflow-x-auto w-full">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-neutral-800">
-            {["Data", "Sono", "Estudo", "Questões", "Acerto"].map((h) => (
-              <th
-                key={h}
-                className="py-3 px-2 text-left text-[10px] font-bold text-neutral-600"
-              >
-                {h}
-              </th>
-            ))}
+          <tr className="border-b border-border">
+            {["Data", "Sono", "Estudo", "Leitura", "Questões", "Acerto"].map(
+              (h) => (
+                <th
+                  key={h}
+                  className="py-3 px-2 text-left text-[10px] font-bold text-neutral-600"
+                >
+                  {h}
+                </th>
+              ),
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-neutral-800/30">
@@ -54,23 +56,35 @@ export function CrossTable({ metrics }: CrossTableProps) {
                   ? "text-green-400"
                   : m.study_hit_rate >= 55
                     ? "text-yellow-400/80"
-                    : "text-red-400/80";
+                    : "text-red-600 dark:text-red-400/80";
 
             return (
               <tr
                 key={m.date}
-                className="group border-b border-neutral-800/10 hover:bg-neutral-800/30 transition-all"
+                className="group border-b border-border/10 hover:bg-accent/50/30 transition-all"
               >
-                <td className="py-2.5 px-2 text-neutral-400 font-medium">
+                <td className="py-2.5 px-2 text-muted-foreground font-medium">
                   {dateLabel}
                 </td>
                 <td className="py-2.5 px-2 text-blue-400/90 font-bold">
                   {m.sleep_hours > 0 ? `${m.sleep_hours.toFixed(1)}h` : "—"}
                 </td>
-                <td className="py-2.5 px-2 text-violet-400/90 font-bold">
+                <td className="py-2.5 px-2 text-violet-600 dark:text-violet-400/90 font-bold">
                   {m.study_hours > 0 ? `${m.study_hours.toFixed(1)}h` : "—"}
                 </td>
-                <td className="py-2.5 px-2 text-neutral-500 font-medium">
+                <td className="py-2.5 px-2 text-orange-600 dark:text-orange-400/90 font-bold">
+                  <div>
+                    {m.reading_pages > 0
+                      ? `${m.reading_pages}p / ${m.reading_minutes}m`
+                      : "—"}
+                  </div>
+                  {m.reading_ppm > 0 && (
+                    <div className="text-[9px] text-orange-600/70 font-bold">
+                      {m.reading_ppm} PPM
+                    </div>
+                  )}
+                </td>
+                <td className="py-2.5 px-2 text-muted-foreground font-medium">
                   {m.questions_total}
                 </td>
                 <td className={`py-2.5 px-2 font-bold ${hitColor}`}>

@@ -8,6 +8,7 @@ import { NotificationPermission } from "@/components/NotificationPermission";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { TimeProvider } from "@/context/TimeContext";
 
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -39,7 +40,8 @@ export default function RootLayout({
     window.addEventListener("error", handleError);
     window.addEventListener("unhandledrejection", handleRejection);
 
-    console.log("[SYSTEM] Base Global Logging Initialized");
+    // Garantia de scroll - Resetar body se estiver travado
+    document.body.style.overflow = "auto";
 
     return () => {
       window.removeEventListener("error", handleError);
@@ -50,11 +52,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className={`${montserrat.className} antialiased`}>
-        <TooltipProvider>
-          <TimeProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </TimeProvider>
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <TimeProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </TimeProvider>
+          </TooltipProvider>
+        </ThemeProvider>
         <NotificationPermission />
         <Toaster />
       </body>

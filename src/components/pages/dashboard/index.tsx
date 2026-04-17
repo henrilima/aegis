@@ -7,9 +7,14 @@ import { DashboardConfigModal } from "@/components/forms/dashboard/DashboardConf
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import type { CurrencyRate } from "../currency/types";
+import type {
+  ReadingBook,
+  ReadingGoal,
+  ReadingSession,
+} from "../reading/types";
+import type { Task } from "../tasks/types";
 import { DashboardHeader } from "./dashboardHeader";
 import { isToday, startOfWeekIso } from "./helpers";
-
 import type {
   Habit,
   HydrationReminder,
@@ -28,6 +33,7 @@ const DEFAULT_WIDGET_IDS = [
   "habits",
   "pomodoro",
   "notes",
+  "tasks",
   "studies",
   "sleep",
   "statistics",
@@ -41,6 +47,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>([]);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const [data, setData] = useState<{
     habits: Habit[];
     notes: Note[];
@@ -56,6 +63,11 @@ export default function Dashboard() {
     currencyLastUpdated: string | null;
     statsSummary: PerformanceSummary | null;
     weekStartDay: number;
+    tasks: Task[];
+    readingBooks: ReadingBook[];
+    readingSessions: ReadingSession[];
+    readingGoals: ReadingGoal[];
+    showHolidays: boolean;
   }>({
     habits: [],
     notes: [],
@@ -71,6 +83,11 @@ export default function Dashboard() {
     currencyLastUpdated: null,
     statsSummary: null,
     weekStartDay: 1,
+    tasks: [],
+    readingBooks: [],
+    readingSessions: [],
+    readingGoals: [],
+    showHolidays: true,
   });
   const { now: time, isSimulated } = useTime();
 
@@ -111,7 +128,17 @@ export default function Dashboard() {
     const uid = String(user.id);
 
     try {
-      const config = await invoke<{ week_start_day: number }>("get_app_config");
+      invoke<Task[]>("tasks_list", { userId: uid })
+        .then((tasksResult) => {
+          setPendingTasksCount(tasksResult.filter((t) => !t.completed).length);
+          setData((prev) => ({ ...prev, tasks: tasksResult }));
+        })
+        .catch(console.error);
+
+      const config = await invoke<{
+        week_start_day: number;
+        show_holidays: boolean;
+      }>("get_app_config");
       const results = await Promise.allSettled([
         invoke<Habit[]>("list_habits", { userId: uid }),
         invoke<Note[]>("list_notes", { userId: uid }),
@@ -134,8 +161,14 @@ export default function Dashboard() {
         invoke<CurrencyRate[]>("get_currency_rates"),
         invoke<PerformanceSummary>("stats_get_performance_summary", {
           userId: uid,
-          days: 30,
+          days: 7,
         }),
+        invoke<ReadingBook[]>("reading_list_books", { userId: uid }),
+        invoke<ReadingSession[]>("reading_list_sessions", {
+          userId: uid,
+          monthsBack: 1,
+        }),
+        invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
       ]);
 
       const ratesMap: Record<string, number> = {};
@@ -153,7 +186,8 @@ export default function Dashboard() {
         }
       }
 
-      setData({
+      setData((prev) => ({
+        ...prev,
         habits:
           results[0].status === "fulfilled"
             ? (results[0].value as Habit[])
@@ -199,7 +233,20 @@ export default function Dashboard() {
             ? (results[11].value as PerformanceSummary)
             : null,
         weekStartDay: config.week_start_day,
-      });
+        readingBooks:
+          results[12].status === "fulfilled"
+            ? (results[12].value as ReadingBook[])
+            : [],
+        readingSessions:
+          results[13].status === "fulfilled"
+            ? (results[13].value as ReadingSession[])
+            : [],
+        readingGoals:
+          results[14].status === "fulfilled"
+            ? (results[14].value as ReadingGoal[])
+            : [],
+        showHolidays: config.show_holidays,
+      }));
     } catch (error) {
       console.error("Dashboard fetch error:", error);
     }
@@ -218,7 +265,6 @@ export default function Dashboard() {
           title: title.trim(),
           content: content.trim(),
           created_at: time.toISOString(),
-          status: "pending",
           pinned: false,
         },
       });
@@ -270,12 +316,21 @@ export default function Dashboard() {
   const positiveHabitsCount = data.habits.filter(
     (h) => h.habit_type === "Positive",
   ).length;
-  const pendingNotesCount = data.notes.filter(
-    (n) => n.status === "pending",
-  ).length;
+
+  // Leitura: páginas desta semana
+  const weekReadingSessions = data.readingSessions.filter(
+    (s) => s.date >= weekStart,
+  );
+  const weekPages = weekReadingSessions.reduce(
+    (acc, s) => acc + (s.pages_read || 0),
+    0,
+  );
+  const goalWeekPages =
+    data.readingGoals.find((g) => g.goal_type === "weekly_pages")
+      ?.target_value ?? null;
 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-neutral-950 p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
+    <div className="flex flex-col items-center w-full min-h-screen bg-background p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
       <div className="w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0">
         <div className="flex-none px-4 sm:px-0 mt-4 sm:mt-0">
           <DashboardHeader
@@ -284,7 +339,7 @@ export default function Dashboard() {
             user={user}
             doneTodayCount={doneTodayCount}
             positiveHabitsCount={positiveHabitsCount}
-            pendingNotesCount={pendingNotesCount}
+            pendingTasksCount={pendingTasksCount}
             onOpenConfig={() => setIsConfigOpen(true)}
             isSimulated={isSimulated}
           />
@@ -306,6 +361,20 @@ export default function Dashboard() {
               if (id === "notes") {
                 widgetProps.notes = data.notes;
                 widgetProps.onCreateNote = handleCreateNote;
+              }
+              if (id === "tasks") {
+                widgetProps.tasks = data.tasks;
+                widgetProps.onToggleTask = async (task: Task) => {
+                  try {
+                    await invoke("tasks_toggle", {
+                      id: task.id,
+                      completed: !task.completed,
+                    });
+                    fetchAll();
+                  } catch {
+                    toast.error("Erro ao atualizar tarefa");
+                  }
+                };
               }
               if (id === "studies") {
                 widgetProps.sessions = weekSessions;
@@ -334,6 +403,15 @@ export default function Dashboard() {
               }
               if (id === "statistics") {
                 widgetProps.summary = data.statsSummary;
+              }
+              if (id === "calendar") {
+                widgetProps.showHolidays = data.showHolidays;
+              }
+              if (id === "reading") {
+                widgetProps.books = data.readingBooks;
+                widgetProps.recentSessions = data.readingSessions.slice(0, 5);
+                widgetProps.weekPages = weekPages;
+                widgetProps.goalWeekPages = goalWeekPages;
               }
 
               return (

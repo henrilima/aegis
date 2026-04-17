@@ -50,11 +50,11 @@ export function qualityColor(q: number) {
     case 3:
       return "text-yellow-400";
     case 2:
-      return "text-orange-400";
+      return "text-orange-600 dark:text-orange-400";
     case 1:
-      return "text-red-400";
+      return "text-red-600 dark:text-red-400";
     default:
-      return "text-neutral-500";
+      return "text-muted-foreground";
   }
 }
 

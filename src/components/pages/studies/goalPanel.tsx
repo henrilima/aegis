@@ -81,7 +81,7 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
   }
 
   const ic =
-    "flex-1 bg-neutral-800/60 border border-neutral-700 rounded-xl px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-600/20 transition-colors";
+    "flex-1 bg-background border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-violet-600/20 transition-colors";
 
   return (
     <div className="flex flex-col gap-5">
@@ -91,7 +91,7 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
             key={type}
             className="flex flex-col gap-2 rounded-xl border-none"
           >
-            <span className="text-xs font-black uppercase text-neutral-500 ml-1">
+            <span className="text-xs font-bold text-muted-foreground ml-1">
               {GOAL_LABELS[type]}
             </span>
             <div className="flex items-center gap-2">

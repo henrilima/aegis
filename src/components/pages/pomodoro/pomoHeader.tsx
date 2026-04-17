@@ -27,35 +27,37 @@ export function PomoHeader({ cyclesCompleted, isWork }: PomoHeaderProps) {
             <Timer
               className={cn(
                 "w-5 h-5",
-                isWork ? "text-red-400" : "text-teal-400",
+                isWork
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-teal-600 dark:text-teal-400",
               )}
             />
           </div>
           <div>
-            <h1 className="text-xl font-black text-white leading-none">
+            <h1 className="text-xl font-black text-foreground leading-none">
               Foco & Produtividade
             </h1>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Gerencie seus ciclos de trabalho e descanso
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 mt-4">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border">
             <div
               className={cn(
                 "w-1.5 h-1.5 rounded-full",
                 isWork ? "bg-red-500 animate-pulse" : "bg-teal-500",
               )}
             />
-            <p className="text-[10px] font-bold text-neutral-400 uppercase">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase">
               {isWork ? "Fase Provedora de Foco" : "Fase de Recuperação Neutra"}
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase">
               {cyclesCompleted} Ciclo{cyclesCompleted !== 1 ? "s" : ""}{" "}
               Concluído{cyclesCompleted !== 1 ? "s" : ""}
             </span>

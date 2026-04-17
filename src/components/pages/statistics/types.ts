@@ -12,6 +12,9 @@ export interface CrossMetric {
   study_hit_rate: number;
   questions_total: number;
   focus_score?: number;
+  reading_pages: number;
+  reading_minutes: number;
+  reading_ppm: number;
 }
 
 export interface PerformanceSummary {
@@ -24,7 +27,11 @@ export interface PerformanceSummary {
   total_days_analyzed: number;
   study_streak_days: number;
   sleep_streak_days: number;
+  reading_streak_days: number;
   peak_study_subject: string | null;
+  avg_reading_pages: number;
+  avg_reading_minutes: number;
+  avg_ppm: number;
   // Novas métricas
   consistency_score: number;
   study_efficiency: number;

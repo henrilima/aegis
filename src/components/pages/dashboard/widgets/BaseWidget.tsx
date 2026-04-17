@@ -41,11 +41,11 @@ export function BaseWidget({
     <Card
       onClick={handleClick}
       className={cn(
-        "group flex flex-col h-full bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden relative @container",
+        "group flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden relative @container",
         !isEditMode &&
-          "transition-all duration-200 hover:border-neutral-700 hover:bg-neutral-800/60 cursor-pointer",
+          "transition-all duration-200 hover:border-border hover:bg-accent/50/60 cursor-pointer",
         isEditMode &&
-          "cursor-move border-emerald-500 bg-neutral-900 ring-1 ring-emerald-500/20",
+          "cursor-move border-emerald-500 bg-card ring-1 ring-emerald-500/20",
         className,
       )}
     >
@@ -53,13 +53,13 @@ export function BaseWidget({
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              "p-1.5 rounded-lg bg-neutral-800 border border-neutral-700 group-hover:border-neutral-600 transition-colors",
-              isEditMode && "border-emerald-500/30",
+              "p-1.5 rounded-lg bg-accent border border-accent group-hover:border-border/50 transition-colors",
+              isEditMode && "border-accent/30",
             )}
           >
             <Icon className={cn("w-4 h-4", iconColor)} strokeWidth={2.5} />
           </div>
-          <h3 className="text-sm font-bold text-neutral-300 truncate">
+          <h3 className="text-sm font-bold text-muted-foreground truncate">
             {title}
           </h3>
         </div>

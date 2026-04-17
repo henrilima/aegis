@@ -1,6 +1,7 @@
 "use client";
 
 import { Key, Lock, Shield, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -27,19 +28,19 @@ export function LockedVault({
   handleVerify,
   handleStartReset,
 }: LockedVaultProps) {
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
-    <div className="h-full w-full flex items-center justify-center bg-neutral-950 p-6 animate-in fade-in duration-500">
-      <Card className="w-full max-w-sm bg-neutral-900 border border-neutral-800 shadow-none rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+    <div className="h-full w-full flex items-center justify-center bg-background p-6 ">
+      <Card className="w-full max-w-sm bg-card border border-border rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
         <CardHeader className="text-center pt-10 pb-6">
           <div className="mx-auto mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl w-fit">
             <Shield className="w-8 h-8 text-amber-400" />
           </div>
-          <CardTitle className="text-2xl font-black text-white">
+          <CardTitle className="text-2xl font-black text-foreground">
             Cofre de segurança
           </CardTitle>
-          <CardDescription className="text-xs font-medium text-neutral-500 px-4 mt-1">
+          <CardDescription className="text-xs font-medium text-muted-foreground px-4 mt-1">
             Insira sua senha mestre para descriptografar seus dados
           </CardDescription>
         </CardHeader>
@@ -50,7 +51,7 @@ export function LockedVault({
               Senha de acesso
             </Label>
             <div className="relative">
-              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500/30" />
+              <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-600 dark:text-amber-500/30" />
               <Input
                 id="master"
                 type="password"
@@ -59,7 +60,7 @@ export function LockedVault({
                     ? "Sua senha mestra secreta"
                     : "Defina sua nova senha mestra"
                 }
-                className="pl-12 h-11 bg-neutral-900 border-neutral-800 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:border-amber-500/40 transition-all"
+                className="pl-12 h-11 bg-card border-border rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:border-amber-500/40 transition-all"
                 value={masterPassword}
                 onChange={(e) => setMasterPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleVerify()}
@@ -72,7 +73,10 @@ export function LockedVault({
             <button
               type="button"
               onClick={handleVerify}
-              className="w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+              className={cn(
+                "w-full py-3 rounded-xl text-white text-sm font-bold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2",
+                "bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400",
+              )}
             >
               <Lock className="w-4 h-4" />
               {vaultExists ? "Desbloquear cofre" : "Configurar novo cofre"}
@@ -82,7 +86,7 @@ export function LockedVault({
               <button
                 type="button"
                 onClick={handleStartReset}
-                className="w-full py-2 text-neutral-600 hover:text-red-400 text-[11px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2 text-neutral-600 hover:text-red-600 dark:text-red-400 text-[11px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Esqueci minha senha / Resetar
               </button>
@@ -90,21 +94,21 @@ export function LockedVault({
           </div>
         </CardContent>
 
-        <CardFooter className="pb-10 pt-8 px-10 border-t border-neutral-900/50">
+        <CardFooter className="pb-10 pt-8 px-10 border-t border-border">
           <div className="text-center space-y-4">
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-neutral-600 uppercase">
+              <p className="text-[10px] font-bold text-muted-foreground/60 uppercase">
                 Protocolo de Segurança
               </p>
-              <p className="text-[11px] leading-relaxed text-neutral-500 font-medium">
+              <p className="text-[11px] leading-relaxed text-muted-foreground font-medium">
                 Criptografia{" "}
-                <span className="text-neutral-300">AES-256-GCM</span> com
+                <span className="text-muted-foreground">AES-256-GCM</span> com
                 derivação
-                <span className="text-neutral-300"> Argon2id</span>. Seus dados
-                nunca saem do dispositivo.
+                <span className="text-muted-foreground"> Argon2id</span>. Seus
+                dados nunca saem do dispositivo.
               </p>
             </div>
-            <p className="text-[10px] text-amber-500/40 font-medium italic">
+            <p className="text-[10px] text-amber-600 dark:text-amber-500/40 font-medium italic">
               Atenção: Não há recuperação de senha possível.
             </p>
           </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import type { StudySession, StudyStats, SubjectData } from "./types";
+import type { StudySession, SubjectData } from "./types";
 
-// ─── Utilitários de data ──────────────────────────────────────────────────────
+// Utilitários de data
 
 export function isoDate(d: Date) {
   const y = d.getFullYear();
@@ -41,7 +41,7 @@ export function formatHours(h: number) {
   return `${hrs}h ${mins}min`;
 }
 
-// ─── Lógica de Computação ───────────────────────────────────────────────────
+// Lógica de Computação
 
 export function computeStats(arr: StudySession[]) {
   return {
@@ -57,41 +57,6 @@ export function computeStats(arr: StudySession[]) {
     pages: arr.reduce((a, s) => a + (s.pages_read || 0), 0),
     sessionsCount: arr.length,
   };
-}
-
-export function generateReport({
-  weekStats,
-  monthStats,
-  allStats,
-  goalValue,
-}: {
-  weekStats: StudyStats;
-  monthStats: StudyStats;
-  allStats: StudyStats;
-  goalValue: (type: string) => number;
-}) {
-  const lines = [
-    `📊 RELATÓRIO DE ESTUDOS — ${new Date().toLocaleDateString("pt-BR")}`,
-    ``,
-    `📅 SEMANA ATUAL`,
-    `  ⏱ Tempo: ${formatHours(weekStats.hours)} / ${goalValue("weekly_hours") ? formatHours(goalValue("weekly_hours")) : "—"}`,
-    `  📝 Questões: ${weekStats.questions} / ${goalValue("weekly_questions") || "—"}`,
-    `  📖 Páginas: ${weekStats.pages} / ${goalValue("weekly_pages") || "—"}`,
-    `  ✅ Acerto Inéditas: ${hitRate(weekStats.correctNew, weekStats.questionsNew)}%`,
-    `  🔄 Acerto Refeitas: ${hitRate(weekStats.correctReview, weekStats.questionsReview)}%`,
-    ``,
-    `📆 MÊS ATUAL`,
-    `  ⏱ Tempo: ${formatHours(monthStats.hours)} / ${goalValue("monthly_hours") ? formatHours(goalValue("monthly_hours")) : "—"}`,
-    `  📝 Questões: ${monthStats.questions} / ${goalValue("monthly_questions") || "—"}`,
-    `  📖 Páginas: ${monthStats.pages} / ${goalValue("monthly_pages") || "—"}`,
-    ``,
-    `🏆 TOTAL ACUMULADO`,
-    `  ⏱ Total de Horas: ${formatHours(allStats.hours)}`,
-    `  📝 Total de Questões: ${allStats.questions}`,
-    `  📖 Total de Páginas: ${allStats.pages}`,
-    `  🎓 Sessões Realizadas: ${allStats.sessionsCount}`,
-  ];
-  return lines.join("\n");
 }
 
 export function computeSubjectMap(sessions: StudySession[]) {

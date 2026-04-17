@@ -47,7 +47,7 @@ export function SleepStatsBanner({
       value: `${consistency}%`,
       icon: TrendingUp,
       sub: `Noites registradas`,
-      colorClass: "text-teal-400",
+      colorClass: "text-teal-600 dark:text-teal-400",
       tooltip:
         "Frequência com que você registrou o sono nos últimos 7 dias. Calculado dividindo as noites dormidas pelo total de dias.",
     },
@@ -59,7 +59,8 @@ export function SleepStatsBanner({
           : `${avgVsTarget > 0 ? "+" : ""}${Math.round(avgVsTarget)}min`,
       icon: Zap,
       sub: avgVsTarget >= 0 ? "acima da meta" : "abaixo da meta",
-      colorClass: avgVsTarget >= 0 ? "text-green-400" : "text-red-400",
+      colorClass:
+        avgVsTarget >= 0 ? "text-green-400" : "text-red-600 dark:text-red-400",
       tooltip:
         "Diferença média entre o tempo dormido e a sua meta pessoal de sono por noite.",
     },
@@ -69,10 +70,10 @@ export function SleepStatsBanner({
     return (
       <div
         key={c.label}
-        className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-1.5"
+        className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1.5"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-neutral-500">
+          <span className="text-[10px] font-bold text-muted-foreground">
             {c.label}
           </span>
           <c.icon className="w-3.5 h-3.5 text-blue-500" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { AlertCircle, CalendarDays } from "lucide-react";
+import { AlertCircle, CalendarDays, Flag } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { cn, formatDateLocal } from "@/lib/utils";
@@ -16,9 +16,14 @@ import { BaseWidget } from "../BaseWidget";
 interface CalendarWidgetProps {
   isEditMode?: boolean;
   time: Date;
+  showHolidays?: boolean;
 }
 
-export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
+export function CalendarWidget({
+  isEditMode,
+  time,
+  showHolidays = true,
+}: CalendarWidgetProps) {
   const { user } = useAuth();
   const uid = user ? String(user.id) : "";
   const [items, setItems] = useState<CalendarEvent[]>([]);
@@ -41,6 +46,7 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
       // Pegar os próximos 6 itens (mistura de eventos e deadlines)
       const upcoming = data
         .filter((e) => e.date >= todayStr && e.date <= limitStr)
+        .filter((e) => showHolidays || !e.is_holiday)
         .sort((a, b) => {
           // Prioridade para deadlines se forem no mesmo dia
           if (a.date === b.date) {
@@ -59,7 +65,7 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
     } finally {
       setLoading(false);
     }
-  }, [uid, time]);
+  }, [uid, time, showHolidays]);
 
   useEffect(() => {
     load();
@@ -69,16 +75,16 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
     <BaseWidget
       title="Calendário e Prazos"
       icon={CalendarDays}
-      iconColor="text-emerald-400"
+      iconColor="text-emerald-600 dark:text-emerald-400"
       route="calendar"
       isEditMode={isEditMode}
     >
       <div className="space-y-[1.5cqw] @sm:space-y-2">
         {loading ? (
           <div className="space-y-2 animate-pulse">
-            <div className="h-10 bg-neutral-800 rounded-xl w-full" />
-            <div className="h-10 bg-neutral-800 rounded-xl w-full" />
-            <div className="h-10 bg-neutral-800 rounded-xl w-full" />
+            <div className="h-10 bg-muted rounded-xl w-full" />
+            <div className="h-10 bg-muted rounded-xl w-full" />
+            <div className="h-10 bg-muted rounded-xl w-full" />
           </div>
         ) : items.length === 0 ? (
           <p className="text-[3cqw] @sm:text-xs text-neutral-600 italic py-2">
@@ -98,15 +104,21 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
                 key={ev.id}
                 className={cn(
                   "flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl border transition-all",
-                  isDeadline
-                    ? "bg-rose-500/5 border-rose-500/10 hover:border-rose-500/20"
-                    : "bg-neutral-800/30 border-neutral-800/50 hover:border-neutral-700/50",
+                  ev.is_holiday
+                    ? "bg-zinc-500/5 border-zinc-500/10 hover:border-zinc-500/20"
+                    : isDeadline
+                      ? "bg-amber-500/5 border-amber-500/10 hover:border-amber-500/20"
+                      : "bg-muted border-border/50 hover:border-border/50",
                 )}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  {isDeadline ? (
-                    <div className="shrink-0 p-1.5 rounded-lg bg-rose-500/10">
-                      <AlertCircle className="w-3 h-3 text-rose-500" />
+                  {ev.is_holiday ? (
+                    <div className="shrink-0 p-1.5 rounded-lg bg-zinc-500/10">
+                      <Flag className="w-3 h-3 text-zinc-500" />
+                    </div>
+                  ) : isDeadline ? (
+                    <div className="shrink-0 p-1.5 rounded-lg bg-amber-500/10">
+                      <AlertCircle className="w-3 h-3 text-amber-600 dark:text-amber-500" />
                     </div>
                   ) : (
                     <div className="shrink-0 p-1.5 rounded-lg bg-emerald-500/10">
@@ -114,13 +126,17 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
                     </div>
                   )}
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-bold text-neutral-200 truncate">
+                    <span className="text-sm font-bold text-foreground truncate">
                       {ev.title}
                     </span>
-                    {isDeadline && ev.deadline_category ? (
+                    {ev.is_holiday ? (
+                      <span className="text-xs font-bold text-zinc-500/80">
+                        Feriado Nacional
+                      </span>
+                    ) : isDeadline && ev.deadline_category ? (
                       <span
                         className="text-xs font-bold opacity-90"
-                        style={{ color: color ?? "#ef4444" }}
+                        style={{ color: color ?? "#f59e0b" }}
                       >
                         {
                           DEADLINE_LABELS[
@@ -129,11 +145,11 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
                         }
                       </span>
                     ) : ev.time ? (
-                      <span className="text-xs font-medium text-neutral-500">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {ev.time}
                       </span>
                     ) : (
-                      <span className="text-xs font-medium text-neutral-500">
+                      <span className="text-xs font-medium text-muted-foreground">
                         Dia todo
                       </span>
                     )}
@@ -143,13 +159,21 @@ export function CalendarWidget({ isEditMode, time }: CalendarWidgetProps) {
                 <div
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-right shrink-0",
-                    isDeadline ? "bg-rose-500/10" : "bg-emerald-500/10",
+                    ev.is_holiday
+                      ? "bg-zinc-500/5"
+                      : isDeadline
+                        ? "bg-amber-500/5"
+                        : "bg-emerald-500/5",
                   )}
                 >
                   <span
                     className={cn(
-                      "block text-xs font-blacker leading-none",
-                      isDeadline ? "text-rose-400" : "text-emerald-400",
+                      "block text-xs font-black leading-none",
+                      ev.is_holiday
+                        ? "text-zinc-500"
+                        : isDeadline
+                          ? "text-amber-400"
+                          : "text-emerald-600 dark:text-emerald-400",
                     )}
                   >
                     {days === 0 ? "Hoje" : days === 1 ? "Amanhã" : `${days}d`}

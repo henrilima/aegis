@@ -7,21 +7,39 @@ import { hitRate } from "../utils";
 interface PerformanceGlobalProps {
   allStats: StudyStats;
   globalRate: number;
-  isMonthly?: boolean;
+  reportMode?: "daily" | "weekly" | "monthly" | "all";
 }
 
 export function PerformanceGlobal({
   allStats,
   globalRate,
-  isMonthly = false,
+  reportMode = "weekly",
 }: PerformanceGlobalProps) {
+  const rateLabel =
+    reportMode === "daily"
+      ? "Taxa de Acerto Diária"
+      : reportMode === "weekly"
+        ? "Taxa de Acerto Semanal"
+        : reportMode === "monthly"
+          ? "Taxa de Acerto Mensal"
+          : "Taxa de Acerto Global";
+
+  const totalLabel =
+    reportMode === "daily"
+      ? "Acerto Diário"
+      : reportMode === "weekly"
+        ? "Acerto Semanal"
+        : reportMode === "monthly"
+          ? "Acerto Mensal"
+          : "Acerto Geral";
+
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col gap-6 shadow-xl lg:col-span-2">
+    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-6 lg:col-span-2">
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
           <PieChart className="w-4 h-4 text-emerald-500" />
-          <h3 className=" font-black uppercase text-neutral-400">
-            {isMonthly ? "Taxa de Acerto Mensal" : "Taxa de Acerto Global"}
+          <h3 className=" font-black uppercase text-muted-foreground">
+            {rateLabel}
           </h3>
         </div>
       </div>
@@ -54,30 +72,30 @@ export function PerformanceGlobal({
             />
           </svg>
           <div className="absolute flex flex-col items-center">
-            <span className="text-5xl font-black text-white leading-none">
+            <span className="text-5xl font-black text-foreground leading-none">
               {globalRate}%
             </span>
-            <span className="text-xs font-black text-violet-400 uppercase mt-2">
-              {isMonthly ? "Acerto Mensal" : "Acerto Geral"}
+            <span className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase mt-2">
+              {totalLabel}
             </span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-neutral-950/50 border border-neutral-800 p-4 rounded-xl flex flex-col gap-1 items-center">
-          <span className="text-xs font-black text-neutral-500 uppercase">
+        <div className="bg-background/50 border border-border p-4 rounded-xl flex flex-col gap-1 items-center">
+          <span className="text-xs font-black text-muted-foreground uppercase">
             Inéditas
           </span>
-          <span className="text-xl font-black text-white">
+          <span className="text-xl font-black text-foreground">
             {hitRate(allStats.correctNew, allStats.questionsNew)}%
           </span>
         </div>
-        <div className="bg-neutral-950/50 border border-neutral-800 p-4 rounded-xl flex flex-col gap-1 items-center">
-          <span className="text-xs font-black text-neutral-500 uppercase">
+        <div className="bg-background/50 border border-border p-4 rounded-xl flex flex-col gap-1 items-center">
+          <span className="text-xs font-black text-muted-foreground uppercase">
             Refeitas
           </span>
-          <span className="text-xl font-black text-white">
+          <span className="text-xl font-black text-foreground">
             {hitRate(allStats.correctReview, allStats.questionsReview)}%
           </span>
         </div>

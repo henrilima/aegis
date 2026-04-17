@@ -48,7 +48,7 @@ export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
     <BaseWidget
       title="Pomodoro"
       icon={Timer}
-      iconColor="text-red-400"
+      iconColor="text-red-600 dark:text-red-400"
       route="pomodoro"
       isEditMode={isEditMode}
     >
@@ -62,10 +62,10 @@ export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
             className="w-full h-full"
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[7.5cqw] @sm:text-4xl font-bold text-white leading-none">
+            <span className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
               {fmtTime(remainingSeconds)}
             </span>
-            <span className="text-[3.5cqw] @sm:text-[12px] font-medium text-neutral-500 mt-1">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
               {pomodoro?.cycle_type === "Work" ? "Foco" : "Pausa"}
             </span>
           </div>
@@ -73,14 +73,14 @@ export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
 
         <div className="flex items-center gap-[7cqw] @sm:gap-6">
           <div className="text-center">
-            <p className="text-[5.5cqw] @sm:text-2xl font-bold text-white leading-none">
+            <p className="text-xl @sm:text-2xl font-black text-foreground leading-none">
               {pomodoro?.cycles_completed ?? 0}
             </p>
-            <p className="text-[2.8cqw] @sm:text-[11px] font-medium text-neutral-500 mt-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
               Ciclos hoje
             </p>
           </div>
-          <div className="w-px h-6 bg-neutral-800" />
+          <div className="w-px h-6 bg-muted" />
           <div className="flex items-center gap-2">
             {isRunning ? (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20">
@@ -90,9 +90,9 @@ export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-800 border border-border">
                 <div className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
-                <span className="text-[10px] font-bold text-neutral-500">
+                <span className="text-[10px] font-bold text-muted-foreground">
                   Parado
                 </span>
               </div>

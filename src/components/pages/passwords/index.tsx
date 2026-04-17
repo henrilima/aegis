@@ -44,6 +44,7 @@ export default function PasswordManager() {
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  // Verifica se o cofre (database de senhas) já existe para o usuário atual
   const checkVault = useCallback(async () => {
     if (!user) return;
     try {
@@ -56,6 +57,7 @@ export default function PasswordManager() {
     }
   }, [user]);
 
+  // Carrega a lista de senhas criptografadas do backend
   const loadPasswords = useCallback(async () => {
     if (!user) return;
     try {
@@ -78,10 +80,12 @@ export default function PasswordManager() {
     }
   }, [isVerified, loadPasswords]);
 
+  // Realiza a verificação da senha mestre para desbloquear o cofre ou configurá-lo
   const handleVerify = async () => {
     if (!user) return;
     try {
       if (!vaultExists) {
+        // Se o cofre não existir, cria um novo
         await invoke("setup_local_vault", {
           userId: String(user.id),
           username: user.username,
@@ -90,6 +94,7 @@ export default function PasswordManager() {
         setVaultExists(true);
       }
 
+      // Verifica se a senha mestre está correta
       await invoke("verify_master", {
         userId: String(user.id),
         masterPassword: masterPassword,
@@ -212,8 +217,10 @@ export default function PasswordManager() {
     }
   };
 
+  // Descriptografa uma entrada para exibição temporária na tabela
   const handleShowPassword = async (id: number) => {
     if (decryptedId === id) {
+      // Se já estiver visível, oculta ao clicar novamente
       setDecryptedId(null);
       setDecryptedData(null);
       return;
@@ -285,7 +292,7 @@ export default function PasswordManager() {
   };
 
   return (
-    <div className="w-full h-full relative animate-in fade-in duration-500">
+    <div className="w-full h-full relative ">
       {!isVerified ? (
         <LockedVault
           vaultExists={vaultExists}
@@ -313,10 +320,10 @@ export default function PasswordManager() {
           />
 
           <div className="relative group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 group-focus-within:text-amber-500 transition-colors" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-amber-600 dark:text-amber-500 transition-colors" />
             <Input
               placeholder="Buscar por serviço ou usuário..."
-              className="h-11 pl-11 bg-neutral-900 border-neutral-800 rounded-xl text-sm font-medium placeholder:text-neutral-600 focus:border-amber-500/40 transition-all"
+              className="h-11 pl-11 bg-card border-border rounded-xl text-sm font-medium placeholder:text-muted-foreground/50 focus:border-amber-500/40 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

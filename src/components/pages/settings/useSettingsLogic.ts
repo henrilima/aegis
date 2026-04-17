@@ -16,6 +16,7 @@ export interface AppConfig {
   high_priority_notifications: boolean;
   start_minimized: boolean;
   week_start_day: number;
+  show_holidays: boolean;
 }
 
 export function useSettingsLogic() {
@@ -26,6 +27,7 @@ export function useSettingsLogic() {
   const [weekStartDay, setWeekStartDay] = useState(1);
   const [highPriorityNotifications, setHighPriorityNotifications] =
     useState(false);
+  const [showHolidays, setShowHolidays] = useState(true);
   const username = user?.username || "Usuário";
   const email = user?.email || "sem-email@aegis.local";
 
@@ -37,6 +39,7 @@ export function useSettingsLogic() {
       setHighPriorityNotifications(config.high_priority_notifications);
       setStartMinimized(config.start_minimized);
       setWeekStartDay(config.week_start_day);
+      setShowHolidays(config.show_holidays);
     } catch (err) {
       console.error("Failed to load config:", err);
     }
@@ -56,6 +59,7 @@ export function useSettingsLogic() {
       high_priority_notifications: highPriorityNotifications,
       start_minimized: key === "minimized" ? value : startMinimized,
       week_start_day: weekStartDay,
+      show_holidays: showHolidays,
     };
 
     try {
@@ -77,12 +81,37 @@ export function useSettingsLogic() {
       high_priority_notifications: highPriorityNotifications,
       start_minimized: startMinimized,
       week_start_day: value,
+      show_holidays: showHolidays,
     };
 
     try {
       await invoke("set_app_config", { config: newConfig });
       setWeekStartDay(value);
       toast.success("Início da semana atualizado");
+    } catch (err) {
+      console.error("Failed to save config:", err);
+      toast.error("Erro ao salvar configuração");
+    }
+  };
+
+  const updateShowHolidays = async (value: boolean) => {
+    const newConfig: AppConfig = {
+      minimize_on_close: minimizeOnClose,
+      start_at_login: startAtLogin,
+      high_priority_notifications: highPriorityNotifications,
+      start_minimized: startMinimized,
+      week_start_day: weekStartDay,
+      show_holidays: value,
+    };
+
+    try {
+      await invoke("set_app_config", { config: newConfig });
+      setShowHolidays(value);
+      toast.success(
+        value
+          ? "Feriados brasileiros exibidos"
+          : "Feriados brasileiros ocultos",
+      );
     } catch (err) {
       console.error("Failed to save config:", err);
       toast.error("Erro ao salvar configuração");
@@ -115,10 +144,12 @@ export function useSettingsLogic() {
     startMinimized,
     weekStartDay,
     highPriorityNotifications,
+    showHolidays,
     username,
     email,
     updateSystemConfig,
     updateWeekStart,
+    updateShowHolidays,
     handleTestNotification,
     handleInternalCommand,
     handleDeleteAccount: async (password: string) => {

@@ -1,8 +1,8 @@
 /** * Configurações estáticas do projeto Aegis. */
 export const APP_CONFIG = {
   name: "Aegis",
-  version: "1.0.0",
-  codename: "evergreen",
+  version: "2.0.0",
+  codename: "medusa",
   stage: "stable",
   get versionLabel() {
     return `${this.stage}-${this.version} (${this.codename})`;
@@ -25,5 +25,11 @@ export const APP_CONFIG = {
       | "red"
       | "orange"
       | "sky",
+    chromatic: "default" as
+      | "default"
+      | "midnight"
+      | "deep-blue"
+      | "dracula"
+      | "light",
   },
 } as const;

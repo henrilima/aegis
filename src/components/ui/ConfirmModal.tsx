@@ -36,24 +36,24 @@ const VARIANT_CONFIG: Record<
     icon: Trash2,
     iconColor: "text-red-500",
     btnClass:
-      "bg-red-500/10 border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200",
-    bgColor: "bg-red-500/5",
-    textColor: "text-red-400",
+      "bg-red-600 hover:bg-red-500 dark:bg-red-500 dark:hover:bg-red-400 text-white",
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-600 dark:text-red-400",
   },
   warning: {
     icon: AlertTriangle,
-    iconColor: "text-amber-500",
+    iconColor: "text-amber-600 dark:text-amber-500",
     btnClass:
-      "bg-amber-500/10 border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200",
-    bgColor: "bg-amber-500/5",
+      "bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white",
+    bgColor: "bg-amber-500/10",
     textColor: "text-amber-400",
   },
   default: {
     icon: HelpCircle,
     iconColor: "text-blue-500",
     btnClass:
-      "bg-blue-500/10 border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200",
-    bgColor: "bg-blue-500/5",
+      "bg-blue-600 hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 text-white",
+    bgColor: "bg-blue-500/10",
     textColor: "text-blue-400",
   },
 };
@@ -74,20 +74,20 @@ export function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 text-center flex flex-col items-center shadow-2xl max-h-[90vh]">
+      <div className="w-full max-w-sm bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 text-center flex flex-col items-center max-h-[90vh]">
         <div
-          className={`w-full py-10 flex justify-center ${cfg.bgColor} border-b border-neutral-800/50 shrink-0`}
+          className={`w-full py-10 flex justify-center ${cfg.bgColor} border-b border-border/50 shrink-0`}
         >
           <div
-            className={`p-4 bg-neutral-950 border border-neutral-800 rounded-xl w-fit ${cfg.iconColor}`}
+            className={`p-4 bg-background border border-border rounded-xl w-fit ${cfg.iconColor}`}
           >
             <Icon className="w-8 h-8" />
           </div>
         </div>
 
         <div className="p-8 w-full flex flex-col items-center overflow-y-auto custom-scrollbar">
-          <h3 className="font-bold text-xl text-neutral-100 mb-2">{title}</h3>
-          <p className="text-xs text-neutral-500 mb-8 font-medium leading-relaxed px-4">
+          <h3 className="font-bold text-xl text-foreground mb-2">{title}</h3>
+          <p className="text-xs text-muted-foreground mb-8 font-medium leading-relaxed px-4">
             {description}
           </p>
 
@@ -102,7 +102,7 @@ export function ConfirmModal({
             <button
               type="button"
               onClick={onCancel}
-              className="w-full py-2 text-neutral-500 hover:text-neutral-300 text-sm font-medium transition-all cursor-pointer"
+              className="w-full py-2 text-muted-foreground hover:text-muted-foreground text-sm font-medium transition-all cursor-pointer"
             >
               {cancelLabel}
             </button>

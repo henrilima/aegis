@@ -2,7 +2,7 @@
 
 import { Moon, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDurationMin } from "../../helpers";
+import { formatDateShort, formatDurationMin } from "../../helpers";
 import type { SleepEntry } from "../../types";
 import { BaseWidget } from "../BaseWidget";
 
@@ -35,25 +35,25 @@ export function SonoWidget({
         <div className="flex items-center gap-[6cqw] @sm:gap-6">
           <div className="flex-1">
             <div className="flex items-baseline gap-1">
-              <span className="text-[6cqw] @sm:text-3xl font-bold text-white tabular-nums min-text-[20px]">
+              <span className="text-2xl @sm:text-3xl font-black text-foreground tabular-nums">
                 {avgSleepMin > 0 ? formatDurationMin(avgSleepMin) : "—"}
               </span>
             </div>
-            <p className="text-[2.5cqw] @sm:text-xs font-medium text-neutral-500">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
               Duração média
             </p>
           </div>
-          <div className="w-px h-8 bg-neutral-800" />
+          <div className="w-px h-8 bg-muted" />
           <div className="flex-1">
             <div className="flex items-baseline gap-1">
-              <span className="text-[6cqw] @sm:text-3xl font-bold text-white tabular-nums min-text-[20px]">
+              <span className="text-2xl @sm:text-3xl font-black text-foreground tabular-nums">
                 {avgQuality}
               </span>
-              <span className="text-[3cqw] @sm:text-sm font-medium text-neutral-500">
+              <span className="text-xs font-bold text-muted-foreground">
                 /5
               </span>
             </div>
-            <p className="text-[2.5cqw] @sm:text-xs font-medium text-neutral-500">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
               Qualidade
             </p>
           </div>
@@ -62,9 +62,14 @@ export function SonoWidget({
         {goalSleepMin !== null && avgSleepMin > 0 && (
           <div className="space-y-1.5 pt-1">
             <div className="flex justify-between text-[11px] font-medium">
-              <span className="text-neutral-400">
-                {formatDurationMin(avgSleepMin)} de{" "}
-                {formatDurationMin(goalSleepMin)}
+              <span className="text-muted-foreground">
+                <span className="text-sky-400">
+                  {formatDurationMin(avgSleepMin)}
+                </span>{" "}
+                de{" "}
+                <span className="text-sky-400">
+                  {formatDurationMin(goalSleepMin)}
+                </span>
               </span>
               <span className="text-sky-400">{sleepPct}%</span>
             </div>
@@ -87,16 +92,16 @@ export function SonoWidget({
           {recentSleep.slice(0, 3).map((e, i) => (
             <div
               key={e.id ?? i}
-              className="flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-neutral-800/50"
+              className="flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-border/50"
             >
               <div className="flex items-center gap-[2cqw] @sm:gap-2 min-w-0">
                 <div className="w-1.5 h-1.5 rounded-full bg-sky-500/60 shrink-0" />
-                <span className="text-[3cqw] @sm:text-xs font-medium text-neutral-400 truncate">
-                  {e.date}
+                <span className="text-[3cqw] @sm:text-xs font-medium text-muted-foreground truncate">
+                  {formatDateShort(e.date)}
                 </span>
               </div>
               <div className="flex items-center gap-[3cqw] @sm:gap-3">
-                <span className="text-[2.5cqw] @sm:text-[10px] font-bold text-neutral-300">
+                <span className="text-[2.5cqw] @sm:text-[10px] font-bold text-muted-foreground">
                   {formatDurationMin(e.duration_minutes)}
                 </span>
                 <div className="flex items-center gap-0.5">
@@ -104,7 +109,7 @@ export function SonoWidget({
                     className={cn(
                       "w-[2.5cqw] h-[2.5cqw] @sm:w-2.5 @sm:h-2.5 fill-current",
                       e.quality >= 4
-                        ? "text-emerald-400"
+                        ? "text-emerald-600 dark:text-emerald-400"
                         : e.quality >= 3
                           ? "text-sky-400"
                           : "text-rose-400",
@@ -114,7 +119,7 @@ export function SonoWidget({
                     className={cn(
                       "text-[2.5cqw] @sm:text-[10px] font-bold",
                       e.quality >= 4
-                        ? "text-emerald-400"
+                        ? "text-emerald-600 dark:text-emerald-400"
                         : e.quality >= 3
                           ? "text-sky-400"
                           : "text-rose-400",

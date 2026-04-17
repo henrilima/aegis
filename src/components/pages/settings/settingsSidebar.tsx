@@ -30,8 +30,8 @@ export function SettingsSidebar({
           className={cn(
             "justify-start gap-3 transition-all",
             activeTab === tab.id
-              ? "bg-amber-500/10 text-amber-500 border-l-2 border-amber-500 rounded-l-none"
-              : "hover:bg-neutral-800 text-neutral-400",
+              ? "bg-accent text-foreground border-l-2 border-primary rounded-l-none font-bold"
+              : "hover:bg-accent/50 text-muted-foreground",
           )}
         >
           <tab.icon className="w-4 h-4" /> {tab.label}

@@ -1,4 +1,4 @@
-export type EventType = "event" | "deadline";
+export type EventType = "event" | "deadline" | "holiday";
 export type DeadlineCategory = "prova" | "trabalho" | "simulado";
 
 export interface CalendarEvent {
@@ -11,6 +11,7 @@ export interface CalendarEvent {
   event_type: EventType;
   deadline_category?: DeadlineCategory;
   color?: string;
+  is_holiday?: boolean;
   created_at?: string;
 }
 

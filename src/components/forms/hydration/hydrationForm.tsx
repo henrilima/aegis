@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getThemeColor } from "@/lib/utils";
+import { useTheme } from "@/context/ThemeContext";
 
 interface HydrationFormProps {
   newType: string;
@@ -36,12 +36,12 @@ export function HydrationForm({
   onAdd,
   onCancel,
 }: HydrationFormProps) {
-  const theme = getThemeColor();
-  const inputStyle = `w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium focus:${theme.border.split(" ")[0]} transition-all placeholder:text-neutral-600`;
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const { themeStyles: theme } = useTheme();
+  const inputStyle = `w-full bg-background border-border h-11 rounded-xl text-sm font-medium focus:${theme.border.split(" ")[0]} transition-all placeholder:text-muted-foreground/50`;
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
-    <div className="bg-neutral-950/40 border border-neutral-800 rounded-xl p-6 space-y-5">
+    <div className="bg-background/40 border border-border rounded-xl p-6 space-y-5">
       {/* Tipo de Alerta */}
       <div className="space-y-1.5">
         <Label htmlFor="hydration-type" className={lc}>
@@ -50,20 +50,20 @@ export function HydrationForm({
         <Select value={newType} onValueChange={setNewType}>
           <SelectTrigger
             id="hydration-type"
-            className={`w-full bg-neutral-950 border-neutral-800 h-11 rounded-xl text-sm font-medium ring-offset-neutral-950 focus:ring-${theme.text.split("-")[1]}-500/50`}
+            className={`w-full bg-background border-border h-11 rounded-xl text-sm font-medium ring-offset-neutral-950 focus:ring-${theme.text.split("-")[1]}-500/50`}
           >
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
-          <SelectContent className="bg-neutral-900 border-neutral-800">
+          <SelectContent className="bg-card border-border">
             <SelectItem
               value="Interval"
-              className="text-xs font-bold py-3 hover:bg-neutral-800"
+              className="text-xs font-bold py-3 hover:bg-accent/50"
             >
               ⏱ Intervalo Periódico
             </SelectItem>
             <SelectItem
               value="Fixed"
-              className="text-xs font-bold py-3 hover:bg-neutral-800"
+              className="text-xs font-bold py-3 hover:bg-accent/50"
             >
               📍 Horário Definido
             </SelectItem>
@@ -125,7 +125,7 @@ export function HydrationForm({
         <button
           type="button"
           onClick={onCancel}
-          className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
         >
           Agora não
         </button>

@@ -86,18 +86,18 @@ export function DeleteAccountModal({
     }
   };
 
-  const lc = "text-xs font-medium text-neutral-400 ml-0.5";
+  const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-sm bg-neutral-950 border border-red-500/20 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-sm bg-background border border-red-500/20 rounded-xl overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between p-5 border-b border-neutral-900">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
               <ShieldAlert className="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-foreground">
                 Gerenciar Conta
               </h2>
               <p className="text-xs text-red-500/60 mt-0.5">
@@ -110,7 +110,7 @@ export function DeleteAccountModal({
           <button
             type="button"
             onClick={onCancel}
-            className="p-2 rounded-xl hover:bg-neutral-800 text-neutral-600 hover:text-white transition-all cursor-pointer"
+            className="p-2 rounded-xl hover:bg-accent/50 text-neutral-600 hover:text-foreground transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -119,15 +119,18 @@ export function DeleteAccountModal({
         <div className="p-6 space-y-5">
           {!isMasterMode ? (
             <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-xl space-y-3">
-              <p className="text-xs font-medium text-red-400 leading-relaxed">
+              <p className="text-xs font-medium text-red-600 dark:text-red-400 leading-relaxed">
                 Você solicitou a exclusão permanente dos dados de{" "}
-                <span className="text-white font-bold italic">{username}</span>.
+                <span className="text-foreground font-bold italic">
+                  {username}
+                </span>
+                .
               </p>
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-neutral-500 uppercase px-0.5">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase px-0.5">
                   Dados afetados:
                 </p>
-                <ul className="text-[11px] text-neutral-500 font-medium space-y-1.5">
+                <ul className="text-[11px] text-muted-foreground font-medium space-y-1.5">
                   <li className="flex items-center gap-2">
                     <div className="w-1 h-1 rounded-full bg-red-500/40" />{" "}
                     Cofres de chaves e senhas
@@ -145,18 +148,18 @@ export function DeleteAccountModal({
             </div>
           ) : (
             <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-3 text-center">
-              <p className="text-xs font-bold text-amber-500">
+              <p className="text-xs font-bold text-amber-600 dark:text-amber-500">
                 Protocolo de Validação
               </p>
               <div className="relative group">
-                <h3 className="text-2xl font-black text-white font-mono bg-neutral-900 py-3 rounded-lg border border-neutral-800">
+                <h3 className="text-2xl font-black text-foreground font-mono bg-card py-3 rounded-lg border border-border">
                   {currentEntry?.code}
                 </h3>
               </div>
-              <p className="text-[11px] text-neutral-400 font-medium px-6 leading-relaxed">
+              <p className="text-[11px] text-muted-foreground font-medium px-6 leading-relaxed">
                 Para obter a <b>Chave de Protocolo</b> vinculada a este código,
                 envie uma mensagem para{" "}
-                <span className="text-amber-500/80 font-bold">
+                <span className="text-amber-600 dark:text-amber-500/80 font-bold">
                   {APP_CONFIG.support.email}
                 </span>{" "}
                 ou acesse nossa comunidade.
@@ -174,7 +177,7 @@ export function DeleteAccountModal({
                   <button
                     type="button"
                     onClick={startMasterMode}
-                    className="text-[10px] font-bold text-neutral-600 hover:text-amber-500 transition-colors uppercase cursor-pointer pr-1"
+                    className="text-[10px] font-bold text-neutral-600 hover:text-amber-600 dark:text-amber-500 transition-colors uppercase cursor-pointer pr-1"
                   >
                     Esqueceu a senha?
                   </button>
@@ -187,7 +190,7 @@ export function DeleteAccountModal({
                   placeholder={
                     isMasterMode ? "Digite a chave..." : "Sua senha mestra"
                   }
-                  className={`bg-neutral-900 border-neutral-800 h-11 rounded-xl text-sm font-medium pr-12 transition-all ${isMasterMode ? "focus:border-amber-500/50" : "focus:border-red-500/50"}`}
+                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium pr-12 transition-all ${isMasterMode ? "focus:border-amber-500/50" : "focus:border-red-500/50"}`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoFocus
@@ -196,7 +199,7 @@ export function DeleteAccountModal({
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-white transition-colors cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-foreground transition-colors cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -235,7 +238,7 @@ export function DeleteAccountModal({
               <button
                 type="button"
                 onClick={onCancel}
-                className="w-full text-neutral-500 hover:text-neutral-300 py-2 text-sm font-medium cursor-pointer transition-colors"
+                className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
                 disabled={loading}
               >
                 Cancelar Operação

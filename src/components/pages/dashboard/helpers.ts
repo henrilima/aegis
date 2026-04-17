@@ -86,3 +86,12 @@ export function getHabitStreak(habit: Habit, referenceNow?: Date) {
   const diff = now.getTime() - slip.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
+
+export function formatDateShort(iso: string) {
+  if (!iso) return "";
+  const parts = iso.split("-");
+  if (parts.length >= 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return iso;
+}

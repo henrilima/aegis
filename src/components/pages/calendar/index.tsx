@@ -5,7 +5,7 @@ import { CalendarDays, Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EventModal } from "@/components/forms/calendar/calendarModals";
-import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
@@ -15,33 +15,39 @@ import { CalendarHeader } from "./components/calendarHeader";
 import { CalendarUpcomingDeadlines } from "./components/calendarUpcomingDeadlines";
 import type { CalendarEvent } from "./types";
 
-/**
- * Módulo de Calendário: Gestão de compromissos, prazos e eventos acadêmicos/pessoais
- */
 export default function CalendarPage() {
   const { user } = useAuth();
+  const { now: simulatedNow } = useTime();
   const uid = user ? String(user.id) : "";
 
-  const { now: simulatedNow } = useTime();
+  // Estados principais
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [month, setMonth] = useState(simulatedNow.getMonth());
   const [year, setYear] = useState(simulatedNow.getFullYear());
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editEvent, setEditEvent] = useState<CalendarEvent | undefined>();
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [showHolidays, setShowHolidays] = useState(true);
 
-  // Sincronização
+  // Estados de formulário/modal
+  const [showForm, setShowForm] = useState(false);
+  const [editEvent, setEditEvent] = useState<CalendarEvent | undefined>(
+    undefined,
+  );
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+
   const loadEvents = useCallback(async () => {
-    if (!uid) return;
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
     try {
       const data = await invoke<CalendarEvent[]>("calendar_list_events", {
         userId: uid,
       });
       setEvents(data);
-    } catch {
-      toast.error("Falha ao sincronizar agenda");
+    } catch (err) {
+      console.error(err);
+      toast.error("Falha ao carregar eventos");
     } finally {
       setLoading(false);
     }
@@ -51,33 +57,47 @@ export default function CalendarPage() {
     loadEvents();
   }, [loadEvents]);
 
-  const handleSave = async (ev: CalendarEvent) => {
+  const handleSyncHolidays = async () => {
+    if (!uid) return;
     try {
-      if (ev.id) {
-        await invoke("calendar_update_event", { event: ev });
-        toast.success("Evento atualizado!");
+      setLoading(true);
+      const count = await invoke<number>("sync_br_holidays", {
+        userId: uid,
+        year: year,
+      });
+      if (count > 0) {
+        toast.success(`${count} novos feriados sincronizados!`);
+        await loadEvents();
       } else {
-        await invoke("calendar_add_event", { event: ev });
-        toast.success("Agenda atualizada!");
+        toast.info("Calendário de feriados já está atualizado.");
       }
-      setShowForm(false);
-      setEditEvent(undefined);
-      await loadEvents();
-    } catch {
-      toast.error("Erro ao persistir evento");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao sincronizar feriados.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleSaveEvent = async (ev: CalendarEvent) => {
     try {
-      await invoke("calendar_delete_event", { id, userId: uid });
-      toast.success("Registro removido");
-      setDeleteConfirm(null);
-      setSelectedDate(null);
-      await loadEvents();
-    } catch {
-      toast.error("Erro ao excluir do histórico");
+      if (ev.id) {
+        await invoke("calendar_update_event", { event: ev });
+        toast.success("Compromisso atualizado!");
+      } else {
+        await invoke("calendar_add_event", { event: ev });
+        toast.success("Compromisso agendado!");
+      }
+      setShowForm(false);
+      loadEvents();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar compromisso");
     }
+  };
+
+  const updateShowHolidays = (val: boolean) => {
+    setShowHolidays(val);
   };
 
   // Filtragem de eventos
@@ -103,14 +123,14 @@ export default function CalendarPage() {
   if (loading)
     return (
       <div className="h-full flex items-center justify-center font-bold">
-        <div className="flex items-center gap-2 text-neutral-500 animate-pulse">
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
           <CalendarDays className="w-4 h-4" /> Sincronizando agenda...
         </div>
       </div>
     );
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-white">
+    <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground">
       {/* Cabeçalho */}
       <CalendarHeader
         month={month}
@@ -125,6 +145,9 @@ export default function CalendarPage() {
           setEditEvent(undefined);
           setShowForm(true);
         }}
+        onSyncHolidays={handleSyncHolidays}
+        showHolidays={showHolidays}
+        onToggleHolidays={() => updateShowHolidays(!showHolidays)}
       />
 
       {/* Modais */}
@@ -132,34 +155,48 @@ export default function CalendarPage() {
         show={showForm}
         userId={uid}
         editEvent={editEvent}
-        onSave={handleSave}
-        onClose={() => {
-          setShowForm(false);
-          setEditEvent(undefined);
-        }}
+        onClose={() => setShowForm(false)}
+        onSave={handleSaveEvent}
       />
 
       {deleteConfirm !== null && (
         <ConfirmModal
-          {...CONFIRM_PRESETS.deleteEvent}
-          onConfirm={() => handleDelete(deleteConfirm)}
+          title="Excluir Evento?"
+          description="Esta ação não poderá ser desfeita e removerá o compromisso permanentemente."
+          variant="danger"
+          onConfirm={async () => {
+            if (deleteConfirm) {
+              try {
+                await invoke("calendar_delete_event", {
+                  id: deleteConfirm,
+                  userId: uid,
+                });
+                toast.success("Evento removido");
+                loadEvents();
+              } catch (_err) {
+                toast.error("Erro ao remover");
+              }
+            }
+            setDeleteConfirm(null);
+          }}
           onCancel={() => setDeleteConfirm(null)}
         />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Grade */}
-        <div className="lg:col-span-2">
+        {/* Calendário Principal */}
+        <div className="lg:col-span-2 bg-card/40 border border-border rounded-2xl overflow-hidden backdrop-blur-sm">
           <CalendarGrid
             month={month}
             year={year}
-            events={events}
+            events={events.filter((e) => showHolidays || !e.is_holiday)}
             selectedDate={selectedDate}
             onDayClick={(date) =>
               setSelectedDate((prev) => (prev === date ? null : date))
             }
             onDayDoubleClick={(date) => {
-              setEditEvent({ date } as CalendarEvent);
+              setSelectedDate(date);
+              setEditEvent(undefined);
               setShowForm(true);
             }}
           />
@@ -172,7 +209,7 @@ export default function CalendarPage() {
           {selectedDate ? (
             <CalendarDayPanel
               date={selectedDate}
-              events={selectedEvents}
+              dayEvents={selectedEvents}
               onEdit={(ev) => {
                 setEditEvent(ev);
                 setShowForm(true);
@@ -185,7 +222,7 @@ export default function CalendarPage() {
               icon={Info}
               title="Selecione uma data"
               description="Consulte os registros do dia ou adicione novos eventos clicando no calendário."
-              className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 shadow-lg shadow-black/20"
+              className="bg-card border border-border rounded-xl p-8"
             />
           )}
         </div>

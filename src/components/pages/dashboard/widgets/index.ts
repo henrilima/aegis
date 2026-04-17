@@ -5,6 +5,7 @@ export * from "./hydration/HydrationWidget";
 export * from "./notes/NotesWidget";
 export * from "./passwords/PasswordsWidget";
 export * from "./pomodoro/PomodoroWidget";
+export * from "./reading/ReadingWidget";
 export * from "./sleep/SleepWidget";
 export * from "./statistics/StatisticsWidget";
 export * from "./studies/StudiesWidget";
