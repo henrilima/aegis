@@ -13,6 +13,17 @@ pub struct AppConfig {
     pub start_minimized: bool,
     pub week_start_day: i32,
     pub show_holidays: bool,
+    pub auto_read_notifications: bool,
+    pub notif_sleep_bedtime: bool,
+    pub notif_sleep_bedtime_time: String,
+    pub notif_sleep_morning: bool,
+    pub notif_sleep_morning_time: String,
+    pub notif_habit_uncompleted: bool,
+    pub notif_habit_time: String,
+    pub notif_event_upcoming: bool,
+    pub notif_event_upcoming_time: String,
+    pub notif_sleep_target_hours: f64,
+    pub notification_sound: String,
 }
 
 pub struct ConfigManager {
@@ -43,6 +54,17 @@ impl ConfigManager {
             ("week_start_day", "1"),
             ("debug_time_offset", "0"),
             ("show_holidays", "true"),
+            ("auto_read_notifications", "true"),
+            ("notif_sleep_bedtime", "true"),
+            ("notif_sleep_bedtime_time", "23:00"),
+            ("notif_sleep_morning", "true"),
+            ("notif_sleep_morning_time", "09:00"),
+            ("notif_habit_uncompleted", "true"),
+            ("notif_habit_time", "22:00"),
+            ("notif_event_upcoming", "true"),
+            ("notif_event_upcoming_time", "08:00"),
+            ("notif_sleep_target_hours", "8.0"),
+            ("notification_sound", "Plin.mp3"),
         ];
 
         for (key, val) in defaults {
@@ -117,6 +139,90 @@ impl ConfigManager {
             }
         ).unwrap_or(true);
 
+        let auto_read_notifications: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'auto_read_notifications'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let notif_sleep_bedtime: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_sleep_bedtime'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let notif_sleep_morning: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_sleep_morning'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let notif_habit_uncompleted: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_habit_uncompleted'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let notif_habit_time: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_habit_time'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("22:00".to_string());
+
+        let notif_event_upcoming: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_event_upcoming'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let notif_sleep_bedtime_time: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_sleep_bedtime_time'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("23:00".to_string());
+
+        let notif_sleep_morning_time: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_sleep_morning_time'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("09:00".to_string());
+
+        let notif_event_upcoming_time: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_event_upcoming_time'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("08:00".to_string());
+
+        let notif_sleep_target_hours: f64 = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notif_sleep_target_hours'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s.parse::<f64>().unwrap_or(8.0))
+            }
+        ).unwrap_or(8.0);
+
+        let notification_sound: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'notification_sound'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("Plin.mp3".to_string());
+
         AppConfig {
             minimize_on_close,
             start_at_login,
@@ -124,6 +230,17 @@ impl ConfigManager {
             start_minimized,
             week_start_day,
             show_holidays,
+            auto_read_notifications,
+            notif_sleep_bedtime,
+            notif_sleep_bedtime_time,
+            notif_sleep_morning,
+            notif_sleep_morning_time,
+            notif_habit_uncompleted,
+            notif_habit_time,
+            notif_event_upcoming,
+            notif_event_upcoming_time,
+            notif_sleep_target_hours,
+            notification_sound,
         }
     }
 
@@ -159,6 +276,77 @@ impl ConfigManager {
             params![if config.show_holidays { "true" } else { "false" }],
         ).map_err(|e| e.to_string())?;
 
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('auto_read_notifications', ?1)",
+            params![if config.auto_read_notifications { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_bedtime', ?1)",
+            params![if config.notif_sleep_bedtime { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_morning', ?1)",
+            params![if config.notif_sleep_morning { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_habit_uncompleted', ?1)",
+            params![if config.notif_habit_uncompleted { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_habit_time', ?1)",
+            params![config.notif_habit_time],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_event_upcoming', ?1)",
+            params![if config.notif_event_upcoming { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_bedtime_time', ?1)",
+            params![config.notif_sleep_bedtime_time],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_morning_time', ?1)",
+            params![config.notif_sleep_morning_time],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_event_upcoming_time', ?1)",
+            params![config.notif_event_upcoming_time],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_target_hours', ?1)",
+            params![config.notif_sleep_target_hours.to_string()],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notification_sound', ?1)",
+            params![config.notification_sound],
+        ).map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    pub fn update_config(&self, key: &str, value: serde_json::Value) -> Result<(), String> {
+        let conn = self.get_connection();
+        let val_str = match value {
+            serde_json::Value::String(s) => s,
+            serde_json::Value::Bool(b) => b.to_string(),
+            serde_json::Value::Number(n) => n.to_string(),
+            _ => return Err("Unsupported value type".to_string()),
+        };
+        
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            params![key, val_str],
+        ).map_err(|e| e.to_string())?;
         Ok(())
     }
     pub fn get_time_offset(&self) -> i64 {

@@ -26,6 +26,8 @@ export interface ChromaticTheme {
     | "green"
     | "red"
     | "orange"
+    | "carbon"
+    | "coffee"
     | "sky";
 }
 

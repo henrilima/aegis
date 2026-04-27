@@ -284,7 +284,7 @@ export function ReadingReportCanvas({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const img = new Image();
-    img.src = "/images/background.jpg";
+    img.src = "/images/readings-background.jpg";
     img.onload = () => drawReport(ctx, canvas, img);
     img.onerror = () => drawReport(ctx, canvas);
   }, [drawReport]);

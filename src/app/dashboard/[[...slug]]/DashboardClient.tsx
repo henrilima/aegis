@@ -5,11 +5,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Loading from "@/components/Loading";
+import Alarms from "@/components/pages/alarms";
 import Calendar from "@/components/pages/calendar";
 import Currency from "@/components/pages/currency";
 import Dashboard from "@/components/pages/dashboard";
 import Habits from "@/components/pages/habits";
-import Hydration from "@/components/pages/hydration";
 import Notes from "@/components/pages/notes";
 import Passwords from "@/components/pages/passwords";
 import Pomodoro from "@/components/pages/pomodoro";
@@ -57,8 +57,8 @@ export default function DashboardClient() {
         return <Passwords />;
       case "habits":
         return <Habits />;
-      case "hydration":
-        return <Hydration />;
+      case "alarms":
+        return <Alarms />;
       case "notes":
         return <Notes />;
       case "pomodoro":

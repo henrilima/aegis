@@ -101,7 +101,7 @@ export function HeatmapGrid({
                         <Tooltip key={date} delayDuration={0}>
                           <TooltipTrigger asChild>
                             <div
-                              className={`aspect-square w-full rounded-[2px] transition-all hover:scale-150 hover:z-20 hover:shadow-xl hover:shadow-violet-500/20 cursor-pointer ${
+                              className={`aspect-square w-full rounded-[2px] transition-all hover:scale-150 hover:z-20 cursor-pointer ${
                                 !isSameYear
                                   ? "opacity-0 pointer-events-none"
                                   : intensityColors[intensity]

@@ -1,13 +1,25 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { CheckCircle2, Circle, ListTodo, Plus, Trash2 } from "lucide-react";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
+import {
+  CheckCircle2,
+  Circle,
+  DownloadCloud,
+  ListTodo,
+  Plus,
+  Trash2,
+  UploadCloud,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
+import { cn, getColorTheme } from "@/lib/utils";
 import type { Task } from "./types";
 
 export default function TasksPage() {
@@ -79,6 +91,45 @@ export default function TasksPage() {
   const pendingTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
+  const handleExportCSV = async () => {
+    try {
+      const filePath = await save({
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+        defaultPath: "aegis_tarefas_backup.csv",
+      });
+
+      if (!filePath) return;
+
+      await invoke("export_tasks_csv", { userId: uid, path: filePath });
+      toast.success("Exportação de tarefas concluída!");
+    } catch (e) {
+      toast.error(
+        `Falha ao exportar: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
+  const handleImportCSV = async () => {
+    try {
+      const filePath = await openDialog({
+        multiple: false,
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (filePath && typeof filePath === "string") {
+        const count = await invoke<number>("import_tasks_csv", {
+          userId: uid,
+          path: filePath,
+        });
+        toast.success(`${count} tarefas importadas!`);
+        await fetchTasks();
+      }
+    } catch (e) {
+      toast.error(
+        `Erro ao importar CSV: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -90,13 +141,22 @@ export default function TasksPage() {
     );
   }
 
+  const moduleColor = "red";
+  const m = getColorTheme(moduleColor);
+
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10  text-foreground w-full">
+    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-            <ListTodo className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <div
+            className={cn(
+              "p-2 rounded-xl border transition-all",
+              m.bg,
+              m.border,
+            )}
+          >
+            <ListTodo className={cn("w-5 h-5", m.text)} />
           </div>
           <div>
             <h1 className="text-xl font-bold leading-none">Lista de tarefas</h1>
@@ -107,6 +167,34 @@ export default function TasksPage() {
                 : "tarefas pendentes"}
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <ToolTip content="Importar Tarefas (CSV)">
+            <button
+              type="button"
+              onClick={handleImportCSV}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                `hover:${m.text}`,
+              )}
+            >
+              <UploadCloud className="w-4 h-4" />
+              Importar
+            </button>
+          </ToolTip>
+          <ToolTip content="Exportar Tarefas (CSV)">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                `hover:${m.text}`,
+              )}
+            >
+              <DownloadCloud className="w-4 h-4" />
+              Exportar
+            </button>
+          </ToolTip>
         </div>
       </div>
 

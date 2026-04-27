@@ -42,7 +42,7 @@ export function PerformanceComposition({
     allStats.questions + allStats.pages + allStats.sessionsCount || 1;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-8 shadow_xl">
+    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-8">
       <div className="flex items-center gap-2">
         <Zap className="w-4 h-4 text-violet-500" />
         <h3 className=" font-black uppercase text-muted-foreground">

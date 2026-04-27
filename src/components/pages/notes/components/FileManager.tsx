@@ -51,6 +51,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,7 @@ import type { FileSystemItem, Note } from "../types";
 
 interface FileManagerProps {
   onNoteClick: (note: Note) => void;
-  onNewNote: (path: string) => void;
+  onNewNote?: (path: string) => void;
   refreshTrigger: number;
   searchQuery: string;
   externalFolderTrigger?: boolean;
@@ -67,7 +68,6 @@ interface FileManagerProps {
 
 export function FileManager({
   onNoteClick,
-  onNewNote,
   refreshTrigger,
   searchQuery,
   externalFolderTrigger,
@@ -117,8 +117,13 @@ export function FileManager({
 
   const currentItems = useMemo(() => {
     const filtered = items.filter((item) => {
-      if (searchQuery)
-        return item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const q = searchQuery.toLowerCase().trim();
+      if (q) {
+        const nameMatch = item.name.toLowerCase().includes(q);
+        const contentMatch =
+          !item.is_dir && (item.note?.content || "").toLowerCase().includes(q);
+        return nameMatch || contentMatch;
+      }
       const itemParent = item.path.split(/[\\/]/).slice(0, -1).join("/");
       const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/$/, "");
       return norm(currentPath) === norm(itemParent);
@@ -294,17 +299,18 @@ export function FileManager({
 
         <div className="rounded-2xl border border-border bg-card/10 p-4">
           {currentItems.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground gap-3">
-              <Folder className="w-12 h-12 opacity-10" />
-              <p className="text-sm">Pasta vazia</p>
-              <Button
-                variant="link"
-                className="text-orange-500 text-xs"
-                onClick={() => onNewNote(currentPath)}
-              >
-                Criar minha primeira nota aqui
-              </Button>
-            </div>
+            <EmptyState
+              icon={searchQuery ? FileText : Folder}
+              title={
+                searchQuery ? "Nenhum resultado encontrado" : "Pasta vazia"
+              }
+              description={
+                searchQuery
+                  ? `Nenhum item corresponde a "${searchQuery}".`
+                  : "Crie sua primeira nota ou pasta aqui para começar a organizar."
+              }
+              className="py-16"
+            />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {currentItems.map((item) => (
@@ -322,6 +328,7 @@ export function FileManager({
                     setRenameValue(item.name);
                   }}
                   onTogglePin={() => handleTogglePin(item)}
+                  searchQuery={searchQuery}
                 />
               ))}
             </div>
@@ -443,6 +450,7 @@ interface ItemCardProps {
   onDelete: () => void;
   onRename: () => void;
   onTogglePin: () => void;
+  searchQuery?: string;
 }
 
 function ItemCard({
@@ -451,6 +459,7 @@ function ItemCard({
   onDelete,
   onRename,
   onTogglePin,
+  searchQuery,
 }: ItemCardProps) {
   const isFolder = item.is_dir;
   const isPinned = !isFolder && item.note?.pinned;
@@ -517,6 +526,11 @@ function ItemCard({
             <div className="text-center min-w-0 font-semibold text-foreground truncate group-hover:text-orange-600 dark:text-orange-400 transition-colors text-sm w-full">
               {item.name}
             </div>
+            {searchQuery && !isFolder && item.note?.content && (
+              <p className="text-[10px] text-muted-foreground line-clamp-2 w-full text-center px-1 leading-tight h-5">
+                {item.note.content}
+              </p>
+            )}
           </div>
 
           <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-y-[-4px] group-hover:translate-y-0 z-20">

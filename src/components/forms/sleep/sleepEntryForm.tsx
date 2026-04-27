@@ -66,12 +66,7 @@ interface EntryFormProps {
 /**
  * Formulário Unificado: Registra novos ciclos ou edita registros históricos
  */
-export function SleepEntryForm({
-  userId,
-  initial,
-  onSave,
-  onCancel,
-}: EntryFormProps) {
+export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
   const { now: simulatedNow } = useTime();
   const [form, setForm] = useState({
     date: initial?.date ?? isoDate(simulatedNow),
@@ -119,8 +114,12 @@ export function SleepEntryForm({
   const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <form
+      id="sleep-form"
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-8"
+    >
+      <div className="grid grid-cols-2 gap-8 items-start">
         {/* Lado Esquerdo: Horários */}
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1.5">
@@ -265,23 +264,6 @@ export function SleepEntryForm({
             />
           </div>
         </div>
-      </div>
-
-      {/* Ações do Formulário */}
-      <div className="flex flex-col gap-2 pt-6 border-t border-border">
-        <button
-          type="submit"
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 text-blue-300 hover:text-blue-200 text-sm font-bold transition-all active:scale-[0.98] cursor-pointer"
-        >
-          {initial ? "Salvar alterações" : "Confirmar registro"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
-        >
-          Agora não
-        </button>
       </div>
     </form>
   );

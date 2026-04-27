@@ -1,10 +1,10 @@
 "use client";
 
 import type React from "react";
+import { AlarmsWidget } from "./alarms/AlarmsWidget";
 import { CalendarWidget } from "./calendar/CalendarWidget";
 import { CurrencyWidget } from "./currency/CurrencyWidget";
 import { HabitsWidget } from "./habits/HabitsWidget";
-import { HydrationWidget } from "./hydration/HydrationWidget";
 import { NotesWidget } from "./notes/NotesWidget";
 import { PasswordsWidget } from "./passwords/PasswordsWidget";
 import { PomodoroWidget } from "./pomodoro/PomodoroWidget";
@@ -24,7 +24,7 @@ export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   sleep: SonoWidget,
   calendar: CalendarWidget,
   passwords: PasswordsWidget,
-  hydration: HydrationWidget,
+  alarms: AlarmsWidget,
   currency: CurrencyWidget,
   statistics: StatisticsWidget,
   reading: ReadingWidget,
@@ -43,7 +43,11 @@ export const WIDGET_METADATA = [
     description: "Eventos e prazos importantes",
   },
   { id: "passwords", name: "Cofre", description: "Segurança e senhas" },
-  { id: "hydration", name: "Hidratação", description: "Alertas de água" },
+  {
+    id: "alarms",
+    name: "Alarmes",
+    description: "Próximos alertas programados",
+  },
   { id: "currency", name: "Câmbio", description: "Cotações em tempo real" },
   {
     id: "statistics",

@@ -58,6 +58,9 @@ impl HabitManager {
             [],
         ).ok();
 
+        // Evita duplicados (mesmo nome para o mesmo usuário)
+        conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_habits_user_name ON habits(user_id, name)"#, []).ok();
+
         
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN max_streak INTEGER NOT NULL DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN current_streak INTEGER NOT NULL DEFAULT 0", []);
@@ -67,15 +70,15 @@ impl HabitManager {
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN charges_amount INTEGER NOT NULL DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN charges_interval_days INTEGER NOT NULL DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN accumulates INTEGER NOT NULL DEFAULT 0", []);
-        let _ = conn.execute("ALTER TABLE habits ADD COLUMN last_charge_refill TEXT NOT NULL DEFAULT ''", []);
-        let _ = conn.execute("ALTER TABLE habits ADD COLUMN current_charges INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute(r#"ALTER TABLE habits ADD COLUMN last_charge_refill TEXT NOT NULL DEFAULT ''"#, []);
+        let _ = conn.execute(r#"ALTER TABLE habits ADD COLUMN current_charges INTEGER NOT NULL DEFAULT 0"#, []);
 
         Self { db_path }
     }
 
     fn get_connection(&self) -> Connection {
-        let conn = Connection::open(&self.db_path).expect("Falha ao conectar ao banco de hábitos");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha ao definir timeout de espera");
+        let conn = Connection::open(&self.db_path).expect("Falha ao conectar ao banco de dados");
+        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha no timeout");
         conn
     }
 
@@ -226,7 +229,7 @@ impl HabitManager {
     pub fn add_habit(&self, habit: Habit) -> Result<(), String> {
         let conn = self.get_connection();
         conn.execute(
-            "INSERT INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+            "INSERT OR IGNORE INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
             params![
                 habit.user_id, 
                 habit.name, 
@@ -377,20 +380,59 @@ impl HabitManager {
         Ok(())
     }
 
-    pub fn refill_all_charges(&self, now: DateTime<Utc>) -> Result<(), String> {
-        let conn = self.get_connection();
-        let now_iso = now.to_rfc3339();
-        conn.execute(
-            "UPDATE habits SET current_charges = charges_amount, last_charge_refill = ?1",
-            params![now_iso],
-        ).map_err(|e| e.to_string())?;
-        Ok(())
-    }
-
     pub fn delete_habit(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
         conn.execute("DELETE FROM habits WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    pub fn export_csv(&self, user_id: &str, path: &str, now: DateTime<Utc>) -> Result<(), String> {
+        let habits = self.list_habits(user_id, now);
+        let mut wtr = csv::Writer::from_path(path).map_err(|e| e.to_string())?;
+        wtr.write_record(&["name", "habit_type", "max_streak", "current_streak", "cooldown_days", "current_charges", "charges_amount"]).map_err(|e| e.to_string())?;
+        for h in habits {
+            wtr.write_record(&[
+                h.name,
+                h.habit_type,
+                h.max_streak.to_string(),
+                h.current_streak.to_string(),
+                h.cooldown_days.to_string(),
+                h.current_charges.to_string(),
+                h.charges_amount.to_string(),
+            ]).map_err(|e| e.to_string())?;
+        }
+        wtr.flush().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn import_csv(&self, user_id: &str, path: &str) -> Result<usize, String> {
+        let mut rdr = csv::Reader::from_path(path).map_err(|e| e.to_string())?;
+        let mut count = 0;
+        let now_iso = Utc::now().to_rfc3339();
+        for result in rdr.records() {
+            let record = result.map_err(|e| e.to_string())?;
+            let habit = Habit {
+                id: None,
+                user_id: user_id.to_string(),
+                name: record.get(0).unwrap_or_default().to_string(),
+                habit_type: record.get(1).unwrap_or("positive").to_string(),
+                last_slip: now_iso.clone(),
+                created_at: now_iso.clone(),
+                max_streak: record.get(2).and_then(|s| s.parse().ok()).unwrap_or(0),
+                current_streak: record.get(3).and_then(|s| s.parse().ok()).unwrap_or(0),
+                cooldown_days: record.get(4).and_then(|s| s.parse().ok()).unwrap_or(1),
+                last_done: None,
+                charges_used: 0,
+                charges_amount: record.get(6).and_then(|s| s.parse().ok()).unwrap_or(0),
+                charges_interval_days: 1,
+                accumulates: false,
+                last_charge_refill: now_iso.clone(),
+                current_charges: record.get(5).and_then(|s| s.parse().ok()).unwrap_or(0),
+            };
+            let _ = self.add_habit(habit);
+            count += 1;
+        }
+        Ok(count)
     }
 }
 

@@ -157,16 +157,18 @@ export function CalendarDayPanel({
 
                     {/* Ações do Registro */}
                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ToolTip content="Editar registro">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => onEdit(ev)}
-                          className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-foreground hover:bg-accent/50 transition-all border-none"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                      </ToolTip>
+                      {!ev.is_holiday && (
+                        <ToolTip content="Editar registro">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => onEdit(ev)}
+                            className="w-7 h-7 p-0 rounded-lg text-neutral-600 hover:text-foreground hover:bg-accent/50 transition-all border-none"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                        </ToolTip>
+                      )}
                       {!ev.is_holiday && (
                         <ToolTip content="Remover registro">
                           <Button

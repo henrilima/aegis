@@ -92,42 +92,45 @@ impl NoteManager {
     }
 
     fn parse_note_file(&self, path: &PathBuf) -> Result<Note, String> {
-        let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
-        
-        if content.starts_with("---\n") {
-            if let Some(end_idx) = content[4..].find("\n---\n") {
-                let frontmatter_str = &content[4..end_idx + 4];
-                let body = &content[end_idx + 9..];
-                
-                let meta: NoteMeta = serde_yaml::from_str(frontmatter_str).map_err(|e| e.to_string())?;
-                
-                let mut title = String::new();
-                let mut stripped_body = body;
-                if let Some(first_line) = body.lines().next() {
-                    if first_line.starts_with("# ") {
-                        title = first_line[2..].trim().to_string();
-                        if let Some(rest_idx) = body.find('\n') {
-                            stripped_body = &body[rest_idx + 1..];
-                        }
+    let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let content = content.replace("\r\n", "\n");
+
+    if content.starts_with("---\n") {
+        if let Some(end_idx) = content[4..].find("\n---\n") {
+            let frontmatter_str = &content[4..end_idx + 4];
+            let body = &content[end_idx + 9..];
+
+            let meta: NoteMeta =
+                serde_yaml::from_str(frontmatter_str).map_err(|e| e.to_string())?;
+
+            let mut title = String::new();
+            let mut stripped_body = body;
+            if let Some(first_line) = body.lines().next() {
+                if first_line.starts_with("# ") {
+                    title = first_line[2..].trim().to_string();
+                    if let Some(rest_idx) = body.find('\n') {
+                        stripped_body = &body[rest_idx + 1..];
                     }
                 }
-                
-                let relative_path = path.strip_prefix(&self.notes_dir)
-                    .ok()
-                    .and_then(|p| p.parent())
-                    .map(|p| p.to_string_lossy().to_string());
-
-                return Ok(Note {
-                    id: Some(meta.id),
-                    user_id: meta.user_id,
-                    title,
-                    content: stripped_body.trim().to_string(),
-                    created_at: meta.created_at,
-                    pinned: meta.pinned,
-                    path: relative_path,
-                });
             }
+
+            let relative_path = path
+                .strip_prefix(&self.notes_dir)
+                .ok()
+                .and_then(|p| p.parent())
+                .map(|p| p.to_string_lossy().to_string());
+
+            return Ok(Note {
+                id: Some(meta.id),
+                user_id: meta.user_id,
+                title,
+                content: stripped_body.trim().to_string(),
+                created_at: meta.created_at,
+                pinned: meta.pinned,
+                path: relative_path,
+            });
         }
+    }
         
         Err("Formato invalido".to_string())
     }

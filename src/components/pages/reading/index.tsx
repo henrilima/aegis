@@ -178,7 +178,7 @@ export default function ReadingPage() {
     try {
       const path = await save({
         filters: [{ name: "JSON", extensions: ["json"] }],
-        defaultPath: "backup_leitura.json",
+        defaultPath: "aegis_leitura_backup.json",
       });
       if (path) {
         await invoke("reading_export_json", { userId: uid, destPath: path });

@@ -1,6 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { load } from "@tauri-apps/plugin-store";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -16,6 +17,8 @@ export interface User {
   username: string;
   email: string;
   master_code_index: number;
+  password_hint?: string;
+  has_vault_password?: boolean;
 }
 
 interface AuthContextType {
@@ -37,9 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async (userId: string) => {
     try {
-      // Busca dados do usuário no backend
       const userData = await invoke<User>("get_local_user", { userId });
-
       if (userData?.id) {
         setUser(userData);
         setIsAuthenticated(true);
@@ -47,9 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Usuário não encontrado");
       }
     } catch (error) {
-      // Limpa sessão em caso de erro
       console.error("Erro na autenticação local:", error);
-      localStorage.removeItem("token");
+      // Limpa sessão no store seguro
+      const store = await load("aegis-session.json", {
+        defaults: {},
+        autoSave: true,
+      });
+      await store.delete("token");
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -59,12 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (userId: string) => {
     setLoading(true);
-    localStorage.setItem("token", userId);
+    // Persiste no store seguro do Tauri em vez de localStorage
+    const store = await load("aegis-session.json", {
+      defaults: {},
+      autoSave: true,
+    });
+    await store.set("token", userId);
     await fetchUser(userId);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    load("aegis-session.json", { defaults: {}, autoSave: true }).then((store) =>
+      store.delete("token"),
+    );
     setUser(null);
     setIsAuthenticated(false);
     router.push("/");
@@ -77,13 +89,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    // Restaura sessão se houver token
-    if (storedToken) {
-      fetchUser(storedToken);
-    } else {
-      setLoading(false);
-    }
+    const restoreSession = async () => {
+      try {
+        const store = await load("aegis-session.json", {
+          defaults: {},
+          autoSave: true,
+        });
+        const storedToken = await store.get<string>("token");
+        if (storedToken) {
+          await fetchUser(storedToken);
+        } else {
+          setLoading(false);
+        }
+      } catch {
+        setLoading(false);
+      }
+    };
+    restoreSession();
   }, [fetchUser]);
 
   return (

@@ -20,10 +20,12 @@
       "recommended": true,
       "suspicious": {
         "noUnknownAtRules": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
       }
     },
     "domains": {
-      "next": "recommended",
       "react": "recommended"
     }
   },

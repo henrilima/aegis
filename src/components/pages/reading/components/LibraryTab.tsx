@@ -122,7 +122,7 @@ export function LibraryTab({
             return (
               <div
                 key={book.id}
-                className="group flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:border-orange-500/30 transition-all hover:shadow-orange-900/5"
+                className="group flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:border-orange-500/30 transition-all"
               >
                 <div className="relative p-6 pb-0 flex gap-4">
                   <div className="w-24 h-36 bg-muted rounded-xl overflow-hidden shrink-0 border border-border/50 group-hover:scale-105 transition-all duration-500">

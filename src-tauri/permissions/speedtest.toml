@@ -20,5 +20,7 @@ commands.allow = [
     "export_passwords",
     "delete_password",
     "check_vault",
-    "reset_vault"
+    "reset_vault",
+    "export_encrypted_db",
+    "import_encrypted_db"
 ]

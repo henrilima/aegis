@@ -2,13 +2,19 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { StickyNote } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { NoteCreateModal } from "@/components/forms/notes/noteCreateModal";
 import { NoteExpandModal } from "@/components/forms/notes/noteExpandModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
-import { FileManager } from "./components/FileManager";
+
+// Lazy import: @dnd-kit só carrega quando o módulo de Notas for aberto
+const FileManager = lazy(() =>
+  import("./components/FileManager").then((m) => ({ default: m.FileManager })),
+);
+
+import { NotesInfoModal } from "./components/NotesInfoModal";
 import { NotesHeader } from "./components/notesHeader";
 import type { Note } from "./types";
 
@@ -30,6 +36,7 @@ export default function NotesPage() {
   // Estados compartilhados com o Header e FileManager
   const [searchQuery, setSearchQuery] = useState("");
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -123,9 +130,12 @@ export default function NotesPage() {
         }}
         onOpenFolder={() => invoke("open_notes_folder")}
         onNewFolder={() => setIsFolderModalOpen(true)}
+        onOpenInfo={() => setShowInfo(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
+
+      <NotesInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {isNoteModalOpen && (
         <NoteCreateModal
@@ -142,17 +152,28 @@ export default function NotesPage() {
         />
       )}
 
-      <FileManager
-        onNoteClick={(note) => setExpandedNote(note)}
-        onNewNote={(path) => {
-          setCreationPath(path);
-          setIsNoteModalOpen(true);
-        }}
-        refreshTrigger={refreshTrigger}
-        searchQuery={searchQuery}
-        externalFolderTrigger={isFolderModalOpen}
-        onFolderModalClose={() => setIsFolderModalOpen(false)}
-      />
+      <Suspense
+        fallback={
+          <div className="flex items-center gap-2 text-muted-foreground animate-pulse py-8">
+            <StickyNote className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              Carregando gerenciador...
+            </span>
+          </div>
+        }
+      >
+        <FileManager
+          onNoteClick={(note) => setExpandedNote(note)}
+          onNewNote={(path) => {
+            setCreationPath(path);
+            setIsNoteModalOpen(true);
+          }}
+          refreshTrigger={refreshTrigger}
+          searchQuery={searchQuery}
+          externalFolderTrigger={isFolderModalOpen}
+          onFolderModalClose={() => setIsFolderModalOpen(false)}
+        />
+      </Suspense>
 
       {/* Confirmação */}
       {deletingId !== null && (

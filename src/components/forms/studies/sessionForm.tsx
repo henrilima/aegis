@@ -23,7 +23,6 @@ export function SessionForm({
   initial,
   existingSubjects = [],
   onSave,
-  onCancel,
 }: SessionFormProps) {
   const { now: simulatedNow } = useTime();
   const [form, setForm] = useState<
@@ -112,8 +111,12 @@ export function SessionForm({
   const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <form
+      id="studies-form"
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-6"
+    >
+      <div className="grid grid-cols-2 gap-8 items-start">
         {/* Lado Esquerdo: Identificação e Tempo */}
         <div className="flex flex-col gap-6">
           <div className="space-y-4">
@@ -424,23 +427,6 @@ export function SessionForm({
             )}
           </div>
         </div>
-      </div>
-
-      {/* Ações do Formulário */}
-      <div className="flex flex-col gap-2 pt-4 border-t border-neutral-900/50">
-        <button
-          type="submit"
-          className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600/10 hover:bg-violet-600/20 border border-violet-600/20 hover:border-violet-600 text-violet-300 hover:text-violet-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer`}
-        >
-          {initial ? "Salvar alterações" : "Registrar sessão"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
-        >
-          Agora não
-        </button>
       </div>
     </form>
   );

@@ -32,9 +32,9 @@ export function EditHabitDialog({
         tabIndex={-1}
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-sm bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-5 border-b border-border/60">
+        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
               <Edit2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -57,7 +57,7 @@ export function EditHabitDialog({
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-4">
           {/* Nome */}
           <div className="space-y-1.5">
             <label htmlFor="ed-name" className={lc}>
@@ -134,24 +134,24 @@ export function EditHabitDialog({
               />
             </div>
           )}
+        </div>
 
-          {/* Ações */}
-          <div className="flex flex-col gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onUpdate}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 hover:border-teal-400 text-teal-300 hover:text-teal-200 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
-            >
-              Salvar alterações
-            </button>
-            <button
-              type="button"
-              onClick={() => setHabit(null)}
-              className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
-            >
-              Agora não
-            </button>
-          </div>
+        {/* Ações */}
+        <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-background/50">
+          <button
+            type="button"
+            onClick={() => setHabit(null)}
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onUpdate}
+            className="flex-2 px-4 py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer"
+          >
+            Salvar alterações
+          </button>
         </div>
       </div>
     </div>

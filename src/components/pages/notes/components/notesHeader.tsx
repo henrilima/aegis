@@ -1,4 +1,11 @@
-import { FolderOpen, FolderPlus, Plus, Search, StickyNote } from "lucide-react";
+import {
+  FolderOpen,
+  FolderPlus,
+  HelpCircle,
+  Plus,
+  Search,
+  StickyNote,
+} from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 
 interface NotesHeaderProps {
@@ -8,6 +15,7 @@ interface NotesHeaderProps {
   onNewNote: () => void;
   onOpenFolder: () => void;
   onNewFolder: () => void;
+  onOpenInfo: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }
@@ -22,6 +30,7 @@ export function NotesHeader({
   onNewNote,
   onOpenFolder,
   onNewFolder,
+  onOpenInfo,
   searchQuery,
   onSearchChange,
 }: NotesHeaderProps) {
@@ -65,14 +74,27 @@ export function NotesHeader({
           </button>
         </ToolTip>
 
-        <button
-          type="button"
-          onClick={onNewFolder}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border hover:bg-accent/50 text-muted-foreground transition-all text-sm font-bold cursor-pointer"
-        >
-          <FolderPlus className="w-4 h-4" />
-          Pasta
-        </button>
+        <ToolTip content="Guia do Módulo">
+          <button
+            type="button"
+            onClick={onOpenInfo}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card/50 hover:bg-accent/50 text-muted-foreground hover:text-orange-600 dark:text-orange-400 border border-border transition-all cursor-pointer text-xs font-bold"
+          >
+            <HelpCircle className="w-4 h-4" />
+            Guia
+          </button>
+        </ToolTip>
+
+        <ToolTip content="Nova Pasta">
+          <button
+            type="button"
+            onClick={onNewFolder}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border hover:bg-accent/50 text-muted-foreground transition-all text-sm font-bold cursor-pointer"
+          >
+            <FolderPlus className="w-4 h-4" />
+            Pasta
+          </button>
+        </ToolTip>
 
         <button
           type="button"

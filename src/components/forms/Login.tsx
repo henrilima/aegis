@@ -22,12 +22,25 @@ import { DeleteAccountModal } from "./DeleteAccountModal";
 import RegisterComponent from "./Register";
 import { TermsContent } from "./TermsContent";
 
+/** Retorna o src de uma imagem base64 a partir dos dados e do tipo MIME detectado. */
+function toDataUrl(base64: string | null | undefined): string | null {
+  if (!base64) return null;
+  // Detecta o tipo pelo cabeçalho base64
+  const header = base64.substring(0, 10);
+  let mime = "image/png";
+  if (header.startsWith("/9j/")) mime = "image/jpeg";
+  else if (header.startsWith("UklGR")) mime = "image/webp";
+  else if (header.startsWith("R0lGO")) mime = "image/gif";
+  return `data:${mime};base64,${base64}`;
+}
+
 interface LocalUser {
   id: string;
   username: string;
   email: string;
   master_code_index: number;
   password_hint: string;
+  avatar?: string | null;
 }
 
 export default function LoginComponent() {
@@ -200,9 +213,20 @@ export default function LoginComponent() {
                       className="flex flex-1 items-center gap-4 p-4 text-left cursor-pointer group"
                     >
                       <div
-                        className={`w-12 h-12 rounded-xl ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text} font-black text-xl transition-all group-hover:${theme.solid} group-hover:text-foreground group-hover:scale-105`}
+                        className={`w-12 h-12 rounded-xl ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text} font-black text-xl transition-all group-hover:${theme.solid} group-hover:text-foreground group-hover:scale-105 overflow-hidden`}
                       >
-                        {u.username[0].toUpperCase()}
+                        {u.avatar ? (
+                          <img
+                            src={toDataUrl(u.avatar) || ""}
+                            alt={u.username}
+                            width={48}
+                            height={48}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          u.username[0].toUpperCase()
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-foreground text-base truncate">
@@ -269,9 +293,20 @@ export default function LoginComponent() {
 
               <div className="flex items-center gap-4 p-4 rounded-xl bg-card/40 border border-neutral-900">
                 <div
-                  className={`w-12 h-12 rounded-xl ${theme.solid} flex items-center justify-center text-foreground font-bold text-xl`}
+                  className={`w-12 h-12 rounded-xl ${theme.solid} flex items-center justify-center text-foreground font-bold text-xl overflow-hidden`}
                 >
-                  {selectedUser.username[0].toUpperCase()}
+                  {selectedUser.avatar ? (
+                    <img
+                      src={toDataUrl(selectedUser.avatar) || ""}
+                      alt={selectedUser.username}
+                      width={48}
+                      height={48}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    selectedUser.username[0].toUpperCase()
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-foreground truncate">

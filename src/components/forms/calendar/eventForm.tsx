@@ -28,12 +28,7 @@ interface EventFormProps {
 /**
  * Formulário para criação e edição de eventos e prazos no calendário
  */
-export function EventForm({
-  userId,
-  initial,
-  onSave,
-  onCancel,
-}: EventFormProps) {
+export function EventForm({ userId, initial, onSave }: EventFormProps) {
   const { now: simulatedNow } = useTime();
   const [form, setForm] = useState<
     Omit<CalendarEvent, "id" | "user_id" | "created_at">
@@ -66,8 +61,12 @@ export function EventForm({
     "w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-green-500/40 transition-all placeholder:text-neutral-700";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <form
+      id="calendar-form"
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-8"
+    >
+      <div className="grid grid-cols-2 gap-8 items-start">
         {/* Lado Esquerdo: Identificação */}
         <div className="flex flex-col gap-6">
           <div className="space-y-1.5">
@@ -95,7 +94,7 @@ export function EventForm({
                     : "bg-transparent text-neutral-600 border-transparent hover:text-muted-foreground"
                 }`}
               >
-                <AlertTriangle className="w-3.5 h-3.5" /> Deadline
+                <AlertTriangle className="w-3.5 h-3.5" /> Prazo
               </button>
             </div>
           </div>
@@ -106,6 +105,7 @@ export function EventForm({
             </Label>
             <Input
               id="ef-title"
+              disabled={initial?.is_holiday}
               className={inputStyle}
               placeholder={
                 isDeadline ? "Ex: Prova de Anatomia" : "Ex: Reunião de equipe"
@@ -122,6 +122,7 @@ export function EventForm({
             </Label>
             <Textarea
               id="ef-desc"
+              disabled={initial?.is_holiday}
               className="bg-card border-border rounded-xl min-h-[120px] resize-none text-sm font-medium text-muted-foreground focus:border-green-600/30 placeholder:text-neutral-700 transition-all"
               placeholder="Notas, links ou detalhes relevantes..."
               value={form.description ?? ""}
@@ -140,6 +141,7 @@ export function EventForm({
               <Input
                 id="ef-date"
                 type="date"
+                disabled={initial?.is_holiday}
                 className={inputStyle}
                 value={form.date}
                 onChange={(e) => set("date", e.target.value)}
@@ -153,6 +155,7 @@ export function EventForm({
               <Input
                 id="ef-time"
                 type="time"
+                disabled={initial?.is_holiday}
                 className={inputStyle}
                 value={form.time ?? ""}
                 onChange={(e) => set("time", e.target.value)}
@@ -162,7 +165,7 @@ export function EventForm({
 
           {isDeadline ? (
             <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-300">
-              <Label className={lc}>Nível de Urgência</Label>
+              <Label className={lc}>Nível de urgência</Label>
               <div className="grid grid-cols-2 gap-2">
                 {(Object.keys(DEADLINE_LABELS) as DeadlineCategory[]).map(
                   (cat) => (
@@ -216,35 +219,7 @@ export function EventForm({
               </div>
             </div>
           )}
-
-          <div className="mt-auto p-4 bg-background/40 border border-border/60 rounded-xl">
-            <p className="text-[10px] text-neutral-600 font-medium leading-relaxed">
-              Registros serão exibidos na grade mensal e no painel lateral de
-              próximos compromissos.
-            </p>
-          </div>
         </div>
-      </div>
-
-      {/* Ações */}
-      <div className="flex flex-col gap-2 pt-6 border-t border-neutral-900/50">
-        <button
-          type="submit"
-          className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-bold transition-all active:scale-[0.98] cursor-pointer border ${
-            isDeadline
-              ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/40 hover:border-red-400 text-red-300 hover:text-red-200"
-              : "bg-green-500/10 hover:bg-green-500/20 border-green-500/40 hover:border-green-400 text-green-300 hover:text-green-200"
-          }`}
-        >
-          {initial ? "Salvar alterações" : "Confirmar agendamento"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
-        >
-          Agora não
-        </button>
       </div>
     </form>
   );

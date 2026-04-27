@@ -7,8 +7,6 @@ import {
   BookOpen,
   ChevronRight,
   Hash,
-  Plus,
-  Save,
   Search,
   Tag,
   User,
@@ -241,31 +239,32 @@ export function BookModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-background border border-border rounded-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-border/50">
+      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-              <Book className="w-5 h-5" />
+            <div className="p-2.5 bg-orange-500/10 rounded-xl border border-orange-500/20">
+              <BookOpen className="w-5 h-5 text-orange-500" />
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground leading-none">
-                {editBook ? "Editar obra" : "Nova obra literária"}
+                {editBook ? "Editar obra" : "Adicionar à biblioteca"}
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Gestão de acervo
+                Gestão de acervo e progresso
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2.5 hover:bg-muted/50 rounded-xl transition-all text-neutral-600 hover:text-foreground"
+            className="p-2.5 rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto custom-scrollbar flex-1 max-h-[80vh]">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           {!editBook && (
             <div className="mb-6">
               <div className="bg-card/40 p-1.5 rounded-xl border border-border flex items-center gap-3">
@@ -334,7 +333,7 @@ export function BookModal({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-5">
                 <div>
                   <Label className={labelClass}>
@@ -498,25 +497,20 @@ export function BookModal({
               </div>
             </div>
 
-            <div className="pt-5 border-t border-neutral-900 flex flex-col gap-3">
-              <Button
-                type="submit"
-                className="w-full h-12 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 text-orange-600 dark:text-orange-400 font-semibold text-sm transition-all active:scale-[0.98]"
-              >
-                {editBook ? (
-                  <Save className="w-4 h-4" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
-                {editBook ? "Salvar alterações" : "Adicionar à biblioteca"}
-              </Button>
+            <div className="flex gap-3 pt-8 mt-4 border-t border-border">
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs font-medium text-neutral-700 hover:text-muted-foreground text-center py-2"
+                className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
               >
-                Agora não
+                Cancelar
               </button>
+              <Button
+                type="submit"
+                className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98]"
+              >
+                {editBook ? "Salvar alterações" : "Adicionar à biblioteca"}
+              </Button>
             </div>
           </form>
         </div>

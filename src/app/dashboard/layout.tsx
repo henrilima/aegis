@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { AppSidebar } from "@/components/appSidebar";
+import { GlobalShortcuts } from "@/components/GlobalShortcuts";
 import { Toaster } from "@/components/ui/sonner";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { NavigationProvider } from "@/context/NavigationContext";
@@ -16,6 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <NavigationProvider>
       <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden">
+        <GlobalShortcuts />
         <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
         {isSidebarOpen && (

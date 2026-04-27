@@ -109,7 +109,6 @@ export function ReadingHeader({
               "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold transition-all cursor-pointer active:scale-95",
               m.solid,
               m.solidHover,
-              "shadow-orange-500/20",
             )}
           >
             <Plus className="w-4 h-4" /> Novo Livro

@@ -1,8 +1,9 @@
 "use client";
 
-import { Timer } from "lucide-react";
+import { Pause, Play, Square, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTime } from "@/context/TimeContext";
+import { cn } from "@/lib/utils";
 import { fmtTime, pomodoroClock } from "../../helpers";
 import type { PomodoroState } from "../../types";
 import { BaseWidget } from "../BaseWidget";
@@ -11,9 +12,20 @@ import { Ring } from "../ui";
 interface PomodoroWidgetProps {
   pomodoro: PomodoroState | null;
   isEditMode?: boolean;
+  isInteractive?: boolean;
+  onToggleInteractive?: () => void;
+  onTogglePomo?: () => void;
+  onStopPomo?: () => void;
 }
 
-export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
+export function PomodoroWidget({
+  pomodoro,
+  isEditMode,
+  isInteractive,
+  onToggleInteractive,
+  onTogglePomo,
+  onStopPomo,
+}: PomodoroWidgetProps) {
   const { now: simulatedNow } = useTime();
   const [remainingSeconds, setRemainingSeconds] = useState(
     pomodoro ? pomodoroClock(pomodoro, simulatedNow) : 0,
@@ -51,6 +63,8 @@ export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
       iconColor="text-red-600 dark:text-red-400"
       route="pomodoro"
       isEditMode={isEditMode}
+      isInteractive={isInteractive}
+      onToggleInteractive={onToggleInteractive}
     >
       <div className="flex flex-col items-center justify-center gap-[4.5cqw] @sm:gap-4 py-2">
         <div className="relative w-[38cqw] h-[38cqw] min-w-[110px] min-h-[110px] max-w-[240px] max-h-[240px]">
@@ -81,23 +95,59 @@ export function PomodoroWidget({ pomodoro, isEditMode }: PomodoroWidgetProps) {
             </p>
           </div>
           <div className="w-px h-6 bg-muted" />
-          <div className="flex items-center gap-2">
-            {isRunning ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-red-500">
-                  Ativo
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-800 border border-border">
-                <div className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
-                <span className="text-[10px] font-bold text-muted-foreground">
-                  Parado
-                </span>
-              </div>
-            )}
-          </div>
+
+          {isInteractive ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePomo?.();
+                }}
+                className={cn(
+                  "p-2 rounded-xl transition-all",
+                  isRunning
+                    ? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                    : "bg-primary/10 text-primary hover:bg-primary/20",
+                )}
+              >
+                {isRunning ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 fill-current" />
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={!isRunning && pomodoro?.cycles_completed === 0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStopPomo?.();
+                }}
+                className="p-2 rounded-xl bg-muted text-muted-foreground hover:bg-muted/80 disabled:opacity-30 transition-all"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {isRunning ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-red-500">
+                    Ativo
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-800 border border-border">
+                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    Parado
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </BaseWidget>

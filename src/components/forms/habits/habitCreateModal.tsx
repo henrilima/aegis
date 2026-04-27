@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Plus, X } from "lucide-react";
+import { Activity, X } from "lucide-react";
 import { useState } from "react";
 import {
   Select,
@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
-import { getColorTheme } from "@/lib/utils";
+import { cn, getColorTheme } from "@/lib/utils";
 
 interface HabitCreateModalProps {
   onAdd: (
@@ -53,7 +53,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
       aria-modal="true"
       aria-labelledby="habit-create-title"
     >
-      <div className="relative w-full max-w-2xl bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-3">
@@ -86,8 +86,12 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
 
         {/* Área rolável */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <form
+            id="habit-form"
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-8"
+          >
+            <div className="grid grid-cols-2 gap-8 items-start">
               {/* Coluna Esquerda: Definição Básica */}
               <div className="flex flex-col gap-6">
                 <div className="space-y-1.5">
@@ -220,25 +224,30 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                 )}
               </div>
             </div>
-
-            {/* Ações */}
-            <div className="flex flex-col gap-2 pt-6 border-t border-neutral-900/50">
-              <button
-                type="submit"
-                disabled={!name.trim()}
-                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover} ${theme.textDark} ${theme.textDarkHover} text-sm font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40`}
-              >
-                <Plus className="w-5 h-5" /> Criar Hábito
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-sm font-medium cursor-pointer transition-colors"
-              >
-                Agora não
-              </button>
-            </div>
           </form>
+        </div>
+
+        {/* Rodapé Fixo */}
+        <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-background/50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="habit-form"
+            disabled={!name.trim()}
+            className={cn(
+              "flex-2 px-4 py-3 rounded-xl font-bold text-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40 text-white",
+              theme.solid,
+              theme.solidHover,
+            )}
+          >
+            Criar Hábito
+          </button>
         </div>
       </div>
     </div>

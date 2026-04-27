@@ -65,7 +65,7 @@ export function NoteExpandModal({
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/60 hover:border-orange-400 text-orange-300 hover:text-orange-200 font-semibold  transition-all active:scale-[0.98] cursor-pointer"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer"
               >
                 <Save className="w-4 h-4" /> Salvar alterações
               </button>

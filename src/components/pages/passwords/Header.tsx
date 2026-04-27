@@ -1,4 +1,6 @@
-import { Download, Plus, ShieldCheck, Upload } from "lucide-react";
+import { DownloadCloud, Plus, ShieldCheck, UploadCloud } from "lucide-react";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { cn, getColorTheme } from "@/lib/utils";
 
 interface HeaderProps {
   handleImport: () => void;
@@ -13,11 +15,16 @@ export function Header({
   onAddNew,
   count = 0,
 }: HeaderProps) {
+  const moduleColor = "amber";
+  const m = getColorTheme(moduleColor);
+
   return (
     <div className="flex items-center justify-between flex-wrap gap-4 pb-2">
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <ShieldCheck className="w-6 h-6 text-amber-600 dark:text-amber-500" />
+        <div
+          className={cn("p-2 rounded-xl border transition-all", m.bg, m.border)}
+        >
+          <ShieldCheck className={cn("w-6 h-6", m.text)} />
         </div>
         <div>
           <h1 className="text-xl font-bold leading-tight text-foreground">
@@ -31,30 +38,46 @@ export function Header({
         </div>
       </div>
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleImport}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 text-muted-foreground hover:text-amber-400 border border-border transition-all cursor-pointer text-xs font-bold h-auto"
-        >
-          <Download className="w-4 h-4" />
-          Importar
-        </button>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 text-muted-foreground hover:text-amber-400 border border-border transition-all cursor-pointer text-xs font-bold h-auto"
-        >
-          <Upload className="w-4 h-4" />
-          Exportar
-        </button>
+        <ToolTip content="Importar Senhas (CSV)">
+          <button
+            type="button"
+            onClick={handleImport}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+              `hover:${m.text}`,
+            )}
+          >
+            <UploadCloud className="w-4 h-4" />
+            Importar
+          </button>
+        </ToolTip>
+        <ToolTip content="Exportar Senhas (CSV)">
+          <button
+            type="button"
+            onClick={handleExport}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+              `hover:${m.text}`,
+            )}
+          >
+            <DownloadCloud className="w-4 h-4" />
+            Exportar
+          </button>
+        </ToolTip>
 
-        <button
-          type="button"
-          onClick={onAddNew}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Nova Senha
-        </button>
+        <ToolTip content="Adicionar nova credencial ao cofre">
+          <button
+            type="button"
+            onClick={onAddNew}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-black font-bold transition-all cursor-pointer active:scale-95",
+              m.solid,
+              m.solidHover,
+            )}
+          >
+            <Plus className="w-4 h-4" /> Nova Senha
+          </button>
+        </ToolTip>
       </div>
     </div>
   );

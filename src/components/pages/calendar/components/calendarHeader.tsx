@@ -119,7 +119,7 @@ export function CalendarHeader({
         <Button
           type="button"
           onClick={onNew}
-          className={`flex items-center gap-2 px-4 rounded-xl text-white text-xs font-bold transition-all border-none h-10 cursor-pointer active:scale-95 ${themeStyles.solid} ${themeStyles.solidHover}`}
+          className={`flex items-center gap-2 px-4 rounded-xl text-white text-sm font-bold transition-all border-none h-10 cursor-pointer active:scale-95 ${themeStyles.solid} ${themeStyles.solidHover}`}
         >
           <Plus className="w-4 h-4" /> Novo Evento
         </Button>

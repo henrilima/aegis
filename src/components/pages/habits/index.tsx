@@ -1,16 +1,28 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { Activity, LayoutGrid, Plus, ShieldOff, Zap } from "lucide-react";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
+import {
+  Activity,
+  DownloadCloud,
+  HelpCircle,
+  LayoutGrid,
+  Plus,
+  ShieldOff,
+  UploadCloud,
+  Zap,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EditHabitDialog } from "@/components/forms/habits/editDialog";
 import { HabitCreateModal } from "@/components/forms/habits/habitCreateModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
-import { cn } from "@/lib/utils";
+import { cn, getColorTheme } from "@/lib/utils";
+import { HabitsInfoModal } from "./components/HabitsInfoModal";
 import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
 
@@ -31,6 +43,7 @@ export default function HabitsPage() {
   const [resetId, setResetId] = useState<number | null>(null);
   const [hardResetId, setHardResetId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -153,6 +166,45 @@ export default function HabitsPage() {
     (h) => h.habit_type === "Negative" || h.habit_type === "Bad",
   );
 
+  const handleExportCSV = async () => {
+    try {
+      const filePath = await save({
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+        defaultPath: "aegis_habitos_backup.csv",
+      });
+
+      if (!filePath) return;
+
+      await invoke("export_habits_csv", { userId: uid, path: filePath });
+      toast.success("Exportação de hábitos concluída!");
+    } catch (e) {
+      toast.error(
+        `Falha ao exportar: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
+  const handleImportCSV = async () => {
+    try {
+      const filePath = await openDialog({
+        multiple: false,
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (filePath && typeof filePath === "string") {
+        const count = await invoke<number>("import_habits_csv", {
+          userId: uid,
+          path: filePath,
+        });
+        toast.success(`${count} hábitos importados!`);
+        await fetchHabits();
+      }
+    } catch (e) {
+      toast.error(
+        `Erro ao importar CSV: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
   if (loading)
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -198,13 +250,22 @@ export default function HabitsPage() {
   const currentList =
     tab === "all" ? sortedHabits : tab === "positive" ? positive : negative;
 
+  const moduleColor = "teal";
+  const m = getColorTheme(moduleColor);
+
   return (
     <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12  text-foreground">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
-            <Activity className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+          <div
+            className={cn(
+              "p-2 rounded-xl border transition-all",
+              m.bg,
+              m.border,
+            )}
+          >
+            <Activity className={cn("w-5 h-5", m.text)} />
           </div>
           <div>
             <h1 className="text-xl font-bold leading-none">
@@ -216,16 +277,60 @@ export default function HabitsPage() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold transition-all cursor-pointer active:scale-95",
-            "bg-teal-600 hover:bg-teal-500 dark:bg-teal-500 dark:hover:bg-teal-400",
-          )}
-        >
-          <Plus className="w-4 h-4" /> Novo Hábito
-        </button>
+        <div className="flex items-center gap-2">
+          <ToolTip content="Importar Hábitos (CSV)">
+            <button
+              type="button"
+              onClick={handleImportCSV}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                `hover:${m.text}`,
+              )}
+            >
+              <UploadCloud className="w-4 h-4" />
+              Importar
+            </button>
+          </ToolTip>
+          <ToolTip content="Exportar Hábitos (CSV)">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                `hover:${m.text}`,
+              )}
+            >
+              <DownloadCloud className="w-4 h-4" />
+              Exportar
+            </button>
+          </ToolTip>
+          <ToolTip content="Guia do Módulo">
+            <button
+              type="button"
+              onClick={() => setShowInfo(true)}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                `hover:${m.text}`,
+              )}
+            >
+              <HelpCircle className="w-4 h-4" />
+              Guia
+            </button>
+          </ToolTip>
+          <ToolTip content="Criar novo hábito">
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold transition-all cursor-pointer active:scale-95",
+                m.solid,
+                m.solidHover,
+              )}
+            >
+              <Plus className="w-4 h-4" /> Novo Hábito
+            </button>
+          </ToolTip>
+        </div>
       </div>
 
       {/* Categorias */}
@@ -284,6 +389,8 @@ export default function HabitsPage() {
           ))}
         </div>
       )}
+
+      <HabitsInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {/* Modais */}
       {createOpen && (

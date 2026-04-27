@@ -1,34 +1,43 @@
 "use client";
 
 import {
+  Bell,
+  Database,
   Info,
   Monitor,
   Settings as SettingsIcon,
   ShieldCheck,
+  Terminal,
   Trash2,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { APP_CONFIG } from "@/app.config";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 import { AboutTab } from "./aboutTab";
 import { DangerTab } from "./dangerTab";
+import { DataTab } from "./dataTab";
+import { NotificationsTab } from "./notificationsTab";
 import { ProfileTab } from "./profileTab";
 import { SecurityTab } from "./securityTab";
 import { SystemTab } from "./systemTab";
+import { TelemetryTab } from "./telemetryTab";
 import { useSettingsLogic } from "./useSettingsLogic";
 
 const TABS = [
   { id: "profile", label: "Perfil", icon: User },
   { id: "system", label: "Sistema", icon: Monitor },
+  { id: "notifications", label: "Notificações", icon: Bell },
   { id: "security", label: "Segurança", icon: ShieldCheck },
+  { id: "data", label: "Dados e Backup", icon: Database },
   { id: "about", label: "Sobre", icon: Info },
   { id: "danger", label: "Zona de Perigo", icon: Trash2 },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof TABS)[number]["id"] | "telemetry";
 
 export default function Settings() {
   const {
@@ -38,16 +47,40 @@ export default function Settings() {
     weekStartDay,
     username,
     email,
+    notifSleepBedtime,
+    notifSleepBedtimeTime,
+    notifSleepMorning,
+    notifSleepMorningTime,
+    notifHabitUncompleted,
+    notifHabitTime,
+    notifEventUpcoming,
+    notifEventUpcomingTime,
+    autoReadNotifications,
+    updateConfigField,
     updateSystemConfig,
     updateWeekStart,
+    updateAutoReadNotifications,
     handleTestNotification,
     handleInternalCommand,
     handleDeleteAccount,
+    highPriorityNotifications,
+    notificationSound,
     user,
   } = useSettingsLogic();
   const { themeStyles } = useTheme();
 
   const [activeTab, setActiveTab] = useState<TabId>("profile");
+
+  // Escuta o evento global de ativação de telemetria
+  useEffect(() => {
+    const handleOpenTelemetry = () => {
+      setActiveTab("telemetry");
+      toast.info("Modo de Telemetria ativado");
+    };
+    window.addEventListener("open-telemetry", handleOpenTelemetry);
+    return () =>
+      window.removeEventListener("open-telemetry", handleOpenTelemetry);
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 ">
@@ -95,6 +128,19 @@ export default function Settings() {
             {tab.label}
           </button>
         ))}
+
+        {activeTab === "telemetry" && (
+          <button
+            type="button"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+              `${themeStyles.bg} ${themeStyles.text.replace("-500", "-600 dark:text-400")} border-primary/20`,
+            )}
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            Telemetria
+          </button>
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -115,7 +161,6 @@ export default function Settings() {
               handleInternalCommand={handleInternalCommand}
               weekStartDay={weekStartDay}
               updateWeekStart={updateWeekStart}
-              handleTestNotification={handleTestNotification}
             />
           </div>
         )}
@@ -123,6 +168,33 @@ export default function Settings() {
         {activeTab === "security" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <SecurityTab />
+          </div>
+        )}
+
+        {activeTab === "notifications" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <NotificationsTab
+              highPriorityNotifications={highPriorityNotifications}
+              notifSleepBedtime={notifSleepBedtime}
+              notifSleepBedtimeTime={notifSleepBedtimeTime}
+              notifSleepMorning={notifSleepMorning}
+              notifSleepMorningTime={notifSleepMorningTime}
+              notifHabitUncompleted={notifHabitUncompleted}
+              notifHabitTime={notifHabitTime}
+              notifEventUpcoming={notifEventUpcoming}
+              notifEventUpcomingTime={notifEventUpcomingTime}
+              autoReadNotifications={autoReadNotifications}
+              updateConfig={updateConfigField}
+              updateAutoReadNotifications={updateAutoReadNotifications}
+              handleTestNotification={handleTestNotification}
+              notificationSound={notificationSound}
+            />
+          </div>
+        )}
+
+        {activeTab === "data" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <DataTab />
           </div>
         )}
 
@@ -139,6 +211,12 @@ export default function Settings() {
               masterCodeIndex={user?.master_code_index ?? 0}
               onDeleteAccount={handleDeleteAccount}
             />
+          </div>
+        )}
+
+        {activeTab === "telemetry" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TelemetryTab />
           </div>
         )}
       </div>

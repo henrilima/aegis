@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",
@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://www.googleapis.com https://books.googleapis.com; img-src 'self' data: https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' https://api.github.com https://brasilapi.com.br https://openlibrary.org https://www.googleapis.com https://books.googleapis.com; img-src 'self' data: https://covers.openlibrary.org https://*.openlibrary.org https://www.google.com https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     }
   },
   "bundle": {
@@ -41,13 +41,28 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "../aegis.changelog",
+      "../public/sounds/*"
+    ],
     "windows": {
       "nsis": {
-        "languages": ["PortugueseBR"]
+        "languages": [
+          "PortugueseBR"
+        ]
       },
       "wix": {
         "language": "pt-BR"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/henrilima/aegis/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ2MzkzOTJFODE4ODk3MjAKUldRZ2w0aUJMams1UnVodVBRSnNFbGF0Ykg4QnhKOFRHQUM4bndZemF0RjdqUXFyZkZDQkdrTnMK"
     }
   }
 }

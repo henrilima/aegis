@@ -14,7 +14,7 @@ export type AppRoute =
   | "currency"
   | "passwords"
   | "habits"
-  | "hydration"
+  | "alarms"
   | "notes"
   | "pomodoro"
   | "studies"
@@ -31,7 +31,7 @@ const VALID_ROUTES = new Set<AppRoute>([
   "currency",
   "passwords",
   "habits",
-  "hydration",
+  "alarms",
   "notes",
   "pomodoro",
   "studies",

@@ -1,0 +1,12 @@
+[version]:["2.1.0"]
+[updates]
+[1]:["Autoupdater: Agora o Aegis consegue verificar, baixar e instalar atualizações automaticamente."]
+[2]:["Módulo de alarmes: O módulo de hidratação foi atualizado para suportar horários fixos e repetições intervaladas."]
+[3]:["Command Palette (Ctrl+K): Navegação instantânea entre módulos e guia de atalhos interativo."]
+[4]:["Feedback Direto: Sistema in-app para sugestões e reportes rápidos de bugs."]
+
+[fixes]
+[1]:["Estabilidade Rust: Refatoração massiva do backend eliminando riscos de crash em módulos críticos."]
+[2]:["Lógica de Alertas: Preservação de estado para evitar notificações repetitivas e duplicadas."]
+[3]:["Acessibilidade WCAG: Implementação de Focus Trap e correção integral de ARIA Roles em todo o app."]
+[4]:["Performance Zero: Otimização do sistema de polling de notificações para um consumo quase nulo de CPU em standby."]

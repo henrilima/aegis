@@ -104,6 +104,7 @@ impl PasswordManager {
         let _ = conn.execute("ALTER TABLE users ADD COLUMN vault_hash TEXT", []);
         let _ = conn.execute("ALTER TABLE users ADD COLUMN master_code_index INTEGER DEFAULT 4", []);
         let _ = conn.execute("ALTER TABLE users ADD COLUMN password_hint TEXT DEFAULT 'Sem dica'", []);
+        let _ = conn.execute("ALTER TABLE users ADD COLUMN avatar_base64 TEXT", []);
 
         Self { db_path }
     }
@@ -179,9 +180,36 @@ impl PasswordManager {
         let _ = conn.execute("DELETE FROM pomodoro_v2 WHERE user_id = ?1", params![user_id]);
         let _ = conn.execute("DELETE FROM pomodoro_history WHERE user_id = ?1", params![user_id]);
         let _ = conn.execute("DELETE FROM habits WHERE user_id = ?1", params![user_id]);
-        let _ = conn.execute("DELETE FROM hydration_reminders WHERE user_id = ?1", params![user_id]);
+        let _ = conn.execute("DELETE FROM app_alarms WHERE user_id = ?1", params![user_id]);
         let _ = conn.execute("DELETE FROM notes WHERE user_id = ?1", params![user_id]);
         let _ = conn.execute("DELETE FROM users WHERE id = ?1", params![user_id]);
+        Ok(())
+    }
+
+    pub fn save_avatar(&self, user_id: &str, base64_data: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "UPDATE users SET avatar_base64 = ?1 WHERE id = ?2",
+            params![base64_data, user_id],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn get_avatar(&self, user_id: &str) -> Option<String> {
+        let conn = self.get_connection();
+        conn.query_row(
+            "SELECT avatar_base64 FROM users WHERE id = ?1",
+            params![user_id],
+            |row| row.get(0),
+        ).unwrap_or(None)
+    }
+
+    pub fn delete_avatar(&self, user_id: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "UPDATE users SET avatar_base64 = NULL WHERE id = ?1",
+            params![user_id],
+        ).map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -250,22 +278,26 @@ impl PasswordManager {
 
     pub fn get_user_data(&self, user_id: &str) -> Result<serde_json::Value, String> {
         let conn = self.get_connection();
-        let (username, email): (String, String) = conn.query_row(
-            "SELECT username, email FROM users WHERE id = ?1",
+        let (username, email, avatar, master_code_index, hint, vault_hash): (String, String, Option<String>, i32, String, Option<String>) = conn.query_row(
+            "SELECT username, email, avatar_base64, master_code_index, password_hint, vault_hash FROM users WHERE id = ?1",
             params![user_id],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
         ).map_err(|_| "Dados do usuário não encontrados".to_string())?;
 
         Ok(serde_json::json!({
             "id": user_id,
             "username": username,
-            "email": email
+            "email": email,
+            "avatar": avatar,
+            "master_code_index": master_code_index,
+            "password_hint": hint,
+            "has_vault_password": vault_hash.is_some()
         }))
     }
 
     pub fn list_users(&self) -> Result<Vec<serde_json::Value>, String> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT id, username, email, master_code_index, password_hint FROM users")
+        let mut stmt = conn.prepare("SELECT id, username, email, master_code_index, password_hint, avatar_base64 FROM users")
             .map_err(|e| e.to_string())?;
         
         let users = stmt.query_map([], |row| {
@@ -274,7 +306,8 @@ impl PasswordManager {
                 "username": row.get::<_, String>(1)?,
                 "email": row.get::<_, String>(2)?,
                 "master_code_index": row.get::<_, i32>(3)?,
-                "password_hint": row.get::<_, String>(4)?
+                "password_hint": row.get::<_, String>(4)?,
+                "avatar": row.get::<_, Option<String>>(5)?
             }))
         }).map_err(|e| e.to_string())?
         .filter_map(|e| e.ok())
@@ -471,11 +504,13 @@ impl PasswordManager {
 
 
     fn encrypt(&self, data: &str, key: &[u8]) -> (String, String) {
-        let cipher = Aes256Gcm::new_from_slice(key).unwrap();
+        let cipher = match Aes256Gcm::new_from_slice(key) {
+            Ok(c) => c,
+            Err(_) => return (String::new(), String::new()),
+        };
         let nonce_bytes = rand::random::<[u8; 12]>();
         let nonce = Nonce::from_slice(&nonce_bytes);
-        
-        let ciphertext = cipher.encrypt(nonce, data.as_bytes()).expect("Encryption failed");
+        let ciphertext = cipher.encrypt(nonce, data.as_bytes()).unwrap_or_default();
         
         (
             general_purpose::STANDARD.encode(ciphertext),
@@ -563,6 +598,17 @@ impl PasswordManager {
         Ok(entries)
     }
 
+    pub fn add_password_entry(&self, entry: PasswordEntry) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "INSERT INTO passwords (user_id, name, url, username, password_encrypted, note_encrypted, nonce_password, nonce_note, created_at, updated_at) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![entry.user_id, entry.name, entry.url, entry.username, entry.password_encrypted, entry.note_encrypted, entry.nonce_password, entry.nonce_note, entry.created_at, entry.updated_at],
+        ).map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
     pub fn decrypt_entry(&self, user_id: &str, master_pwd: &str, entry_id: i32) -> Result<DecryptedEntry, String> {
         let key = self.verify_master(user_id, master_pwd)?;
         let conn = self.get_connection();
@@ -589,7 +635,7 @@ impl PasswordManager {
         let note = self.decrypt(&entry.note_encrypted, &entry.nonce_note, &key)?;
 
         Ok(DecryptedEntry {
-            id: entry.id.unwrap(),
+            id: entry.id.ok_or("ID de entrada ausente no banco de dados".to_string())?,
             name: entry.name,
             url: entry.url,
             username: entry.username,

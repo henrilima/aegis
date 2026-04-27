@@ -10,6 +10,7 @@ import { SleepEntryModal } from "@/components/forms/sleep/sleepModals";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
+import type { AppConfig } from "../settings/useSettingsLogic";
 import { SleepChart } from "./components/sleepChart";
 import { SleepGoalTab } from "./components/sleepGoalTab";
 import { SleepHeader } from "./components/sleepHeader";
@@ -44,7 +45,7 @@ export default function SleepPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
-  // Busca registros e metas
+  // Busca registros, metas e configuração de notificação
   const loadData = useCallback(async () => {
     if (!uid) return;
     try {
@@ -54,6 +55,7 @@ export default function SleepPage() {
           monthsBack: 3,
         }),
         invoke<SleepGoal>("sono_get_goal", { userId: uid }),
+        invoke<AppConfig>("get_app_config"),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -66,8 +68,16 @@ export default function SleepPage() {
         const g = results[1].value;
         setGoal(g);
         setGoalHours(String(g.target_hours));
-        setGoalBedtime(g.target_bedtime);
-        setReminderEnabled(g.reminder_enabled);
+
+        // Preferência para a config global se disponível
+        if (results[2].status === "fulfilled") {
+          const cfg = results[2].value;
+          setGoalBedtime(cfg.notif_sleep_bedtime_time);
+          setReminderEnabled(cfg.notif_sleep_bedtime);
+        } else {
+          setGoalBedtime(g.target_bedtime);
+          setReminderEnabled(g.reminder_enabled);
+        }
       }
     } finally {
       setLoading(false);
@@ -118,6 +128,20 @@ export default function SleepPage() {
           reminder_enabled: reminderEnabled,
         },
       });
+
+      // Sincroniza com a configuração global de notificações
+      try {
+        const currentConfig = await invoke<AppConfig>("get_app_config");
+        const newConfig: AppConfig = {
+          ...currentConfig,
+          notif_sleep_bedtime: reminderEnabled,
+          notif_sleep_bedtime_time: goalBedtime,
+        };
+        await invoke("set_app_config", { config: newConfig });
+      } catch (e) {
+        console.error("Erro ao sincronizar config global de sono:", e);
+      }
+
       toast.success("Novas metas estabelecidas!");
       await loadData();
     } catch {
@@ -129,7 +153,7 @@ export default function SleepPage() {
     try {
       const path = await save({
         filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "meu_sono.csv",
+        defaultPath: "aegis_sono_backup.csv",
       });
       if (path) {
         await invoke("sono_export_csv", { userId: uid, destPath: path });
@@ -321,23 +345,23 @@ export default function SleepPage() {
       {/* Configurações */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm ">
-          <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300 overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-10">
+          <div className="bg-card border border-border rounded-xl w-full max-w-[850px]! max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-border flex items-center justify-between shrink-0 bg-card z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-600/10 border border-blue-600/20">
                   <Settings className="w-5 h-5 text-blue-400" />
                 </div>
-                <h2 className="text-xl font-bold">Objetivos de Sono</h2>
+                <h2 className="text-base font-bold">Objetivos de Sono</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
                 className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                <Plus className="w-6 h-6 rotate-45" />
+                <Plus className="w-5 h-5 rotate-45" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               <SleepGoalTab
                 goalHours={goalHours}
                 setGoalHours={setGoalHours}
@@ -345,11 +369,27 @@ export default function SleepPage() {
                 setGoalBedtime={setGoalBedtime}
                 reminderEnabled={reminderEnabled}
                 setReminderEnabled={setReminderEnabled}
-                onSave={async () => {
+                onSave={handleGoalSave}
+              />
+            </div>
+            <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-card/50">
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
                   await handleGoalSave();
                   setShowSettings(false);
                 }}
-              />
+                className="flex-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer"
+              >
+                Consolidar Objetivos
+              </button>
             </div>
           </div>
         </div>

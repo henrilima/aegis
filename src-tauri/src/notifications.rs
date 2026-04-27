@@ -10,8 +10,10 @@ pub struct AppNotification {
     pub user_id: String,
     pub title: String,
     pub body: String,
-    pub category: String,  // "sleep", "habit", "hydration", "system"
+    pub category: String,  // "sleep", "habit", "alarms", "system"
     pub tag: Option<String>, // Tag única para evitar duplicatas
+    pub color: Option<String>, // Cor customizada (ex: "red", "blue")
+    pub icon: Option<String>,  // Ícone customizado (ex: "Bell", "Coffee")
     pub persistent: bool,   // Notificações persistentes não podem ser deletadas
     pub is_read: bool,
     pub created_at: String,
@@ -38,13 +40,15 @@ impl NotificationsManager {
                 body        TEXT NOT NULL,
                 category    TEXT NOT NULL DEFAULT 'system',
                 is_read     INTEGER NOT NULL DEFAULT 0,
-                created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+                created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             );",
         ).expect("Falha ao criar tabela app_notifications");
 
         // Migrações de schema
         let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN tag TEXT", []);
         let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN persistent INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN color TEXT", []);
+        let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN icon TEXT", []);
 
         // Garante constraint UNIQUE em (user_id, tag) para idempotência
         let _ = conn.execute(
@@ -62,7 +66,7 @@ impl NotificationsManager {
             "CREATE TABLE IF NOT EXISTS system_events (
                 user_id     TEXT NOT NULL,
                 event_key   TEXT NOT NULL,
-                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
                 PRIMARY KEY (user_id, event_key)
             );",
         ).expect("Falha ao criar tabela system_events");
@@ -98,11 +102,11 @@ impl NotificationsManager {
     }
 
     /// Cria uma nova notificação in-app para o usuário.
-    pub fn push(&self, user_id: &str, title: &str, body: &str, category: &str, tag: Option<&str>) -> Result<i64, String> {
+    pub fn push(&self, user_id: &str, title: &str, body: &str, category: &str, tag: Option<&str>, color: Option<&str>, icon: Option<&str>) -> Result<i64, String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO app_notifications (user_id, title, body, category, tag) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![user_id, title, body, category, tag],
+            "INSERT INTO app_notifications (user_id, title, body, category, tag, color, icon) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![user_id, title, body, category, tag, color, icon],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
     }
@@ -121,32 +125,29 @@ impl NotificationsManager {
 
     /// Verifica e envia o convite do Discord uma única vez na vida útil do usuário.
     /// Usa system_events para rastrear permanentemente, independente de o usuário apagar a notificação.
-    pub fn check_and_push_discord_invitation(&self, user_id: &str) -> Result<(), String> {
+    pub fn check_and_push_discord_invitation(&self, user_id: &str) -> Result<bool, String> {
         let event_key = "discord-invite";
-        // Se o evento já foi marcado (mesmo que o usuário tenha apagado a notificação), não envia
         if self.has_system_event(user_id, event_key) {
-            return Ok(());
+            return Ok(false);
         }
-        // Marca o evento ANTES de inserir a notificação (evita race condition)
         self.mark_system_event(user_id, event_key);
 
         let tag = "discord-invite";
         let title = "Bem-vindo à Comunidade!";
         let body = "Parabéns por escolher o Aegis! Para uma experiência completa, junte-se ao nosso servidor oficial no Discord. Lá você encontrará suporte, poderá enviar feedback direto aos desenvolvedores e ficar por dentro de todas as novidades. Entre agora: https://discord.gg/8Wq8hT7R8r";
         let conn = self.conn();
-        // persistent=1: o frontend não exibe o botão de deletar para esta notificação
         let _ = conn.execute(
-            "INSERT OR IGNORE INTO app_notifications (user_id, title, body, category, tag, persistent) VALUES (?1, ?2, ?3, 'system', ?4, 1)",
+            "INSERT OR IGNORE INTO app_notifications (user_id, title, body, category, tag, persistent, color, icon) VALUES (?1, ?2, ?3, 'system', ?4, 1, 'blue', 'Bell')",
             params![user_id, title, body, tag],
         );
-        Ok(())
+        Ok(true)
     }
 
     /// Lista todas as notificações de um usuário (mais recentes primeiro).
     pub fn list(&self, user_id: &str) -> Vec<AppNotification> {
         let conn = self.conn();
         let mut stmt = match conn.prepare(
-            "SELECT id, title, body, category, is_read, created_at, tag, persistent
+            "SELECT id, title, body, category, is_read, created_at, tag, persistent, color, icon
              FROM app_notifications
              WHERE user_id=?1
              ORDER BY created_at DESC
@@ -167,6 +168,8 @@ impl NotificationsManager {
                 created_at: row.get(5)?,
                 tag: row.get(6)?,
                 persistent: row.get::<_, i32>(7).unwrap_or(0) != 0,
+                color: row.get(8)?,
+                icon: row.get(9)?,
             })
         }) {
             Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
@@ -221,6 +224,15 @@ impl NotificationsManager {
         conn.execute(
             "DELETE FROM app_notifications WHERE user_id=?1 AND is_read=1 AND persistent=0",
             params![user_id],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+    pub fn add_notification_direct(&self, n: AppNotification) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "INSERT INTO app_notifications (user_id, title, body, category, tag, is_read, created_at, persistent, color, icon) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![n.user_id, n.title, n.body, n.category, n.tag, if n.is_read { 1 } else { 0 }, n.created_at, if n.persistent { 1 } else { 0 }, n.color, n.icon],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }

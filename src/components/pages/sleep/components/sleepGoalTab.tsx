@@ -1,7 +1,6 @@
 "use client";
 
 import { Target } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -25,7 +24,6 @@ export function SleepGoalTab({
   setGoalBedtime,
   reminderEnabled,
   setReminderEnabled,
-  onSave,
 }: SleepGoalTabProps) {
   const inputStyle =
     "bg-background/40 border-border h-12 rounded-xl px-4  text-foreground focus:border-blue-500/40 transition-all font-bold";
@@ -47,7 +45,7 @@ export function SleepGoalTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-2 gap-8">
         {/* Meta de Duração Total */}
         <div className="space-y-2.5">
           <Label htmlFor="sg-hours" className={labelStyle}>
@@ -93,30 +91,19 @@ export function SleepGoalTab({
             <button
               type="button"
               onClick={() => setReminderEnabled(!reminderEnabled)}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                 reminderEnabled ? "bg-blue-500" : "bg-muted"
               }`}
             >
               <span
                 aria-hidden="true"
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white ring-0 transition duration-200 ease-in-out ${
                   reminderEnabled ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Ação de Persistência */}
-      <div className="mt-10 border-border/50">
-        <Button
-          type="button"
-          onClick={onSave}
-          className="w-full px-3 py-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-bold border border-blue-600/30 transition-colors cursor-pointer"
-        >
-          Consolidar métricas
-        </Button>
       </div>
     </div>
   );

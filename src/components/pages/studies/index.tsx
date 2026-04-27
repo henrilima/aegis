@@ -124,7 +124,7 @@ export default function StudiesPage() {
     try {
       const path = await save({
         filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "meus_estudos.csv",
+        defaultPath: "aegis_estudos_backup.csv",
       });
       if (path) {
         await invoke("estudos_export_csv", { userId: uid, destPath: path });

@@ -1,314 +1,46 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { DashboardConfigModal } from "@/components/forms/dashboard/DashboardConfigModal";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
-import type { CurrencyRate } from "../currency/types";
-import type {
-  ReadingBook,
-  ReadingGoal,
-  ReadingSession,
-} from "../reading/types";
 import type { Task } from "../tasks/types";
 import { DashboardHeader } from "./dashboardHeader";
-import { isToday, startOfWeekIso } from "./helpers";
-import type {
-  Habit,
-  HydrationReminder,
-  Note,
-  PasswordEntry,
-  PerformanceSummary,
-  PomodoroState,
-  SleepEntry,
-  SleepGoal,
-  StudyGoal,
-  StudySession,
-} from "./types";
+import { isToday } from "./helpers";
+import { useDashboardData, useWidgetLayout } from "./useDashboardData";
 import { WIDGET_REGISTRY } from "./widgets/registry";
-
-const DEFAULT_WIDGET_IDS = [
-  "habits",
-  "pomodoro",
-  "notes",
-  "tasks",
-  "studies",
-  "sleep",
-  "statistics",
-  "hydration",
-  "calendar",
-  "passwords",
-  "currency",
-];
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>([]);
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [pendingTasksCount, setPendingTasksCount] = useState(0);
-  const [data, setData] = useState<{
-    habits: Habit[];
-    notes: Note[];
-    pomodoro: PomodoroState | null;
-    studySessions: StudySession[];
-    studyGoals: StudyGoal[];
-    sleepEntries: SleepEntry[];
-    sleepGoal: SleepGoal | null;
-    passwords: PasswordEntry[];
-    vaultExists: boolean | null;
-    hydrationReminders: HydrationReminder[];
-    currencyRates: Record<string, number>;
-    currencyLastUpdated: string | null;
-    statsSummary: PerformanceSummary | null;
-    weekStartDay: number;
-    tasks: Task[];
-    readingBooks: ReadingBook[];
-    readingSessions: ReadingSession[];
-    readingGoals: ReadingGoal[];
-    showHolidays: boolean;
-  }>({
-    habits: [],
-    notes: [],
-    pomodoro: null,
-    studySessions: [],
-    studyGoals: [],
-    sleepEntries: [],
-    sleepGoal: null,
-    passwords: [],
-    vaultExists: null,
-    hydrationReminders: [],
-    currencyRates: {},
-    currencyLastUpdated: null,
-    statsSummary: null,
-    weekStartDay: 1,
-    tasks: [],
-    readingBooks: [],
-    readingSessions: [],
-    readingGoals: [],
-    showHolidays: true,
-  });
   const { now: time, isSimulated } = useTime();
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
 
-  // Carrega layout ao montar
-  useEffect(() => {
-    const saved = localStorage.getItem("aegis_dashboard_widgets");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setActiveWidgetIds(parsed);
-          return;
-        }
-      } catch (e) {
-        console.error("Error parsing saved widgets", e);
-      }
-    }
-    setActiveWidgetIds(DEFAULT_WIDGET_IDS);
-  }, []);
+  const {
+    activeWidgetIds,
+    handleToggleWidget,
+    handleReorderWidgets,
+    widgetConfigs,
+    handleUpdateWidgetConfig,
+  } = useWidgetLayout();
+  const { data, fetchAll, pendingTasksCount, handleCreateNote, derived } =
+    useDashboardData();
 
-  const handleToggleWidget = (id: string) => {
-    setActiveWidgetIds((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((i) => i !== id)
-        : [...prev, id];
-      localStorage.setItem("aegis_dashboard_widgets", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const handleReorderWidgets = (newOrder: string[]) => {
-    setActiveWidgetIds(newOrder);
-    localStorage.setItem("aegis_dashboard_widgets", JSON.stringify(newOrder));
-  };
-
-  const fetchAll = useCallback(async () => {
-    if (!user?.id) return;
-    const uid = String(user.id);
-
-    try {
-      invoke<Task[]>("tasks_list", { userId: uid })
-        .then((tasksResult) => {
-          setPendingTasksCount(tasksResult.filter((t) => !t.completed).length);
-          setData((prev) => ({ ...prev, tasks: tasksResult }));
-        })
-        .catch(console.error);
-
-      const config = await invoke<{
-        week_start_day: number;
-        show_holidays: boolean;
-      }>("get_app_config");
-      const results = await Promise.allSettled([
-        invoke<Habit[]>("list_habits", { userId: uid }),
-        invoke<Note[]>("list_notes", { userId: uid }),
-        invoke<PomodoroState>("get_pomodoro_state", { userId: uid }),
-        invoke<StudySession[]>("estudos_list_sessions", {
-          userId: uid,
-          monthsBack: 1,
-        }),
-        invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
-        invoke<SleepEntry[]>("sono_list_entries", {
-          userId: uid,
-          monthsBack: 1,
-        }),
-        invoke<SleepGoal>("sono_get_goal", { userId: uid }),
-        invoke<PasswordEntry[]>("list_passwords", { userId: uid }),
-        invoke<boolean>("check_vault", { userId: uid }),
-        invoke<HydrationReminder[]>("list_hydration_reminders", {
-          userId: uid,
-        }),
-        invoke<CurrencyRate[]>("get_currency_rates"),
-        invoke<PerformanceSummary>("stats_get_performance_summary", {
-          userId: uid,
-          days: 7,
-        }),
-        invoke<ReadingBook[]>("reading_list_books", { userId: uid }),
-        invoke<ReadingSession[]>("reading_list_sessions", {
-          userId: uid,
-          monthsBack: 1,
-        }),
-        invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
-      ]);
-
-      const ratesMap: Record<string, number> = {};
-      let lastUpdateTS: string | null = null;
-      if (
-        results[10].status === "fulfilled" &&
-        Array.isArray(results[10].value)
-      ) {
-        const ratesArr = results[10].value as CurrencyRate[];
-        for (const r of ratesArr) {
-          ratesMap[r.code.toUpperCase()] = r.rate;
-        }
-        if (ratesArr.length > 0) {
-          lastUpdateTS = ratesArr[0].last_updated;
-        }
-      }
-
-      setData((prev) => ({
-        ...prev,
-        habits:
-          results[0].status === "fulfilled"
-            ? (results[0].value as Habit[])
-            : [],
-        notes:
-          results[1].status === "fulfilled" ? (results[1].value as Note[]) : [],
-        pomodoro:
-          results[2].status === "fulfilled"
-            ? (results[2].value as PomodoroState)
-            : null,
-        studySessions:
-          results[3].status === "fulfilled"
-            ? (results[3].value as StudySession[])
-            : [],
-        studyGoals:
-          results[4].status === "fulfilled"
-            ? (results[4].value as StudyGoal[])
-            : [],
-        sleepEntries:
-          results[5].status === "fulfilled"
-            ? (results[5].value as SleepEntry[])
-            : [],
-        sleepGoal:
-          results[6].status === "fulfilled"
-            ? (results[6].value as SleepGoal)
-            : null,
-        passwords:
-          results[7].status === "fulfilled"
-            ? (results[7].value as PasswordEntry[])
-            : [],
-        vaultExists:
-          results[8].status === "fulfilled"
-            ? (results[8].value as boolean)
-            : null,
-        hydrationReminders:
-          results[9].status === "fulfilled"
-            ? (results[9].value as HydrationReminder[])
-            : [],
-        currencyRates: ratesMap,
-        currencyLastUpdated: lastUpdateTS,
-        statsSummary:
-          results[11].status === "fulfilled"
-            ? (results[11].value as PerformanceSummary)
-            : null,
-        weekStartDay: config.week_start_day,
-        readingBooks:
-          results[12].status === "fulfilled"
-            ? (results[12].value as ReadingBook[])
-            : [],
-        readingSessions:
-          results[13].status === "fulfilled"
-            ? (results[13].value as ReadingSession[])
-            : [],
-        readingGoals:
-          results[14].status === "fulfilled"
-            ? (results[14].value as ReadingGoal[])
-            : [],
-        showHolidays: config.show_holidays,
-      }));
-    } catch (error) {
-      console.error("Dashboard fetch error:", error);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  const handleCreateNote = async (title: string, content: string) => {
-    if (!user?.id) return;
-    try {
-      await invoke("add_note", {
-        note: {
-          user_id: String(user.id),
-          title: title.trim(),
-          content: content.trim(),
-          created_at: time.toISOString(),
-          pinned: false,
-        },
-      });
-      fetchAll();
-      toast.success("Nota salva!");
-    } catch {
-      toast.error("Erro ao criar nota");
-    }
-  };
-
-  const weekStart = startOfWeekIso(time, data.weekStartDay);
-  const weekSessions = data.studySessions.filter((s) => s.date >= weekStart);
-  const weekHours = weekSessions.reduce((acc, s) => acc + (s.hours || 0), 0);
-  const weekQuestions = weekSessions.reduce(
-    (acc, s) => acc + (s.questions_new + s.questions_review || 0),
-    0,
-  );
-
-  const goalWeekHours =
-    data.studyGoals.find((g) => g.goal_type === "weekly_hours")?.target_value ||
-    0;
-  const goalWeekQuestions =
-    data.studyGoals.find((g) => g.goal_type === "weekly_questions")
-      ?.target_value || 0;
-
-  // Sono: Últimos 7 dias rolantes
-  const sleepLimit = new Date(time);
-  sleepLimit.setDate(time.getDate() - 6);
-  sleepLimit.setHours(0, 0, 0, 0);
-  const recentSleep = data.sleepEntries
-    .filter((e) => new Date(e.date.replace(/-/g, "/")) >= sleepLimit)
-    .slice(0, 7);
-  const avgSleepMin = recentSleep.length
-    ? recentSleep.reduce((acc, s) => acc + s.duration_minutes, 0) /
-      recentSleep.length
-    : 0;
-  const avgQuality = recentSleep.length
-    ? (
-        recentSleep.reduce((acc, s) => acc + s.quality, 0) / recentSleep.length
-      ).toFixed(1)
-    : "0.0";
-  const goalSleepMin = (data.sleepGoal?.target_hours || 8) * 60;
-  const sleepPct =
-    goalSleepMin > 0 ? Math.round((avgSleepMin / goalSleepMin) * 100) : 0;
+  const {
+    weekSessions,
+    weekHours,
+    weekQuestions,
+    goalWeekHours,
+    goalWeekQuestions,
+    recentSleep,
+    avgSleepMin,
+    avgQuality,
+    goalSleepMin,
+    sleepPct,
+    weekPages,
+    goalWeekPages,
+  } = derived;
 
   const doneTodayCount = data.habits.filter(
     (h) => h.last_done && isToday(h.last_done),
@@ -316,18 +48,6 @@ export default function Dashboard() {
   const positiveHabitsCount = data.habits.filter(
     (h) => h.habit_type === "Positive",
   ).length;
-
-  // Leitura: páginas desta semana
-  const weekReadingSessions = data.readingSessions.filter(
-    (s) => s.date >= weekStart,
-  );
-  const weekPages = weekReadingSessions.reduce(
-    (acc, s) => acc + (s.pages_read || 0),
-    0,
-  );
-  const goalWeekPages =
-    data.readingGoals.find((g) => g.goal_type === "weekly_pages")
-      ?.target_value ?? null;
 
   return (
     <div className="flex flex-col items-center w-full min-h-screen bg-background p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
@@ -352,12 +72,98 @@ export default function Dashboard() {
               if (!WidgetComponent) return null;
 
               const boundIsToday = (iso: string) => isToday(iso, time);
-              const widgetProps: Record<string, unknown> = {
+
+              // Tipagem mais específica para evitar 'any'
+              const widgetProps: {
+                isToday: (iso: string) => boolean;
+                time: Date;
+                [key: string]: unknown;
+              } = {
                 isToday: boundIsToday,
                 time,
               };
-              if (id === "habits") widgetProps.habits = data.habits;
-              if (id === "pomodoro") widgetProps.pomodoro = data.pomodoro;
+
+              if (id === "habits") {
+                widgetProps.habits = data.habits;
+                widgetProps.onToggleHabit = async (habitId: number) => {
+                  try {
+                    await invoke("mark_habit_done", {
+                      id: habitId,
+                      userId: String(user?.id),
+                    });
+                    fetchAll();
+                  } catch {
+                    toast.error("Erro ao atualizar hábito");
+                  }
+                };
+              }
+              if (id === "pomodoro") {
+                widgetProps.pomodoro = data.pomodoro;
+                widgetProps.onTogglePomo = async () => {
+                  if (!data.pomodoro || !user) return;
+                  const isStarting = !data.pomodoro.is_running;
+                  const nowIso = time.toISOString();
+                  let newAccumulated = data.pomodoro.accumulated_seconds;
+                  if (!isStarting && data.pomodoro.start_time) {
+                    const startTime = new Date(
+                      data.pomodoro.start_time,
+                    ).getTime();
+                    newAccumulated += Math.floor(
+                      (time.getTime() - startTime) / 1000,
+                    );
+                  }
+                  const newState = {
+                    ...data.pomodoro,
+                    is_running: isStarting,
+                    start_time: isStarting ? nowIso : null,
+                    accumulated_seconds: newAccumulated,
+                    cycle_type:
+                      isStarting && data.pomodoro.cycles_completed === 0
+                        ? "Work"
+                        : data.pomodoro.cycle_type,
+                  };
+                  try {
+                    await invoke("save_pomodoro_state", {
+                      userId: String(user.id),
+                      pomoState: newState,
+                    });
+                    fetchAll();
+                  } catch {
+                    toast.error("Erro ao salvar Pomodoro");
+                  }
+                };
+                widgetProps.onStopPomo = async () => {
+                  if (!user || !data.pomodoro) return;
+                  if (data.pomodoro.cycles_completed > 0) {
+                    const historyEntry = {
+                      user_id: String(user.id),
+                      work_minutes: data.pomodoro.work_minutes,
+                      break_minutes: data.pomodoro.break_minutes,
+                      cycles_done: data.pomodoro.cycles_completed,
+                      start_time: time.toISOString(),
+                      end_time: time.toISOString(),
+                    };
+                    try {
+                      await invoke("record_pomodoro_session", {
+                        session: historyEntry,
+                      });
+                    } catch {}
+                  }
+                  const newState = {
+                    ...data.pomodoro,
+                    is_running: false,
+                    start_time: null,
+                    cycles_completed: 0,
+                    accumulated_seconds: 0,
+                    cycle_type: "Work",
+                  };
+                  await invoke("save_pomodoro_state", {
+                    userId: String(user.id),
+                    pomoState: newState,
+                  });
+                  fetchAll();
+                };
+              }
               if (id === "notes") {
                 widgetProps.notes = data.notes;
                 widgetProps.onCreateNote = handleCreateNote;
@@ -373,6 +179,24 @@ export default function Dashboard() {
                     fetchAll();
                   } catch {
                     toast.error("Erro ao atualizar tarefa");
+                  }
+                };
+                widgetProps.onAddTask = async (title: string) => {
+                  try {
+                    await invoke("tasks_upsert", {
+                      task: {
+                        user_id: String(user?.id),
+                        title,
+                        description: null,
+                        completed: false,
+                        due_date: null,
+                        created_at: time.toISOString(),
+                      },
+                    });
+                    fetchAll();
+                    toast.success("Tarefa adicionada!");
+                  } catch {
+                    toast.error("Erro ao adicionar tarefa");
                   }
                 };
               }
@@ -394,25 +218,84 @@ export default function Dashboard() {
                 widgetProps.passwords = data.passwords;
                 widgetProps.vaultExists = data.vaultExists;
               }
-              if (id === "hydration") {
-                widgetProps.reminders = data.hydrationReminders;
-              }
+              if (id === "alarms") widgetProps.alarms = data.alarms;
               if (id === "currency") {
                 widgetProps.rates = data.currencyRates;
                 widgetProps.lastUpdated = data.currencyLastUpdated;
+                widgetProps.onRefresh = async () => {
+                  try {
+                    await invoke("update_currency_rates");
+                    fetchAll();
+                    toast.success("Câmbio atualizado!");
+                  } catch {
+                    toast.error("Erro ao atualizar câmbio");
+                  }
+                };
               }
-              if (id === "statistics") {
-                widgetProps.summary = data.statsSummary;
-              }
-              if (id === "calendar") {
+              if (id === "statistics") widgetProps.summary = data.statsSummary;
+              if (id === "calendar")
                 widgetProps.showHolidays = data.showHolidays;
-              }
               if (id === "reading") {
                 widgetProps.books = data.readingBooks;
                 widgetProps.recentSessions = data.readingSessions.slice(0, 5);
                 widgetProps.weekPages = weekPages;
                 widgetProps.goalWeekPages = goalWeekPages;
+                widgetProps.onLogSession = async (
+                  bookId: number,
+                  pages: number,
+                ) => {
+                  try {
+                    const book = data.readingBooks.find((b) => b.id === bookId);
+                    if (!book) return;
+
+                    const newPage = Math.min(
+                      book.total_pages,
+                      book.current_page + pages,
+                    );
+
+                    // Upsert Book (update page)
+                    await invoke("reading_upsert_book", {
+                      book: { ...book, current_page: newPage },
+                    });
+
+                    // Add Session
+                    await invoke("reading_upsert_session", {
+                      session: {
+                        user_id: String(user?.id),
+                        book_id: bookId,
+                        pages_read: pages,
+                        date: time.toISOString().split("T")[0],
+                        duration_minutes: 0,
+                      },
+                    });
+
+                    fetchAll();
+                    toast.success("Progresso salvo!");
+                  } catch {
+                    toast.error("Erro ao salvar progresso");
+                  }
+                };
               }
+
+              const config = widgetConfigs[id] || { interactive: false };
+              const isInteractive =
+                id !== "notes" &&
+                id !== "currency" &&
+                id !== "tasks" &&
+                id !== "reading"
+                  ? config.interactive
+                  : false;
+              widgetProps.isInteractive = isInteractive;
+              widgetProps.onToggleInteractive =
+                id !== "notes" &&
+                id !== "currency" &&
+                id !== "tasks" &&
+                id !== "reading"
+                  ? () =>
+                      handleUpdateWidgetConfig(id, {
+                        interactive: !config.interactive,
+                      })
+                  : undefined;
 
               return (
                 <div

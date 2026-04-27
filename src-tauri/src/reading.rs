@@ -211,6 +211,17 @@ impl ReadingManager {
         }
     }
 
+    pub fn add_session_direct(&self, s: ReadingSession) -> Result<i64, String> {
+        let conn = self.conn();
+        conn.execute(
+            "INSERT INTO reading_sessions (user_id, book_id, date, pages_read, duration_minutes, note) 
+             VALUES (?1,?2,?3,?4,?5,?6)",
+             params![s.user_id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note],
+        ).map_err(|e| e.to_string())?;
+        
+        Ok(conn.last_insert_rowid())
+    }
+
     pub fn list_sessions(&self, user_id: &str, months_back: i32, now: DateTime<Utc>) -> Vec<ReadingSession> {
         let conn = self.conn();
         let cutoff_date = (now - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();

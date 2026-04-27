@@ -28,7 +28,7 @@ export function SessionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-4xl bg-background border border-border rounded-xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-[850px]! bg-background border border-border rounded-xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-4">
             <div
@@ -65,6 +65,24 @@ export function SessionModal({
             onSave={onSave}
             onCancel={onClose}
           />
+        </div>
+
+        {/* Rodapé Fixo */}
+        <div className="p-6 border-t border-border shrink-0 bg-background/50 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="studies-form"
+            className="flex-2 px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer"
+          >
+            {editSession ? "Salvar alterações" : "Registrar sessão"}
+          </button>
         </div>
       </div>
     </div>

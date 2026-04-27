@@ -362,7 +362,7 @@ export function ReportCanvas({
     if (!ctx) return;
 
     const img = new Image();
-    img.src = "/images/background.jpg";
+    img.src = "/images/studies-background.jpg";
     img.onload = () => drawReport(ctx, canvas, img);
     img.onerror = () => drawReport(ctx, canvas);
   }, [drawReport]);

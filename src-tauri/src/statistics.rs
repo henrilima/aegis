@@ -187,9 +187,9 @@ impl StatisticsManager {
         let avg_hit = metrics.iter().filter(|m| m.questions_total > 0).map(|m| m.study_hit_rate).sum::<f64>()
             / metrics.iter().filter(|m| m.questions_total > 0).count().max(1) as f64;
 
-        let best_sleep = metrics.iter().max_by(|a, b| a.sleep_hours.partial_cmp(&b.sleep_hours).unwrap())
+        let best_sleep = metrics.iter().max_by(|a, b| a.sleep_hours.partial_cmp(&b.sleep_hours).unwrap_or(std::cmp::Ordering::Equal))
             .map(|m| m.date.clone());
-        let best_study = metrics.iter().max_by(|a, b| a.study_hours.partial_cmp(&b.study_hours).unwrap())
+        let best_study = metrics.iter().max_by(|a, b| a.study_hours.partial_cmp(&b.study_hours).unwrap_or(std::cmp::Ordering::Equal))
             .map(|m| m.date.clone());
 
         // Novas métricas
@@ -209,7 +209,7 @@ impl StatisticsManager {
         // Métricas de Foco
         let focus_metrics: Vec<&CrossMetric> = metrics.iter().filter(|m| m.focus_score.is_some()).collect();
         let avg_focus = if focus_metrics.is_empty() { 0.0 } else {
-            focus_metrics.iter().map(|m| m.focus_score.unwrap()).sum::<f64>() / focus_metrics.len() as f64
+            focus_metrics.iter().filter_map(|m| m.focus_score).sum::<f64>() / focus_metrics.len() as f64
         };
 
         let (fh_sum, fh_count) = metrics.iter()
@@ -312,9 +312,14 @@ impl StatisticsManager {
              GROUP BY date ORDER BY date DESC",
             table
         );
-        let mut stmt = conn.prepare(&sql).unwrap();
-        let dates: Vec<String> = stmt.query_map(params![user_id, cutoff_date], |row| row.get(0))
-            .unwrap().filter_map(|r| r.ok()).collect();
+        let mut stmt = match conn.prepare(&sql) {
+            Ok(s) => s,
+            Err(_) => return 0,
+        };
+        let dates: Vec<String> = match stmt.query_map(params![user_id, cutoff_date], |row| row.get(0)) {
+            Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
+            Err(_) => vec![],
+        };
         
         if dates.is_empty() { return 0; }
         
@@ -329,8 +334,11 @@ impl StatisticsManager {
         for date in dates {
             if date == expected {
                 streak += 1;
-                let d = chrono::NaiveDate::parse_from_str(&expected, "%Y-%m-%d").unwrap();
-                expected = (d - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+                if let Ok(d) = chrono::NaiveDate::parse_from_str(&expected, "%Y-%m-%d") {
+                    expected = (d - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+                } else {
+                    break;
+                }
             } else {
                 break;
             }

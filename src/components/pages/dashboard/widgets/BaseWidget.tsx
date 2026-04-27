@@ -1,8 +1,10 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import { Settings, Zap } from "lucide-react";
 import type React from "react";
 import { Card } from "@/components/ui/card";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { type AppRoute, useNavigation } from "@/context/NavigationContext";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +16,8 @@ interface BaseWidgetProps {
   children: React.ReactNode;
   className?: string;
   isEditMode?: boolean;
+  isInteractive?: boolean;
+  onToggleInteractive?: () => void;
 }
 
 export function BaseWidget({
@@ -24,6 +28,8 @@ export function BaseWidget({
   children,
   className,
   isEditMode = false,
+  isInteractive = false,
+  onToggleInteractive,
 }: BaseWidgetProps) {
   const { navigate } = useNavigation();
 
@@ -63,11 +69,42 @@ export function BaseWidget({
             {title}
           </h3>
         </div>
+
+        {onToggleInteractive && !isEditMode && (
+          <ToolTip
+            content={
+              isInteractive
+                ? "Desativar modo interativo"
+                : "Ativar modo interativo"
+            }
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleInteractive();
+              }}
+              className={cn(
+                "p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100",
+                isInteractive
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
+            >
+              {isInteractive ? (
+                <Zap className="w-3.5 h-3.5 fill-current" />
+              ) : (
+                <Settings className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </ToolTip>
+        )}
       </div>
       <div
         className={cn(
           "flex-1 w-full p-4 pt-2 overflow-auto custom-scrollbar min-h-0",
-          isEditMode && "pointer-events-none select-none", // Desativa interações internas no modo de edição
+          isEditMode && "pointer-events-none select-none",
+          isInteractive && "relative", // Pode ser útil para estilos específicos
         )}
       >
         <div className="h-full w-full flex flex-col">{children}</div>

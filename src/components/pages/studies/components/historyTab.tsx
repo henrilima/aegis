@@ -84,7 +84,7 @@ export function HistoryTab({
             return (
               <div
                 key={s.id}
-                className={`group bg-card/50 border border-border hover:border-violet-600/30 hover:bg-card rounded-xl p-5 transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/5`}
+                className={`group bg-card/50 border border-border hover:border-violet-600/30 hover:bg-card rounded-xl p-5 transition-all duration-300`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 flex flex-col gap-3">

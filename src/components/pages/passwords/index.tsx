@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "../../ui/input";
 import { AddEditModal } from "./AddEditModal";
@@ -263,7 +264,7 @@ export default function PasswordManager() {
     try {
       const path = await save({
         filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "aegis_passwords.csv",
+        defaultPath: "aegis_senhas_backup.csv",
       });
       if (path && user) {
         await invoke("export_passwords", {
@@ -292,8 +293,29 @@ export default function PasswordManager() {
   };
 
   return (
-    <div className="w-full h-full relative ">
-      {!isVerified ? (
+    <div className="w-full h-full relative">
+      {vaultExists === null ? (
+        // Skeleton enquanto verifica existência do cofre
+        <div className="w-full h-full flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-9 h-9 rounded-xl" />
+              <div className="flex flex-col gap-1.5">
+                <Skeleton className="h-5 w-36 rounded-md" />
+                <Skeleton className="h-3 w-24 rounded-md" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-32 rounded-xl" />
+          </div>
+          <Skeleton className="h-11 w-full rounded-xl" />
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows
+              <Skeleton key={i} className="h-16 w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+      ) : !isVerified ? (
         <LockedVault
           vaultExists={vaultExists}
           masterPassword={masterPassword}

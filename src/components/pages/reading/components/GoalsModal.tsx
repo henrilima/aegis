@@ -76,8 +76,8 @@ export function GoalsModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-[650px] bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-border/50">
+      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="flex items-center justify-between p-6 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-500/10 rounded-xl border border-orange-500/20 flex items-center justify-center">
               <Settings className="w-5 h-5 text-orange-500" />
@@ -100,7 +100,7 @@ export function GoalsModal({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="bg-card border border-border/60 rounded-xl p-6 relative">
             <div className="flex items-start justify-between mb-8">
               <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export function GoalsModal({
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-8">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-5 mb-8">
               <div>
                 <Label className={labelClass}>Horas semanais</Label>
                 <div className="relative">
@@ -233,15 +233,25 @@ export function GoalsModal({
                 </div>
               </div>
             </div>
-
-            <Button
-              type="button"
-              onClick={() => onSave(localGoals, weekStartsOnMonday)}
-              className="w-full h-12 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 text-orange-600 dark:text-orange-400 font-semibold text-sm transition-all active:scale-[0.98]"
-            >
-              Salvar metas
-            </Button>
           </div>
+        </div>
+
+        {/* Rodapé Fixo */}
+        <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-background/50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <Button
+            type="button"
+            onClick={() => onSave(localGoals, weekStartsOnMonday)}
+            className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98]"
+          >
+            Salvar metas e preferências
+          </Button>
         </div>
       </div>
     </div>

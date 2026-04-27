@@ -2,7 +2,7 @@
 
 [[permission]]
 identifier = "allow-feature-management"
-description = "Permite gerenciar Pomodoro, Câmbio, Hidratação e Hábitos"
+description = "Todas as funcionalidades do aplicativo"
 commands.allow = [
     "get_pomodoro_state",
     "save_pomodoro_state",
@@ -11,9 +11,12 @@ commands.allow = [
     "clear_pomodoro_history",
     "get_currency_rates",
     "update_currency_rates",
-    "list_hydration_reminders",
-    "add_hydration_reminder",
-    "delete_hydration_reminder",
+    "list_alarms",
+    "add_alarm",
+    "update_alarm",
+    "delete_alarm",
+    "toggle_alarm",
+    "list_notification_sounds",
     "list_habits",
     "add_habit",
     "update_habit",
@@ -98,4 +101,22 @@ commands.allow = [
     "notif_clear_read",
     "send_critical_notification",
     "ensure_discord_invite",
+    "save_avatar",
+    "get_avatar",
+    "delete_avatar",
+    "export_tasks_csv",
+    "import_tasks_csv",
+    "export_habits_csv",
+    "import_habits_csv",
+    "get_app_version",
+    "get_log_path",
+    "read_app_logs",
+    "capture_screenshot",
+    "read_changelog",
+    "pre_update_backup",
+    "export_user_package",
+    "import_user_package",
+    "export_full_system_bundle",
+    "import_full_system_bundle",
+    "check_github_update"
 ]

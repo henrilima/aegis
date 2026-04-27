@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
+use crate::config::ConfigManager;
 
 
 
@@ -123,7 +124,14 @@ impl SleepManager {
 
     
 
-    pub fn upsert_goal(&self, g: SleepGoal) -> Result<(), String> {
+    pub fn upsert_goal(&self, g: SleepGoal, app_handle: &AppHandle) -> Result<(), String> {
+        let config_manager = ConfigManager::new(app_handle);
+        
+        // Sincroniza com a config global
+        let _ = config_manager.update_config("notif_sleep_bedtime", serde_json::Value::Bool(g.reminder_enabled));
+        let _ = config_manager.update_config("notif_sleep_bedtime_time", serde_json::Value::String(g.target_bedtime.clone()));
+        let _ = config_manager.update_config("notif_sleep_target_hours", serde_json::Value::Number(serde_json::Number::from_f64(g.target_hours).unwrap()));
+
         let conn = self.conn();
         conn.execute(
             "INSERT INTO sleep_goals (user_id, target_hours, target_bedtime, reminder_enabled)
@@ -137,23 +145,34 @@ impl SleepManager {
         Ok(())
     }
 
-    pub fn get_goal(&self, user_id: &str) -> SleepGoal {
+    pub fn get_goal(&self, user_id: &str, app_handle: &AppHandle) -> SleepGoal {
+        let config_manager = ConfigManager::new(app_handle);
+        let config = config_manager.get_config();
+        
         let conn = self.conn();
-        conn.query_row(
+        let db_goal: Option<(f64, String, bool)> = conn.query_row(
             "SELECT target_hours, target_bedtime, reminder_enabled FROM sleep_goals WHERE user_id=?1",
             params![user_id],
-            |row| Ok(SleepGoal {
+            |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, i32>(2)? != 0)),
+        ).ok();
+
+        match db_goal {
+            Some((_hours, _bedtime, _reminder)) => {
+                // Retorna mix entre banco local e config global (preferência global)
+                SleepGoal {
+                    user_id: user_id.to_string(),
+                    target_hours: config.notif_sleep_target_hours, // Usa a global
+                    target_bedtime: config.notif_sleep_bedtime_time,
+                    reminder_enabled: config.notif_sleep_bedtime,
+                }
+            },
+            None => SleepGoal {
                 user_id: user_id.to_string(),
-                target_hours: row.get(0)?,
-                target_bedtime: row.get(1)?,
-                reminder_enabled: row.get::<_, i32>(2)? != 0,
-            }),
-        ).unwrap_or(SleepGoal {
-            user_id: user_id.to_string(),
-            target_hours: 8.0,
-            target_bedtime: "23:00".to_string(),
-            reminder_enabled: false,
-        })
+                target_hours: config.notif_sleep_target_hours,
+                target_bedtime: config.notif_sleep_bedtime_time,
+                reminder_enabled: config.notif_sleep_bedtime,
+            }
+        }
     }
 
     pub fn export_csv(&self, user_id: &str, dest_path: &str, now: DateTime<Utc>) -> Result<(), String> {

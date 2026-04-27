@@ -1,6 +1,13 @@
 "use client";
 
-import { BookOpen, HelpCircle, Plus, Settings } from "lucide-react";
+import {
+  BookOpen,
+  DownloadCloud,
+  HelpCircle,
+  Plus,
+  Settings,
+  UploadCloud,
+} from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn, getColorTheme } from "@/lib/utils";
 
@@ -50,25 +57,7 @@ export function StudiesHeader({
               `hover:${m.text}`,
             )}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-upload-cloud"
-              role="img"
-              aria-labelledby="upload-cloud-title-studies"
-            >
-              <title id="upload-cloud-title-studies">Importar estudos</title>
-              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-              <path d="M12 12v9" />
-              <path d="m16 16-4-4-4 4" />
-            </svg>
+            <UploadCloud className="w-4 h-4" />
             Importar
           </button>
         </ToolTip>
@@ -81,25 +70,7 @@ export function StudiesHeader({
               `hover:${m.text}`,
             )}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-download-cloud"
-              role="img"
-              aria-labelledby="download-cloud-title-studies"
-            >
-              <title id="download-cloud-title-studies">Exportar estudos</title>
-              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-              <path d="M12 12v9" />
-              <path d="m8 17 4 4 4-4" />
-            </svg>
+            <DownloadCloud className="w-4 h-4" />
             Exportar
           </button>
         </ToolTip>
@@ -138,7 +109,6 @@ export function StudiesHeader({
               "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold transition-all cursor-pointer active:scale-95",
               m.solid,
               m.solidHover,
-              `${moduleColor === "violet" ? "shadow-violet-500/20" : ""}`,
             )}
           >
             <Plus className="w-4 h-4" /> Nova sessão

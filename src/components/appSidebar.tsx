@@ -2,18 +2,19 @@
 
 import {
   Activity,
+  AlarmClock,
   Banknote,
   BarChart3,
   Bell,
   Book,
   BookOpen,
   CalendarDays,
-  Droplet,
   FileText,
   Home,
   ListTodo,
   Lock,
   LogOut,
+  MessageSquare,
   Moon,
   PanelLeftClose,
   Settings,
@@ -21,16 +22,18 @@ import {
   Timer,
   Wifi,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { type AppRoute, useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useAvatar } from "@/hooks/useAvatar";
 import { useNotifications } from "@/hooks/useNotifications";
 import { cn, getColorTheme } from "@/lib/utils";
+import { FeedbackDialog } from "./FeedbackDialog";
 import { NotificationsPanel } from "./NotificationsPanel";
 
-const NAV_GROUPS = [
+export const NAV_GROUPS = [
   {
     label: null,
     compact: false,
@@ -103,10 +106,10 @@ const NAV_GROUPS = [
     items: [
       { title: "Sono", route: "sleep" as AppRoute, icon: Moon, color: "blue" },
       {
-        title: "Hidratação",
-        route: "hydration" as AppRoute,
-        icon: Droplet,
-        color: "blue",
+        title: "Alarmes",
+        route: "alarms" as AppRoute,
+        icon: AlarmClock,
+        color: "red",
       },
       {
         title: "Leitura",
@@ -142,6 +145,20 @@ const NAV_GROUPS = [
   },
 ];
 
+/**
+ * NAV_GROUPS com temas pré-computados para itens de cor estática.
+ * Itens "primary" são marcados como null e resolvidos em runtime via useMemo.
+ */
+const NAV_GROUPS_WITH_THEMES = NAV_GROUPS.map((group) => ({
+  ...group,
+  items: group.items.map((item) => ({
+    ...item,
+    // Pré-computa tema para cores estáticas; "primary" é resolvido no render
+    precomputedTheme:
+      item.color !== "primary" ? getColorTheme(item.color) : null,
+  })),
+}));
+
 interface AppSidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -156,6 +173,9 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
 
   const [mounted, setMounted] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+
+  const { avatarSrc } = useAvatar(user?.id);
 
   const {
     notifications,
@@ -171,13 +191,26 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === "b") setIsOpen(!isOpen);
     };
+    const togglePanel = () => setShowNotifPanel((prev) => !prev);
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("toggle-notifications-panel", togglePanel);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("toggle-notifications-panel", togglePanel);
+    };
   }, [isOpen, setIsOpen]);
+
+  // Tema primário (dinâmico): recalculado apenas quando o tema mudar
+  const primaryTheme = useMemo(
+    () => getColorTheme(themeStyles.name as string),
+    [themeStyles.name],
+  );
 
   return (
     <>
       <aside
+        inert={!isOpen || undefined}
         className={cn(
           "fixed inset-y-0 left-0 z-20 flex h-full w-72 flex-col bg-background border-r border-border/70 transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full",
@@ -185,11 +218,22 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
       >
         {/* usuário + ações */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70">
-          {/* Avatar */}
+          {/* Avatar — exibe foto ou inicial; edição fica nas Configurações */}
           <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${themeStyles.bg} border ${themeStyles.border} ${themeStyles.text}`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold overflow-hidden ${themeStyles.bg} border ${themeStyles.border} ${themeStyles.text}`}
           >
-            {(user?.username?.[0] ?? "A").toUpperCase()}
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt="Foto de perfil"
+                width={36}
+                height={36}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              (user?.username?.[0] ?? "A").toUpperCase()
+            )}
           </div>
 
           {/* Info do usuário */}
@@ -197,9 +241,15 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
             <p className="text-sm font-semibold text-foreground truncate leading-none">
               {user?.username ?? "Usuário"}
             </p>
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {user?.email ?? ""}
-            </p>
+            {user?.email ? (
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                {user.email}
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground/50 truncate mt-0.5 italic">
+                Sem e-mail
+              </p>
+            )}
           </div>
 
           {/* Ações do header */}
@@ -207,9 +257,10 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
             <ToolTip content="Notificações">
               <button
                 type="button"
+                aria-label="Abrir notificações"
                 onClick={() => setShowNotifPanel(true)}
                 className={cn(
-                  "p-1.5 rounded-lg transition-all cursor-pointer",
+                  "relative p-1.5 rounded-lg transition-all cursor-pointer",
                   mounted && isActive("settings")
                     ? `${themeStyles.text} ${themeStyles.bg}`
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
@@ -217,11 +268,15 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
               >
                 <Bell className="w-[18px] h-[18px]" />
                 {unreadCount > 0 && (
-                  <span
-                    className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 ${themeStyles.solid} text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none`}
+                  <ToolTip
+                    content={`${unreadCount} notifica${unreadCount !== 1 ? "ções" : "ção"} não lida${unreadCount !== 1 ? "s" : ""}`}
                   >
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+                    <span
+                      className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 ${themeStyles.solid} text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none`}
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  </ToolTip>
                 )}
               </button>
             </ToolTip>
@@ -255,7 +310,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
 
         {/* Navigation */}
         <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3 custom-scrollbar">
-          {NAV_GROUPS.map((group) => (
+          {NAV_GROUPS_WITH_THEMES.map((group) => (
             <div key={group.label ?? "top"} className="flex flex-col gap-0.5">
               {group.label && (
                 <p className="px-2 mb-1.5 text-[9px] font-semibold text-muted-foreground">
@@ -268,11 +323,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
                 <div className="grid grid-cols-3 gap-1.5">
                   {group.items.map((item) => {
                     const active = mounted && isActive(item.route);
-                    const itemColor =
-                      item.color === "primary"
-                        ? (themeStyles.name as string)
-                        : item.color;
-                    const itemTheme = getColorTheme(itemColor);
+                    const itemTheme = item.precomputedTheme ?? primaryTheme;
                     return (
                       <button
                         key={item.route}
@@ -303,11 +354,7 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
                 /* Lista padrão */
                 group.items.map((item) => {
                   const active = mounted && isActive(item.route);
-                  const itemColor =
-                    item.color === "primary"
-                      ? (themeStyles.name as string)
-                      : item.color;
-                  const itemTheme = getColorTheme(itemColor);
+                  const itemTheme = item.precomputedTheme ?? primaryTheme;
 
                   return (
                     <button
@@ -379,21 +426,43 @@ export function AppSidebar({ isOpen, setIsOpen }: AppSidebarProps) {
             </span>
           </div>
 
-          <ToolTip content="Sair">
-            <button
-              type="button"
-              onClick={logout}
-              className="p-1.5 rounded-lg text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </ToolTip>
+          <div className="flex items-center gap-1 shrink-0">
+            <ToolTip content="Feedback / Reportar Bug">
+              <button
+                type="button"
+                onClick={() => setShowFeedbackDialog(true)}
+                className={cn(
+                  "p-1.5 rounded-lg text-muted-foreground transition-all cursor-pointer",
+                  "hover:text-foreground hover:bg-accent/50",
+                )}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+            </ToolTip>
+
+            <ToolTip content="Sair">
+              <button
+                type="button"
+                onClick={logout}
+                className="p-1.5 rounded-lg text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </ToolTip>
+          </div>
         </div>
       </aside>
+
+      {/* Dialogs */}
+      <FeedbackDialog
+        isOpen={showFeedbackDialog}
+        onClose={() => setShowFeedbackDialog(false)}
+      />
 
       {/* Painel de Notificações */}
       <NotificationsPanel
         notifications={notifications}
+        unreadCount={unreadCount}
         isOpen={showNotifPanel}
         onClose={() => setShowNotifPanel(false)}
         onMarkRead={markRead}

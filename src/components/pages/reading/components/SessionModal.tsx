@@ -275,7 +275,7 @@ export function SessionModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm ">
-      <div className="w-full max-w-[850px] bg-background border border-border rounded-xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
         <div className="flex items-center justify-between px-8 py-5 border-b border-border/50">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-orange-500/10 rounded-xl border border-orange-500/20 flex items-center justify-center text-orange-500">
@@ -299,7 +299,7 @@ export function SessionModal({
           </button>
         </div>
 
-        <div className="flex-1 p-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 p-8 grid grid-cols-2 gap-8 overflow-y-auto custom-scrollbar">
           <div className="space-y-5">
             <div>
               <Label className={labelClass}>
@@ -541,20 +541,21 @@ export function SessionModal({
           </div>
         </div>
 
-        <div className="px-8 py-5 border-t border-border/30 flex flex-col gap-3 bg-background/20">
-          <Button
-            onClick={handleSubmit}
-            className="h-12 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 text-orange-600 dark:text-orange-400 font-semibold text-sm transition-all active:scale-[0.98]"
-          >
-            {editSession ? "Salvar alterações" : "Confirmar registro"}
-          </Button>
+        <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-background/50">
           <button
             type="button"
             onClick={onClose}
-            className="text-xs font-medium text-neutral-700 hover:text-muted-foreground text-center transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
           >
-            Agora não
+            Cancelar
           </button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98]"
+          >
+            {editSession ? "Salvar alterações" : "Confirmar registro"}
+          </Button>
         </div>
       </div>
     </div>

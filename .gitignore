@@ -42,3 +42,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local files
+todo.md
+scripts/
+passwords.db
+config.db
+*.db
+
+# Tauri Updater
+main.key
+main.key.pub

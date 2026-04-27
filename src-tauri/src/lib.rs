@@ -1,8 +1,9 @@
 mod passwords;
 mod pomodoro;
 mod currencies;
-mod hydration;
+mod alarms;
 mod habits;
+mod migration;
 mod notes;
 mod config;
 mod studies;
@@ -16,7 +17,7 @@ mod notifications;
 use passwords::{PasswordEntry, DecryptedEntry, PasswordManager};
 use pomodoro::{PomodoroState, PomodoroManager, PomodoroHistory};
 use currencies::{CurrencyRate, CurrencyManager};
-use hydration::{HydrationReminder, HydrationManager};
+use alarms::{AppAlarm, AlarmManager};
 use habits::{Habit, HabitManager};
 use config::{AppConfig, ConfigManager};
 use studies::{StudiesManager, StudySession, StudyGoal};
@@ -31,8 +32,10 @@ use tauri::{Emitter, Manager, Window, State, tray::TrayIconBuilder};
 use std::thread;
 use std::time::Duration;
 use tauri_plugin_notification::NotificationExt;
-use chrono::{Utc, Timelike, Local};
-use tauri_plugin_autostart::ManagerExt as AutoStartManagerExt;
+use chrono::{Utc, Timelike, Local, DateTime};
+
+
+use migration::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct SimulationStatus {
@@ -45,7 +48,7 @@ pub struct AppState {
     pm: PasswordManager,
     pomo: PomodoroManager,
     curr: CurrencyManager,
-    hydra: HydrationManager,
+    alarm: AlarmManager,
     habit: HabitManager,
     note: notes::NoteManager,
     config: ConfigManager,
@@ -59,14 +62,128 @@ pub struct AppState {
 }
 
 #[tauri::command]
-async fn verify_master(state: State<'_, AppState>, user_id: String, master_password: String) -> Result<bool, String> {
-    state.pm.verify_master(&user_id, &master_password).map(|_| true)
+async fn verify_master(
+    app_handle: tauri::AppHandle,
+    state: State<'_, AppState>,
+    user_id: String,
+    master_password: String
+) -> Result<bool, String> {
+    let result = state.pm.verify_master(&user_id, &master_password).map(|_| true);
+    if result.is_ok() {
+        let config = state.config.get_config();
+        if config.notif_sleep_morning {
+            let now = state.config.get_now().with_timezone(&chrono::Local);
+            let now_min = now.hour() as i32 * 60 + now.minute() as i32;
+            let morning_min = time_to_minutes(&config.notif_sleep_morning_time);
+            
+            if now_min >= morning_min && now_min < morning_min + 360 {
+                let today = now.format("%Y-%m-%d").to_string();
+                let entries = state.sleep.list_entries(&user_id, 1, chrono::Utc::now());
+                let has_today = entries.iter().any(|e| e.date == today);
+                
+                if !has_today {
+                    let title = "Aegis: Sono não registrado";
+                    if !state.notif.has_unread_today(&user_id, title) {
+                        notify_critical(&app_handle, title, "Você ainda não registrou seu ciclo de sono hoje!");
+                        let tag = format!("sleep_aviso_{}", today);
+                        let _ = state.notif.push(&user_id, title, "Acesse o módulo de Sono para manter seu histórico de descanso atualizado.", "sleep", Some(&tag), Some("blue"), Some("Moon"));
+                        let _ = app_handle.emit("new-notification", ());
+                    }
+                }
+            }
+        }
+    }
+    result
 }
 
 #[tauri::command]
 async fn send_critical_notification(app_handle: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
     notify_critical(&app_handle, &title, &body);
     Ok(())
+}
+#[tauri::command]
+async fn test_notification(app_handle: tauri::AppHandle) -> Result<(), String> {
+    notify_critical(&app_handle, "Aegis Teste", "Se você vê isso, as notificações críticas estão funcionando!");
+    Ok(())
+}
+#[tauri::command]
+fn get_app_version(app_handle: tauri::AppHandle) -> String {
+    app_handle.package_info().version.to_string()
+}
+
+#[tauri::command]
+async fn read_changelog(app_handle: tauri::AppHandle) -> Result<String, String> {
+    // Primeiro, tenta localizar via diretório de recursos (ideal para produção)
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        let paths = [
+            resource_dir.join("aegis.changelog"),
+            resource_dir.join("_up_/aegis.changelog"),
+            resource_dir.join("_up_/_up_/aegis.changelog"),
+        ];
+        for path in &paths {
+            if path.exists() {
+                return std::fs::read_to_string(path).map_err(|e| e.to_string());
+            }
+        }
+    }
+
+    // Fallback para desenvolvimento: Tenta encontrar na raiz do projeto ou níveis acima
+    let paths = [
+        "aegis.changelog", 
+        "../aegis.changelog", 
+        "../../aegis.changelog",
+        "../../../aegis.changelog"
+    ];
+    for p in &paths {
+        if std::path::Path::new(p).exists() {
+            return std::fs::read_to_string(p).map_err(|e| e.to_string());
+        }
+    }
+
+    Err("Arquivo aegis.changelog não encontrado em nenhum dos locais esperados.".to_string())
+}
+
+#[tauri::command]
+async fn get_log_path(app_handle: tauri::AppHandle) -> Result<String, String> {
+    app_handle.path().app_log_dir()
+        .map(|p| p.join("Aegis.log").to_string_lossy().to_string())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_app_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let log_path = app_handle.path().app_log_dir()
+        .map(|p| p.join("Aegis.log"))
+        .map_err(|e| e.to_string())?;
+    
+    if !log_path.exists() {
+        return Err("Arquivo de log não encontrado".to_string());
+    }
+
+    let content = std::fs::read_to_string(log_path).map_err(|e| e.to_string())?;
+    
+    // Find the last clear marker and return only what's after it
+    let marker = "======== LOGS CLEARED ========";
+    if let Some(idx) = content.rfind(marker) {
+        let after_marker = content[idx + marker.len()..].trim_start();
+        Ok(after_marker.to_string())
+    } else {
+        Ok(content)
+    }
+}
+
+
+
+#[tauri::command]
+async fn capture_screenshot() -> Result<Vec<u8>, String> {
+    use screenshots::Screen;
+    let screens = Screen::all().map_err(|e| e.to_string())?;
+    let screen = screens.first().ok_or("Nenhuma tela encontrada")?;
+    let image = screen.capture().map_err(|e| e.to_string())?;
+    let mut buffer = Vec::new();
+    image.write_to(&mut std::io::Cursor::new(&mut buffer), screenshots::image::ImageFormat::Png)
+        .map_err(|e| e.to_string())?;
+    Ok(buffer)
 }
 
 fn notify_critical(app: &tauri::AppHandle, title: &str, body: &str) {
@@ -76,24 +193,32 @@ fn notify_critical(app: &tauri::AppHandle, title: &str, body: &str) {
         .show();
 }
 
+fn time_to_minutes(time_str: &str) -> i32 {
+    let parts: Vec<&str> = time_str.split(':').collect();
+    if parts.len() == 2 {
+        let h = parts[0].parse::<i32>().unwrap_or(0);
+        let m = parts[1].parse::<i32>().unwrap_or(0);
+        h * 60 + m
+    } else {
+        0
+    }
+}
+
 #[tauri::command]
 fn check_dnd_status() -> bool {
     false
 }
 
 #[tauri::command]
-async fn open_notification_settings(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn open_notification_settings() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use tauri_plugin_shell::ShellExt;
-        let _ = app_handle.shell().command("explorer").args(["ms-settings:notifications"]).spawn();
+        use std::process::Command;
+        Command::new("powershell")
+            .args(&["-Command", "start ms-settings:notifications"])
+            .spawn()
+            .map_err(|e| e.to_string())?;
     }
-    Ok(())
-}
-
-#[tauri::command]
-async fn test_notification(app_handle: tauri::AppHandle) -> Result<(), String> {
-    notify_critical(&app_handle, "Aegis Teste", "Se você vê isso, as notificações críticas estão funcionando!");
     Ok(())
 }
 
@@ -161,43 +286,6 @@ async fn reset_vault(state: State<'_, AppState>, user_id: String) -> Result<(), 
     state.pm.delete_user(&user_id)
 }
 
-#[tauri::command]
-async fn teste_velocidade_aegis(window: Window) -> Result<(), String> {
-    let w = window.clone();
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let mut config = speedtest::get_configuration()
-            .map_err(|e| format!("Erro de Configuração: {:?}", e))?;
-        
-        let server_list = speedtest::get_server_list_with_config(&config)
-            .map_err(|e| format!("Erro ao obter servidores: {:?}", e))?;
-        
-        let best_result = speedtest::get_best_server_based_on_latency(&server_list.servers)
-            .map_err(|_| "Nenhum servidor encontrado para sua região".to_string())?;
-        
-        let best_server = &best_result.server; 
-
-        w.emit("speed-status", format!("Conectado a: {} ({})", best_server.sponsor, best_server.name)).unwrap();
-        w.emit("speed-ping", best_result.latency.as_millis()).unwrap();
-
-        w.emit("speed-status", "Testando Download...").unwrap();
-        let download_speed = speedtest::test_download_with_progress_and_config(best_server, || {}, &mut config)
-            .map_err(|e| format!("Falha no Download: {:?}", e))?;
-        
-        let dl_mbps = download_speed.bps_f64() / 1_000_000.0;
-        w.emit("speed-download", dl_mbps).unwrap();
-
-        w.emit("speed-status", "Testando Upload...").unwrap();
-        let upload_speed = speedtest::test_upload_with_progress_and_config(best_server, || {}, &config)
-            .map_err(|e| format!("Falha no Upload: {:?}", e))?;
-        
-        let ul_mbps = upload_speed.bps_f64() / 1_000_000.0;
-        w.emit("speed-upload", ul_mbps).unwrap();
-
-        w.emit("speed-status", "Teste Concluído").unwrap();
-        Ok::<(), String>(())
-    }).await.map_err(|e| e.to_string())?
-}
 
 
 #[tauri::command]
@@ -225,7 +313,6 @@ async fn clear_pomodoro_history(state: State<'_, AppState>, user_id: String) -> 
     state.pomo.clear_history(&user_id)
 }
 
-
 #[tauri::command]
 async fn get_currency_rates(state: State<'_, AppState>) -> Result<Vec<CurrencyRate>, String> {
     Ok(state.curr.get_rates())
@@ -236,22 +323,30 @@ async fn update_currency_rates(state: State<'_, AppState>, rates: Vec<CurrencyRa
     state.curr.update_rates(rates)
 }
 
-
 #[tauri::command]
-async fn list_hydration_reminders(state: State<'_, AppState>, user_id: String) -> Result<Vec<HydrationReminder>, String> {
-    Ok(state.hydra.list_reminders(&user_id))
+async fn list_alarms(state: State<'_, AppState>, user_id: String) -> Result<Vec<AppAlarm>, String> {
+    Ok(state.alarm.list_alarms(&user_id))
 }
 
 #[tauri::command]
-async fn add_hydration_reminder(state: State<'_, AppState>, reminder: HydrationReminder) -> Result<(), String> {
-    state.hydra.add_reminder(reminder)
+async fn add_alarm(state: State<'_, AppState>, alarm: AppAlarm) -> Result<(), String> {
+    state.alarm.add_alarm(alarm)
 }
 
 #[tauri::command]
-async fn delete_hydration_reminder(state: State<'_, AppState>, id: i32) -> Result<(), String> {
-    state.hydra.delete_reminder(id)
+async fn update_alarm(state: State<'_, AppState>, alarm: AppAlarm) -> Result<(), String> {
+    state.alarm.update_alarm(alarm)
 }
 
+#[tauri::command]
+async fn delete_alarm(state: State<'_, AppState>, id: i32, user_id: String) -> Result<(), String> {
+    state.alarm.delete_alarm(id, &user_id)
+}
+
+#[tauri::command]
+async fn toggle_alarm(state: State<'_, AppState>, id: i32, user_id: String) -> Result<(), String> {
+    state.alarm.toggle_alarm(id, &user_id)
+}
 
 #[tauri::command]
 async fn list_habits(state: State<'_, AppState>, user_id: String) -> Result<Vec<Habit>, String> {
@@ -265,19 +360,69 @@ async fn add_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), Strin
 }
 
 #[tauri::command]
-async fn reset_habit(state: State<'_, AppState>, id: i32, timestamp: String) -> Result<(), String> {
-    let now = state.config.get_now();
-    state.habit.reset_habit(id, &timestamp, now)
-}
+async fn list_notification_sounds(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let mut sounds = Vec::new();
+    
+    // Tenta localizar via diretório de recursos (produção)
+    let mut found_dir = None;
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        let paths = [
+            resource_dir.join("sounds"),
+            resource_dir.join("_up_/public/sounds"),
+            resource_dir.join("_up_/_up_/public/sounds"),
+            resource_dir.join("_up_/sounds"),
+        ];
+        for path in &paths {
+            if path.exists() && path.is_dir() {
+                found_dir = Some(path.to_path_buf());
+                break;
+            }
+        }
+    }
 
-#[tauri::command]
-async fn hard_reset_habit(state: State<'_, AppState>, id: i32, timestamp: String) -> Result<(), String> {
-    state.habit.hard_reset_habit(id, &timestamp)
-}
+    // Fallback para desenvolvimento (vários caminhos possíveis dependendo de onde o binário rodar)
+    if found_dir.is_none() {
+        let dev_paths = [
+            "public/sounds", 
+            "../public/sounds", 
+            "../../public/sounds",
+            "../../../public/sounds"
+        ];
+        for p in &dev_paths {
+            let path = std::path::Path::new(p);
+            if path.exists() && path.is_dir() {
+                found_dir = Some(path.to_path_buf());
+                break;
+            }
+        }
+    }
 
-#[tauri::command]
-async fn delete_habit(state: State<'_, AppState>, id: i32) -> Result<(), String> {
-    state.habit.delete_habit(id)
+    if let Some(audio_dir) = found_dir {
+        if let Ok(entries) = std::fs::read_dir(audio_dir) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Some(ext) = path.extension() {
+                            let ext_str = ext.to_string_lossy().to_lowercase();
+                            if ext_str == "mp3" || ext_str == "wav" || ext_str == "ogg" || ext_str == "m4a" {
+                                if let Some(name) = path.file_name() {
+                                    sounds.push(name.to_string_lossy().to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if sounds.is_empty() {
+        sounds.push("Plin.mp3".to_string());
+    }
+    
+    sounds.sort();
+    Ok(sounds)
 }
 
 #[tauri::command]
@@ -286,30 +431,43 @@ async fn update_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), St
 }
 
 #[tauri::command]
-async fn mark_habit_done(state: State<'_, AppState>, id: i32, timestamp: String) -> Result<(), String> {
+async fn mark_habit_done(state: State<'_, AppState>, id: i32, user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
     let now = state.config.get_now();
-    state.habit.mark_done(id, &timestamp, now)
+    let uid = user_id.unwrap_or_default();
+    state.habit.mark_done(id, &uid, now)
 }
 
 #[tauri::command]
-async fn use_habit_charge(state: State<'_, AppState>, id: i32) -> Result<(), String> {
+async fn use_habit_charge(state: State<'_, AppState>, id: i32, _user_id: Option<String>) -> Result<(), String> {
     let now = state.config.get_now();
     state.habit.use_charge(id, now)
 }
 
 #[tauri::command]
-async fn quit_app(app_handle: tauri::AppHandle) {
-    app_handle.exit(0);
+async fn reset_habit(state: State<'_, AppState>, id: i32, _user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.habit.reset_habit(id, "", now)
 }
 
 #[tauri::command]
-async fn check_user_availability(state: State<'_, AppState>, username: String, email: String) -> Result<(), String> {
-    state.pm.check_availability(&username, &email)
+async fn hard_reset_habit(state: State<'_, AppState>, id: i32, _user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
+    let now = state.config.get_now().to_rfc3339();
+    state.habit.hard_reset_habit(id, &now)
+}
+
+#[tauri::command]
+async fn delete_habit(state: State<'_, AppState>, id: i32, _user_id: Option<String>) -> Result<(), String> {
+    state.habit.delete_habit(id)
 }
 
 #[tauri::command]
 async fn local_register(state: State<'_, AppState>, username: String, email: String, password: String, password_hint: String) -> Result<String, String> {
     state.pm.register_user(&username, &email, &password, &password_hint)
+}
+
+#[tauri::command]
+async fn check_user_availability(state: State<'_, AppState>, username: String, email: String) -> Result<(), String> {
+    state.pm.check_availability(&username, &email)
 }
 
 #[tauri::command]
@@ -352,13 +510,13 @@ async fn change_username(state: State<'_, AppState>, user_id: String, new_userna
 }
 
 #[tauri::command]
-async fn change_vault_password(state: State<'_, AppState>, user_id: String, current_vault_pwd: String, new_vault_pwd: String) -> Result<(), String> {
-    state.pm.change_vault_password(&user_id, &current_vault_pwd, Some(&new_vault_pwd))
+async fn change_vault_password(state: State<'_, AppState>, user_id: String, current_vault_password: String, new_vault_password: String) -> Result<(), String> {
+    state.pm.change_vault_password(&user_id, &current_vault_password, Some(&new_vault_password))
 }
 
 #[tauri::command]
-async fn revert_vault_to_master(state: State<'_, AppState>, user_id: String, current_vault_pwd: String, master_pwd: String) -> Result<(), String> {
-    state.pm.revert_vault_to_master(&user_id, &current_vault_pwd, &master_pwd)
+async fn revert_vault_to_master(state: State<'_, AppState>, user_id: String, current_vault_password: String, master_password: String) -> Result<(), String> {
+    state.pm.revert_vault_to_master(&user_id, &current_vault_password, &master_password)
 }
 
 #[tauri::command]
@@ -372,13 +530,14 @@ async fn list_notes(state: State<'_, AppState>, user_id: String) -> Result<Vec<n
 }
 
 #[tauri::command]
-async fn list_note_items(state: State<'_, AppState>, user_id: String) -> Result<Vec<notes::FileSystemItem>, String> {
+async fn list_note_items(state: State<'_, AppState>, user_id: String, _parent_id: Option<i64>) -> Result<Vec<notes::FileSystemItem>, String> {
     Ok(state.note.list_items(&user_id))
 }
 
 #[tauri::command]
-async fn add_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), String> {
-    state.note.add_note(note)
+async fn add_note(state: State<'_, AppState>, note: notes::Note) -> Result<i64, String> {
+    state.note.add_note(note)?;
+    Ok(0)
 }
 
 #[tauri::command]
@@ -402,21 +561,18 @@ async fn move_note_item(state: State<'_, AppState>, source_path: String, dest_pa
 }
 
 #[tauri::command]
-async fn setup_local_vault(state: State<'_, AppState>, user_id: String, username: String, master_password: String, password_hint: String) -> Result<(), String> {
-    
-    let local_email = format!("{}@aegis.local", username.to_lowercase());
-    state.pm.register_user_with_id(&user_id, &username, &local_email, &master_password, &password_hint)
-}
-
-#[tauri::command]
 async fn delete_note(state: State<'_, AppState>, id: i32) -> Result<(), String> {
     state.note.delete_note(id)
 }
 
-
 #[tauri::command]
 async fn update_note_pinned(state: State<'_, AppState>, id: i32, pinned: bool) -> Result<(), String> {
     state.note.update_note_pinned(id, pinned)
+}
+
+#[tauri::command]
+async fn open_notes_folder(state: State<'_, AppState>) -> Result<(), String> {
+    state.note.open_folder()
 }
 
 #[tauri::command]
@@ -425,69 +581,30 @@ async fn get_app_config(state: State<'_, AppState>) -> Result<AppConfig, String>
 }
 
 #[tauri::command]
-async fn apply_internal_command(
-    state: State<'_, AppState>, 
-    app_handle: tauri::AppHandle,
-    command: String
-) -> Result<String, String> {
-    let clean_cmd = if command.starts_with("--dev ") {
-        &command[6..]
-    } else {
-        &command
-    };
+async fn set_app_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
+    state.config.set_config(config)
+}
 
-    if clean_cmd.starts_with("@notify(") && clean_cmd.ends_with(')') {
-        let content = &clean_cmd[8..clean_cmd.len() - 1];
-        let parts: Vec<&str> = content.split('|').collect();
-        let title = parts.get(0).unwrap_or(&"Aegis Debug").to_string();
-        let body = parts.get(1).unwrap_or(&"Teste de notificação interna").to_string();
-        
-        let _ = app_handle.notification()
-            .builder()
-            .title(title)
-            .body(body)
-            .show();
-
-        return Ok("Notificação disparada!".to_string());
-    }
-
-    if clean_cmd == "@habit_refill_all" {
-        let now = state.config.get_now();
-        state.habit.refill_all_charges(now)?;
-        return Ok("Todas as cargas de hábitos foram recarregadas.".to_string());
-    }
-
-    // Delega comandos de tempo ao ConfigManager
-    state.config.apply_debug_command(&command)
+#[tauri::command]
+async fn apply_internal_command(_app_handle: tauri::AppHandle, state: State<'_, AppState>, command: String) -> Result<(), String> {
+    state.config.apply_debug_command(&command).map(|_| ())
 }
 
 #[tauri::command]
 async fn get_simulation_status(state: State<'_, AppState>) -> Result<SimulationStatus, String> {
     let offset = state.config.get_time_offset();
-    let now = state.config.get_now();
     Ok(SimulationStatus {
         is_active: offset != 0,
-        simulated_time: now.to_rfc3339(),
+        simulated_time: state.config.get_now().to_rfc3339(),
         offset_seconds: offset,
     })
 }
 
+
 #[tauri::command]
-async fn set_app_config(state: State<'_, AppState>, app_handle: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
-    state.config.set_config(config.clone())?;
-
-    if !cfg!(debug_assertions) {
-        if config.start_at_login {
-            let _ = app_handle.autolaunch().enable();
-        } else {
-            let _ = app_handle.autolaunch().disable();
-        }
-    }
-
-    Ok(())
+async fn quit_app(app_handle: tauri::AppHandle) {
+    app_handle.exit(0);
 }
-
-
 
 #[tauri::command]
 async fn estudos_add_session(state: State<'_, AppState>, session: StudySession) -> Result<i64, String> {
@@ -531,8 +648,6 @@ async fn estudos_import_csv(state: State<'_, AppState>, user_id: String, file_pa
     state.studies.import_csv(&user_id, &file_path)
 }
 
-
-
 #[tauri::command]
 async fn sono_upsert_entry(state: State<'_, AppState>, entry: SleepEntry) -> Result<i64, String> {
     state.sleep.upsert_entry(entry)
@@ -550,13 +665,13 @@ async fn sono_list_entries(state: State<'_, AppState>, user_id: String, months_b
 }
 
 #[tauri::command]
-async fn sono_upsert_goal(state: State<'_, AppState>, goal: SleepGoal) -> Result<(), String> {
-    state.sleep.upsert_goal(goal)
+async fn sono_upsert_goal(app_handle: tauri::AppHandle, state: State<'_, AppState>, goal: SleepGoal) -> Result<(), String> {
+    state.sleep.upsert_goal(goal, &app_handle)
 }
 
 #[tauri::command]
-async fn sono_get_goal(state: State<'_, AppState>, user_id: String) -> Result<SleepGoal, String> {
-    Ok(state.sleep.get_goal(&user_id))
+async fn sono_get_goal(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<SleepGoal, String> {
+    Ok(state.sleep.get_goal(&user_id, &app_handle))
 }
 
 #[tauri::command]
@@ -569,16 +684,6 @@ async fn sono_export_csv(state: State<'_, AppState>, user_id: String, dest_path:
 async fn sono_import_csv(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
     state.sleep.import_csv(&user_id, &file_path)
 }
-
-
-
-#[tauri::command]
-async fn open_notes_folder(state: State<'_, AppState>) -> Result<(), String> {
-    state.note.open_folder()
-}
-
-
-// Comandos de Calendário
 
 #[tauri::command]
 async fn calendar_add_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<i64, String> {
@@ -611,9 +716,6 @@ async fn calendar_list_upcoming_deadlines(state: State<'_, AppState>, user_id: S
     Ok(state.calendar.list_upcoming_deadlines(&user_id, now))
 }
 
-
-// Comandos de Estatísticas
-
 #[tauri::command]
 async fn stats_get_cross_metrics(state: State<'_, AppState>, user_id: String, days: i32) -> Result<Vec<CrossMetric>, String> {
     let now = state.config.get_now();
@@ -626,7 +728,6 @@ async fn stats_get_performance_summary(state: State<'_, AppState>, user_id: Stri
     Ok(state.stats.get_performance_summary(&user_id, days, now))
 }
 
-// Comandos de Leitura
 #[tauri::command]
 async fn reading_list_books(state: State<'_, AppState>, user_id: String) -> Result<Vec<ReadingBook>, String> {
     Ok(state.reading.list_books(&user_id))
@@ -685,33 +786,30 @@ async fn reading_search_books(query: String) -> Result<serde_json::Value, String
         "https://openlibrary.org/search.json?q={}&limit=5&fields=title,author_name,number_of_pages_median,cover_i,subject,isbn",
         urlencoding::encode(&query)
     );
-    
-    let client = reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| format!("Falha ao configurar cliente HTTP: {}", e))?;
-
-    let res = client.get(&url)
-        .send()
-        .await
-        .map_err(|e| {
-            if e.is_timeout() {
-                "A busca demorou muito para responder. Tente novamente.".to_string()
-            } else {
-                format!("Erro de conexão com o servidor: {}", e)
-            }
-        })?;
-
-    if !res.status().is_success() {
-        return Err(format!("O servidor retornou um erro: Código {}", res.status()));
-    }
-
-    let json: serde_json::Value = res.json().await.map_err(|e| format!("Erro ao processar dados do livro: {}", e))?;
+    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
     Ok(json)
 }
 
-// Comandos de Tarefas
+#[tauri::command]
+async fn check_github_update() -> Result<serde_json::Value, String> {
+    let url = "https://api.github.com/repos/henrilima/aegis/releases/latest";
+    let client = reqwest::Client::builder()
+        .user_agent("Aegis-App")
+        .build()
+        .map_err(|e| e.to_string())?;
+    let res = client.get(url).send().await.map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        if res.status() == reqwest::StatusCode::FORBIDDEN {
+            return Err("Verificação via GitHub em espera (limite atingido). Tente novamente em breve.".to_string());
+        }
+        return Err(format!("GitHub API error: {}", res.status()));
+    }
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    Ok(json)
+}
+
 #[tauri::command]
 async fn tasks_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<Task>, String> {
     Ok(state.tasks.list_tasks(&user_id))
@@ -732,7 +830,6 @@ async fn tasks_delete(state: State<'_, AppState>, id: i32) -> Result<(), String>
     state.tasks.delete_task(id)
 }
 
-// Comandos de Notificações In-App
 #[tauri::command]
 async fn notif_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<notifications::AppNotification>, String> {
     Ok(state.notif.list(&user_id))
@@ -764,19 +861,107 @@ async fn notif_clear_read(state: State<'_, AppState>, user_id: String) -> Result
 }
 
 #[tauri::command]
-async fn ensure_discord_invite(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
-    state.notif.check_and_push_discord_invitation(&user_id)
+async fn ensure_discord_invite(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    if state.notif.check_and_push_discord_invitation(&user_id)? {
+        notify_critical(&app_handle, "Comunidade", "Junte-se ao nosso Discord!");
+    }
+    Ok(())
 }
 
+#[tauri::command]
+async fn save_avatar(state: State<'_, AppState>, user_id: String, base64_data: String) -> Result<(), String> {
+    state.pm.save_avatar(&user_id, &base64_data)
+}
 
+#[tauri::command]
+async fn get_avatar(state: State<'_, AppState>, user_id: String) -> Result<Option<String>, String> {
+    Ok(state.pm.get_avatar(&user_id))
+}
+
+#[tauri::command]
+async fn delete_avatar(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    state.pm.delete_avatar(&user_id)
+}
+
+#[tauri::command]
+async fn export_tasks_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
+    state.tasks.export_csv(&user_id, &path)
+}
+
+#[tauri::command]
+async fn export_habits_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.habit.export_csv(&user_id, &path, now)
+}
+
+#[tauri::command]
+async fn import_tasks_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
+    state.tasks.import_csv(&user_id, &path)
+}
+
+#[tauri::command]
+async fn import_habits_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
+    state.habit.import_csv(&user_id, &path)
+}
+
+#[tauri::command]
+async fn pre_update_backup(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    let backup_dir = data_dir.join("backups");
+    if !backup_dir.exists() { std::fs::create_dir(&backup_dir).map_err(|e| e.to_string())?; }
+    let now = Local::now().format("%Y%m%d_%H%M%S").to_string();
+    std::fs::copy(data_dir.join("passwords.db"), backup_dir.join(format!("backup_{}.db", now))).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// migration.rs handles export_user_package, import_user_package, export_full_system_bundle, import_full_system_bundle
+
+
+#[tauri::command]
+async fn teste_velocidade_aegis(window: Window) -> Result<(), String> {
+    let w = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut config = speedtest::get_configuration()
+            .map_err(|e| format!("Erro de Configuração: {:?}", e))?;
+        
+        let server_list = speedtest::get_server_list_with_config(&config)
+            .map_err(|e| format!("Erro ao obter servidores: {:?}", e))?;
+        
+        let best_result = speedtest::get_best_server_based_on_latency(&server_list.servers)
+            .map_err(|_| "Nenhum servidor encontrado para sua região".to_string())?;
+        
+        let best_server = &best_result.server; 
+
+        w.emit("speed-status", format!("Conectado a: {} ({})", best_server.sponsor, best_server.name)).unwrap();
+        w.emit("speed-ping", best_result.latency.as_millis()).unwrap();
+
+        w.emit("speed-status", "Testando Download...").unwrap();
+        let download_speed = speedtest::test_download_with_progress_and_config(best_server, || {}, &mut config)
+            .map_err(|e| format!("Falha no Download: {:?}", e))?;
+        
+        let dl_mbps = download_speed.bps_f64() / 1_000_000.0;
+        w.emit("speed-download", dl_mbps).unwrap();
+
+        w.emit("speed-status", "Testando Upload...").unwrap();
+        let upload_speed = speedtest::test_upload_with_progress_and_config(best_server, || {}, &config)
+            .map_err(|e| format!("Falha no Upload: {:?}", e))?;
+        
+        let ul_mbps = upload_speed.bps_f64() / 1_000_000.0;
+        w.emit("speed-upload", ul_mbps).unwrap();
+
+        w.emit("speed-status", "Teste Concluído").unwrap();
+        Ok::<(), String>(())
+    }).await.map_err(|e| e.to_string())?
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
                 let _ = window.show();
+                let _ = window.maximize();
                 let _ = window.set_focus();
             }
         }))
@@ -784,8 +969,11 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--minimized"])))
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_log::Builder::default().build())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--minimized"])))
         .setup(|app| {
             use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
             let quit_i = MenuItem::with_id(app, "quit", "Sair do Aegis", true, None::<String>)?;
@@ -800,6 +988,7 @@ pub fn run() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
+                            let _ = window.maximize();
                             let _ = window.set_focus();
                         }
                     }
@@ -809,7 +998,6 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    
                     if let tauri::tray::TrayIconEvent::Click {
                         button: tauri::tray::MouseButton::Left,
                         button_state: tauri::tray::MouseButtonState::Up,
@@ -821,6 +1009,7 @@ pub fn run() {
                                 let _ = window.hide();
                             } else {
                                 let _ = window.show();
+                                let _ = window.maximize();
                                 let _ = window.set_focus();
                             }
                         }
@@ -831,11 +1020,30 @@ pub fn run() {
             let pm = PasswordManager::new(app.handle());
             let pomo = PomodoroManager::new(app.handle());
             let curr = CurrencyManager::new(app.handle());
-            let hydra = HydrationManager::new(app.handle());
+            let alarm = AlarmManager::new(app.handle());
             let habit = HabitManager::new(app.handle());
             let note = notes::NoteManager::new(app.handle());
             let config = ConfigManager::new(app.handle());
-            let initial_config = config.get_config();
+            
+            // Window startup logic
+            let app_config = config.get_config();
+            let args: Vec<String> = std::env::args().collect();
+            let is_autostart = args.contains(&"--minimized".to_string());
+
+            if let Some(window) = app.get_webview_window("main") {
+                if is_autostart {
+                    if !app_config.start_minimized {
+                        let _ = window.show();
+                        let _ = window.maximize();
+                        let _ = window.set_focus();
+                    }
+                } else {
+                    let _ = window.show();
+                    let _ = window.maximize();
+                    let _ = window.set_focus();
+                }
+            }
+
             let studies = StudiesManager::new(app.handle());
             let sleep = SleepManager::new(app.handle());
             let calendar = CalendarManager::new(app.handle());
@@ -844,92 +1052,110 @@ pub fn run() {
             let tasks = TaskManager::new(app.handle());
             let notif = NotificationsManager::new(app.handle());
 
-            if initial_config.start_at_login && !cfg!(debug_assertions) {
-                let _ = app.autolaunch().enable();
-            } else {
-                let _ = app.autolaunch().disable();
-            }
-            
-
-            
-            
             let app_handle = app.handle().clone();
-            let hydra_clone = HydrationManager::new(app.handle());
-            let pomo_clone = PomodoroManager::new(app.handle());
-            let sleep_clone = SleepManager::new(app.handle());
             let pm_clone = PasswordManager::new(app.handle());
+            let sleep_clone = SleepManager::new(app.handle());
             let notif_clone = NotificationsManager::new(app.handle());
-            
-            thread::spawn(move || {
-                let mut last_notified_min = -1;
+            let pomo_clone = PomodoroManager::new(app.handle());
+            let alarm_clone = AlarmManager::new(app.handle());
+            let config_clone = ConfigManager::new(app.handle());
+
+            thread::spawn::<_, ()>(move || {
+                // Inicializa com o minuto atual do Aegis (respeitando simulação)
+                let now_init = config_clone.get_now().with_timezone(&Local);
+                let mut last_notified_min = now_init.hour() as i32 * 60 + now_init.minute() as i32;
 
                 loop {
                     thread::sleep(Duration::from_secs(1)); 
                     
-                    let now = Local::now();
-                    let now_min = now.hour() as i32 * 60 + now.minute() as i32;
-                    let now_str = now.format("%H:%M").to_string();
+                    // Obtém o tempo atual do Aegis (respeitando offset de simulação se houver)
+                    let now_aegis = config_clone.get_now().with_timezone(&Local);
+                    let now_min = now_aegis.hour() as i32 * 60 + now_aegis.minute() as i32;
+                    let now_str = now_aegis.format("%H:%M").to_string();
 
-                    
+                    // Só processamos a lógica se houver mudança de minuto
                     if now_min != last_notified_min {
-                        let reminders = hydra_clone.list_all_enabled_reminders();
-                        let mut notified_this_round = false;
-                        for r in reminders {
-                            let mut should_notify = false;
-                            if r.reminder_type == "Fixed" && r.value == now_str {
-                                should_notify = true;
-                            } else if r.reminder_type == "Interval" {
-                                if let Some(start_str) = r.start_time {
-                                    let start_parts: Vec<&str> = start_str.split(':').collect();
-                                    if start_parts.len() == 2 {
-                                        let s_h = start_parts[0].parse::<i32>().unwrap_or(0);
-                                        let s_m = start_parts[1].parse::<i32>().unwrap_or(0);
-                                        let s_min = s_h * 60 + s_m;
-                                        let interval = r.value.parse::<i32>().unwrap_or(60);
-                                        if now_min >= s_min && (now_min - s_min) % interval == 0 {
-                                            should_notify = true;
+                        // Importante: atualizar IMEDIATAMENTE para evitar re-disparo no próximo tick de 1s
+                        last_notified_min = now_min;
+                        
+                        let alarms = alarm_clone.list_all_enabled_alarms();
+                        
+                        for a in alarms {
+                            let mut trigger = false;
+                            
+                            if a.alarm_type == "fixed" {
+                                // Alerta fixo: EXATAMENTE no minuto configurado
+                                if a.time == now_str {
+                                    trigger = true;
+                                }
+                            } else if a.alarm_type == "interval" {
+                                // Alerta de intervalo:
+                                // 1. No horário de início exato
+                                // 2. Se o tempo desde o último disparo >= intervalo
+                                if now_str == a.time {
+                                    trigger = true;
+                                } else if now_str > a.time {
+                                    if let Some(iso) = &a.last_triggered {
+                                        if let Ok(lt_dt) = DateTime::parse_from_rfc3339(iso) {
+                                            let lt = lt_dt.with_timezone(&Local);
+                                            let diff_secs = now_aegis.signed_duration_since(lt).num_seconds();
+                                            let interval_secs = (a.interval_minutes.unwrap_or(30) * 60) as i64;
+                                            
+                                            // Usamos margem de 5s para garantir captura mas evitar duplo disparo
+                                            if diff_secs >= interval_secs && diff_secs < interval_secs + 59 {
+                                                trigger = true;
+                                            }
                                         }
+                                    } else {
+                                        // Se nunca disparou e já passou do horário de início
+                                        trigger = true;
                                     }
                                 }
                             }
-                            if should_notify {
-                                let title = "Aegis: Hidratação";
-                                let body = "Hora de beber água! Mantenha seu corpo funcionando em alto nível.";
-                                // Apenas notifica o sistema operacional (não salva no painel in-app)
-                                // para evitar acumular lembretes obsoletos quando o app está fechado
-                                notify_critical(&app_handle, title, body);
-                                notified_this_round = true;
+
+                            if trigger {
+                                // Atualiza estado ANTES de notificar para segurança
+                                if a.alarm_type == "interval" {
+                                    alarm_clone.update_last_triggered(a.id.unwrap(), &now_aegis.to_rfc3339());
+                                }
+
+                                let title = format!("Aegis: {}", a.title);
+                                let body = if a.alarm_type == "interval" { 
+                                    format!("Lembrete periódico: {}", a.title) 
+                                } else { 
+                                    "Alerta programado disparado!".to_string() 
+                                };
+                                
+                                notify_critical(&app_handle, &title, &body);
+                                let _ = app_handle.emit("trigger-alarm", a.clone());
+                                let _ = notif_clone.push(&a.user_id, &title, &body, "alarms", None, a.color.as_deref(), Some(&a.icon));
+                                let _ = app_handle.emit("new-notification", ());
                             }
                         }
                         
+                        // Lógica de Lembretes de Sono (Check por Minuto)
                         if let Ok(users) = pm_clone.list_users() {
                             for user_val in users {
                                 if let Some(uid_val) = user_val.get("id") {
                                     if let Some(uid) = uid_val.as_str() {
-                                        let goal = sleep_clone.get_goal(uid);
-                                        // Lembrete de hora de dormir
+                                        let goal = sleep_clone.get_goal(uid, &app_handle);
                                         if goal.reminder_enabled && goal.target_bedtime == now_str {
                                             let title = "Aegis: Controle de Sono";
-                                            let body = "Seu ponto de recolhimento ideal chegou. Bom descanso e não esqueça de registrar seu ciclo ao acordar!";
+                                            let body = "Seu ponto de recolhimento ideal chegou. Bom descanso!";
                                             notify_critical(&app_handle, title, body);
-                                            let _ = notif_clone.push(uid, title, body, "sleep", None);
+                                            let _ = notif_clone.push(uid, title, body, "sleep", None, Some("blue"), Some("Moon"));
                                             let _ = app_handle.emit("new-notification", ());
-                                            notified_this_round = true;
                                         }
-                                        // Verifica se o sono de hoje não foi registrado (aviso matinal às 09:00)
                                         if now_str == "09:00" {
-                                            let today = Local::now().format("%Y-%m-%d").to_string();
-                                            let yesterday = (Local::now() - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+                                            let today = now_aegis.format("%Y-%m-%d").to_string();
                                             let entries = sleep_clone.list_entries(uid, 1, Utc::now());
-                                            let has_yesterday = entries.iter().any(|e| e.date == yesterday);
                                             let has_today = entries.iter().any(|e| e.date == today);
-                                            if !has_yesterday && !has_today {
+                                            if !has_today {
                                                 let title = "Aegis: Sono não registrado";
                                                 if !notif_clone.has_unread_today(uid, title) {
-                                                    notify_critical(&app_handle, title, "Você esqueceu de registrar seu ciclo de sono! Acesse o módulo de Sono para manter seu histórico.");
-                                                    let _ = notif_clone.push(uid, title, "Você não registrou o sono de ontem. Acesse o módulo de Sono para manter seu histórico atualizado.", "sleep", None);
+                                                    notify_critical(&app_handle, title, "Você ainda não registrou seu ciclo de sono hoje!");
+                                                    let _ = notif_clone.push(uid, title, "Acesse o módulo de Sono para manter seu histórico de descanso atualizado.", "sleep", None, Some("blue"), Some("Moon"));
                                                     let _ = app_handle.emit("new-notification", ());
-                                                    notified_this_round = true;
                                                 }
                                             }
                                         }
@@ -937,11 +1163,9 @@ pub fn run() {
                                 }
                             }
                         }
-
-                        if notified_this_round { last_notified_min = now_min; }
                     }
 
-                    
+                    // Pomodoro Tick (Independente de minuto, usa tempo real ou simulado)
                     let user_ids = pomo_clone.get_all_user_ids();
                     for user_id in user_ids {
                         let mut state = pomo_clone.get_state(&user_id);
@@ -954,181 +1178,45 @@ pub fn run() {
                                 let total_secs = duration_mins * 60;
                                 
                                 if total_elapsed >= total_secs {
-                                    let next_type = if state.cycle_type == "Work" { "ShortBreak" } else { "Work" };
                                     state.cycles_completed += if state.cycle_type == "Work" { 1 } else { 0 };
-                                    state.cycle_type = next_type.to_string();
+                                    state.cycle_type = if state.cycle_type == "Work" { "ShortBreak".to_string() } else { "Work".to_string() };
                                     state.start_time = Some(Utc::now());
                                     state.accumulated_seconds = 0;
                                     
                                     let _ = pomo_clone.save_state(&user_id, &state);
-                                    
-                                    let body = if next_type == "Work" { "Descanso concluído! De volta ao foco." } else { "Foco concluído! Hora de um descanso." };
-                                    notify_critical(&app_handle, "Aegis Pomodoro", body);
+                                    notify_critical(&app_handle, "Aegis Pomodoro", "Ciclo concluído!");
                                 }
                             }
                         }
                     }
-                    
                     let _ = app_handle.emit("pomo-tick", ());
                 }
             });
 
-            app.manage(AppState { pm, pomo, curr, hydra, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif });
-            
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
-
-            let args: Vec<String> = std::env::args().collect();
-            let arg_minimized = args.contains(&"--minimized".to_string());
-            let config_minimized = initial_config.start_minimized;
-
-            if let Some(window) = app.get_webview_window("main") {
-                // Minimiza apenas se iniciado via Windows (--minimized)
-                // e a configuração estiver ativa.
-                if arg_minimized && config_minimized {
-                    let _ = window.hide();
-                } else {
-                    let _ = window.maximize();
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-
+            app.manage(AppState { pm, pomo, curr, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif });
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                let state = window.state::<AppState>();
-                let config = state.config.get_config();
-                
-                if config.minimize_on_close {
-                    api.prevent_close();
-                    let _ = window.hide();
-                }
-                
-            }
-        })
         .invoke_handler(tauri::generate_handler![
-            teste_velocidade_aegis,
-            test_notification,
-            check_dnd_status,
-            open_notification_settings,
-            send_critical_notification,
-            verify_master,
-            add_password,
-            update_password,
-            list_passwords,
-            decrypt_entry,
-            import_passwords,
-            export_passwords,
-            delete_password,
-            check_vault,
-            reset_vault,
-            
-            get_pomodoro_state,
-            save_pomodoro_state,
-            record_pomodoro_session,
-            get_pomodoro_history,
-            clear_pomodoro_history,
-            
-            get_currency_rates,
-            update_currency_rates,
-            
-            list_hydration_reminders,
-            add_hydration_reminder,
-            delete_hydration_reminder,
-            
-            list_habits,
-            add_habit,
-            update_habit,
-            mark_habit_done,
-            use_habit_charge,
-            reset_habit,
-            hard_reset_habit,
-            delete_habit,
-            
-            local_register,
-            check_user_availability,
-            local_login,
-            get_local_user,
-            list_local_users,
-            delete_account,
-            change_account_password,
-            change_username,
-            change_vault_password,
-            revert_vault_to_master,
-            has_separate_vault_password,
-            setup_local_vault,
-            list_notes,
-            list_note_items,
-            add_note,
-            update_note,
-            delete_note,
-            create_note_folder,
-            delete_note_folder,
-            move_note_item,
-            update_note_pinned,
-            open_notes_folder,
-            get_app_config,
-            set_app_config,
-            apply_internal_command,
-            get_simulation_status,
-            quit_app,
-            
-            estudos_add_session,
-            estudos_update_session,
-            estudos_delete_session,
-            estudos_list_sessions,
-            estudos_upsert_goal,
-            estudos_list_goals,
-            estudos_export_csv,
-            estudos_import_csv,
-            
-            sono_upsert_entry,
-            sono_delete_entry,
-            sono_list_entries,
-            sono_upsert_goal,
-            sono_get_goal,
-            sono_export_csv,
-            sono_import_csv,
-
-            calendar_add_event,
-            calendar_update_event,
-            calendar_delete_event,
-            sync_br_holidays,
-            calendar_list_events,
-            calendar_list_upcoming_deadlines,
-
-            stats_get_cross_metrics,
-            stats_get_performance_summary,
-
-            reading_list_books,
-            reading_upsert_book,
-            reading_delete_book,
-            reading_upsert_session,
-            reading_list_sessions,
-            reading_delete_session,
-            reading_upsert_goal,
-            reading_list_goals,
-            reading_export_json,
-            reading_import_json,
-            reading_search_books,
-            tasks_list,
-            tasks_upsert,
-            tasks_toggle,
-            tasks_delete,
-            notif_list,
-            notif_unread_count,
-            notif_mark_read,
-            notif_mark_all_read,
-            notif_delete,
-            notif_clear_read,
-            ensure_discord_invite
+            teste_velocidade_aegis, test_notification, open_notification_settings, send_critical_notification, verify_master,
+            add_password, update_password, list_passwords, decrypt_entry, import_passwords, export_passwords, delete_password, check_vault, reset_vault,
+            get_pomodoro_state, save_pomodoro_state, record_pomodoro_session, get_pomodoro_history, clear_pomodoro_history,
+            get_currency_rates, update_currency_rates, list_alarms, add_alarm, delete_alarm, toggle_alarm, update_alarm,
+            list_habits, add_habit, update_habit, mark_habit_done, use_habit_charge, reset_habit, hard_reset_habit, delete_habit,
+            local_register, check_user_availability, local_login, get_local_user, list_local_users, delete_account, change_account_password, change_username, change_vault_password, revert_vault_to_master, has_separate_vault_password,
+            list_notes, list_note_items, add_note, update_note, delete_note, create_note_folder, delete_note_folder, move_note_item, update_note_pinned, open_notes_folder, list_notification_sounds,
+            get_app_config, set_app_config, apply_internal_command, get_simulation_status, quit_app,
+            get_app_version, read_changelog,
+            estudos_add_session, estudos_update_session, estudos_delete_session, estudos_list_sessions, estudos_upsert_goal, estudos_list_goals, estudos_export_csv, estudos_import_csv,
+            sono_upsert_entry, sono_delete_entry, sono_list_entries, sono_upsert_goal, sono_get_goal, sono_export_csv, sono_import_csv,
+            calendar_add_event, calendar_update_event, calendar_delete_event, sync_br_holidays, calendar_list_events, calendar_list_upcoming_deadlines,
+            stats_get_cross_metrics, stats_get_performance_summary,
+            reading_list_books, reading_upsert_book, reading_delete_book, reading_upsert_session, reading_list_sessions, reading_delete_session, reading_upsert_goal, reading_list_goals, reading_export_json, reading_import_json, reading_search_books,
+            tasks_list, tasks_upsert, tasks_toggle, tasks_delete,
+            notif_list, notif_unread_count, notif_mark_read, notif_mark_all_read, notif_delete, notif_clear_read, ensure_discord_invite,
+            get_app_version, get_log_path, read_app_logs, capture_screenshot,
+            save_avatar, get_avatar, delete_avatar, export_tasks_csv, export_habits_csv, import_tasks_csv, import_habits_csv,
+            pre_update_backup, export_user_package, import_user_package, export_full_system_bundle, import_full_system_bundle, check_dnd_status,
+            check_github_update
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

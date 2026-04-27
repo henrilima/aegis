@@ -39,6 +39,9 @@ impl TaskManager {
             [],
         ).ok();
 
+        // Evita duplicados (mesmo título para o mesmo usuário)
+        conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title)"#, []).ok();
+
         Self { db_path }
     }
 
@@ -78,7 +81,7 @@ impl TaskManager {
             ).map_err(|e| e.to_string())?;
         } else {
             conn.execute(
-                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                "INSERT OR IGNORE INTO tasks (user_id, title, description, completed, due_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at],
             ).map_err(|e| e.to_string())?;
         }
@@ -99,5 +102,42 @@ impl TaskManager {
         let conn = self.get_connection();
         conn.execute("DELETE FROM tasks WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    pub fn export_csv(&self, user_id: &str, path: &str) -> Result<(), String> {
+        let tasks = self.list_tasks(user_id);
+        let mut wtr = csv::Writer::from_path(path).map_err(|e| e.to_string())?;
+        wtr.write_record(&["title", "description", "completed", "due_date", "created_at"]).map_err(|e| e.to_string())?;
+        for t in tasks {
+            wtr.write_record(&[
+                t.title,
+                t.description.unwrap_or_default(),
+                t.completed.to_string(),
+                t.due_date.unwrap_or_default(),
+                t.created_at,
+            ]).map_err(|e| e.to_string())?;
+        }
+        wtr.flush().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn import_csv(&self, user_id: &str, path: &str) -> Result<usize, String> {
+        let mut rdr = csv::Reader::from_path(path).map_err(|e| e.to_string())?;
+        let mut count = 0;
+        for result in rdr.records() {
+            let record = result.map_err(|e| e.to_string())?;
+            let task = Task {
+                id: None,
+                user_id: user_id.to_string(),
+                title: record.get(0).unwrap_or_default().to_string(),
+                description: record.get(1).map(|s| s.to_string()),
+                completed: record.get(2).map(|s| s == "true").unwrap_or(false),
+                due_date: record.get(3).map(|s| s.to_string()),
+                created_at: record.get(4).unwrap_or_default().to_string(),
+            };
+            let _ = self.upsert_task(task);
+            count += 1;
+        }
+        Ok(count)
     }
 }

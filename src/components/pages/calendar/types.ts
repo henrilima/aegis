@@ -1,5 +1,13 @@
 export type EventType = "event" | "deadline" | "holiday";
-export type DeadlineCategory = "prova" | "trabalho" | "simulado";
+export type DeadlineCategory =
+  | "prova"
+  | "trabalho"
+  | "simulado"
+  | "estudo"
+  | "reunião"
+  | "exame"
+  | "entrega"
+  | "pessoal";
 
 export interface CalendarEvent {
   id?: number;
@@ -19,12 +27,22 @@ export const DEADLINE_LABELS: Record<DeadlineCategory, string> = {
   prova: "Prova",
   trabalho: "Trabalho",
   simulado: "Simulado",
+  estudo: "Estudo",
+  reunião: "Reunião",
+  exame: "Exame",
+  entrega: "Entrega",
+  pessoal: "Pessoal",
 };
 
 export const DEADLINE_COLORS: Record<DeadlineCategory, string> = {
   prova: "#ef4444",
   trabalho: "#f97316",
   simulado: "#8b5cf6",
+  estudo: "#3b82f6",
+  reunião: "#10b981",
+  exame: "#f43f5e",
+  entrega: "#6366f1",
+  pessoal: "#6b7280",
 };
 
 export const EVENT_COLOR_OPTIONS = [

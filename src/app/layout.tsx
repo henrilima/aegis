@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { NotificationPermission } from "@/components/NotificationPermission";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { VersionGuard } from "@/components/VersionGuard";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { TimeProvider } from "@/context/TimeContext";
@@ -55,12 +56,15 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             <TimeProvider>
-              <AuthProvider>{children}</AuthProvider>
+              <AuthProvider>
+                {children}
+                <NotificationPermission />
+                <VersionGuard />
+                <Toaster />
+              </AuthProvider>
             </TimeProvider>
           </TooltipProvider>
         </ThemeProvider>
-        <NotificationPermission />
-        <Toaster />
       </body>
     </html>
   );

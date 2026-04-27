@@ -1,4 +1,13 @@
-export type ModColor = "teal" | "blue" | "amber" | "orange" | "red" | "neutral";
+export type ModColor =
+  | "teal"
+  | "blue"
+  | "amber"
+  | "orange"
+  | "red"
+  | "green"
+  | "violet"
+  | "sky"
+  | "neutral";
 
 export interface Habit {
   id?: number;
@@ -34,10 +43,16 @@ export interface PasswordEntry {
   site: string;
 }
 
-export interface HydrationReminder {
+export interface AppAlarm {
   id?: number;
-  reminder_type: string;
-  value: string;
+  user_id: string;
+  title: string;
+  alarm_type: string;
+  time: string;
+  interval_minutes: number | null;
+  last_triggered: string | null;
+  sound_file: string;
+  icon: string;
   enabled: boolean;
 }
 
@@ -92,7 +107,17 @@ export interface PerformanceSummary {
   total_days_analyzed: number;
   study_streak_days: number;
   sleep_streak_days: number;
+  reading_streak_days: number;
   peak_study_subject: string | null;
+  avg_reading_pages: number;
+  avg_reading_minutes: number;
+  avg_ppm: number;
   consistency_score: number;
   study_efficiency: number;
+  rested_hit_rate: number;
+  tired_hit_rate: number;
+  avg_focus_score: number;
+  focus_hit_rate_high: number;
+  focus_hit_rate_low: number;
+  subject_distribution: SubjectStats[];
 }

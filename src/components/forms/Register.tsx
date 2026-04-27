@@ -151,7 +151,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 <button
                   type="button"
                   onClick={handleConfirmRegister}
-                  className={`w-full py-4 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover.replace("hover:", "hover:border-")} ${theme.text} ${theme.textDarkHover.replace("hover:", "hover:text-")} text-sm font-black uppercase transition-all active:scale-[0.98] disabled:opacity-30 cursor-pointer`}
+                  className={`w-full py-3 rounded-xl ${theme.bg} ${theme.bgHover} border ${theme.border} ${theme.borderHover.replace("hover:", "hover:border-")} ${theme.text} ${theme.textDarkHover.replace("hover:", "hover:text-")} text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-30 cursor-pointer`}
                   disabled={!acceptedTerms}
                 >
                   Criar Identidade

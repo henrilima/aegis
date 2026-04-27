@@ -42,12 +42,12 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-999 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="note-create-title"
     >
-      <div className="relative w-full max-w-5xl bg-background border border-border rounded-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0 bg-background/50 backdrop-blur-sm z-10">
           <div className="flex items-center gap-3">
@@ -81,6 +81,7 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* Esquerda: Editor */}
           <form
+            id="note-form"
             onSubmit={handleSubmit}
             className="flex-1 flex flex-col p-6 space-y-5 border-r border-border/50 overflow-y-auto custom-scrollbar"
           >
@@ -115,23 +116,6 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
                 )}
                 required
               />
-            </div>
-
-            <div className="pt-2 flex flex-col gap-2">
-              <button
-                type="submit"
-                disabled={!title.trim() || !content.trim()}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 hover:border-orange-400 text-orange-300 hover:text-orange-200 text-sm font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
-              >
-                <Plus className="w-4 h-4" /> Criar nota
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full text-muted-foreground hover:text-muted-foreground py-2 text-xs font-bold cursor-pointer transition-colors"
-              >
-                Agora não
-              </button>
             </div>
           </form>
 
@@ -169,6 +153,25 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
               </div>
             </ScrollArea>
           </div>
+        </div>
+
+        {/* Rodapé Fixo */}
+        <div className="p-6 border-t border-border shrink-0 bg-background/50 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="note-form"
+            disabled={!title.trim() || !content.trim()}
+            className="flex-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40"
+          >
+            <Plus className="w-4 h-4" /> Criar nota
+          </button>
         </div>
       </div>
     </div>

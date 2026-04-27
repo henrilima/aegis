@@ -161,12 +161,15 @@ impl PomodoroManager {
 
     pub fn get_history(&self, user_id: &str) -> Vec<PomodoroHistory> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare(
+        let mut stmt = match conn.prepare(
             "SELECT id, work_minutes, break_minutes, cycles_done, start_time, end_time 
              FROM pomodoro_history WHERE user_id = ?1 ORDER BY id DESC LIMIT 5"
-        ).unwrap();
+        ) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
 
-        let rows = stmt.query_map(params![user_id], |row| {
+        let rows = match stmt.query_map(params![user_id], |row| {
             Ok(PomodoroHistory {
                 id: Some(row.get(0)?),
                 user_id: user_id.to_string(),
@@ -176,9 +179,12 @@ impl PomodoroManager {
                 start_time: row.get(4)?,
                 end_time: row.get(5)?,
             })
-        }).unwrap();
+        }) {
+            Ok(r) => r,
+            Err(_) => return vec![],
+        };
 
-        rows.map(|r| r.unwrap()).collect()
+        rows.filter_map(|r| r.ok()).collect()
     }
 
     pub fn clear_history(&self, user_id: &str) -> Result<(), String> {
@@ -190,8 +196,14 @@ impl PomodoroManager {
 
     pub fn get_all_user_ids(&self) -> Vec<String> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT user_id FROM pomodoro_v2").unwrap();
-        let rows = stmt.query_map([], |row| row.get(0)).unwrap();
-        rows.map(|r| r.unwrap()).collect()
+        let mut stmt = match conn.prepare("SELECT user_id FROM pomodoro_v2") {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let rows = match stmt.query_map([], |row| row.get(0)) {
+            Ok(r) => r,
+            Err(_) => return vec![],
+        };
+        rows.filter_map(|r| r.ok()).collect()
     }
 }

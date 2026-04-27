@@ -43,11 +43,16 @@ export default function CurrencyPage() {
   const [loading, setLoading] = useState(true);
 
   // Sincronização de taxas via API ou Cache Local
+  // Nota: fetch() padrão é usado aqui pois a URL (open.er-api.com) está na allowlist de rede do Tauri.
+  // Se a CSP for restringida no futuro, migrar para @tauri-apps/plugin-http.
   const fetchRates = useCallback(async (forceReload = false) => {
     setLoading(true);
     try {
-      const response = await fetch(CURRENCY_API);
-      if (!response.ok) throw new Error("Connection Error");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(CURRENCY_API, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
       const erRates = data.rates;
@@ -66,6 +71,7 @@ export default function CurrencyPage() {
       setIsOffline(false);
       if (forceReload) toast.success("Mercado atualizado com sucesso!");
     } catch {
+      // Fallback para cache local no banco SQLite
       const dbRates = await invoke<CurrencyRate[]>("get_currency_rates");
       if (dbRates.length > 0) {
         const ratesMap: Record<string, number> = {};

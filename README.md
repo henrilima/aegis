@@ -1,48 +1,49 @@
-# 🛡️ Aegis — Seu Centro de Produtividade & Privacidade (v2.0.0 "Medusa")
+# 🛡️ Aegis — Seu Centro de Produtividade & Privacidade (v2.1.0 "Medusa")
 
-Aegis é um dashboard de produtividade "all-in-one" desenvolvido para ser rápido, seguro e totalmente focado no usuário. Construído com a robustez do **Rust (Tauri)** e a agilidade do **Next.js**, ele oferece um ambiente centralizado para gerenciar sua rotina diretamente no seu desktop com privacidade absoluta.
+Aegis é um dashboard de produtividade "all-in-one" desenvolvido para ser rápido, seguro e absolutamente **impecável**. Construído com a robustez inabalável do **Rust (Tauri)** e a agilidade estonteante do **Next.js**, ele oferece um ambiente centralizado para gerenciar sua rotina diretamente no seu desktop com privacidade absoluta e um design que é puro luxo.
 
 ---
 
-## 🚀 Novidades da Versão 2.0.0 "Medusa"
+## 🚀 Novidades da Versão 2.1.0 "Medusa"
 
-A versão **Medusa** traz uma evolução completa na experiência do usuário:
+A versão **Medusa** passou por uma evolução, focada em estabilidade, interatividade e aquele toque de sofisticação:
 
-- **🎨 Temas Estonteantes**: Suporte nativo a temas dinâmicos como *Midnight*, *Dracula*, *Nordic* e o novo *Cappuccino Cream*.
-- **📚 Módulo de Leitura**: Controle total da sua biblioteca com busca automática por títulos e monitoramento de progresso.
-- **📁 Gerenciador de Notas Pro**: Organização hierárquica por pastas com suporte a *Drag and Drop* para total liberdade.
-- **📅 Calendário Refinado**: Integração automática com feriados nacionais e visualização otimizada.
-- **🏃 Módulo de Tarefas**: Gestão de to-dos rápidos diretamente na sidebar.
-- **✨ Interface Premium**: Transições fluidas, sidebar redesenhada e suporte estendido a monitores wide.
+- **⏰ Módulo de Alarmes e Alertas**: Uma revolução completa! Suporte a horários fixos e repetições por intervalos (perfeito para suas micro-pausas), com ícones, cores e sons que você escolhe para dar aquele toque especial de organização.
+- **🎵 Personalização de Áudio**: Agora você pode escolher sons para os alarmes. O sistema vai usar os sons predefinidos para te notificar.
+- **🔍 Busca nas Notas**: Pesquisa em tempo real que varre o conteúdo das suas notas, com prévia nos cards e normalização de texto. Encontrar o que você precisa ficou muito mais fluido.
+- **🕹️ Widgets Interativos**: Os cards de *Tarefas*, *Hábitos* e *Pomodoro* no Dashboard agora são mini-aplicativos funcionais. Você pode interagir diretamente com os cards sem precisar abrir nada. Praticidade é tudo!
+- **⌨️ Busca Global (Ctrl+K)**: Um *Command Palette* para navegação instantânea. E se bater a dúvida? **Ctrl+Shift+?** abre um guia de atalhos.
+- **💬 Feedback Inteligente**: Reporte bugs com logs técnicos ou envie sugestões de melhoria diretamente pela aplicação.
+- **✨ UX/Design Esculpido**: Padronização em todos os modais, micro-animações fluidas e um contraste refinado que respeita as normas de acessibilidade (WCAG) sem perder o estilo.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-O projeto utiliza tecnologias de ponta para garantir performance e estética:
+O projeto utiliza o que há de mais moderno e poderoso no mercado:
 
 - **Frontend**: [Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/)
-- **Core Engine**: [Tauri v2](https://tauri.app/) (Powered by Rust 🦀)
+- **Core Engine**: [Tauri v2](https://tauri.app/) (A força e segurança do Rust 🦀)
 - **Estilização**: [Tailwind CSS 4](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
-- **Linting**: [Biome](https://biomejs.dev/)
+- **Qualidade de Código**: [Biome](https://biomejs.dev/) para um linting impecável.
 
 ---
 
-## 🛡️ Privacidade Primeiro
+## 🛡️ Privacidade & Segurança
 
-O Aegis processa todos os seus dados localmente. Suas métricas, notas, leituras e senhas permanecem no seu computador através da infraestrutura segura do Tauri.
+O Aegis não brinca em serviço: todos os seus dados são processados localmente. Suas métricas, notas e senhas permanecem no seu computador através da infraestrutura segura e criptografada do Tauri. Seus dados, suas regras.
 
 ## 🪟 Compatibilidade
 
-O Aegis é **otimizado exclusivamente para Windows** (10 e 11), utilizando integrações profundas com as notificações e APIs do sistema para oferecer a melhor performance.
+O Aegis é **otimizado exclusivamente para Windows** (10 e 11), com integrações profundas nas APIs do sistema para garantir uma performance que não aceita menos que a perfeição.
 
 ---
 
 ## 📜 Licença
 
-Este projeto está sob a licença **MIT**. Sinta-se à vontade para estudar o código e contribuir!
+Este projeto está sob a licença **MIT**. Sinta-se à vontade para estudar o código, brilhar nas contribuições e levar a produtividade ao próximo nível!
 
 > [!NOTE]
-> Todo o código, documentação e changelog foram revisados por uma IA para garantir consistência e clareza técnica.
+> Todo o código, documentação e changelog foram revisados meticulosamente para garantir consistência, clareza técnica e uma experiência de usuário de altíssimo nível.
 
-Feito com carinho por [José Henrique](https://github.com/henrilima).
+Feito com carinho por [José Henrique](https://github.com/henrilima) e revisado por IA.

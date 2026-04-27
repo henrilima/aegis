@@ -12,6 +12,9 @@ interface HabitsWidgetProps {
   isToday: (iso: string) => boolean;
   time: Date;
   isEditMode?: boolean;
+  isInteractive?: boolean;
+  onToggleInteractive?: () => void;
+  onToggleHabit?: (id: number) => void;
 }
 
 export function HabitsWidget({
@@ -19,6 +22,9 @@ export function HabitsWidget({
   isToday,
   time,
   isEditMode,
+  isInteractive,
+  onToggleInteractive,
+  onToggleHabit,
 }: HabitsWidgetProps) {
   const positiveHabits = habits.filter((h) => h.habit_type === "Positive");
   const doneToday = positiveHabits.filter(
@@ -42,6 +48,8 @@ export function HabitsWidget({
       iconColor="text-teal-600 dark:text-teal-400"
       route="habits"
       isEditMode={isEditMode}
+      isInteractive={isInteractive}
+      onToggleInteractive={onToggleInteractive}
     >
       <div className="flex items-center gap-[5cqw] @sm:gap-7 mb-[5cqw] @sm:mb-5">
         <div className="relative shrink-0 w-[20cqw] h-[20cqw] min-w-[75px] min-h-[75px] max-w-[150px] max-h-[150px]">
@@ -82,10 +90,35 @@ export function HabitsWidget({
           return (
             <div
               key={h.id}
-              className="flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-border/50"
+              className={cn(
+                "flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-border/50",
+                isInteractive &&
+                  !done &&
+                  "hover:bg-neutral-800/50 transition-colors",
+              )}
             >
               <div className="flex items-center gap-[2cqw] @sm:gap-2 min-w-0">
-                {done ? (
+                {isInteractive ? (
+                  <button
+                    type="button"
+                    disabled={!!done}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!done && onToggleHabit && h.id !== undefined)
+                        onToggleHabit(h.id);
+                    }}
+                    className={cn(
+                      "shrink-0 transition-transform",
+                      !done && "hover:scale-110 active:scale-95",
+                    )}
+                  >
+                    {done ? (
+                      <CheckCircle2 className="w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 text-teal-600 dark:text-teal-400" />
+                    ) : (
+                      <Circle className="w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 text-neutral-600 hover:text-teal-500 transition-colors" />
+                    )}
+                  </button>
+                ) : done ? (
                   <CheckCircle2 className="w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 text-teal-600 dark:text-teal-400 shrink-0" />
                 ) : (
                   <Circle className="w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 text-neutral-600 shrink-0" />

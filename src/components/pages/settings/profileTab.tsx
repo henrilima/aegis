@@ -1,10 +1,20 @@
 "use client";
 
-import { Edit2, Mail, Shield, User } from "lucide-react";
+import {
+  Camera,
+  Edit2,
+  Loader2,
+  Mail,
+  Shield,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 import ChangeUsernameModal from "@/components/forms/ChangeUsernameModal";
 import { FeedbackSection, TermsContent } from "@/components/forms/TermsContent";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useAvatar } from "@/hooks/useAvatar";
 import { getThemeColor } from "@/lib/utils";
 
 interface ProfileTabProps {
@@ -15,6 +25,13 @@ interface ProfileTabProps {
 export function ProfileTab({ username, email }: ProfileTabProps) {
   const { themeStyles: theme } = useTheme();
   const [showEditName, setShowEditName] = useState(false);
+  const { user } = useAuth();
+  const {
+    avatarSrc,
+    loading: avatarLoading,
+    pickAvatar,
+    removeAvatar,
+  } = useAvatar(user?.id);
 
   return (
     <div className="space-y-6 ">
@@ -22,15 +39,36 @@ export function ProfileTab({ username, email }: ProfileTabProps) {
         <ChangeUsernameModal onClose={() => setShowEditName(false)} />
       )}
 
+      {/* Card de perfil com avatar */}
       <div className="flex items-center gap-6 p-6 bg-card border border-border rounded-xl overflow-hidden relative group">
         <div
           className={`absolute top-0 right-0 w-32 h-32 ${theme.bg.replace("10", "5")} blur-3xl rounded-full -mr-16 -mt-16 group-hover:${theme.bg} transition-colors`}
         />
 
-        <div
-          className={`w-20 h-20 rounded-xl ${theme.solid} flex items-center justify-center text-3xl font-bold text-accent-foreground shrink-0 transition-transform`}
-        >
-          {username[0]?.toUpperCase()}
+        {/* Avatar com overlay de câmera */}
+        <div className="relative shrink-0">
+          <div
+            className={`w-20 h-20 rounded-xl ${theme.solid} flex items-center justify-center text-3xl font-bold text-accent-foreground overflow-hidden transition-transform`}
+          >
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt="Foto de perfil"
+                width={80}
+                height={80}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              username[0]?.toUpperCase()
+            )}
+          </div>
+          {/* Indicador de loading */}
+          {avatarLoading && (
+            <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
+            </div>
+          )}
         </div>
 
         <div className="flex-1">
@@ -38,6 +76,30 @@ export function ProfileTab({ username, email }: ProfileTabProps) {
           <div className="flex items-center gap-2 mt-1.5 p-1 px-2.5 bg-accent rounded-lg w-fit">
             <Mail className={`w-3.5 h-3.5 text-accent-foreground`} />
             <span className=" text-accent-foreground font-medium">{email}</span>
+          </div>
+
+          {/* Controles do avatar */}
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              type="button"
+              onClick={pickAvatar}
+              disabled={avatarLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-accent hover:bg-accent/80 text-foreground transition-colors cursor-pointer disabled:opacity-50`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              {avatarSrc ? "Alterar foto" : "Adicionar foto"}
+            </button>
+            {avatarSrc && (
+              <button
+                type="button"
+                onClick={removeAvatar}
+                disabled={avatarLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Remover
+              </button>
+            )}
           </div>
         </div>
       </div>

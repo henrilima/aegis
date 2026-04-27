@@ -1,12 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Bell,
-  ExternalLink,
-  type LucideIcon,
-  Power,
-  Settings as SettingsIcon,
-  ShieldAlert,
-} from "lucide-react";
+import { type LucideIcon, Power } from "lucide-react";
 import * as React from "react";
 import { APP_CONFIG } from "@/app.config";
 import { Button } from "@/components/ui/button";
@@ -28,7 +21,6 @@ interface SystemTabProps {
   weekStartDay: number;
   updateWeekStart: (value: number) => Promise<void>;
   handleInternalCommand: (command: string) => Promise<void>;
-  handleTestNotification: () => void;
 }
 
 export function SystemTab({
@@ -39,7 +31,6 @@ export function SystemTab({
   weekStartDay,
   updateWeekStart,
   handleInternalCommand,
-  handleTestNotification,
 }: SystemTabProps) {
   const [internalCmd, setInternalCmd] = React.useState("");
   const { theme, setTheme, themeStyles } = useTheme();
@@ -152,50 +143,6 @@ export function SystemTab({
         </div>
       </section>
 
-      {/* Notificações */}
-      <section className="pt-4 border-t border-border space-y-4">
-        <SectionHeading>Notificações</SectionHeading>
-        <div className="p-4 bg-card border border-border rounded-xl space-y-4">
-          <ActionRow
-            icon={ShieldAlert}
-            title="Prioridade Crítica (Windows)"
-            description="Exibir alertas mesmo em modo Foco."
-            action={
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => invoke("open_notification_settings")}
-                className="h-8 text-xs font-bold bg-accent text-foreground cursor-pointer hover:bg-accent/80"
-              >
-                <ExternalLink className="w-3 h-3 mr-1.5" /> Windows
-              </Button>
-            }
-          />
-          <div className="h-px bg-border my-2" />
-          <ActionRow
-            icon={Bell}
-            title="Sinal de Teste"
-            description="Verificar entrega de notificações."
-            action={
-              <Button
-                size="sm"
-                onClick={handleTestNotification}
-                className="h-8 text-xs font-bold bg-accent text-foreground cursor-pointer hover:bg-accent/80"
-              >
-                Enviar Teste
-              </Button>
-            }
-          />
-        </div>
-        <div className="flex gap-2 p-3 border border-dashed border-border rounded-xl text-[10px] text-muted-foreground italic">
-          <SettingsIcon className="w-3.5 h-3.5 shrink-0" />
-          <p>
-            Recomendado ativar a prioridade alta no Windows para não perder
-            lembretes importantes de saúde ou final de Pomodoro.
-          </p>
-        </div>
-      </section>
-
       {/* Operações */}
       <section className="pt-4 border-t border-border space-y-4 text-center">
         <div className="text-left">
@@ -280,7 +227,7 @@ function ToggleRow({
   );
 }
 
-function ActionRow({
+function _ActionRow({
   icon: Icon,
   title,
   description,
