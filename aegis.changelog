@@ -1,4 +1,4 @@
-[version]:["2.1.0"]
+[version]:["2.1.1"]
 [updates]
 [1]:["Autoupdater: Agora o Aegis consegue verificar, baixar e instalar atualizações automaticamente."]
 [2]:["Módulo de alarmes: O módulo de hidratação foi atualizado para suportar horários fixos e repetições intervaladas."]

@@ -24,6 +24,7 @@
     "updater:default",
     "process:allow-restart",
     "store:default",
-    "log:default"
+    "log:default",
+    "http:default"
   ]
 }

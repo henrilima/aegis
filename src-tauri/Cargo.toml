@@ -1,6 +1,6 @@
 [package]
 name = "Aegis"
-version = "2.1.0"
+version = "2.1.1"
 description = "Aegis is a productivity-focused desktop application designed to help users manage their daily tasks, notes, and goals with a modern, intuitive interface."
 authors = ["José Henrique da Silva Lima"]
 license = "MIT"
@@ -41,6 +41,7 @@ tauri-plugin-process = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-store = "2"
 tauri-plugin-fs = "2.2.0"
+tauri-plugin-http = "2"
 yaml-front-matter = "0.1.0"
 serde_yaml = "0.9.34"
 reqwest = { version = "0.12", features = ["json", "native-tls"], default-features = false }
