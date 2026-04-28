@@ -50,12 +50,18 @@ jobs:
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           $tag = "${{ github.ref_name }}"
+          # Busca recursiva para garantir que encontre o .sig no Tauri v2
           $sigFile = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*.exe.sig" | Select-Object -First 1
           
           if (-not $sigFile) { 
-            Write-Host "ERRO: Arquivo .sig não encontrado. Listando arquivos para debug:"
-            Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse
-            throw "Arquivo de assinatura .sig não encontrado!" 
+            Write-Host "AVISO: Assinatura automática falhou. Tentando assinatura manual..."
+            $exeFile = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*.exe" | Select-Object -First 1
+            if (-not $exeFile) { throw "Executável .exe não encontrado para assinatura!" }
+            
+            # Comando de assinatura manual do Tauri v2
+            npx tauri signer sign -k "$env:TAURI_SIGNING_PRIVATE_KEY" -p "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" $exeFile.FullName | Out-File -FilePath "$($exeFile.FullName).sig" -NoNewline
+            $sigFile = Get-Item -Path "$($exeFile.FullName).sig"
+            Write-Host "Sucesso: Assinatura manual gerada em $($sigFile.FullName)"
           }
           
           $signature = Get-Content -Path $sigFile.FullName

@@ -53,7 +53,6 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
       "endpoints": [
         "https://github.com/henrilima/aegis/releases/latest/download/latest.json"
       ],
