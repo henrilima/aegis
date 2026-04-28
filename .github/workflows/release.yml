@@ -54,8 +54,15 @@ jobs:
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           $tag = "${{ github.ref_name }}"
-          $sigFile = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis/*.sig" | Select-Object -First 1
-          if (-not $sigFile) { throw "Arquivo de assinatura .sig não encontrado!" }
+          # Busca recursiva para garantir que encontre o .sig no Tauri v2
+          $sigFile = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*.sig" | Select-Object -First 1
+          
+          if (-not $sigFile) { 
+            Write-Host "ERRO: Arquivo .sig não encontrado. Listando arquivos para debug:"
+            Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse
+            throw "Arquivo de assinatura .sig não encontrado!" 
+          }
+          
           $signature = Get-Content -Path $sigFile.FullName
           
           $json = @{
