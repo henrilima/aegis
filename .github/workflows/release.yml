@@ -58,8 +58,8 @@ jobs:
             $exeFile = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*.exe" | Select-Object -First 1
             if (-not $exeFile) { throw "Executável .exe não encontrado para assinatura!" }
             
-            # Comando de assinatura manual do Tauri v2
-            npx tauri signer sign -k "$env:TAURI_SIGNING_PRIVATE_KEY" -p "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" $exeFile.FullName | Out-File -FilePath "$($exeFile.FullName).sig" -NoNewline
+            # Comando de assinatura manual do Tauri v2 (ele cria o arquivo .sig automaticamente)
+            npx tauri signer sign -k "$env:TAURI_SIGNING_PRIVATE_KEY" -p "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" $exeFile.FullName
             $sigFile = Get-Item -Path "$($exeFile.FullName).sig"
             Write-Host "Sucesso: Assinatura manual gerada em $($sigFile.FullName)"
           }
