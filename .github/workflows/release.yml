@@ -85,9 +85,7 @@ jobs:
         with:
           files: |
             src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/nsis/*.exe.sig
             src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/msi/*.msi.sig
             latest.json
           tag_name: ${{ github.ref_name }}
           name: "Aegis ${{ github.ref_name }}"

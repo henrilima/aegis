@@ -991,21 +991,38 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--minimized"])))
-        .setup(|app| {
-            use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
-            let quit_i = MenuItem::with_id(app, "quit", "Sair do Aegis", true, None::<String>)?;
-            let show_i = MenuItem::with_id(app, "show", "Abrir Aegis", true, None::<String>)?;
-            let menu = Menu::with_items(app, &[&show_i as &dyn tauri::menu::IsMenuItem<tauri::Wry>, &PredefinedMenuItem::separator(app)? as &dyn tauri::menu::IsMenuItem<tauri::Wry>, &quit_i as &dyn tauri::menu::IsMenuItem<tauri::Wry>])?;
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let state = window.state::<AppState>();
+                let config = state.config.get_config();
+                
+                if config.minimize_on_close {
+                    #[cfg(not(target_os = "macos"))]
+                    {
+                        let _ = window.hide();
+                        api.prevent_close();
+                    }
+                }
+            }
+        })
+        .setup(move |app| {
+            let tray_menu = tauri::menu::Menu::with_items(
+                app,
+                &[
+                    &tauri::menu::MenuItem::with_id(app, "show", "Abrir Aegis", true, None::<&str>).unwrap(),
+                    &tauri::menu::PredefinedMenuItem::separator(app).unwrap(),
+                    &tauri::menu::MenuItem::with_id(app, "quit", "Sair", true, None::<&str>).unwrap(),
+                ],
+            ).unwrap();
 
-            let _tray = TrayIconBuilder::new()
+            let _tray = tauri::tray::TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .menu(&menu)
-                .show_menu_on_left_click(false)
+                .menu(&tray_menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
-                            let _ = window.maximize();
+                            let _ = window.unminimize();
                             let _ = window.set_focus();
                         }
                     }
@@ -1015,20 +1032,12 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click {
-                        button: tauri::tray::MouseButton::Left,
-                        button_state: tauri::tray::MouseButtonState::Up,
-                        ..
-                    } = event {
+                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
-                            if window.is_visible().unwrap_or(false) {
-                                let _ = window.hide();
-                            } else {
-                                let _ = window.show();
-                                let _ = window.maximize();
-                                let _ = window.set_focus();
-                            }
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
                         }
                     }
                 })
@@ -1040,6 +1049,22 @@ pub fn run() {
             let alarm = AlarmManager::new(app.handle());
             let habit = HabitManager::new(app.handle());
             let note = notes::NoteManager::new(app.handle());
+            let config = ConfigManager::new(app.handle());
+            let initial_config = config.get_config();
+            // ... (resto dos managers)
+
+            let args: Vec<String> = std::env::args().collect();
+            let arg_minimized = args.contains(&"--minimized".to_string());
+
+            if let Some(window) = app.get_webview_window("main") {
+                if arg_minimized && initial_config.start_minimized {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.maximize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
             let config = ConfigManager::new(app.handle());
             
             // Window startup logic
