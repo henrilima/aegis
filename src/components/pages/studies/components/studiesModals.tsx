@@ -12,6 +12,7 @@ interface SessionModalProps {
   existingSubjects: string[];
   onSave: (s: StudySession) => Promise<void>;
   onClose: () => void;
+  isSaving?: boolean;
 }
 
 export function SessionModal({
@@ -21,6 +22,7 @@ export function SessionModal({
   existingSubjects,
   onSave,
   onClose,
+  isSaving = false,
 }: SessionModalProps) {
   useLockBodyScroll(show);
 
@@ -79,9 +81,14 @@ export function SessionModal({
           <button
             type="submit"
             form="studies-form"
-            className="flex-2 px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer"
+            disabled={isSaving}
+            className="flex-2 px-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {editSession ? "Salvar alterações" : "Registrar sessão"}
+            {isSaving
+              ? "Salvando..."
+              : editSession
+                ? "Salvar alterações"
+                : "Registrar sessão"}
           </button>
         </div>
       </div>

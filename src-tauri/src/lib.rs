@@ -33,6 +33,7 @@ use std::thread;
 use std::time::Duration;
 use tauri_plugin_notification::NotificationExt;
 use chrono::{Utc, Timelike, Local, DateTime};
+use log::{info, error, warn};
 
 
 use migration::*;
@@ -187,10 +188,25 @@ async fn capture_screenshot() -> Result<Vec<u8>, String> {
 }
 
 fn notify_critical(app: &tauri::AppHandle, title: &str, body: &str) {
-    let _ = app.notification().builder()
+    info!("[Aegis] Enviando notificação crítica: {} - {}", title, body);
+    
+    // Tenta obter o som do config
+    let sound = {
+        let config = ConfigManager::new(app);
+        config.get_config().notification_sound
+    };
+    
+    let mut builder = app.notification().builder()
         .title(title)
-        .body(body)
-        .show();
+        .body(body);
+
+    if !sound.is_empty() && sound != "None" {
+        builder = builder.sound(&sound);
+    }
+
+    if let Err(e) = builder.show() {
+        error!("[Aegis] Erro ao mostrar notificação: {}", e);
+    }
 }
 
 fn time_to_minutes(time_str: &str) -> i32 {
@@ -1062,9 +1078,8 @@ pub fn run() {
             let config_clone = ConfigManager::new(app.handle());
 
             thread::spawn::<_, ()>(move || {
-                // Inicializa com o minuto atual do Aegis (respeitando simulação)
-                let now_init = config_clone.get_now().with_timezone(&Local);
-                let mut last_notified_min = now_init.hour() as i32 * 60 + now_init.minute() as i32;
+                // Inicializa com -1 para garantir que o primeiro minuto seja processado
+                let mut last_notified_min = -1;
 
                 loop {
                     thread::sleep(Duration::from_secs(1)); 
@@ -1076,50 +1091,54 @@ pub fn run() {
 
                     // Só processamos a lógica se houver mudança de minuto
                     if now_min != last_notified_min {
-                        // Importante: atualizar IMEDIATAMENTE para evitar re-disparo no próximo tick de 1s
+                        info!("[Aegis Loop] Processando minuto: {} (Minuto: {})", now_str, now_min);
                         last_notified_min = now_min;
                         
                         let alarms = alarm_clone.list_all_enabled_alarms();
+                        if !alarms.is_empty() {
+                            let titles: Vec<String> = alarms.iter().map(|a| a.title.clone()).collect();
+                            info!("[Aegis Loop] Encontrados {} alarmes ativos: {:?}", alarms.len(), titles);
+                        }
                         
                         for a in alarms {
                             let mut trigger = false;
+                            let alarm_min = time_to_minutes(&a.time);
                             
                             if a.alarm_type == "fixed" {
                                 // Alerta fixo: EXATAMENTE no minuto configurado
-                                if a.time == now_str {
+                                if alarm_min == now_min {
                                     trigger = true;
                                 }
                             } else if a.alarm_type == "interval" {
                                 // Alerta de intervalo:
-                                // 1. No horário de início exato
-                                // 2. Se o tempo desde o último disparo >= intervalo
-                                if now_str == a.time {
+                                if now_min == alarm_min {
                                     trigger = true;
-                                } else if now_str > a.time {
+                                } else if now_min > alarm_min {
                                     if let Some(iso) = &a.last_triggered {
                                         if let Ok(lt_dt) = DateTime::parse_from_rfc3339(iso) {
                                             let lt = lt_dt.with_timezone(&Local);
                                             let diff_secs = now_aegis.signed_duration_since(lt).num_seconds();
                                             let interval_secs = (a.interval_minutes.unwrap_or(30) * 60) as i64;
                                             
-                                            // Usamos margem de 5s para garantir captura mas evitar duplo disparo
                                             if diff_secs >= interval_secs && diff_secs < interval_secs + 59 {
                                                 trigger = true;
                                             }
                                         }
                                     } else {
                                         // Se nunca disparou e já passou do horário de início
+                                        info!("[Aegis Loop] Alarme de intervalo nunca disparado para {}, ativando.", a.title);
                                         trigger = true;
                                     }
                                 }
                             }
 
                             if trigger {
+                                info!("[Aegis Loop] !!! DISPARANDO ALARME: {} !!!", a.title);
                                 // Atualiza estado ANTES de notificar para segurança
                                 if a.alarm_type == "interval" {
                                     alarm_clone.update_last_triggered(a.id.unwrap(), &now_aegis.to_rfc3339());
                                 }
-
+                                
                                 let title = format!("Aegis: {}", a.title);
                                 let body = if a.alarm_type == "interval" { 
                                     format!("Lembrete periódico: {}", a.title) 
@@ -1128,13 +1147,18 @@ pub fn run() {
                                 };
                                 
                                 notify_critical(&app_handle, &title, &body);
-                                let _ = app_handle.emit("trigger-alarm", a.clone());
-                                let _ = notif_clone.push(&a.user_id, &title, &body, "alarms", None, a.color.as_deref(), Some(&a.icon));
-                                let _ = app_handle.emit("new-notification", ());
+                                if let Err(e) = app_handle.emit("trigger-alarm", a.clone()) {
+                                    error!("[Aegis Loop] Erro ao emitir trigger-alarm: {}", e);
+                                }
+                                if let Err(e) = notif_clone.push(&a.user_id, &title, &body, "alarms", None, a.color.as_deref(), Some(&a.icon)) {
+                                    error!("[Aegis Loop] Erro ao salvar notificação no banco: {}", e);
+                                }
+                                if let Err(e) = app_handle.emit("new-notification", ()) {
+                                    error!("[Aegis Loop] Erro ao emitir new-notification: {}", e);
+                                }
                             }
                         }
                         
-                        // Lógica de Lembretes de Sono (Check por Minuto)
                         if let Ok(users) = pm_clone.list_users() {
                             for user_val in users {
                                 if let Some(uid_val) = user_val.get("id") {

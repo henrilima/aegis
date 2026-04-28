@@ -11,6 +11,7 @@ interface EventModalProps {
   editEvent?: CalendarEvent;
   onSave: (ev: CalendarEvent) => Promise<void>;
   onClose: () => void;
+  isSaving?: boolean;
 }
 
 export function EventModal({
@@ -19,6 +20,7 @@ export function EventModal({
   editEvent,
   onSave,
   onClose,
+  isSaving = false,
 }: EventModalProps) {
   useLockBodyScroll(show);
 
@@ -71,9 +73,14 @@ export function EventModal({
           <button
             type="submit"
             form="calendar-form"
-            className="flex-2 px-4 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer"
+            disabled={isSaving}
+            className="flex-2 px-4 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {editEvent ? "Salvar alterações" : "Agendar evento"}
+            {isSaving
+              ? "Salvando..."
+              : editEvent
+                ? "Salvar alterações"
+                : "Agendar evento"}
           </button>
         </div>
       </div>

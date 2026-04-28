@@ -33,6 +33,7 @@ export default function ReadingPage() {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedBook, setSelectedBook] = useState<ReadingBook | undefined>();
   const [selectedSession, setSelectedSession] = useState<
     ReadingSession | undefined
@@ -91,13 +92,17 @@ export default function ReadingPage() {
   }, [fetchData]);
 
   const handleSaveBook = async (book: ReadingBook) => {
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       await invoke("reading_upsert_book", { book: { ...book, user_id: uid } });
       toast.success(book.id ? "Livro atualizado!" : "Livro adicionado!");
       setIsBookModalOpen(false);
       fetchData();
     } catch (_error) {
       toast.error("Erro ao salvar livro");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -142,7 +147,9 @@ export default function ReadingPage() {
   };
 
   const handleSaveSession = async (session: ReadingSession) => {
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       await invoke("reading_upsert_session", {
         session: { ...session, user_id: uid },
       });
@@ -152,6 +159,8 @@ export default function ReadingPage() {
     } catch (error) {
       console.error("Erro ao salvar sessão:", error);
       toast.error("Erro ao salvar sessão");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -313,6 +322,7 @@ export default function ReadingPage() {
         onSave={handleSaveBook}
         editBook={selectedBook}
         existingCategories={categories}
+        isSaving={isSaving}
       />
 
       <SessionModal
@@ -322,6 +332,7 @@ export default function ReadingPage() {
         onSave={handleSaveSession}
         books={books || []}
         editSession={selectedSession}
+        isSaving={isSaving}
       />
 
       <GoalsModal

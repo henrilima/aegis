@@ -13,6 +13,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   const { now: simulatedNow } = useTime();
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [chargeTimeLeft, setChargeTimeLeft] = useState<string>("");
+  const [isActionPending, setIsActionPending] = useState(false);
   const [canUse, setCanUse] = useState(true);
 
   const id = habit.id;
@@ -73,15 +74,19 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
 
   // Registrar conclusão de hábito positivo
   const markDone = useCallback(async () => {
+    if (isActionPending) return;
     try {
+      setIsActionPending(true);
       const nowStr = simulatedNow.toISOString();
       await invoke("mark_habit_done", { id, timestamp: nowStr });
       onRefresh?.();
       toast.success("Hábito concluído com sucesso!");
     } catch {
       toast.error("Erro ao registrar progresso");
+    } finally {
+      setIsActionPending(false);
     }
-  }, [id, onRefresh, simulatedNow]);
+  }, [id, onRefresh, simulatedNow, isActionPending]);
 
   // Utilizar carga de proteção (vícios)
   const handleUseCharge = useCallback(async () => {
@@ -229,6 +234,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     intervalo,
     currentCharges,
     maxCharges,
+    isActionPending,
 
     actions: {
       markDone,

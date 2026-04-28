@@ -17,6 +17,7 @@ interface SessionModalProps {
   onSave: (session: ReadingSession) => void;
   books: ReadingBook[];
   editSession?: ReadingSession;
+  isSaving?: boolean;
 }
 
 function BookSelect({
@@ -126,6 +127,7 @@ export function SessionModal({
   onSave,
   books,
   editSession,
+  isSaving = false,
 }: SessionModalProps) {
   const { user } = useAuth();
   const uid = user ? String(user.id) : "";
@@ -552,9 +554,14 @@ export function SessionModal({
           <Button
             type="button"
             onClick={handleSubmit}
-            className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98]"
+            disabled={isSaving}
+            className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {editSession ? "Salvar alterações" : "Confirmar registro"}
+            {isSaving
+              ? "Salvando..."
+              : editSession
+                ? "Salvar alterações"
+                : "Confirmar registro"}
           </Button>
         </div>
       </div>

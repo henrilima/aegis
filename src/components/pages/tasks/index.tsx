@@ -28,6 +28,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -49,9 +50,10 @@ export default function TasksPage() {
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uid || !newTaskTitle.trim()) return;
+    if (!uid || !newTaskTitle.trim() || isSubmitting) return;
 
     try {
+      setIsSubmitting(true);
       await invoke("tasks_upsert", {
         task: {
           user_id: uid,
@@ -65,6 +67,8 @@ export default function TasksPage() {
       toast.success("Tarefa adicionada!");
     } catch {
       toast.error("Erro ao adicionar tarefa");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,10 +212,14 @@ export default function TasksPage() {
         />
         <button
           type="submit"
-          disabled={!newTaskTitle.trim()}
-          className="flex items-center justify-center h-12 w-12 rounded-xl bg-red-600 hover:bg-red-500 disabled:bg-muted disabled:text-muted-foreground text-white font-bold transition-all shrink-0 cursor-pointer active:scale-95"
+          disabled={!newTaskTitle.trim() || isSubmitting}
+          className="flex items-center justify-center h-12 w-12 rounded-xl bg-red-600 hover:bg-red-500 disabled:bg-muted disabled:text-muted-foreground text-white font-bold transition-all shrink-0 cursor-pointer active:scale-95 disabled:cursor-not-allowed"
         >
-          <Plus className="w-5 h-5" />
+          {isSubmitting ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Plus className="w-5 h-5" />
+          )}
         </button>
       </form>
 

@@ -48,6 +48,7 @@ export function HabitCard({
     chargeTimeLeft,
     totalContagem,
     intervalo,
+    isActionPending,
     actions,
   } = useHabitLogic(habit, onRefresh);
 
@@ -170,9 +171,11 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && actions.markDone()}
-              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-600 dark:text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              disabled={isActionPending}
+              className="w-full py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-600 dark:text-teal-400 text-sm font-semibold hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Check className="w-4 h-4" /> Marcar como feito
+              <Check className="w-4 h-4" />{" "}
+              {isActionPending ? "Processando..." : "Marcar como feito"}
             </button>
           ) : (
             <div className="w-full py-3 rounded-xl bg-background/50 border border-border flex flex-col items-center justify-center gap-0.5">
@@ -195,18 +198,22 @@ export function HabitCard({
             <button
               type="button"
               onClick={() => habit.id && onOpenResetDialog(habit.id)}
-              className="w-full py-3 rounded-xl border border-red-500/30 text-red-600 dark:text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-500/10 bg-red-500/5 transition-all cursor-pointer flex items-center justify-center gap-2"
+              disabled={isActionPending}
+              className="w-full py-3 rounded-xl border border-red-500/30 text-red-600 dark:text-red-500 text-sm font-medium hover:bg-red-500/10 bg-red-500/5 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <AlertTriangle className="w-3.5 h-3.5" /> Registrar falha
+              <AlertTriangle className="w-3.5 h-3.5" />{" "}
+              {isActionPending ? "Processando..." : "Registrar falha"}
             </button>
 
             {currentCharges > 0 && (
               <button
                 type="button"
                 onClick={() => habit.id && actions.handleUseCharge()}
-                className="w-full py-2 rounded-xl text-orange-600 dark:text-orange-600 dark:text-orange-400 text-xs font-medium hover:bg-orange-500/10 bg-orange-500/5 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                disabled={isActionPending}
+                className="w-full py-2 rounded-xl text-orange-600 dark:text-orange-500 text-xs font-medium hover:bg-orange-500/10 bg-orange-500/5 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Zap className="w-3 h-3" /> Usar carga protetora
+                <Zap className="w-3 h-3" />{" "}
+                {isActionPending ? "Processando..." : "Usar carga protetora"}
               </button>
             )}
           </div>

@@ -117,7 +117,8 @@ export function BookModal({
   onSave,
   editBook,
   existingCategories = [],
-}: BookModalProps) {
+  isSaving = false,
+}: BookModalProps & { isSaving?: boolean }) {
   const [formData, setFormData] = useState<Partial<ReadingBook>>({
     title: "",
     author: "",
@@ -507,9 +508,14 @@ export function BookModal({
               </button>
               <Button
                 type="submit"
-                className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98]"
+                disabled={isSaving}
+                className="flex-2 h-11 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editBook ? "Salvar alterações" : "Adicionar à biblioteca"}
+                {isSaving
+                  ? "Salvando..."
+                  : editBook
+                    ? "Salvar alterações"
+                    : "Adicionar à biblioteca"}
               </Button>
             </div>
           </form>

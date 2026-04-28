@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://api.github.com https://brasilapi.com.br https://openlibrary.org https://www.googleapis.com https://books.googleapis.com; img-src 'self' data: https://covers.openlibrary.org https://*.openlibrary.org https://www.google.com https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' https://api.github.com https://github.com https://*.githubusercontent.com https://brasilapi.com.br https://openlibrary.org https://www.googleapis.com https://books.googleapis.com https://discord.com https://*.discord.com https://ptb.discord.com; img-src 'self' data: https://covers.openlibrary.org https://*.openlibrary.org https://www.google.com https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     }
   },
   "bundle": {
@@ -41,15 +41,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "../aegis.changelog",
-      "../public/sounds/*"
-    ],
+    "resources": ["../aegis.changelog", "../public/sounds/*"],
     "windows": {
       "nsis": {
-        "languages": [
-          "PortugueseBR"
-        ]
+        "languages": ["PortugueseBR"]
       },
       "wix": {
         "language": "pt-BR"

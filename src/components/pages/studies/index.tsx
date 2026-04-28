@@ -41,6 +41,7 @@ export default function StudiesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
+  const [isSaving, setIsSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState(1);
@@ -81,7 +82,9 @@ export default function StudiesPage() {
   }, [load]);
 
   const handleSave = async (s: StudySession) => {
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       if (s.id) {
         await invoke("estudos_update_session", { session: s });
         toast.success("Sessão atualizada!");
@@ -94,6 +97,8 @@ export default function StudiesPage() {
       await load();
     } catch (err) {
       toast.error(`Erro ao salvar: ${err}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -252,6 +257,7 @@ export default function StudiesPage() {
           setShowForm(false);
           setEditSession(undefined);
         }}
+        isSaving={isSaving}
       />
 
       <StudyInfoModal show={showInfo} onClose={() => setShowInfo(false)} />

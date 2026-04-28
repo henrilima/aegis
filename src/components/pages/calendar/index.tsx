@@ -33,6 +33,7 @@ export default function CalendarPage() {
   const [editEvent, setEditEvent] = useState<CalendarEvent | undefined>(
     undefined,
   );
+  const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   const loadEvents = useCallback(async () => {
@@ -80,7 +81,9 @@ export default function CalendarPage() {
   };
 
   const handleSaveEvent = async (ev: CalendarEvent) => {
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       if (ev.id) {
         await invoke("calendar_update_event", { event: ev });
         toast.success("Compromisso atualizado!");
@@ -93,6 +96,8 @@ export default function CalendarPage() {
     } catch (err) {
       console.error(err);
       toast.error("Erro ao salvar compromisso");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -157,6 +162,7 @@ export default function CalendarPage() {
         editEvent={editEvent}
         onClose={() => setShowForm(false)}
         onSave={handleSaveEvent}
+        isSaving={isSaving}
       />
 
       {deleteConfirm !== null && (

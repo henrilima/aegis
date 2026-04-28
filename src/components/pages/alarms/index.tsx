@@ -207,6 +207,7 @@ export default function AlarmsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [availableSounds, setAvailableSounds] = useState<string[]>([]);
 
   // Estado do Formulário
@@ -242,9 +243,11 @@ export default function AlarmsPage() {
   }, [fetchAlarms]);
 
   const handleSave = async () => {
+    if (isSaving) return;
     if (!title || !time || !uid) return toast.error("Preencha todos os campos");
 
     try {
+      setIsSaving(true);
       const originalAlarm = alarms.find((a) => a.id === editingId);
       const hasTimingChanged =
         originalAlarm &&
@@ -283,6 +286,8 @@ export default function AlarmsPage() {
     } catch (err) {
       console.error(err);
       toast.error("Erro ao salvar alarme");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -606,13 +611,18 @@ export default function AlarmsPage() {
             <button
               type="button"
               onClick={handleSave}
+              disabled={isSaving}
               className={cn(
-                "flex-2 px-4 py-3 rounded-xl text-white font-bold text-xs transition-all active:scale-95 cursor-pointer",
+                "flex-2 px-4 py-3 rounded-xl text-white font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 m.solid,
                 m.solidHover,
               )}
             >
-              {editingId ? "Salvar Alterações" : "Criar Alarme Agora"}
+              {isSaving
+                ? "Salvando..."
+                : editingId
+                  ? "Salvar Alterações"
+                  : "Criar Alarme Agora"}
             </button>
           </div>
         </DialogContent>
