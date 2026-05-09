@@ -8,6 +8,7 @@ use crate::config::ConfigManager;
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SleepEntry {
     pub id: Option<i64>,
     pub user_id: String,
@@ -21,6 +22,7 @@ pub struct SleepEntry {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SleepGoal {
     pub user_id: String,
     pub target_hours: f64,       
@@ -99,7 +101,8 @@ impl SleepManager {
 
     pub fn list_entries(&self, user_id: &str, months_back: i32, now: DateTime<Utc>) -> Vec<SleepEntry> {
         let conn = self.conn();
-        let cutoff_date = (now - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
+        let now_local = now.with_timezone(&chrono::Local);
+        let cutoff_date = (now_local - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
         let mut stmt = conn.prepare(
             "SELECT id, date, bedtime, wake_time, duration_minutes, quality, note, created_at
              FROM sleep_entries

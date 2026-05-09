@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingBook {
     pub id: Option<i64>,
     pub user_id: String,
@@ -13,15 +14,19 @@ pub struct ReadingBook {
     pub author: String,
     pub total_pages: i32,
     pub current_page: i32,
-    pub status: String, // "Reading", "Completed", "WantToRead", "Dropped"
+    pub status: String,
     pub category: String,
     pub thumbnail: Option<String>,
     #[serde(default)]
-    pub stars: i32,
+    pub stars: f64,
+    pub review: Option<String>,
     pub created_at: Option<String>,
+    #[serde(default)]
+    pub is_favorite: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingSession {
     pub id: Option<i64>,
     pub user_id: String,
@@ -30,10 +35,12 @@ pub struct ReadingSession {
     pub pages_read: i32,
     pub duration_minutes: i32,
     pub note: Option<String>,
+    pub focus: i32,
     pub created_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingGoal {
     pub id: Option<i64>,
     pub user_id: String,
@@ -42,6 +49,7 @@ pub struct ReadingGoal {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingModuleData {
     pub books: Vec<ReadingBook>,
     pub sessions: Vec<ReadingSession>,
@@ -71,6 +79,7 @@ impl ReadingManager {
                 category     TEXT NOT NULL DEFAULT 'Outros',
                 thumbnail    TEXT,
                 stars        INTEGER NOT NULL DEFAULT 0,
+                review       TEXT,
                 created_at   TEXT NOT NULL DEFAULT (datetime('now'))
             );
             CREATE TABLE IF NOT EXISTS reading_sessions (
@@ -93,8 +102,11 @@ impl ReadingManager {
             );"
         );
 
-        // Migração para adicionar coluna stars se não existir
-        let _ = conn.execute("ALTER TABLE reading_books ADD COLUMN stars INTEGER NOT NULL DEFAULT 0", []);
+        // Migrations for columns added after initial release
+        let _ = conn.execute("ALTER TABLE reading_books ADD COLUMN stars REAL NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE reading_books ADD COLUMN review TEXT", []);
+        let _ = conn.execute("ALTER TABLE reading_books ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE reading_sessions ADD COLUMN focus INTEGER NOT NULL DEFAULT 3", []);
 
         Self { db_path }
     }
@@ -109,7 +121,7 @@ impl ReadingManager {
     pub fn list_books(&self, user_id: &str) -> Vec<ReadingBook> {
         let conn = self.conn();
         let mut stmt = conn.prepare(
-            "SELECT id, title, author, total_pages, current_page, status, category, thumbnail, stars, created_at 
+            "SELECT id, title, author, total_pages, current_page, status, category, thumbnail, stars, review, created_at, is_favorite 
              FROM reading_books WHERE user_id=?1 ORDER BY created_at DESC"
         ).unwrap();
 
@@ -124,8 +136,10 @@ impl ReadingManager {
                 status: row.get(5)?,
                 category: row.get(6)?,
                 thumbnail: row.get(7)?,
-                stars: row.get::<_, Option<i32>>(8)?.unwrap_or(0),
-                created_at: row.get(9)?,
+                stars: row.get::<_, Option<f64>>(8)?.unwrap_or(0.0),
+                review: row.get(9)?,
+                created_at: row.get(10)?,
+                is_favorite: row.get::<_, i32>(11).unwrap_or(0) != 0,
             })
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
@@ -134,19 +148,28 @@ impl ReadingManager {
         let conn = self.conn();
         if let Some(id) = b.id {
             conn.execute(
-                "UPDATE reading_books SET title=?2, author=?3, total_pages=?4, current_page=?5, status=?6, category=?7, thumbnail=?8, stars=?9 
-                 WHERE id=?1 AND user_id=?10",
-                params![id, b.title, b.author, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars, b.user_id],
+                "UPDATE reading_books SET title=?2, author=?3, total_pages=?4, current_page=?5, status=?6, category=?7, thumbnail=?8, stars=?9, review=?10, is_favorite=?12 
+                 WHERE id=?1 AND user_id=?11",
+                params![id, b.title, b.author, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars, b.review, b.user_id, b.is_favorite as i32],
             ).map_err(|e| e.to_string())?;
             Ok(id)
         } else {
             conn.execute(
-                "INSERT INTO reading_books (user_id, title, author, total_pages, current_page, status, category, thumbnail, stars) 
-                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
-                params![b.user_id, b.title, b.author, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars],
+                "INSERT INTO reading_books (user_id, title, author, total_pages, current_page, status, category, thumbnail, stars, review, is_favorite) 
+                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
+                params![b.user_id, b.title, b.author, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars, b.review, b.is_favorite as i32],
             ).map_err(|e| e.to_string())?;
             Ok(conn.last_insert_rowid())
         }
+    }
+
+    pub fn toggle_favorite_book(&self, id: i64, user_id: &str, is_favorite: bool) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "UPDATE reading_books SET is_favorite=?1 WHERE id=?2 AND user_id=?3",
+            params![is_favorite as i32, id, user_id],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
     }
 
     pub fn delete_book(&self, id: i64, user_id: &str) -> Result<(), String> {
@@ -176,9 +199,9 @@ impl ReadingManager {
 
             // Atualizar sessão
             conn.execute(
-                "UPDATE reading_sessions SET book_id=?2, date=?3, pages_read=?4, duration_minutes=?5, note=?6 
+                "UPDATE reading_sessions SET book_id=?2, date=?3, pages_read=?4, duration_minutes=?5, note=?6, focus=?8 
                  WHERE id=?1 AND user_id=?7",
-                params![id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note, s.user_id],
+                params![id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note, s.user_id, s.focus],
             ).map_err(|e| e.to_string())?;
 
             // Aplicar novo progresso
@@ -193,9 +216,9 @@ impl ReadingManager {
         } else {
             // Inserção simples
             conn.execute(
-                "INSERT INTO reading_sessions (user_id, book_id, date, pages_read, duration_minutes, note) 
-                 VALUES (?1,?2,?3,?4,?5,?6)",
-                 params![s.user_id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note],
+                "INSERT INTO reading_sessions (user_id, book_id, date, pages_read, duration_minutes, note, focus) 
+                 VALUES (?1,?2,?3,?4,?5,?6,?7)",
+                 params![s.user_id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note, s.focus],
             ).map_err(|e| e.to_string())?;
             
             let session_id = conn.last_insert_rowid();
@@ -214,9 +237,9 @@ impl ReadingManager {
     pub fn add_session_direct(&self, s: ReadingSession) -> Result<i64, String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO reading_sessions (user_id, book_id, date, pages_read, duration_minutes, note) 
-             VALUES (?1,?2,?3,?4,?5,?6)",
-             params![s.user_id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note],
+            "INSERT INTO reading_sessions (user_id, book_id, date, pages_read, duration_minutes, note, focus) 
+             VALUES (?1,?2,?3,?4,?5,?6,?7)",
+             params![s.user_id, s.book_id, s.date, s.pages_read, s.duration_minutes, s.note, s.focus],
         ).map_err(|e| e.to_string())?;
         
         Ok(conn.last_insert_rowid())
@@ -227,7 +250,7 @@ impl ReadingManager {
         let cutoff_date = (now - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
         
         let mut stmt = conn.prepare(
-            "SELECT id, book_id, date, pages_read, duration_minutes, note, created_at 
+            "SELECT id, book_id, date, pages_read, duration_minutes, note, created_at, focus 
              FROM reading_sessions WHERE user_id=?1 AND date >= ?2 ORDER BY date DESC, id DESC"
         ).unwrap();
 
@@ -240,6 +263,7 @@ impl ReadingManager {
                 pages_read: row.get(3)?,
                 duration_minutes: row.get(4)?,
                 note: row.get(5)?,
+                focus: row.get::<_, Option<i32>>(7)?.unwrap_or(3),
                 created_at: row.get(6)?,
             })
         }).unwrap().filter_map(|r| r.ok()).collect()
@@ -327,16 +351,16 @@ impl ReadingManager {
             let bid = if let Some(id) = existing_id {
                 // Atualiza livro existente
                 conn.execute(
-                    "UPDATE reading_books SET total_pages=?2, current_page=?3, status=?4, category=?5, thumbnail=?6, stars=?7 WHERE id=?1",
-                    params![id, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars]
+                    "UPDATE reading_books SET total_pages=?2, current_page=?3, status=?4, category=?5, thumbnail=?6, stars=?7, review=?8 WHERE id=?1",
+                    params![id, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars, b.review]
                 ).ok();
                 id
             } else {
                 // Insere novo livro
                 conn.execute(
-                    "INSERT INTO reading_books (user_id, title, author, total_pages, current_page, status, category, thumbnail, stars) 
-                     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
-                    params![user_id, b.title, b.author, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars],
+                    "INSERT INTO reading_books (user_id, title, author, total_pages, current_page, status, category, thumbnail, stars, review) 
+                     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+                    params![user_id, b.title, b.author, b.total_pages, b.current_page, b.status, b.category, b.thumbnail, b.stars, b.review],
                 ).ok();
                 conn.last_insert_rowid()
             };

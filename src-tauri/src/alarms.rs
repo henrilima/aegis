@@ -5,7 +5,7 @@ use tauri::AppHandle;
 use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct AppAlarm {
     pub id: Option<i32>,
     pub user_id: String,

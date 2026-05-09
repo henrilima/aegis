@@ -6,12 +6,25 @@ use std::collections::HashMap;
 use aes_gcm::AeadCore;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortablePassword {
+    pub name: String,
+    pub url: String,
+    pub username: String,
+    pub password_raw: String,
+    pub note_raw: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserFullBackup {
     pub version: String,
     pub user_id: String,
     pub export_date: String,
     
-    pub passwords: Vec<crate::passwords::PasswordEntry>,
+    pub passwords: Vec<PortablePassword>,
     pub habits: Vec<crate::habits::Habit>,
     pub tasks: Vec<crate::tasks::Task>,
     pub notes: Vec<crate::notes::Note>,
@@ -29,6 +42,7 @@ pub struct UserFullBackup {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SystemFullBundle {
     pub version: String,
     pub export_date: String,
@@ -43,15 +57,32 @@ pub async fn export_user_package(
     app_handle: AppHandle,
     state: State<'_, AppState>,
     user_id: String,
+    master_pwd: String,
     path: String,
     key_bytes: Vec<u8>
 ) -> Result<(), String> {
+    let raw_passwords = state.pm.list_passwords(&user_id)?;
+    let mut portable_passwords = Vec::new();
+
+    for p in raw_passwords {
+        let decrypted = state.pm.decrypt_entry(user_id.as_str(), master_pwd.as_str(), p.id.unwrap_or(0))?;
+        portable_passwords.push(PortablePassword {
+            name: decrypted.name,
+            url: decrypted.url,
+            username: decrypted.username,
+            password_raw: decrypted.password,
+            note_raw: decrypted.note,
+            created_at: p.created_at,
+            updated_at: p.updated_at,
+        });
+    }
+
     let backup = UserFullBackup {
-        version: "1.0.0".to_string(),
+        version: "2.0.0".to_string(), // Incremented version to indicate portable passwords
         user_id: user_id.clone(),
         export_date: Local::now().to_rfc3339(),
         
-        passwords: state.pm.list_passwords(&user_id)?,
+        passwords: portable_passwords,
         habits: state.habit.list_habits(&user_id, chrono::Utc::now()),
         tasks: state.tasks.list_tasks(&user_id),
         notes: state.note.list_notes(&user_id),
@@ -82,6 +113,7 @@ pub async fn import_user_package(
     app_handle: AppHandle,
     state: State<'_, AppState>,
     target_user_id: String,
+    master_pwd: String,
     path: String,
     key_bytes: Vec<u8>
 ) -> Result<(), String> {
@@ -89,10 +121,17 @@ pub async fn import_user_package(
     let backup: UserFullBackup = serde_json::from_slice(&decrypted).map_err(|e| format!("Erro ao processar dados: {}", e))?;
 
     // Merging...
-    for mut p in backup.passwords {
-        p.user_id = target_user_id.clone();
-        p.id = None;
-        let _ = state.pm.add_password_entry(p);
+    for p in backup.passwords {
+        // Re-encrypt with target key
+        let _ = state.pm.add_password(
+            &target_user_id,
+            &master_pwd,
+            &p.name,
+            &p.url,
+            &p.username,
+            &p.password_raw,
+            &p.note_raw
+        );
     }
     for mut h in backup.habits {
         h.user_id = target_user_id.clone();

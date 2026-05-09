@@ -7,6 +7,12 @@ interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   description?: string;
+  /** Texto do botão de ação principal (opcional) */
+  actionLabel?: string;
+  /** Callback do botão de ação (requer actionLabel) */
+  onAction?: () => void;
+  /** Ícone opcional para o botão de ação */
+  actionIcon?: LucideIcon;
   className?: string;
 }
 
@@ -18,6 +24,9 @@ export function EmptyState({
   icon: Icon,
   title,
   description,
+  actionLabel,
+  onAction,
+  actionIcon: ActionIcon,
   className,
 }: EmptyStateProps) {
   return (
@@ -42,6 +51,17 @@ export function EmptyState({
         <p className="text-xs text-neutral-600 max-w-[240px] leading-relaxed font-medium">
           {description}
         </p>
+      )}
+
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-card border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-accent/50 transition-all active:scale-95 cursor-pointer"
+        >
+          {ActionIcon && <ActionIcon className="w-3.5 h-3.5" />}
+          {actionLabel}
+        </button>
       )}
     </div>
   );

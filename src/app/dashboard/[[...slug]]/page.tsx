@@ -3,6 +3,7 @@ import DashboardClient from "./DashboardClient";
 export async function generateStaticParams() {
   return [
     { slug: [] },
+    { slug: ["dictionary"] },
     { slug: ["users"] },
     { slug: ["passwords"] },
     { slug: ["habits"] },
@@ -19,6 +20,7 @@ export async function generateStaticParams() {
     { slug: ["reading"] },
     { slug: ["tasks"] },
     { slug: ["alarms"] },
+    { slug: ["movies"] },
   ];
 }
 

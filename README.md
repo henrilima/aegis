@@ -1,4 +1,4 @@
-# 🛡️ Aegis — Seu Centro de Produtividade & Privacidade (v2.1.0 "Medusa")
+# 🛡️ Aegis - Seu Centro de Produtividade & Privacidade (v2.1.0 "Medusa")
 
 Aegis é um dashboard de produtividade "all-in-one" desenvolvido para ser rápido, seguro e absolutamente **impecável**. Construído com a robustez inabalável do **Rust (Tauri)** e a agilidade estonteante do **Next.js**, ele oferece um ambiente centralizado para gerenciar sua rotina diretamente no seu desktop com privacidade absoluta e um design que é puro luxo.
 

@@ -4,22 +4,24 @@ import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import Loading from "@/components/Loading";
-import Alarms from "@/components/pages/alarms";
-import Calendar from "@/components/pages/calendar";
-import Currency from "@/components/pages/currency";
-import Dashboard from "@/components/pages/dashboard";
-import Habits from "@/components/pages/habits";
-import Notes from "@/components/pages/notes";
-import Passwords from "@/components/pages/passwords";
-import Pomodoro from "@/components/pages/pomodoro";
-import Reading from "@/components/pages/reading";
-import Settings from "@/components/pages/settings";
-import Sleep from "@/components/pages/sleep";
-import Speedtest from "@/components/pages/speedtest";
-import Statistics from "@/components/pages/statistics";
-import Studies from "@/components/pages/studies";
-import Tasks from "@/components/pages/tasks";
+import Loading from "@/components/global/Loading";
+import Alarms from "@/components/modules/alarms";
+import Calendar from "@/components/modules/calendar";
+
+import Dashboard from "@/components/modules/dashboard";
+import Dictionary from "@/components/modules/dictionary";
+import Habits from "@/components/modules/habits";
+import Movies from "@/components/modules/movies";
+import Notes from "@/components/modules/notes";
+import Passwords from "@/components/modules/passwords";
+import Pomodoro from "@/components/modules/pomodoro";
+import Reading from "@/components/modules/reading";
+
+import Sleep from "@/components/modules/sleep";
+
+import Statistics from "@/components/modules/statistics";
+import Studies from "@/components/modules/studies";
+import Tasks from "@/components/modules/tasks";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 
@@ -51,8 +53,9 @@ export default function DashboardClient() {
     switch (route) {
       case "dashboard":
         return <Dashboard />;
-      case "currency":
-        return <Currency />;
+      case "dictionary":
+        return <Dictionary />;
+
       case "passwords":
         return <Passwords />;
       case "habits":
@@ -67,10 +70,7 @@ export default function DashboardClient() {
         return <Studies />;
       case "sleep":
         return <Sleep />;
-      case "settings":
-        return <Settings />;
-      case "speedtest":
-        return <Speedtest />;
+
       case "calendar":
         return <Calendar />;
       case "statistics":
@@ -79,6 +79,8 @@ export default function DashboardClient() {
         return <Reading />;
       case "tasks":
         return <Tasks />;
+      case "movies":
+        return <Movies />;
       default:
         return <Dashboard />;
     }

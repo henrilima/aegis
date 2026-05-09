@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct StudySession {
     pub id: Option<i64>,
     pub user_id: String,
@@ -25,6 +26,7 @@ pub struct StudySession {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct StudyGoal {
     pub id: Option<i64>,
     pub user_id: String,
@@ -125,7 +127,8 @@ impl StudiesManager {
 
     pub fn list_sessions(&self, user_id: &str, months_back: i32, now: DateTime<Utc>) -> Vec<StudySession> {
         let conn = self.conn();
-        let cutoff_date = (now - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
+        let now_local = now.with_timezone(&chrono::Local);
+        let cutoff_date = (now_local - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
         let mut stmt = conn.prepare(
             "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value, focus_score
              FROM study_sessions

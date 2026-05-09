@@ -1,13 +1,12 @@
 {
   "name": "aegis",
-  "version": "2.1.1",
+  "version": "2.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "biome check",
-    "format": "biome format --write",
+    "lint": "npx @biomejs/biome check --write . --unsafe",
     "bump": "node scripts/bump-version.js",
     "tauri": "tauri"
   },
@@ -19,6 +18,7 @@
     "@nivo/heatmap": "^0.99.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-autostart": "^2.5.1",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
     "@tauri-apps/plugin-http": "^2.0.0",

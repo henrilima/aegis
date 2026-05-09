@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use tauri::AppHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Note {
     pub id: Option<i32>,
     pub user_id: String,
@@ -12,9 +13,11 @@ pub struct Note {
     pub created_at: String,
     pub pinned: bool,
     pub path: Option<String>, // Caminho relativo a partir de notes_dir
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct FileSystemItem {
     pub name: String,
     pub is_dir: bool,
@@ -23,11 +26,13 @@ pub struct FileSystemItem {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct NoteMeta {
     pub id: i32,
     pub user_id: String,
     pub created_at: String,
     pub pinned: bool,
+    pub color: Option<String>,
 }
 
 pub struct NoteManager {
@@ -128,6 +133,7 @@ impl NoteManager {
                 created_at: meta.created_at,
                 pinned: meta.pinned,
                 path: relative_path,
+                color: meta.color,
             });
         }
     }
@@ -149,6 +155,7 @@ impl NoteManager {
             user_id: note.user_id.clone(),
             created_at: note.created_at.clone(),
             pinned: note.pinned,
+            color: note.color.clone(),
         };
         
         let frontmatter = serde_yaml::to_string(&meta).unwrap_or_default();

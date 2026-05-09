@@ -8,6 +8,7 @@ use tauri::{AppHandle, Manager};
 // Estruturas de Dados
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CalendarEvent {
     pub id: Option<i64>,
     pub user_id: String,
@@ -24,6 +25,7 @@ pub struct CalendarEvent {
 
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct BrasilApiHoliday {
     date: String,
     name: String,

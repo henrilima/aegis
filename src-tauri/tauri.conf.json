@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
-  "version": "2.1.1",
+  "version": "2.5.0",
   "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",
@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://api.github.com https://github.com https://*.githubusercontent.com https://brasilapi.com.br https://openlibrary.org https://www.googleapis.com https://books.googleapis.com https://discord.com https://*.discord.com https://ptb.discord.com; img-src 'self' data: https://covers.openlibrary.org https://*.openlibrary.org https://www.google.com https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' https://api.github.com https://github.com https://*.githubusercontent.com https://brasilapi.com.br https://openlibrary.org https://www.googleapis.com https://books.googleapis.com https://discord.com https://*.discord.com https://ptb.discord.com https://api.themoviedb.org https://image.tmdb.org https://wttr.in https://geocoding-api.open-meteo.com https://api.dictionaryapi.dev https://translate.googleapis.com https://api.dicionario-aberto.net; img-src 'self' data: https://covers.openlibrary.org https://*.openlibrary.org https://www.google.com https://is1-ssl.mzstatic.com https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     }
   },
   "bundle": {

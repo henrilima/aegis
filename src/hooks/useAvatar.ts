@@ -48,15 +48,18 @@ export function useAvatar(userId: string | undefined) {
     setLoading(true);
     try {
       const bytes = await readFile(path);
-      // Converte Uint8Array para base64
-      const base64 = btoa(
-        Array.from(bytes)
-          .map((b) => String.fromCharCode(b))
-          .join(""),
-      );
+      // Converte Uint8Array para base64 de forma mais eficiente
+      const binary = Array.from(bytes, (byte) =>
+        String.fromCharCode(byte),
+      ).join("");
+      const base64 = btoa(binary);
+
       await invoke("save_avatar", { userId, base64Data: base64 });
       setAvatarSrc(toDataUrl(base64));
       window.dispatchEvent(new Event("avatar-updated"));
+      console.log("Avatar atualizado com sucesso");
+    } catch (error) {
+      console.error("Erro ao salvar avatar:", error);
     } finally {
       setLoading(false);
     }

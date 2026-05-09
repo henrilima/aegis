@@ -47,6 +47,11 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 }
+/* Global Button Cursor Fix */
+button,
+[role="button"] {
+  cursor: pointer;
+}
 
 :root {
   --radius: 0.625rem;
@@ -172,16 +177,16 @@
 }
 
 [data-theme="indigo"] {
-  --background: oklch(0.12 0.02 260);
-  --foreground: oklch(0.95 0.01 260);
-  --card: oklch(0.15 0.03 260);
-  --popover: oklch(0.15 0.03 260);
-  --sidebar: oklch(0.13 0.02 260);
-  --muted: oklch(0.18 0.03 260);
-  --accent: oklch(0.22 0.04 260);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --primary: var(--primary-violet);
+  --background: oklch(0.1 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.13 0 0);
+  --popover: oklch(0.13 0 0);
+  --sidebar: oklch(0.11 0 0);
+  --muted: oklch(0.16 0 0);
+  --accent: oklch(0.18 0.02 48);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --primary: var(--primary-orange);
   --primary-foreground: oklch(1 0 0);
 }
 
@@ -214,16 +219,16 @@
 }
 
 [data-theme="graphite"] {
-  --background: oklch(0.15 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.18 0 0);
-  --popover: oklch(0.18 0 0);
-  --sidebar: oklch(0.16 0 0);
-  --muted: oklch(0.22 0 0);
-  --accent: oklch(0.26 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --primary: var(--primary-blue);
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.11 0 0);
+  --popover: oklch(0.11 0 0);
+  --sidebar: oklch(0.09 0 0);
+  --muted: oklch(0.14 0 0);
+  --accent: oklch(0.16 0.02 22);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --primary: var(--primary-red);
   --primary-foreground: oklch(1 0 0);
 }
 
@@ -309,6 +314,52 @@
 
   .scrollbar-stable {
     scrollbar-gutter: stable;
+  }
+
+  /* Custom Scrollbar Utility */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 50%, transparent);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+
+  /* Forçar na Sidebar */
+  aside nav.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 25%, transparent);
+  }
+
+  aside nav.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 60%, transparent);
+  }
+
+  aside nav.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+
+  /* Hide scrollbar utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 

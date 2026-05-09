@@ -25,12 +25,12 @@ export function TimeProvider({ children }: { children: ReactNode }) {
   const refreshSimulation = useCallback(async () => {
     try {
       const status = await invoke<{
-        is_active: boolean;
-        simulated_time: string;
-        offset_seconds: number;
+        isActive: boolean;
+        simulatedTime: string;
+        offsetSeconds: number;
       }>("get_simulation_status");
-      setIsSimulated(status.is_active);
-      setNow(new Date(status.simulated_time));
+      setIsSimulated(status.isActive);
+      setNow(new Date(status.simulatedTime));
     } catch (error) {
       console.error("Failed to fetch simulation status:", error);
     }

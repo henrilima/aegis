@@ -1,6 +1,6 @@
 mod passwords;
 mod pomodoro;
-mod currencies;
+
 mod alarms;
 mod habits;
 mod migration;
@@ -13,10 +13,12 @@ mod statistics;
 mod reading;
 mod tasks;
 mod notifications;
+mod dictionary;
+mod movies;
 
 use passwords::{PasswordEntry, DecryptedEntry, PasswordManager};
 use pomodoro::{PomodoroState, PomodoroManager, PomodoroHistory};
-use currencies::{CurrencyRate, CurrencyManager};
+
 use alarms::{AppAlarm, AlarmManager};
 use habits::{Habit, HabitManager};
 use config::{AppConfig, ConfigManager};
@@ -27,18 +29,19 @@ use statistics::{StatisticsManager, CrossMetric, PerformanceSummary};
 use reading::{ReadingManager, ReadingBook, ReadingSession, ReadingGoal};
 use tasks::{Task, TaskManager};
 use notifications::NotificationsManager;
-use speedtest_rs::speedtest;
-use tauri::{Emitter, Manager, Window, State, tray::TrayIconBuilder};
-use std::thread;
-use std::time::Duration;
+
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_notification::NotificationExt;
 use chrono::{Utc, Timelike, Local, DateTime};
-use log::{info, error, warn};
+use log::{info, error};
+use std::thread;
+use std::time::Duration;
 
 
 use migration::*;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SimulationStatus {
     pub is_active: bool,
     pub simulated_time: String,
@@ -48,7 +51,7 @@ pub struct SimulationStatus {
 pub struct AppState {
     pm: PasswordManager,
     pomo: PomodoroManager,
-    curr: CurrencyManager,
+
     alarm: AlarmManager,
     habit: HabitManager,
     note: notes::NoteManager,
@@ -60,6 +63,8 @@ pub struct AppState {
     reading: ReadingManager,
     tasks: TaskManager,
     notif: NotificationsManager,
+    dictionary: dictionary::DictionaryManager,
+    movies: movies::MovieManager,
 }
 
 #[tauri::command]
@@ -79,7 +84,8 @@ async fn verify_master(
             
             if now_min >= morning_min && now_min < morning_min + 360 {
                 let today = now.format("%Y-%m-%d").to_string();
-                let entries = state.sleep.list_entries(&user_id, 1, chrono::Utc::now());
+                let now_utc = state.config.get_now();
+                let entries = state.sleep.list_entries(&user_id, 1, now_utc);
                 let has_today = entries.iter().any(|e| e.date == today);
                 
                 if !has_today {
@@ -329,15 +335,7 @@ async fn clear_pomodoro_history(state: State<'_, AppState>, user_id: String) -> 
     state.pomo.clear_history(&user_id)
 }
 
-#[tauri::command]
-async fn get_currency_rates(state: State<'_, AppState>) -> Result<Vec<CurrencyRate>, String> {
-    Ok(state.curr.get_rates())
-}
 
-#[tauri::command]
-async fn update_currency_rates(state: State<'_, AppState>, rates: Vec<CurrencyRate>) -> Result<(), String> {
-    state.curr.update_rates(rates)
-}
 
 #[tauri::command]
 async fn list_alarms(state: State<'_, AppState>, user_id: String) -> Result<Vec<AppAlarm>, String> {
@@ -447,22 +445,37 @@ async fn update_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), St
 }
 
 #[tauri::command]
-async fn mark_habit_done(state: State<'_, AppState>, id: i32, user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
+async fn mark_habit_done(
+    state: State<'_, AppState>, 
+    id: i32, 
+    _user_id: Option<String>, 
+    timestamp: Option<String>
+) -> Result<(), String> {
     let now = state.config.get_now();
-    let uid = user_id.unwrap_or_default();
-    state.habit.mark_done(id, &uid, now)
+    let ts = timestamp.unwrap_or_default();
+    state.habit.mark_done(id, &ts, now)
 }
 
 #[tauri::command]
-async fn use_habit_charge(state: State<'_, AppState>, id: i32, _user_id: Option<String>) -> Result<(), String> {
+async fn use_habit_charge(
+    state: State<'_, AppState>, 
+    id: i32, 
+    _user_id: Option<String>
+) -> Result<(), String> {
     let now = state.config.get_now();
     state.habit.use_charge(id, now)
 }
 
 #[tauri::command]
-async fn reset_habit(state: State<'_, AppState>, id: i32, _user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
+async fn reset_habit(
+    state: State<'_, AppState>, 
+    id: i32, 
+    _user_id: Option<String>, 
+    timestamp: Option<String>
+) -> Result<(), String> {
     let now = state.config.get_now();
-    state.habit.reset_habit(id, "", now)
+    let ts = timestamp.unwrap_or_default();
+    state.habit.reset_habit(id, &ts, now)
 }
 
 #[tauri::command]
@@ -589,6 +602,37 @@ async fn update_note_pinned(state: State<'_, AppState>, id: i32, pinned: bool) -
 #[tauri::command]
 async fn open_notes_folder(state: State<'_, AppState>) -> Result<(), String> {
     state.note.open_folder()
+}
+
+#[tauri::command]
+async fn open_app_data_folder(app: AppHandle) -> Result<(), String> {
+    let path = app.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
+    
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
 }
 
 #[tauri::command]
@@ -799,13 +843,96 @@ async fn reading_export_json(state: State<'_, AppState>, user_id: String, dest_p
 #[tauri::command]
 async fn reading_search_books(query: String) -> Result<serde_json::Value, String> {
     let url = format!(
-        "https://openlibrary.org/search.json?q={}&limit=5&fields=title,author_name,number_of_pages_median,cover_i,subject,isbn",
+        "https://www.googleapis.com/books/v1/volumes?q={}&maxResults=5&langRestrict=pt",
         urlencoding::encode(&query)
     );
     let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
     let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
     Ok(json)
+}
+#[tauri::command]
+async fn movies_search(state: State<'_, AppState>, query: String) -> Result<serde_json::Value, String> {
+    let api_key = state.config.get_tmdb_api_key();
+
+    if api_key.is_empty() {
+        return Err("tmdb_no_key".to_string());
+    }
+
+    let url = format!(
+        "https://api.themoviedb.org/3/search/movie?api_key={}&query={}&language=pt-BR&include_adult=false",
+        api_key,
+        urlencoding::encode(&query)
+    );
+    let client = reqwest::Client::builder()
+        .user_agent("Aegis")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let status = res.status();
+    if status.as_u16() == 401 {
+        return Err("tmdb_invalid_key".to_string());
+    }
+    if !status.is_success() {
+        return Err(format!("TMDb API error {}", status));
+    }
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "source": "tmdb", "data": json }))
+}
+
+#[tauri::command]
+async fn get_tmdb_api_key(state: State<'_, AppState>) -> Result<String, String> {
+    Ok(state.config.get_tmdb_api_key())
+}
+
+#[tauri::command]
+async fn set_tmdb_api_key(state: State<'_, AppState>, api_key: String) -> Result<(), String> {
+    // Validate the key with a TMDb test request before saving
+    if !api_key.is_empty() {
+        let url = format!(
+            "https://api.themoviedb.org/3/configuration?api_key={}",
+            api_key
+        );
+        let client = reqwest::Client::builder()
+            .user_agent("Aegis")
+            .timeout(std::time::Duration::from_secs(8))
+            .build()
+            .map_err(|e| e.to_string())?;
+        let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+        if res.status().as_u16() == 401 {
+            return Err("Chave de API inválida. Verifique e tente novamente.".to_string());
+        }
+        if !res.status().is_success() {
+            return Err(format!("Erro ao validar chave: HTTP {}", res.status()));
+        }
+    }
+    state.config.set_tmdb_api_key(&api_key)
+}
+
+#[tauri::command]
+async fn movies_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<movies::Movie>, String> {
+    Ok(state.movies.list_movies(&user_id))
+}
+
+#[tauri::command]
+async fn movies_upsert(state: State<'_, AppState>, movie: movies::Movie) -> Result<i64, String> {
+    state.movies.upsert_movie(movie).map(|(id, _)| id)
+}
+
+#[tauri::command]
+async fn movies_delete(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.movies.delete_movie(id, &user_id)
+}
+
+#[tauri::command]
+async fn movies_toggle_favorite(state: State<'_, AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
+    state.movies.toggle_favorite_movie(id, &user_id, is_favorite)
+}
+
+#[tauri::command]
+async fn reading_toggle_favorite(state: State<'_, AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
+    state.reading.toggle_favorite_book(id, &user_id, is_favorite)
 }
 
 #[tauri::command]
@@ -915,9 +1042,243 @@ async fn import_tasks_csv(state: State<'_, AppState>, user_id: String, path: Str
     state.tasks.import_csv(&user_id, &path)
 }
 
+async fn translate_text(text: &str, from: &str, to: &str) -> Result<String, String> {
+    let url = format!(
+        "https://translate.googleapis.com/translate_a/single?client=gtx&sl={}&tl={}&dt=t&q={}",
+        from,
+        to,
+        urlencoding::encode(text)
+    );
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0")
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|e| e.to_string())?;
+        
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    
+    // O formato do Google é um array aninhado: [[["traducao", "original", ...]]]
+    let mut translated = String::new();
+    if let Some(sentences) = json[0].as_array() {
+        for sentence in sentences {
+            if let Some(t) = sentence[0].as_str() {
+                translated.push_str(t);
+            }
+        }
+    }
+
+    if translated.is_empty() {
+        return Err("Falha na tradução".to_string());
+    }
+    
+    Ok(translated)
+}
+
+#[tauri::command]
+async fn dictionary_search(
+    state: tauri::State<'_, AppState>,
+    query: String
+) -> Result<serde_json::Value, String> {
+    // 0. Verifica Cache
+    if let Some(cached) = state.dictionary.get_cached(&query) {
+        return Ok(cached);
+    }
+
+    let client = reqwest::Client::builder()
+        .user_agent("Aegis-App/2.0")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // 1. Traduz termo de busca (PT -> EN)
+    let en_query = translate_text(&query, "pt", "en").await.unwrap_or(query.clone());
+    let url_en = format!("https://api.dictionaryapi.dev/api/v2/entries/en/{}", urlencoding::encode(&en_query));
+    
+    let res = client.get(&url_en).send().await.map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err("Palavra não encontrada.".to_string());
+    }
+
+    let mut json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    
+    if let Some(entries) = json.as_array_mut() {
+        let mut batch_texts = vec![];
+        let sep = "\n[SEP]\n";
+
+        // 1. Coleta TODOS os textos de TODAS as entradas
+        let mut original_words = vec![];
+        for entry in entries.iter() {
+            if let Some(word) = entry["word"].as_str() {
+                original_words.push(word.to_string());
+                batch_texts.push(word.to_string());
+            }
+            if let Some(meanings) = entry["meanings"].as_array() {
+                for meaning in meanings {
+                    if let Some(pos) = meaning["partOfSpeech"].as_str() {
+                        batch_texts.push(pos.to_string());
+                    }
+                    if let Some(definitions) = meaning["definitions"].as_array() {
+                        // Limite de 4 definições
+                        for def in definitions.iter().take(4) {
+                            if let Some(def_text) = def["definition"].as_str() {
+                                batch_texts.push(def_text.to_string());
+                            }
+                            if let Some(ex_text) = def["example"].as_str() {
+                                batch_texts.push(ex_text.to_string());
+                            }
+                            if let Some(syns) = def["synonyms"].as_array() {
+                                for s in syns { if let Some(t) = s.as_str() { batch_texts.push(t.to_string()); } }
+                            }
+                        }
+                    }
+                    if let Some(syns) = meaning["synonyms"].as_array() {
+                        for s in syns { if let Some(t) = s.as_str() { batch_texts.push(t.to_string()); } }
+                    }
+                }
+            }
+        }
+
+        if !batch_texts.is_empty() {
+            let combined = batch_texts.join(sep);
+            let mut results = vec![];
+            let mut success = false;
+
+            if let Ok(translated_combined) = translate_text(&combined, "en", "pt").await {
+                let parts: Vec<String> = translated_combined
+                    .split("[SEP]")
+                    .map(|s| s.trim().to_string())
+                    .collect();
+                
+                if parts.len() == batch_texts.len() {
+                    results = parts;
+                    success = true;
+                }
+            }
+
+            if !success {
+                for text in &batch_texts {
+                    results.push(translate_text(text, "en", "pt").await.unwrap_or_else(|_| text.clone()));
+                }
+            }
+
+            // 2. Distribui os resultados de volta
+            let mut cursor = 0;
+            let mut word_cursor = 0;
+            for entry in entries.iter_mut() {
+                // Remove lixo
+                if let Some(obj) = entry.as_object_mut() {
+                    obj.remove("sourceUrls");
+                    obj.remove("license");
+                }
+
+                if entry["word"].is_string() {
+                    let translated = &results[cursor];
+                    let original = &original_words[word_cursor];
+                    // Formato: Traduzido (Original)
+                    entry["word"] = if translated.to_lowercase() != original.to_lowercase() {
+                        serde_json::json!(format!("{} ({})", translated, original))
+                    } else {
+                        serde_json::json!(translated)
+                    };
+                    cursor += 1;
+                    word_cursor += 1;
+                }
+
+                if let Some(meanings) = entry["meanings"].as_array_mut() {
+                    for meaning in meanings {
+                        if meaning["partOfSpeech"].is_string() {
+                            meaning["partOfSpeech"] = serde_json::json!(results[cursor]);
+                            cursor += 1;
+                        }
+                        if let Some(_definitions) = meaning["definitions"].as_array_mut() {
+                            // Limite de 4 no retorno também
+                            let mut truncated_defs = vec![];
+                            let defs_count = std::cmp::min(meaning["definitions"].as_array().unwrap().len(), 4);
+                            
+                            for _ in 0..defs_count {
+                                let mut def = meaning["definitions"].as_array_mut().unwrap().remove(0);
+                                if def["definition"].is_string() {
+                                    def["definition"] = serde_json::json!(results[cursor]);
+                                    cursor += 1;
+                                }
+                                if def["example"].is_string() {
+                                    def["example"] = serde_json::json!(results[cursor]);
+                                    cursor += 1;
+                                }
+                                if let Some(syns) = def["synonyms"].as_array_mut() {
+                                    for s in syns { *s = serde_json::json!(results[cursor]); cursor += 1; }
+                                }
+                                truncated_defs.push(def);
+                            }
+                            meaning["definitions"] = serde_json::json!(truncated_defs);
+                        }
+                        if let Some(syns) = meaning["synonyms"].as_array_mut() {
+                            for s in syns { *s = serde_json::json!(results[cursor]); cursor += 1; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Salva no Cache antes de retornar
+    state.dictionary.set_cache(query, json.clone());
+    Ok(json)
+}
+
+#[tauri::command]
+async fn dictionary_suggestions(query: String) -> Result<Vec<String>, String> {
+    let url = format!("https://api.dicionario-aberto.net/near/{}", urlencoding::encode(&query));
+    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let suggestions: Vec<String> = res.json().await.map_err(|e| e.to_string())?;
+    Ok(suggestions)
+}
+
+#[tauri::command]
+async fn dictionary_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<dictionary::GlossaryWord>, String> {
+    Ok(state.dictionary.list_words(&user_id))
+}
+
+#[tauri::command]
+async fn dictionary_add(state: State<'_, AppState>, word: dictionary::GlossaryWord) -> Result<(), String> {
+    state.dictionary.add_word(word).map(|_| ())
+}
+
+#[tauri::command]
+async fn dictionary_delete(state: State<'_, AppState>, id: i32) -> Result<(), String> {
+    state.dictionary.delete_word(id)
+}
+
+#[tauri::command]
+async fn dictionary_toggle_favorite(state: State<'_, AppState>, id: i32, is_favorite: bool) -> Result<(), String> {
+    state.dictionary.toggle_favorite(id, is_favorite)
+}
+
 #[tauri::command]
 async fn import_habits_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
     state.habit.import_csv(&user_id, &path)
+}
+
+#[tauri::command]
+async fn movies_export_json(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
+    state.movies.export_json(&user_id, &path)
+}
+
+#[tauri::command]
+async fn movies_import_json(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
+    state.movies.import_json(&user_id, &path)
+}
+
+#[tauri::command]
+async fn dictionary_export_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
+    state.dictionary.export_csv(&user_id, &path)
+}
+
+#[tauri::command]
+async fn dictionary_import_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
+    state.dictionary.import_csv(&user_id, &path)
 }
 
 #[tauri::command]
@@ -933,43 +1294,7 @@ async fn pre_update_backup(app_handle: tauri::AppHandle) -> Result<(), String> {
 // migration.rs handles export_user_package, import_user_package, export_full_system_bundle, import_full_system_bundle
 
 
-#[tauri::command]
-async fn teste_velocidade_aegis(window: Window) -> Result<(), String> {
-    let w = window.clone();
 
-    tauri::async_runtime::spawn_blocking(move || {
-        let mut config = speedtest::get_configuration()
-            .map_err(|e| format!("Erro de Configuração: {:?}", e))?;
-        
-        let server_list = speedtest::get_server_list_with_config(&config)
-            .map_err(|e| format!("Erro ao obter servidores: {:?}", e))?;
-        
-        let best_result = speedtest::get_best_server_based_on_latency(&server_list.servers)
-            .map_err(|_| "Nenhum servidor encontrado para sua região".to_string())?;
-        
-        let best_server = &best_result.server; 
-
-        w.emit("speed-status", format!("Conectado a: {} ({})", best_server.sponsor, best_server.name)).unwrap();
-        w.emit("speed-ping", best_result.latency.as_millis()).unwrap();
-
-        w.emit("speed-status", "Testando Download...").unwrap();
-        let download_speed = speedtest::test_download_with_progress_and_config(best_server, || {}, &mut config)
-            .map_err(|e| format!("Falha no Download: {:?}", e))?;
-        
-        let dl_mbps = download_speed.bps_f64() / 1_000_000.0;
-        w.emit("speed-download", dl_mbps).unwrap();
-
-        w.emit("speed-status", "Testando Upload...").unwrap();
-        let upload_speed = speedtest::test_upload_with_progress_and_config(best_server, || {}, &config)
-            .map_err(|e| format!("Falha no Upload: {:?}", e))?;
-        
-        let ul_mbps = upload_speed.bps_f64() / 1_000_000.0;
-        w.emit("speed-upload", ul_mbps).unwrap();
-
-        w.emit("speed-status", "Teste Concluído").unwrap();
-        Ok::<(), String>(())
-    }).await.map_err(|e| e.to_string())?
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -1045,7 +1370,7 @@ pub fn run() {
 
             let pm = PasswordManager::new(app.handle());
             let pomo = PomodoroManager::new(app.handle());
-            let curr = CurrencyManager::new(app.handle());
+
             let alarm = AlarmManager::new(app.handle());
             let habit = HabitManager::new(app.handle());
             let note = notes::NoteManager::new(app.handle());
@@ -1054,31 +1379,11 @@ pub fn run() {
             // ... (resto dos managers)
 
             let args: Vec<String> = std::env::args().collect();
-            let arg_minimized = args.contains(&"--minimized".to_string());
+            let is_minimized_arg = args.contains(&"--minimized".to_string());
 
             if let Some(window) = app.get_webview_window("main") {
-                if arg_minimized && initial_config.start_minimized {
+                if is_minimized_arg && initial_config.start_minimized {
                     let _ = window.hide();
-                } else {
-                    let _ = window.maximize();
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-            let config = ConfigManager::new(app.handle());
-            
-            // Window startup logic
-            let app_config = config.get_config();
-            let args: Vec<String> = std::env::args().collect();
-            let is_autostart = args.contains(&"--minimized".to_string());
-
-            if let Some(window) = app.get_webview_window("main") {
-                if is_autostart {
-                    if !app_config.start_minimized {
-                        let _ = window.show();
-                        let _ = window.maximize();
-                        let _ = window.set_focus();
-                    }
                 } else {
                     let _ = window.show();
                     let _ = window.maximize();
@@ -1093,6 +1398,8 @@ pub fn run() {
             let reading = ReadingManager::new(app.handle());
             let tasks = TaskManager::new(app.handle());
             let notif = NotificationsManager::new(app.handle());
+            let dictionary = dictionary::DictionaryManager::new(app.handle());
+            let movies = movies::MovieManager::new(app.handle());
 
             let app_handle = app.handle().clone();
             let pm_clone = PasswordManager::new(app.handle());
@@ -1101,6 +1408,8 @@ pub fn run() {
             let pomo_clone = PomodoroManager::new(app.handle());
             let alarm_clone = AlarmManager::new(app.handle());
             let config_clone = ConfigManager::new(app.handle());
+            let habit_clone = HabitManager::new(app.handle());
+            let calendar_clone = CalendarManager::new(app.handle());
 
             thread::spawn::<_, ()>(move || {
                 // Inicializa com -1 para garantir que o primeiro minuto seja processado
@@ -1116,14 +1425,10 @@ pub fn run() {
 
                     // Só processamos a lógica se houver mudança de minuto
                     if now_min != last_notified_min {
-                        info!("[Aegis Loop] Processando minuto: {} (Minuto: {})", now_str, now_min);
                         last_notified_min = now_min;
                         
+                        let mut new_trigger_iso: Option<String> = None;
                         let alarms = alarm_clone.list_all_enabled_alarms();
-                        if !alarms.is_empty() {
-                            let titles: Vec<String> = alarms.iter().map(|a| a.title.clone()).collect();
-                            info!("[Aegis Loop] Encontrados {} alarmes ativos: {:?}", alarms.len(), titles);
-                        }
                         
                         for a in alarms {
                             let mut trigger = false;
@@ -1135,24 +1440,33 @@ pub fn run() {
                                     trigger = true;
                                 }
                             } else if a.alarm_type == "interval" {
-                                // Alerta de intervalo:
-                                if now_min == alarm_min {
-                                    trigger = true;
-                                } else if now_min > alarm_min {
-                                    if let Some(iso) = &a.last_triggered {
-                                        if let Ok(lt_dt) = DateTime::parse_from_rfc3339(iso) {
-                                            let lt = lt_dt.with_timezone(&Local);
-                                            let diff_secs = now_aegis.signed_duration_since(lt).num_seconds();
-                                            let interval_secs = (a.interval_minutes.unwrap_or(30) * 60) as i64;
-                                            
-                                            if diff_secs >= interval_secs && diff_secs < interval_secs + 59 {
+                                // Alerta de intervalo: exato no grid de minutos
+                                if now_min >= alarm_min {
+                                    let interval_mins = a.interval_minutes.unwrap_or(30);
+                                    let intervals_passed = (now_min - alarm_min) / interval_mins;
+                                    let latest_grid_slot = alarm_min + (intervals_passed * interval_mins);
+                                    
+                                    let grid_time_today = now_aegis.date_naive()
+                                        .and_hms_opt(latest_grid_slot as u32 / 60, latest_grid_slot as u32 % 60, 0)
+                                        .and_then(|dt| dt.and_local_timezone(Local).single());
+                                        
+                                    if let Some(grid_dt) = grid_time_today {
+                                        let grid_iso = grid_dt.to_rfc3339();
+                                        
+                                        if let Some(last_iso) = &a.last_triggered {
+                                            if let Ok(last_dt) = DateTime::parse_from_rfc3339(last_iso) {
+                                                if last_dt.with_timezone(&Local) < grid_dt {
+                                                    trigger = true;
+                                                    new_trigger_iso = Some(grid_iso);
+                                                }
+                                            } else {
                                                 trigger = true;
+                                                new_trigger_iso = Some(grid_iso);
                                             }
+                                        } else {
+                                            trigger = true;
+                                            new_trigger_iso = Some(grid_iso);
                                         }
-                                    } else {
-                                        // Se nunca disparou e já passou do horário de início
-                                        info!("[Aegis Loop] Alarme de intervalo nunca disparado para {}, ativando.", a.title);
-                                        trigger = true;
                                     }
                                 }
                             }
@@ -1161,7 +1475,8 @@ pub fn run() {
                                 info!("[Aegis Loop] !!! DISPARANDO ALARME: {} !!!", a.title);
                                 // Atualiza estado ANTES de notificar para segurança
                                 if a.alarm_type == "interval" {
-                                    alarm_clone.update_last_triggered(a.id.unwrap(), &now_aegis.to_rfc3339());
+                                    let iso_to_save = new_trigger_iso.clone().unwrap_or_else(|| now_aegis.to_rfc3339());
+                                    alarm_clone.update_last_triggered(a.id.unwrap(), &iso_to_save);
                                 }
                                 
                                 let title = format!("Aegis: {}", a.title);
@@ -1188,6 +1503,67 @@ pub fn run() {
                             for user_val in users {
                                 if let Some(uid_val) = user_val.get("id") {
                                     if let Some(uid) = uid_val.as_str() {
+                                        // Lembretes de Hábitos Pendentes
+                                        let config = config_clone.get_config();
+                                        if config.notif_habit_uncompleted && now_str == config.notif_habit_time {
+                                            let now_utc = config_clone.get_now();
+                                            let habits = habit_clone.list_habits(uid, now_utc);
+                                            
+                                            let pending = habits.iter().filter(|h| {
+                                                let is_pos = h.habit_type.to_lowercase() == "positive" || h.habit_type.to_lowercase() == "good";
+                                                if !is_pos { return false; }
+
+                                                match &h.last_done {
+                                                    // Converte o timestamp UTC para data local antes de comparar.
+                                                    // Sem isso, hábitos feitos às 23h local (02h UTC do dia seguinte)
+                                                    // aparecem como pendentes no dia seguinte.
+                                                    Some(ld) => {
+                                                        let done_local_date = chrono::DateTime::parse_from_rfc3339(ld)
+                                                            .map(|dt| dt.with_timezone(&Local).date_naive())
+                                                            .ok();
+                                                        done_local_date.map_or(true, |d| d != now_aegis.date_naive())
+                                                    }
+                                                    None => true
+                                                }
+                                            }).count();
+
+                                            if pending > 0 {
+                                                let title = "Aegis: Hábitos Pendentes";
+                                                let body = format!("Você ainda tem {} hábitos para concluir hoje. Não quebre sua sequência!", pending);
+                                                notify_critical(&app_handle, title, &body);
+                                                let _ = notif_clone.push(uid, title, &body, "habits", None, Some("orange"), Some("Activity"));
+                                                let _ = app_handle.emit("new-notification", ());
+                                            }
+                                        }
+
+                                        // Notificações de Compromissos (Resumo e Individuais)
+                                        let today = now_aegis.format("%Y-%m-%d").to_string();
+                                        let events = calendar_clone.list_events(uid);
+                                        
+                                        // 1. Resumo da manhã
+                                        if config.notif_event_upcoming && now_str == config.notif_event_upcoming_time {
+                                            let today_events: Vec<_> = events.iter().filter(|e| e.date == today && e.event_type != "holiday").collect();
+                                            if !today_events.is_empty() {
+                                                let title = "Aegis: Agenda de Hoje";
+                                                let body = format!("Você tem {} compromisso(s) agendado(s) para hoje.", today_events.len());
+                                                notify_critical(&app_handle, title, &body);
+                                                let _ = notif_clone.push(uid, title, &body, "calendar", None, Some("teal"), Some("Calendar"));
+                                                let _ = app_handle.emit("new-notification", ());
+                                            }
+                                        }
+
+                                        // 2. Notificações individuais no horário do evento
+                                        for e in &events {
+                                            if e.date == today && e.time == Some(now_str.clone()) {
+                                                let title = format!("Aegis: {}", e.title);
+                                                let body = e.description.as_deref().unwrap_or("Seu compromisso agendado começou agora.");
+                                                notify_critical(&app_handle, &title, body);
+                                                let _ = notif_clone.push(uid, &title, body, "calendar", None, e.color.as_deref(), Some("Calendar"));
+                                                let _ = app_handle.emit("new-notification", ());
+                                            }
+                                        }
+                                        
+                                        // Controle de Sono (Existente)
                                         let goal = sleep_clone.get_goal(uid, &app_handle);
                                         if goal.reminder_enabled && goal.target_bedtime == now_str {
                                             let title = "Aegis: Controle de Sono";
@@ -1243,14 +1619,14 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, curr, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif });
+            app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            teste_velocidade_aegis, test_notification, open_notification_settings, send_critical_notification, verify_master,
+            test_notification, open_notification_settings, send_critical_notification, verify_master,
             add_password, update_password, list_passwords, decrypt_entry, import_passwords, export_passwords, delete_password, check_vault, reset_vault,
             get_pomodoro_state, save_pomodoro_state, record_pomodoro_session, get_pomodoro_history, clear_pomodoro_history,
-            get_currency_rates, update_currency_rates, list_alarms, add_alarm, delete_alarm, toggle_alarm, update_alarm,
+            list_alarms, add_alarm, delete_alarm, toggle_alarm, update_alarm,
             list_habits, add_habit, update_habit, mark_habit_done, use_habit_charge, reset_habit, hard_reset_habit, delete_habit,
             local_register, check_user_availability, local_login, get_local_user, list_local_users, delete_account, change_account_password, change_username, change_vault_password, revert_vault_to_master, has_separate_vault_password,
             list_notes, list_note_items, add_note, update_note, delete_note, create_note_folder, delete_note_folder, move_note_item, update_note_pinned, open_notes_folder, list_notification_sounds,
@@ -1261,12 +1637,17 @@ pub fn run() {
             calendar_add_event, calendar_update_event, calendar_delete_event, sync_br_holidays, calendar_list_events, calendar_list_upcoming_deadlines,
             stats_get_cross_metrics, stats_get_performance_summary,
             reading_list_books, reading_upsert_book, reading_delete_book, reading_upsert_session, reading_list_sessions, reading_delete_session, reading_upsert_goal, reading_list_goals, reading_export_json, reading_import_json, reading_search_books,
+            dictionary_search, dictionary_list, dictionary_add, dictionary_delete, dictionary_toggle_favorite, dictionary_suggestions,
+            movies_search, movies_list, movies_upsert, movies_delete, movies_toggle_favorite,
+            get_tmdb_api_key, set_tmdb_api_key,
+            reading_toggle_favorite,
             tasks_list, tasks_upsert, tasks_toggle, tasks_delete,
             notif_list, notif_unread_count, notif_mark_read, notif_mark_all_read, notif_delete, notif_clear_read, ensure_discord_invite,
             get_app_version, get_log_path, read_app_logs, capture_screenshot,
             save_avatar, get_avatar, delete_avatar, export_tasks_csv, export_habits_csv, import_tasks_csv, import_habits_csv,
+            movies_export_json, movies_import_json, dictionary_export_csv, dictionary_import_csv,
             pre_update_backup, export_user_package, import_user_package, export_full_system_bundle, import_full_system_bundle, check_dnd_status,
-            check_github_update
+            check_github_update, open_app_data_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

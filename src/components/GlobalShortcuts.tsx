@@ -2,81 +2,99 @@
 
 import { Keyboard, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { NAV_GROUPS } from "@/components/appSidebar";
+import { NAV_GROUPS } from "@/components/sidebar/appSidebar";
 import type { AppRoute } from "@/context/NavigationContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
-import { cn, getColorTheme } from "@/lib/utils";
+import { type ShortcutDetails, shortcuts } from "@/lib/shortcuts";
+import { cn, getColorTheme, type ThemeColorKey } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
+
+interface PaletteItem {
+  title: string;
+  route: string;
+  icon: React.ElementType;
+  color: ThemeColorKey | "primary";
+}
 
 export function GlobalShortcuts() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const { navigate } = useNavigation();
+  const { navigate, route, setSettingsOpen } = useNavigation();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Evita interceptar se estiver digitando em um input
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target as HTMLElement).isContentEditable
-      ) {
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      // ESC sempre deve fechar modais
+      if (e.key === "Escape") {
+        if (isPaletteOpen) {
+          setIsPaletteOpen(false);
+          return;
+        }
+        if (isGuideOpen) {
+          setIsGuideOpen(false);
+          return;
+        }
+        setSettingsOpen(false);
+        window.dispatchEvent(new Event("close-all-modals"));
+      }
+
+      // Atalhos que NÃO funcionam se estiver digitando (a menos que usem modificadores)
+      if (isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
         return;
       }
 
-      // Ctrl + K (Command Palette)
-      if (e.ctrlKey && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setIsPaletteOpen((prev) => !prev);
-      }
+      const keys = [];
+      if (e.ctrlKey) keys.push("ctrl");
+      if (e.altKey) keys.push("alt");
+      if (e.shiftKey) keys.push("shift");
+      if (e.metaKey) keys.push("meta");
 
-      // Ctrl + Shift + ? (Shortcuts Guide)
-      if (e.ctrlKey && e.shiftKey && e.key === "?") {
-        e.preventDefault();
-        setIsGuideOpen((prev) => !prev);
-      }
-
-      // Ctrl + Shift + C (Configurações)
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "c") {
-        e.preventDefault();
-        navigate("settings" as AppRoute);
-      }
-
-      // Ctrl + Shift + L (Telemetria)
-      if (
-        e.ctrlKey &&
-        e.shiftKey &&
-        (e.key.toLowerCase() === "l" || e.code === "KeyL")
+      if (e.key === "?") keys.push("?");
+      else if (e.key === "Escape") keys.push("esc");
+      else if (e.key === "Backspace") keys.push("backspace");
+      else if (
+        e.key !== "Control" &&
+        e.key !== "Shift" &&
+        e.key !== "Meta" &&
+        e.key !== "Alt"
       ) {
-        e.preventDefault();
-        navigate("settings" as AppRoute);
-        // Pequeno delay para garantir que o componente Settings foi montado se não estivermos lá
-        setTimeout(() => {
-          window.dispatchEvent(new Event("open-telemetry"));
-        }, 100);
+        keys.push(e.key.toLowerCase());
       }
 
-      // Ctrl + Shift + D (Manual WhatsNew Modal)
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
+      const keyString = keys.join("+");
+      const context = {
+        navigate,
+        setIsPaletteOpen,
+        setIsGuideOpen,
+        setSettingsOpen,
+      };
+
+      // 1. Tentar atalho global
+      const globalHandler = shortcuts.global[keyString];
+      if (globalHandler && typeof globalHandler === "object") {
         e.preventDefault();
-        console.log("[Aegis] Atalho acionado: Abrindo modal de novidades...");
-        window.dispatchEvent(new CustomEvent("open-whats-new"));
+        globalHandler.action(context);
+        return;
       }
 
-      const key = e.key.toLowerCase();
-      const code = e.code;
-
-      if (!isPaletteOpen) {
-        if (e.altKey && (key === "n" || code === "KeyN")) {
-          e.preventDefault();
-          window.dispatchEvent(new Event("toggle-notifications-panel"));
-        }
+      // 2. Tentar atalho da rota atual
+      const routeHandler = shortcuts[route]?.[keyString];
+      if (routeHandler && typeof routeHandler === "object") {
+        e.preventDefault();
+        (routeHandler as ShortcutDetails).action(context);
+        return;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [navigate, isPaletteOpen]);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [navigate, route, isPaletteOpen, isGuideOpen, setSettingsOpen]);
 
   return (
     <>
@@ -95,15 +113,16 @@ export function GlobalShortcuts() {
       <ShortcutsGuide
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
+        currentRoute={route}
       />
 
       <button
         type="button"
         onClick={() => setIsGuideOpen(true)}
-        className="fixed bottom-6 right-6 z-40 p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer"
+        className="fixed bottom-6 right-6 z-40 p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer group"
         aria-label="Ver Atalhos"
       >
-        <Keyboard className="w-5 h-5" />
+        <Keyboard className="w-5 h-5 group-hover:rotate-12 transition-transform" />
       </button>
     </>
   );
@@ -124,8 +143,15 @@ function CommandPalette({
   const { themeStyles } = useTheme();
 
   // Achatar os items do sidebar para busca
-  const allItems = useMemo(() => {
-    const sidebarItems = NAV_GROUPS.flatMap((group) => group.items);
+  const allItems = useMemo<PaletteItem[]>(() => {
+    const sidebarItems = NAV_GROUPS.flatMap((group) => group.items).map(
+      (item) => ({
+        ...item,
+        color: (item.route === ("dashboard" as string)
+          ? "primary"
+          : getModuleColor(item.route)) as PaletteItem["color"],
+      }),
+    );
     // Adiciona comando manual para novidades
     return [
       ...sidebarItems,
@@ -304,12 +330,22 @@ function CommandPalette({
   );
 }
 
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="px-2 py-1 rounded-lg bg-accent border border-border/80 text-[10px] font-bold font-sans text-foreground whitespace-nowrap min-w-[20px] inline-flex items-center justify-center uppercase">
+      {children}
+    </kbd>
+  );
+}
+
 function ShortcutsGuide({
   isOpen,
   onClose,
+  currentRoute,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  currentRoute: AppRoute;
 }) {
   const { themeStyles } = useTheme();
 
@@ -323,13 +359,10 @@ function ShortcutsGuide({
 
   if (!isOpen) return null;
 
-  const shortcuts = [
-    { key: "Ctrl + K", desc: "Abre a busca global (Command Palette)" },
-    { key: "Ctrl + Shift + ?", desc: "Mostra este guia de atalhos" },
-    { key: "Ctrl + Shift + D", desc: "Ver novidades da versão (What's New)" },
-    { key: "Ctrl + B", desc: "Abre/Fecha a barra lateral (Sidebar)" },
-    { key: "Alt + N", desc: "Abre/Fecha o Painel de Notificações" },
-  ];
+  const globalEntries = Object.entries(shortcuts.global);
+  const routeEntries = Object.entries(shortcuts[currentRoute] || {}).filter(
+    ([key]) => key !== "disabled",
+  );
 
   return (
     <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
@@ -339,7 +372,7 @@ function ShortcutsGuide({
         onClick={onClose}
         aria-label="Fechar guia"
       />
-      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20">
           <div className="flex items-center gap-2">
             <div
@@ -359,20 +392,53 @@ function ShortcutsGuide({
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-2 text-left">
-          {shortcuts.map((s, _idx) => (
+
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+          <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase">
+            Atalhos Globais
+          </div>
+          {globalEntries.map(([key, details]) => (
             <div
-              key={s.key}
-              className="flex items-center justify-between p-3 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors rounded-xl"
+              key={key}
+              className="flex items-center justify-between p-3 hover:bg-muted/30 transition-colors rounded-xl"
             >
               <span className="text-[13px] font-medium text-muted-foreground">
-                {s.desc}
+                {(details as ShortcutDetails).description}
               </span>
-              <kbd className="px-2.5 py-1 rounded-lg bg-accent border border-border/80 text-[11px] font-bold font-sans text-foreground whitespace-nowrap">
-                {s.key}
-              </kbd>
+              <div className="flex gap-1.5">
+                {key.split("+").map((k) => (
+                  <Kbd key={k}>{k}</Kbd>
+                ))}
+              </div>
             </div>
           ))}
+
+          {routeEntries.length > 0 && (
+            <>
+              <div className="mt-4 px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase border-t border-border/40">
+                Nesta Tela ({currentRoute})
+              </div>
+              {routeEntries.map(([key, details]) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between p-3 hover:bg-muted/30 transition-colors rounded-xl"
+                >
+                  <span className="text-[13px] font-medium text-muted-foreground">
+                    {(details as ShortcutDetails).description}
+                  </span>
+                  <div className="flex gap-1.5">
+                    {key.split("+").map((k) => (
+                      <Kbd key={k}>{k}</Kbd>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+
+        <div className="bg-muted/20 px-5 py-3 border-t border-border/60 text-[11px] text-muted-foreground text-center">
+          Pressione <Kbd>ESC</Kbd> para fechar este guia
         </div>
       </div>
     </div>

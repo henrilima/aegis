@@ -5,7 +5,7 @@ use tauri::{AppHandle, Manager};
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct PomodoroState {
     pub is_running: bool,
     pub start_time: Option<DateTime<Utc>>,
@@ -17,7 +17,7 @@ pub struct PomodoroState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct PomodoroHistory {
     pub id: Option<i32>,
     pub user_id: String,

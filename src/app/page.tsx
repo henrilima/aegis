@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import LoginComponent from "@/components/forms/Login";
-import Loading from "@/components/Loading";
+import LoginComponent from "@/components/auth/Login";
+import Loading from "@/components/global/Loading";
 
 import { useAuth } from "@/context/AuthContext";
 

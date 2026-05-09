@@ -8,6 +8,9 @@
     "core:event:default",
     "core:event:allow-listen",
     "core:event:allow-emit",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
+    "core:webview:allow-set-webview-zoom",
     "allow-run-speedtest",
     "allow-password-management",
     "allow-feature-management",
@@ -30,7 +33,14 @@
       "identifier": "http:allow-fetch",
       "allow": [
         { "url": "https://*.discord.com/api/webhooks/*" },
-        { "url": "https://discord.com/api/webhooks/*" }
+        { "url": "https://discord.com/api/webhooks/*" },
+        { "url": "https://wttr.in/*" },
+        { "url": "https://geocoding-api.open-meteo.com/*" },
+        { "url": "https://api.dictionaryapi.dev/*" },
+        { "url": "https://translate.googleapis.com/*" },
+        { "url": "https://api.dicionario-aberto.net/*" },
+        { "url": "https://api.themoviedb.org/*" },
+        { "url": "https://www.googleapis.com/*" }
       ]
     }
   ]

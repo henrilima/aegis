@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Cloud,
   Coffee,
+  Download,
   Droplet,
   Flame,
   Ghost,
@@ -20,6 +21,7 @@ import {
   Info,
   Moon,
   Music,
+  Package,
   Pin,
   Shield,
   Star,
@@ -130,23 +132,101 @@ let cachedVState: VersionState = "loading";
 let cachedVDiff = 0;
 let lastCheckTime = 0;
 
-function VersionCard() {
+function VersionCard({
+  vState,
+  vDiff,
+  release: _,
+  setShowUpdateDialog,
+}: {
+  vState: VersionState;
+  vDiff: number;
+  release: GithubRelease | null;
+  setShowUpdateDialog: (v: boolean) => void;
+}) {
+  const { themeStyles: theme } = useTheme();
+  const isCaveMode = vDiff >= 1.0;
+
+  if (vState === "update-available") {
+    return (
+      <button
+        type="button"
+        onClick={() => setShowUpdateDialog(true)}
+        className={cn(
+          "w-[calc(100%-2.5rem)] mx-5 mb-3 p-3 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-left",
+          isCaveMode
+            ? "bg-amber-500/10 border-amber-500/20"
+            : `${theme.bg} ${theme.border.replace("/70", "/20")}`,
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "p-2 rounded-xl",
+              isCaveMode
+                ? "bg-amber-500/20"
+                : "bg-background/80 border border-border/50",
+            )}
+          >
+            <Package
+              className={cn(
+                "w-4 h-4",
+                isCaveMode ? "text-amber-500" : theme.text,
+              )}
+            />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-foreground">
+              Atualização disponível
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Atualize para receber novidades e correções de bugs.
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+      </button>
+    );
+  }
+
+  return null;
+}
+
+export function NotificationsPanel({
+  notifications,
+  unreadCount,
+  isOpen,
+  onClose,
+  onMarkRead,
+  onMarkAllRead,
+  onDelete,
+  onClearRead,
+}: NotificationsPanelProps) {
+  const { themeStyles: theme } = useTheme();
+  const [exitingIds, setExitingIds] = useState<Set<number>>(new Set());
+  const [isClosing, setIsClosing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Update State
   const [release, setRelease] = useState<GithubRelease | null>(cachedRelease);
   const [vState, setVState] = useState<VersionState>(cachedVState);
   const [vDiff, setVDiff] = useState(cachedVDiff);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [_errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [_retryTrigger, _setRetryTrigger] = useState(0);
   const log = useLog("Updater");
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
 
   useEffect(() => {
     const checkUpdate = async () => {
+      if (!isOpen) return;
+
       // Se já verificamos há menos de 1 hora, usamos o cache
       const oneHour = 60 * 60 * 1000;
       if (
         lastCheckTime > 0 &&
         Date.now() - lastCheckTime < oneHour &&
-        vState !== "error"
+        vState !== "error" &&
+        vState !== "loading"
       ) {
         return;
       }
@@ -236,7 +316,7 @@ function VersionCard() {
       }
     };
     checkUpdate();
-  }, [log.error, log.warn, vState]);
+  }, [log.error, log.warn, isOpen, vState]);
 
   const handleUpdate = async () => {
     try {
@@ -284,200 +364,143 @@ function VersionCard() {
     }
   };
 
-  if (vState === "loading")
-    return (
-      <div className="px-4 py-3 flex items-center gap-2 text-muted-foreground text-xs">
-        <div className="w-3.5 h-3.5 border-2 border-border border-b-transparent rounded-full animate-spin shrink-0" />
-        Verificando atualizações...
-      </div>
-    );
+  function UpdateDialog() {
+    const isCaveMode = vDiff >= 1.0;
+    const isBeta = vState === "beta";
+    const isDownloading = vState === "downloading";
+    const isReady = vState === "ready";
 
-  if (vState === "error")
-    return (
-      <div className="px-4 py-3 flex items-center justify-between gap-3 text-xs bg-muted/30 rounded-xl mx-2 mb-2 border border-border/50">
-        <div className="flex items-center gap-2.5">
-          <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground leading-snug">
-            {errorMsg || "Verificação temporariamente indisponível."}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setVState("loading");
-            setErrorMsg(null);
-          }}
-          className="text-[10px] font-bold text-blue-500 hover:underline shrink-0"
-        >
-          Tentar agora
-        </button>
-      </div>
-    );
+    if (!showUpdateDialog) return null;
 
-  if (vState === "up-to-date")
     return (
-      <div className="px-4 py-3.5 flex flex-col gap-1 text-xs border-l-2 border-emerald-500/50 bg-emerald-500/5">
-        <div className="flex flex-col">
-          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 leading-none">
-            Sistema atualizado
-          </span>
-          <span className="text-[11px] text-muted-foreground mt-1.5">
-            Sua versão:{" "}
-            <span className="font-bold text-xs text-foreground">
-              {APP_CONFIG.version}
-            </span>{" "}
-            (Estável)
-          </span>
-        </div>
-        <p className="text-[11px] text-muted-foreground/80 leading-relaxed mt-1">
-          Aegis está operando na versão mais recente disponível.
-        </p>
-      </div>
-    );
-
-  if (vState === "downloading")
-    return (
-      <div className="px-4 py-3.5 flex flex-col gap-3 border-l-2 border-blue-500 bg-blue-500/5">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-blue-400 animate-pulse">
-            Baixando atualização...
-          </span>
-          <span className="text-[10px] font-mono text-blue-400/80">
-            {Math.round(downloadProgress)}%
-          </span>
-        </div>
-        <div className="h-1.5 w-full bg-blue-500/10 rounded-full overflow-hidden">
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div
+          role="none"
+          className="absolute inset-0 bg-background/40 backdrop-blur-sm"
+          onClick={() => setShowUpdateDialog(false)}
+        />
+        <div className="relative w-full max-w-sm bg-card border border-border rounded-3xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+          {/* Header decorativo */}
           <div
-            className="h-full bg-blue-500 transition-all duration-300"
-            style={{ width: `${downloadProgress}%` }}
-          />
-        </div>
-      </div>
-    );
+            className={cn(
+              "h-24 flex items-center justify-center relative overflow-hidden",
+              isCaveMode
+                ? "bg-amber-500/10"
+                : isBeta
+                  ? "bg-purple-500/10"
+                  : theme.bg,
+            )}
+          >
+            <div className="absolute inset-0 opacity-20" />
+            <Package
+              className={cn(
+                "w-10 h-10 relative z-10",
+                isCaveMode
+                  ? "text-amber-500"
+                  : isBeta
+                    ? "text-purple-500"
+                    : theme.text,
+              )}
+            />
+          </div>
 
-  if (vState === "ready")
-    return (
-      <div className="px-4 py-3.5 flex flex-col gap-2 border-l-2 border-emerald-500 bg-emerald-500/10 animate-pulse">
-        <span className="text-xs font-bold text-emerald-400">
-          Reiniciando para aplicar...
-        </span>
-      </div>
-    );
+          <div className="p-6 space-y-6">
+            <div className="text-center space-y-1">
+              <h3 className="text-lg font-bold text-foreground">
+                {isDownloading
+                  ? "Baixando Atualização"
+                  : isReady
+                    ? "Tudo Pronto!"
+                    : "Nova Versão Disponível"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {isDownloading
+                  ? "Aguarde enquanto preparamos os novos recursos."
+                  : isReady
+                    ? "O Aegis precisa reiniciar para aplicar."
+                    : "Uma nova versão do Aegis está pronta para você."}
+              </p>
+            </div>
 
-  if (vState === "beta") {
-    const isGalactic = vDiff >= 1.5;
-    return (
-      <div
-        className={cn(
-          "px-4 py-3.5 flex flex-col gap-1.5 border-l-2 bg-purple-500/5",
-          isGalactic ? "border-purple-400" : "border-purple-500/30",
-        )}
-      >
-        <div className="flex flex-col">
-          <span className="text-sm font-bold text-purple-400">
-            {isGalactic ? "🛸 Paradoxo temporal" : "🧪 Versão beta"}
-          </span>
-          <div className="flex flex-col text-[11px] mt-1.5 space-y-0.5">
-            <p className="text-muted-foreground">
-              Sua versão:{" "}
-              <span className="text-foreground font-bold text-xs">
-                {APP_CONFIG.version}
-              </span>
-            </p>
-            <p className="text-muted-foreground">
-              Próxima oficial:{" "}
-              <span className="font-bold text-foreground">
-                {release?.tag_name}
-              </span>
-            </p>
+            <div className="bg-muted/30 rounded-2xl p-4 border border-border/50 space-y-3">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground font-medium">
+                  Sua versão atual
+                </span>
+                <span className="text-foreground font-bold">
+                  {APP_CONFIG.version}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground font-medium">
+                  Nova versão
+                </span>
+                <span
+                  className={cn(
+                    "font-bold",
+                    isCaveMode ? "text-amber-500" : theme.text,
+                  )}
+                >
+                  {release?.tag_name || "v2.1.x"}
+                </span>
+              </div>
+              {isDownloading && (
+                <div className="space-y-2 pt-2">
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full transition-all duration-300",
+                        theme.solid,
+                      )}
+                      style={{ width: `${downloadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-center font-mono text-muted-foreground">
+                    {Math.round(downloadProgress)}% concluído
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowUpdateDialog(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/80 text-muted-foreground transition-all active:scale-95 cursor-pointer"
+              >
+                Depois
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdate}
+                disabled={isDownloading}
+                className={cn(
+                  "flex-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2",
+                  isCaveMode
+                    ? "bg-amber-600 hover:bg-amber-500"
+                    : `${theme.solid} ${theme.solidHover}`,
+                )}
+              >
+                {isDownloading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Baixando...
+                  </>
+                ) : isReady ? (
+                  "Reiniciar Agora"
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    Atualizar Agora
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground leading-relaxed italic opacity-70">
-          {isGalactic
-            ? "Você está testando uma versão avançada do futuro."
-            : "Recursos experimentais em teste."}
-        </p>
       </div>
     );
   }
-
-  const isCaveMode = vDiff >= 1.0;
-  return (
-    <div
-      className={cn(
-        "px-4 py-3.5 flex flex-col gap-2 border-l-2 bg-card/40",
-        isCaveMode ? "border-amber-500/50" : "border-blue-500/50",
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col">
-          <span
-            className={cn(
-              "text-sm font-bold",
-              isCaveMode ? "text-amber-400" : "text-blue-400",
-            )}
-          >
-            {isCaveMode ? "🕰️ Versão primitiva" : "📦 Nova versão"}
-          </span>
-          <div className="flex flex-col gap-0.5 mt-2">
-            <p className="text-[11px] text-muted-foreground">
-              Sua versão:{" "}
-              <span className="text-foreground font-bold text-xs">
-                {APP_CONFIG.version}
-              </span>
-            </p>
-            <p
-              className={cn(
-                "text-[11px] font-bold",
-                isCaveMode ? "text-amber-400" : "text-blue-400",
-              )}
-            >
-              Disponível:{" "}
-              <span className="text-xs text-foreground">
-                {release?.tag_name}
-              </span>
-            </p>
-          </div>
-        </div>
-        {release && (
-          <button
-            type="button"
-            onClick={handleUpdate}
-            className={cn(
-              "shrink-0 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer text-xs flex items-center gap-1.5",
-              isCaveMode
-                ? "bg-amber-600 hover:bg-amber-500 text-foreground"
-                : "bg-blue-600 hover:bg-blue-500 text-foreground",
-            )}
-          >
-            Atualizar
-          </button>
-        )}
-      </div>
-      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-        {isCaveMode
-          ? "Sua versão é obsoleta. Recomendamos atualizar para proteger seus dados."
-          : `Novos recursos e melhorias de performance estão disponíveis.`}
-      </p>
-    </div>
-  );
-}
-
-export function NotificationsPanel({
-  notifications,
-  unreadCount,
-  isOpen,
-  onClose,
-  onMarkRead,
-  onMarkAllRead,
-  onDelete,
-  onClearRead,
-}: NotificationsPanelProps) {
-  const { themeStyles: theme } = useTheme();
-  const [exitingIds, setExitingIds] = useState<Set<number>>(new Set());
-  const [isClosing, setIsClosing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<string>("all");
-  const panelRef = useRef<HTMLDivElement>(null);
 
   // Reseta estado ao abrir
   useEffect(() => {
@@ -488,9 +511,9 @@ export function NotificationsPanel({
 
       // Auto-read logic
       if (unreadCount > 0) {
-        invoke<{ auto_read_notifications: boolean }>("get_app_config")
+        invoke<{ autoReadNotifications: boolean }>("get_app_config")
           .then((config) => {
-            if (config.auto_read_notifications) {
+            if (config.autoReadNotifications) {
               onMarkAllRead();
             }
           })
@@ -505,6 +528,7 @@ export function NotificationsPanel({
     setTimeout(() => {
       onClose();
       setIsClosing(false);
+      setShowUpdateDialog(false); // Reset update dialog on close
     }, 280);
   };
 
@@ -567,13 +591,13 @@ export function NotificationsPanel({
     for (const n of notifications) {
       if (activeFilter !== "all" && n.category !== activeFilter) continue;
 
-      const key = `${n.category}-${n.title}-${n.is_read}`;
+      const key = `${n.category}-${n.title}-${n.isRead}`;
       const existing = groups.get(key);
       if (existing) {
         existing.count++;
         existing.ids.push(n.id);
-        if (new Date(n.created_at) > new Date(existing.created_at)) {
-          existing.created_at = n.created_at;
+        if (new Date(n.createdAt) > new Date(existing.createdAt)) {
+          existing.createdAt = n.createdAt;
         }
       } else {
         groups.set(key, { ...n, count: 1, ids: [n.id] });
@@ -582,7 +606,7 @@ export function NotificationsPanel({
 
     return Array.from(groups.values()).sort(
       (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }, [notifications, activeFilter]);
 
@@ -599,13 +623,13 @@ export function NotificationsPanel({
     alarmes: "Alarmes",
   };
 
-  const hasRead = notifications.some((n) => n.is_read);
+  const hasRead = notifications.some((n) => n.isRead);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-start items-start">
-      {/* Backdrop — fechamento por mouse; teclado usa Escape ou botão X */}
+      {/* Backdrop - fechamento por mouse; teclado usa Escape ou botão X */}
       <div
         role="none"
         className={cn(
@@ -615,7 +639,7 @@ export function NotificationsPanel({
         onClick={handleClose}
       />
 
-      {/* Painel lateral deslizante — é este div que é o dialog de fato */}
+      {/* Painel lateral deslizante - é este div que é o dialog de fato */}
       <div
         ref={panelRef}
         role="dialog"
@@ -644,16 +668,37 @@ export function NotificationsPanel({
               <h2 className="font-bold text-[15px] text-foreground">
                 Notificações
               </h2>
-              {unreadCount > 0 && (
+              {unreadCount > 0 ? (
                 <p
                   className={`text-[11px] font-medium ${theme.text} opacity-80`}
                 >
                   {unreadCount} não lida{unreadCount !== 1 ? "s" : ""}
                 </p>
+              ) : (
+                <p
+                  className={`text-[11px] font-medium ${theme.text} opacity-80`}
+                >
+                  Nenhuma notificação
+                </p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            {vState === "update-available" && (
+              <ToolTip content="Nova atualização disponível">
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateDialog(true)}
+                  className={cn(
+                    "p-2 rounded-xl animate-pulse transition-all cursor-pointer active:scale-95",
+                    theme.text,
+                    theme.bg,
+                  )}
+                >
+                  <Package className="w-4 h-4" />
+                </button>
+              </ToolTip>
+            )}
             {unreadCount > 0 && (
               <ToolTip content="Marcar todas como lidas">
                 <button
@@ -697,7 +742,12 @@ export function NotificationsPanel({
                 Estado do sistema
               </p>
             </div>
-            <VersionCard />
+            <VersionCard
+              vState={vState}
+              vDiff={vDiff}
+              release={release}
+              setShowUpdateDialog={setShowUpdateDialog}
+            />
           </div>
 
           {/* Filtros de Categoria */}
@@ -763,7 +813,7 @@ export function NotificationsPanel({
             ) : (
               groupedNotifications.map((n, idx) => (
                 <NotificationCard
-                  key={`${n.category}-${n.title}-${n.is_read}`}
+                  key={`${n.category}-${n.title}-${n.isRead}`}
                   n={n}
                   idx={idx}
                   theme={theme}
@@ -782,6 +832,9 @@ export function NotificationsPanel({
             Sistema Aegis - Software para Desktop
           </p>
         </div>
+
+        {/* Dialog de Atualização */}
+        <UpdateDialog />
       </div>
     </div>
   );
@@ -809,7 +862,7 @@ function NotificationCard({
         "group relative w-full overflow-hidden transition-all duration-300 animate-in slide-in-from-left-2",
         n.ids.some((id) => exitingIds.has(id))
           ? "opacity-0 -translate-x-4 scale-95 pointer-events-none"
-          : n.is_read
+          : n.isRead
             ? "bg-transparent opacity-60 grayscale-[0.3] hover:opacity-100 hover:grayscale-0 hover:bg-muted/10"
             : "bg-transparent hover:bg-muted/40",
       )}
@@ -817,7 +870,7 @@ function NotificationCard({
       {/* Botão de ação principal (Overlay) - Satisfaz a semântica sem aninhar botões */}
       <button
         type="button"
-        onClick={() => !n.is_read && handleMarkRead(n.ids)}
+        onClick={() => !n.isRead && handleMarkRead(n.ids)}
         className="absolute inset-0 w-full h-full bg-transparent cursor-pointer z-0 outline-none focus-visible:bg-muted/20"
         aria-label={`Marcar "${n.title}" como lida`}
       />
@@ -830,7 +883,7 @@ function NotificationCard({
             n.color && NOTIF_COLORS[n.color]
               ? NOTIF_COLORS[n.color]
               : (CATEGORY_COLOR[n.category] ?? CATEGORY_COLOR.system),
-            n.is_read && "opacity-80",
+            n.isRead && "opacity-80",
           )}
         >
           {(() => {
@@ -849,19 +902,19 @@ function NotificationCard({
                 <p
                   className={cn(
                     "text-[13px] font-bold leading-tight",
-                    n.is_read ? "text-muted-foreground" : "text-foreground",
+                    n.isRead ? "text-muted-foreground" : "text-foreground",
                   )}
                 >
                   {n.title}
                 </p>
-                {!n.is_read && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 text-[8px] font-black uppercase animate-in fade-in zoom-in">
+                {!n.isRead && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 text-[8px] font-bold animate-in fade-in zoom-in">
                     Novo
                   </span>
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground font-medium">
-                {formatDate(n.created_at)}
+                {formatDate(n.createdAt)}
                 {n.count > 1 && (
                   <span className="ml-2 py-0.5 px-1.5 rounded-full bg-accent text-[9px] font-black text-foreground">
                     {n.count}x
@@ -872,7 +925,7 @@ function NotificationCard({
               <p
                 className={cn(
                   "text-[12px] leading-relaxed mt-1",
-                  n.is_read ? "text-muted-foreground" : "text-muted-foreground",
+                  n.isRead ? "text-muted-foreground" : "text-muted-foreground",
                 )}
               >
                 {n.body.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
@@ -912,7 +965,7 @@ function NotificationCard({
                 </ToolTip>
               )}
 
-              {!n.is_read && (
+              {!n.isRead && (
                 <ToolTip content="Marcar todas como lidas">
                   <button
                     type="button"
@@ -936,10 +989,17 @@ function NotificationCard({
                 onClick={(e) => {
                   e.stopPropagation();
                   const match = n.body.match(/(https?:\/\/[^\s]+)/);
-                  if (match) open(match[0]);
+                  if (match) {
+                    open(match[0]);
+                  } else if (
+                    n.tag === "discord-invite" ||
+                    n.title.toLowerCase().includes("discord")
+                  ) {
+                    open("https://discord.gg/pCQTuTGJUx");
+                  }
                 }}
                 className={cn(
-                  "px-4 py-2 rounded-xl text-[11px] font-black uppercase transition-all active:scale-95 flex items-center gap-2",
+                  "px-4 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-2",
                   n.title.toLowerCase().includes("discord") ||
                     n.body.toLowerCase().includes("discord")
                     ? "bg-[#5865F2] hover:bg-[#4752C4] text-white"

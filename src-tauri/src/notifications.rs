@@ -5,6 +5,7 @@ use tauri::{AppHandle, Manager};
 use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct AppNotification {
     pub id: Option<i64>,
     pub user_id: String,
@@ -134,7 +135,7 @@ impl NotificationsManager {
 
         let tag = "discord-invite";
         let title = "Bem-vindo à Comunidade!";
-        let body = "Parabéns por escolher o Aegis! Para uma experiência completa, junte-se ao nosso servidor oficial no Discord. Lá você encontrará suporte, poderá enviar feedback direto aos desenvolvedores e ficar por dentro de todas as novidades. Entre agora: https://discord.gg/8Wq8hT7R8r";
+        let body = "Obrigado por usar o Aegis! Para uma experiência melhor, junte-se ao nosso servidor oficial no Discord. Lá você encontrará suporte, poderá enviar feedback direto aos desenvolvedores e ficar por dentro de todas as novidades.";
         let conn = self.conn();
         let _ = conn.execute(
             "INSERT OR IGNORE INTO app_notifications (user_id, title, body, category, tag, persistent, color, icon) VALUES (?1, ?2, ?3, 'system', ?4, 1, 'blue', 'Bell')",

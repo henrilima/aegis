@@ -11,7 +11,6 @@ import {
 
 export type AppRoute =
   | "dashboard"
-  | "currency"
   | "passwords"
   | "habits"
   | "alarms"
@@ -19,16 +18,15 @@ export type AppRoute =
   | "pomodoro"
   | "studies"
   | "sleep"
-  | "settings"
-  | "speedtest"
   | "calendar"
   | "statistics"
   | "reading"
-  | "tasks";
+  | "dictionary"
+  | "tasks"
+  | "movies";
 
 const VALID_ROUTES = new Set<AppRoute>([
   "dashboard",
-  "currency",
   "passwords",
   "habits",
   "alarms",
@@ -36,12 +34,12 @@ const VALID_ROUTES = new Set<AppRoute>([
   "pomodoro",
   "studies",
   "sleep",
-  "settings",
-  "speedtest",
   "calendar",
   "statistics",
   "reading",
+  "dictionary",
   "tasks",
+  "movies",
 ]);
 
 function parsePathname(raw: string): AppRoute {
@@ -61,6 +59,8 @@ function getInitialRoute(): AppRoute {
 interface NavigationContextType {
   route: AppRoute;
   navigate: (route: AppRoute) => void;
+  isSettingsOpen: boolean;
+  setSettingsOpen: (open: boolean) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(
@@ -69,6 +69,7 @@ const NavigationContext = createContext<NavigationContextType | undefined>(
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const [route, setRoute] = useState<AppRoute>(getInitialRoute);
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
 
   const navigate = useCallback((newRoute: AppRoute) => {
     if (!VALID_ROUTES.has(newRoute)) return;
@@ -88,8 +89,18 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
+  // Escuta atalhos globais ou eventos para abrir configurações
+  useEffect(() => {
+    const handleOpenSettings = () => setSettingsOpen(true);
+    window.addEventListener("open-settings", handleOpenSettings);
+    return () =>
+      window.removeEventListener("open-settings", handleOpenSettings);
+  }, []);
+
   return (
-    <NavigationContext.Provider value={{ route, navigate }}>
+    <NavigationContext.Provider
+      value={{ route, navigate, isSettingsOpen, setSettingsOpen }}
+    >
       {children}
     </NavigationContext.Provider>
   );

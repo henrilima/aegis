@@ -1,9 +1,9 @@
 use rusqlite::{params, Connection};
 use uuid;
 use serde::{Deserialize, Serialize};
-use argon2::{
+pub use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
+    Argon2
 };
 use aes_gcm::{
     aead::{Aead, KeyInit},
@@ -16,6 +16,7 @@ use tauri::{AppHandle, Manager};
 use csv::{ReaderBuilder, WriterBuilder};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PasswordEntry {
     pub id: Option<i32>,
     pub user_id: String,
@@ -31,6 +32,7 @@ pub struct PasswordEntry {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DecryptedEntry {
     pub id: i32,
     pub name: String,
@@ -41,6 +43,7 @@ pub struct DecryptedEntry {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GoogleCsvEntry {
     name: String,
     url: String,
@@ -69,7 +72,8 @@ impl PasswordManager {
                 username TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 master_hash TEXT NOT NULL,
-                password_hint TEXT NOT NULL DEFAULT 'Sem dica'
+                password_hint TEXT NOT NULL DEFAULT 'Sem dica',
+                created_at TEXT NOT NULL DEFAULT '2026-05-04T00:00:00Z'
             )",
             [],
         ).ok();
@@ -105,6 +109,13 @@ impl PasswordManager {
         let _ = conn.execute("ALTER TABLE users ADD COLUMN master_code_index INTEGER DEFAULT 4", []);
         let _ = conn.execute("ALTER TABLE users ADD COLUMN password_hint TEXT DEFAULT 'Sem dica'", []);
         let _ = conn.execute("ALTER TABLE users ADD COLUMN avatar_base64 TEXT", []);
+        let _ = conn.execute("ALTER TABLE users ADD COLUMN created_at TEXT DEFAULT '2026-05-04T00:00:00Z'", []);
+        
+        // Atualizar datas antigas/bugadas para a data atual (2026-05-04)
+        let _ = conn.execute(
+            "UPDATE users SET created_at = '2026-05-04T00:00:00Z' WHERE created_at = '2024-01-01T00:00:00Z' OR created_at = '2026-05-01T00:00:00Z' OR created_at = '2026-05-03T00:00:00Z' OR created_at IS NULL", 
+            []
+        );
 
         Self { db_path }
     }
@@ -252,9 +263,10 @@ impl PasswordManager {
         use rand::Rng;
         let code_index = rand::thread_rng().gen_range(0..13);
 
+        let now = Utc::now().to_rfc3339();
         conn.execute(
-            "INSERT INTO users (id, username, email, master_hash, master_code_index, password_hint) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![user_id, username, email, password_hash, code_index, password_hint],
+            "INSERT INTO users (id, username, email, master_hash, master_code_index, password_hint, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![user_id, username, email, password_hash, code_index, password_hint, now],
         ).map_err(|e| e.to_string())?;
 
         Ok(())
@@ -278,10 +290,10 @@ impl PasswordManager {
 
     pub fn get_user_data(&self, user_id: &str) -> Result<serde_json::Value, String> {
         let conn = self.get_connection();
-        let (username, email, avatar, master_code_index, hint, vault_hash): (String, String, Option<String>, i32, String, Option<String>) = conn.query_row(
-            "SELECT username, email, avatar_base64, master_code_index, password_hint, vault_hash FROM users WHERE id = ?1",
+        let (username, email, avatar, master_code_index, hint, vault_hash, created_at): (String, String, Option<String>, i32, String, Option<String>, String) = conn.query_row(
+            "SELECT username, email, avatar_base64, master_code_index, password_hint, vault_hash, created_at FROM users WHERE id = ?1",
             params![user_id],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?)),
         ).map_err(|_| "Dados do usuário não encontrados".to_string())?;
 
         Ok(serde_json::json!({
@@ -289,9 +301,10 @@ impl PasswordManager {
             "username": username,
             "email": email,
             "avatar": avatar,
-            "master_code_index": master_code_index,
-            "password_hint": hint,
-            "has_vault_password": vault_hash.is_some()
+            "masterCodeIndex": master_code_index,
+            "passwordHint": hint,
+            "hasVaultPassword": vault_hash.is_some(),
+            "createdAt": created_at
         }))
     }
 
@@ -305,8 +318,8 @@ impl PasswordManager {
                 "id": row.get::<_, String>(0)?,
                 "username": row.get::<_, String>(1)?,
                 "email": row.get::<_, String>(2)?,
-                "master_code_index": row.get::<_, i32>(3)?,
-                "password_hint": row.get::<_, String>(4)?,
+                "masterCodeIndex": row.get::<_, i32>(3)?,
+                "passwordHint": row.get::<_, String>(4)?,
                 "avatar": row.get::<_, Option<String>>(5)?
             }))
         }).map_err(|e| e.to_string())?
@@ -329,11 +342,10 @@ impl PasswordManager {
             .verify_password(master_password.as_bytes(), &parsed_hash)
             .map_err(|_| "Senha mestra incorreta".to_string())?;
 
-        
         let salt = parsed_hash.salt.ok_or("Salt missing")?;
         let mut key = [0u8; 32];
-        let argon2 = Argon2::default();
-        argon2.hash_password_into(master_password.as_bytes(), salt.as_str().as_bytes(), &mut key)
+        
+        Argon2::default().hash_password_into(master_password.as_bytes(), salt.as_str().as_bytes(), &mut key)
             .map_err(|e| e.to_string())?;
 
         Ok(key.to_vec())
@@ -349,7 +361,6 @@ impl PasswordManager {
             |row| Ok((row.get(0)?, row.get(1)?)),
         ).map_err(|_| "Usuário não registrado localmente.".to_string())?;
 
-        
         let hash_to_use = vault_hash.as_deref().unwrap_or(&master_hash);
         let parsed_hash = PasswordHash::new(hash_to_use).map_err(|e| e.to_string())?;
         Argon2::default()
@@ -358,8 +369,8 @@ impl PasswordManager {
 
         let salt = parsed_hash.salt.ok_or("Salt missing")?;
         let mut key = [0u8; 32];
-        Argon2::default()
-            .hash_password_into(vault_pwd.as_bytes(), salt.as_str().as_bytes(), &mut key)
+        
+        Argon2::default().hash_password_into(vault_pwd.as_bytes(), salt.as_str().as_bytes(), &mut key)
             .map_err(|e| e.to_string())?;
         Ok(key.to_vec())
     }
@@ -503,6 +514,7 @@ impl PasswordManager {
     }
 
 
+
     fn encrypt(&self, data: &str, key: &[u8]) -> (String, String) {
         let cipher = match Aes256Gcm::new_from_slice(key) {
             Ok(c) => c,
@@ -519,20 +531,21 @@ impl PasswordManager {
     }
 
     fn decrypt(&self, encrypted_data: &str, nonce_str: &str, key: &[u8]) -> Result<String, String> {
-        let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| e.to_string())?;
-        let ciphertext = general_purpose::STANDARD.decode(encrypted_data).map_err(|e| e.to_string())?;
-        let nonce_bytes = general_purpose::STANDARD.decode(nonce_str).map_err(|e| e.to_string())?;
+        if encrypted_data.is_empty() { return Ok("".to_string()); }
+        let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| format!("Aes err: {}", e))?;
+        let ciphertext = general_purpose::STANDARD.decode(encrypted_data).map_err(|e| format!("B64 cipher err: {}", e))?;
+        let nonce_bytes = general_purpose::STANDARD.decode(nonce_str).map_err(|e| format!("B64 nonce err: {}", e))?;
         let nonce = Nonce::from_slice(&nonce_bytes);
         
-        let plaintext = cipher.decrypt(nonce, ciphertext.as_slice()).map_err(|_| "Falha ao descriptografar".to_string())?;
+        let plaintext = cipher.decrypt(nonce, ciphertext.as_slice()).map_err(|e| format!("Decrypt err (ct: {}, n: {}): {}", ciphertext.len(), nonce_bytes.len(), e))?;
         
-        String::from_utf8(plaintext).map_err(|e| e.to_string())
+        String::from_utf8(plaintext).map_err(|e| format!("UTF8 err: {}", e))
     }
 
     
 
     pub fn add_password(&self, user_id: &str, master_pwd: &str, name: &str, url: &str, username: &str, password_raw: &str, note_raw: &str) -> Result<(), String> {
-        let key = self.verify_master(user_id, master_pwd)?;
+        let key = self.verify_vault_password(user_id, master_pwd)?;
         let (pw_enc, pw_nonce) = self.encrypt(password_raw, &key);
         let (note_enc, note_nonce) = self.encrypt(note_raw, &key);
         let now = Utc::now().to_rfc3339();
@@ -548,7 +561,7 @@ impl PasswordManager {
     }
 
     pub fn update_password(&self, user_id: &str, master_pwd: &str, entry_id: i32, name: &str, url: &str, username: &str, password_raw: &str, note_raw: &str) -> Result<(), String> {
-        let key = self.verify_master(user_id, master_pwd)?;
+        let key = self.verify_vault_password(user_id, master_pwd)?;
         let (pw_enc, pw_nonce) = self.encrypt(password_raw, &key);
         let (note_enc, note_nonce) = self.encrypt(note_raw, &key);
         let now = Utc::now().to_rfc3339();
@@ -577,7 +590,7 @@ impl PasswordManager {
         let mut stmt = conn.prepare("SELECT id, user_id, name, url, username, password_encrypted, note_encrypted, nonce_password, nonce_note, created_at, updated_at FROM passwords WHERE user_id = ?1")
             .map_err(|e| e.to_string())?;
         
-        let entries = stmt.query_map(params![user_id], |row| {
+        let entries: Vec<PasswordEntry> = stmt.query_map(params![user_id], |row| {
             Ok(PasswordEntry {
                 id: Some(row.get(0)?),
                 user_id: row.get(1)?,
@@ -598,19 +611,29 @@ impl PasswordManager {
         Ok(entries)
     }
 
-    pub fn add_password_entry(&self, entry: PasswordEntry) -> Result<(), String> {
+
+
+    fn decrypt_entry_with_key(&self, user_id: &str, master_pwd: &str, encrypted_data: &str, nonce_str: &str) -> Result<String, String> {
         let conn = self.get_connection();
-        conn.execute(
-            "INSERT INTO passwords (user_id, name, url, username, password_encrypted, note_encrypted, nonce_password, nonce_note, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            params![entry.user_id, entry.name, entry.url, entry.username, entry.password_encrypted, entry.note_encrypted, entry.nonce_password, entry.nonce_note, entry.created_at, entry.updated_at],
+        let (master_hash, vault_hash): (String, Option<String>) = conn.query_row(
+            "SELECT master_hash, vault_hash FROM users WHERE id = ?1",
+            params![user_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
         ).map_err(|e| e.to_string())?;
 
-        Ok(())
+        let hash_to_use = vault_hash.as_deref().unwrap_or(&master_hash);
+        let parsed_hash = PasswordHash::new(hash_to_use).map_err(|e| e.to_string())?;
+        let salt = parsed_hash.salt.ok_or("Salt missing")?;
+
+        let mut key = [0u8; 32];
+        Argon2::default()
+            .hash_password_into(master_pwd.as_bytes(), salt.as_str().as_bytes(), &mut key)
+            .map_err(|e| e.to_string())?;
+
+        self.decrypt(encrypted_data, nonce_str, &key)
     }
 
     pub fn decrypt_entry(&self, user_id: &str, master_pwd: &str, entry_id: i32) -> Result<DecryptedEntry, String> {
-        let key = self.verify_master(user_id, master_pwd)?;
         let conn = self.get_connection();
         
         let entry: PasswordEntry = conn.query_row(
@@ -631,8 +654,9 @@ impl PasswordManager {
             })
         ).map_err(|_| "Entrada não encontrada".to_string())?;
 
-        let password = self.decrypt(&entry.password_encrypted, &entry.nonce_password, &key)?;
-        let note = self.decrypt(&entry.note_encrypted, &entry.nonce_note, &key)?;
+        // Use the vault key to decrypt
+        let password = self.decrypt_entry_with_key(user_id, master_pwd, &entry.password_encrypted, &entry.nonce_password)?;
+        let note = self.decrypt_entry_with_key(user_id, master_pwd, &entry.note_encrypted, &entry.nonce_note)?;
 
         Ok(DecryptedEntry {
             id: entry.id.ok_or("ID de entrada ausente no banco de dados".to_string())?,
@@ -645,7 +669,7 @@ impl PasswordManager {
     }
 
     pub fn import_google_csv(&self, user_id: &str, master_pwd: &str, file_path: &str) -> Result<usize, String> {
-        let key = self.verify_master(user_id, master_pwd)?;
+        let key = self.verify_vault_password(user_id, master_pwd)?;
         let mut reader = ReaderBuilder::new()
             .has_headers(true)
             .from_path(file_path)
@@ -673,7 +697,7 @@ impl PasswordManager {
 
     pub fn export_google_csv(&self, user_id: &str, master_pwd: &str, dest_path: &str) -> Result<(), String> {
         let entries = self.list_passwords(user_id)?;
-        let key = self.verify_master(user_id, master_pwd)?;
+        let key = self.verify_vault_password(user_id, master_pwd)?;
         
         let mut writer = WriterBuilder::new()
             .has_headers(true)
@@ -699,3 +723,6 @@ impl PasswordManager {
         Ok(())
     }
 }
+
+
+

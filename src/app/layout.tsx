@@ -4,15 +4,16 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import "./style.css";
 import { useEffect } from "react";
-import { NotificationPermission } from "@/components/NotificationPermission";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VersionGuard } from "@/components/VersionGuard";
 import { AuthProvider } from "@/context/AuthContext";
+import { ModuleProvider } from "@/context/ModuleContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { TimeProvider } from "@/context/TimeContext";
-
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useZoom } from "@/hooks/useZoom";
+import { NotificationPermission } from "@/lib/NotificationPermission";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -26,6 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useFullscreen();
+  useZoom();
   useEffect(() => {
     // Handler global de erros (Safety Net)
     const handleError = (event: ErrorEvent) => {
@@ -57,10 +59,12 @@ export default function RootLayout({
           <TooltipProvider>
             <TimeProvider>
               <AuthProvider>
-                {children}
-                <NotificationPermission />
-                <VersionGuard />
-                <Toaster />
+                <ModuleProvider>
+                  {children}
+                  <NotificationPermission />
+                  <VersionGuard />
+                  <Toaster />
+                </ModuleProvider>
               </AuthProvider>
             </TimeProvider>
           </TooltipProvider>

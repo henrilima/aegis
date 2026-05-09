@@ -5,7 +5,7 @@ use tauri::AppHandle;
 use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: Option<i32>,
     pub user_id: String,
@@ -14,6 +14,10 @@ pub struct Task {
     pub completed: bool,
     pub due_date: Option<String>,
     pub created_at: String,
+    pub parent_id: Option<i32>,
+    pub priority: Option<i32>,
+    pub category: Option<String>,
+    pub color: Option<String>,
 }
 
 pub struct TaskManager {
@@ -34,13 +38,22 @@ impl TaskManager {
                 description TEXT,
                 completed INTEGER NOT NULL DEFAULT 0,
                 due_date TEXT,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                parent_id INTEGER,
+                priority INTEGER,
+                category TEXT,
+                color TEXT
             )",
             [],
         ).ok();
 
+        // Tenta adicionar novas colunas de forma retrocompatível
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER", []);
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN category TEXT", []);
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN color TEXT", []);
+
         // Evita duplicados (mesmo título para o mesmo usuário)
-        conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title)"#, []).ok();
+        conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title, parent_id)"#, []).ok();
 
         Self { db_path }
     }
@@ -53,7 +66,7 @@ impl TaskManager {
 
     pub fn list_tasks(&self, user_id: &str) -> Vec<Task> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC").unwrap();
+        let mut stmt = conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC").unwrap();
         
         let rows = stmt.query_map(params![user_id], |row| {
             Ok(Task {
@@ -64,6 +77,10 @@ impl TaskManager {
                 completed: row.get::<_, i32>(4)? != 0,
                 due_date: row.get(5)?,
                 created_at: row.get(6)?,
+                parent_id: row.get(7)?,
+                priority: row.get(8)?,
+                category: row.get(9)?,
+                color: row.get(10)?,
             })
         }).unwrap();
 
@@ -74,18 +91,26 @@ impl TaskManager {
         let conn = self.get_connection();
         let completed_int = if task.completed { 1 } else { 0 };
 
-        if let Some(id) = task.id {
+        let result = if let Some(id) = task.id {
             conn.execute(
-                "UPDATE tasks SET title = ?1, description = ?2, completed = ?3, due_date = ?4 WHERE id = ?5",
-                params![task.title, task.description, completed_int, task.due_date, id],
-            ).map_err(|e| e.to_string())?;
+                "UPDATE tasks SET title = ?1, description = ?2, completed = ?3, due_date = ?4, parent_id = ?5, priority = ?6, category = ?7, color = ?8 WHERE id = ?9",
+                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, id],
+            )
         } else {
             conn.execute(
-                "INSERT OR IGNORE INTO tasks (user_id, title, description, completed, due_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at],
-            ).map_err(|e| e.to_string())?;
-        }
-        Ok(())
+                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color],
+            )
+        };
+
+        result.map(|_| ()).map_err(|e| {
+            let err_msg = e.to_string();
+            if err_msg.contains("UNIQUE constraint failed") {
+                "Já existe uma tarefa com este título neste contexto.".to_string()
+            } else {
+                err_msg
+            }
+        })
     }
 
     pub fn toggle_task(&self, id: i32, completed: bool) -> Result<(), String> {
@@ -100,6 +125,9 @@ impl TaskManager {
 
     pub fn delete_task(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
+        // Delete subtasks first
+        conn.execute("DELETE FROM tasks WHERE parent_id = ?1", params![id]).map_err(|e| e.to_string())?;
+        // Delete the task itself
         conn.execute("DELETE FROM tasks WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -134,6 +162,10 @@ impl TaskManager {
                 completed: record.get(2).map(|s| s == "true").unwrap_or(false),
                 due_date: record.get(3).map(|s| s.to_string()),
                 created_at: record.get(4).unwrap_or_default().to_string(),
+                parent_id: None,
+                priority: None,
+                category: None,
+                color: None,
             };
             let _ = self.upsert_task(task);
             count += 1;

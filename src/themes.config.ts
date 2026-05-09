@@ -62,10 +62,10 @@ export const CHROMATIC_THEMES: ChromaticTheme[] = [
   },
   {
     id: "indigo",
-    label: "Mystic Indigo",
-    description: "Azul-marinho profundo e enigmático.",
-    previewColor: "#0F111A",
-    primary: "violet",
+    label: "Amber Eclipse",
+    description: "Contraste vibrante entre o preto profundo e o laranja brasa.",
+    previewColor: "#0A0A0A",
+    primary: "orange",
   },
   {
     id: "purple",
@@ -76,10 +76,10 @@ export const CHROMATIC_THEMES: ChromaticTheme[] = [
   },
   {
     id: "graphite",
-    label: "Graphite Gray",
-    description: "Cinza grafite puro e minimalista.",
-    previewColor: "#1D1D1D",
-    primary: "blue",
+    label: "Crimson Red",
+    description: "Um visual agressivo e moderno em preto e vermelho.",
+    previewColor: "#080808",
+    primary: "red",
   },
   {
     id: "dracula",

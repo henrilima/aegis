@@ -16,9 +16,10 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  master_code_index: number;
-  password_hint?: string;
-  has_vault_password?: boolean;
+  masterCodeIndex: number;
+  passwordHint?: string;
+  hasVaultPassword?: boolean;
+  createdAt: string;
 }
 
 interface AuthContextType {
@@ -39,17 +40,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchUser = useCallback(async (userId: string) => {
+    // Definimos um tempo mínimo de carregamento para o usuário ver a animação
+    const minLoadingTime = new Promise((resolve) => setTimeout(resolve, 1500));
+
     try {
-      const userData = await invoke<User>("get_local_user", { userId });
-      if (userData?.id) {
-        setUser(userData);
-        setIsAuthenticated(true);
+      const userData = await invoke<User>("get_local_user", { userId: userId });
+
+      if (userData) {
+        const rawData = userData as unknown as Record<string, unknown>;
+        const id = (rawData.id || rawData.userId) as string | undefined;
+
+        if (id) {
+          setUser({ ...userData, id });
+          setIsAuthenticated(true);
+        } else {
+          throw new Error("Usuário sem identificador válido");
+        }
       } else {
-        throw new Error("Usuário não encontrado");
+        throw new Error("Usuário não encontrado ou formato inválido");
       }
-    } catch (error) {
-      console.error("Erro na autenticação local:", error);
-      // Limpa sessão no store seguro
+    } catch (_error) {
       const store = await load("aegis-session.json", {
         defaults: {},
         autoSave: true,
@@ -58,13 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsAuthenticated(false);
     } finally {
+      // Aguarda o tempo mínimo antes de remover o loading
+      await minLoadingTime;
       setLoading(false);
     }
   }, []);
 
   const login = async (userId: string) => {
     setLoading(true);
-    // Persiste no store seguro do Tauri em vez de localStorage
     const store = await load("aegis-session.json", {
       defaults: {},
       autoSave: true,
@@ -99,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (storedToken) {
           await fetchUser(storedToken);
         } else {
-          setLoading(false);
+          // Mesmo sem token, damos um pequeno delay para a logo aparecer
+          setTimeout(() => setLoading(false), 1000);
         }
       } catch {
         setLoading(false);

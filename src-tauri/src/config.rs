@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub minimize_on_close: bool,
     pub start_at_login: bool,
@@ -24,6 +24,10 @@ pub struct AppConfig {
     pub notif_event_upcoming_time: String,
     pub notif_sleep_target_hours: f64,
     pub notification_sound: String,
+    pub tmdb_api_key: String,
+    pub weather_location: String,
+    pub show_weather_widget: bool,
+    pub app_zoom: f64,
 }
 
 pub struct ConfigManager {
@@ -65,6 +69,10 @@ impl ConfigManager {
             ("notif_event_upcoming_time", "08:00"),
             ("notif_sleep_target_hours", "8.0"),
             ("notification_sound", "Plin.mp3"),
+            ("tmdb_api_key", ""),
+            ("weather_location", ""),
+            ("show_weather_widget", "true"),
+            ("app_zoom", "100"),
         ];
 
         for (key, val) in defaults {
@@ -223,6 +231,36 @@ impl ConfigManager {
             |row| row.get(0)
         ).unwrap_or("Plin.mp3".to_string());
 
+        let tmdb_api_key: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'tmdb_api_key'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or_default();
+
+        let weather_location: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'weather_location'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or_default();
+
+        let show_weather_widget: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'show_weather_widget'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let app_zoom: f64 = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'app_zoom'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s.parse::<f64>().unwrap_or(100.0))
+            }
+        ).unwrap_or(100.0);
+
         AppConfig {
             minimize_on_close,
             start_at_login,
@@ -241,6 +279,10 @@ impl ConfigManager {
             notif_event_upcoming_time,
             notif_sleep_target_hours,
             notification_sound,
+            tmdb_api_key,
+            weather_location,
+            show_weather_widget,
+            app_zoom,
         }
     }
 
@@ -331,6 +373,26 @@ impl ConfigManager {
             params![config.notification_sound],
         ).map_err(|e| e.to_string())?;
 
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('weather_location', ?1)",
+            params![config.weather_location],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_weather_widget', ?1)",
+            params![if config.show_weather_widget { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('tmdb_api_key', ?1)",
+            params![config.tmdb_api_key],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('app_zoom', ?1)",
+            params![config.app_zoom.to_string()],
+        ).map_err(|e| e.to_string())?;
+
         Ok(())
     }
 
@@ -366,6 +428,24 @@ impl ConfigManager {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES ('debug_time_offset', ?1)",
             params![offset.to_string()],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn get_tmdb_api_key(&self) -> String {
+        let conn = self.get_connection();
+        conn.query_row(
+            "SELECT value FROM settings WHERE key = 'tmdb_api_key'",
+            [],
+            |row| row.get(0),
+        ).unwrap_or_default()
+    }
+
+    pub fn set_tmdb_api_key(&self, key: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('tmdb_api_key', ?1)",
+            params![key],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }

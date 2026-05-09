@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export interface AppNotification {
   id: number;
-  user_id: string;
+  userId: string;
   title: string;
   body: string;
   category: string;
@@ -14,8 +14,8 @@ export interface AppNotification {
   color?: string;
   icon?: string;
   persistent: boolean;
-  is_read: boolean;
-  created_at: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 /** Intervalo de polling para sincronização de notificações (em ms). */
@@ -48,7 +48,7 @@ export function useNotifications(userId: string | undefined) {
 
       // Toca o som de notificação configurado
       try {
-        const config = await invoke<{ notification_sound: string }>(
+        const config = await invoke<{ notificationSound: string }>(
           "get_app_config",
         );
         const playSound = (soundFile: string) => {
@@ -62,7 +62,7 @@ export function useNotifications(userId: string | undefined) {
             });
           });
         };
-        playSound(config.notification_sound);
+        playSound(config.notificationSound);
       } catch (err) {
         console.error("[useNotifications] Erro ao processar som:", err);
       }
@@ -71,10 +71,10 @@ export function useNotifications(userId: string | undefined) {
     // Escuta disparos de alarmes customizados
     const unlistenAlarm = listen(
       "trigger-alarm",
-      async (event: { payload: { sound_file: string } }) => {
+      async (event: { payload: { soundFile: string } }) => {
         refresh();
         try {
-          const soundFile = event.payload.sound_file;
+          const soundFile = event.payload.soundFile;
           const audio = new Audio(`/sounds/${soundFile}`);
           audio.play().catch((e) => {
             console.warn(

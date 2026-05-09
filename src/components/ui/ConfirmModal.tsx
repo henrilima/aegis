@@ -7,7 +7,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
+import { ModalShell } from "@/components/ui/ModalShell";
 
 export type ConfirmVariant = "danger" | "warning" | "default";
 
@@ -68,48 +68,47 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  useLockBodyScroll();
   const cfg = VARIANT_CONFIG[variant];
   const Icon = icon ?? cfg.icon;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 text-center flex flex-col items-center max-h-[90vh]">
+    <ModalShell onClose={onCancel} size="xs" zIndex="z-[999]">
+      <div
+        className={`w-full py-10 flex justify-center ${cfg.bgColor} border-b border-border/50 shrink-0`}
+      >
         <div
-          className={`w-full py-10 flex justify-center ${cfg.bgColor} border-b border-border/50 shrink-0`}
+          className={`p-4 bg-background border border-border rounded-xl w-fit ${cfg.iconColor}`}
         >
-          <div
-            className={`p-4 bg-background border border-border rounded-xl w-fit ${cfg.iconColor}`}
-          >
-            <Icon className="w-8 h-8" />
-          </div>
-        </div>
-
-        <div className="p-8 w-full flex flex-col items-center overflow-y-auto custom-scrollbar">
-          <h3 className="font-bold text-xl text-foreground mb-2">{title}</h3>
-          <p className="text-xs text-muted-foreground mb-8 font-medium leading-relaxed px-4">
-            {description}
-          </p>
-
-          <div className="flex flex-col gap-2 w-full mt-auto">
-            <button
-              type="button"
-              onClick={onConfirm}
-              className={`w-full py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] ${cfg.btnClass}`}
-            >
-              {confirmLabel}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="w-full py-2 text-muted-foreground hover:text-muted-foreground text-sm font-medium transition-all cursor-pointer"
-            >
-              {cancelLabel}
-            </button>
-          </div>
+          <Icon className="w-8 h-8" />
         </div>
       </div>
-    </div>
+
+      <div className="p-8 w-full flex flex-col items-center overflow-y-auto custom-scrollbar">
+        <h3 className="font-bold text-xl text-foreground mb-2 text-center">
+          {title}
+        </h3>
+        <p className="text-xs text-muted-foreground mb-8 font-medium leading-relaxed px-4 text-center">
+          {description}
+        </p>
+
+        <div className="flex flex-col gap-2 w-full mt-auto">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`w-full py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] ${cfg.btnClass}`}
+          >
+            {confirmLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-full py-2 text-muted-foreground hover:text-muted-foreground text-sm font-medium transition-all cursor-pointer"
+          >
+            {cancelLabel}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -184,5 +183,50 @@ export const CONFIRM_PRESETS = {
     cancelLabel: "Manter como está",
     variant: "warning" as ConfirmVariant,
     icon: RotateCcw,
+  },
+  deleteGlossaryWord: {
+    title: "Remover do Glossário?",
+    description:
+      "Esta palavra será removida permanentemente da sua lista salva.",
+    confirmLabel: "Remover",
+    cancelLabel: "Agora não",
+    variant: "danger" as ConfirmVariant,
+  },
+  deleteMovie: {
+    title: "Excluir filme?",
+    description: "Este filme será removido permanentemente do seu catálogo.",
+    confirmLabel: "Excluir",
+    cancelLabel: "Agora não",
+    variant: "danger" as ConfirmVariant,
+  },
+  deleteTask: {
+    title: "Excluir tarefa?",
+    description: "Esta tarefa será removida permanentemente da sua lista.",
+    confirmLabel: "Excluir",
+    cancelLabel: "Agora não",
+    variant: "danger" as ConfirmVariant,
+  },
+  deleteAlarm: {
+    title: "Excluir alarme?",
+    description: "Este alarme será removido e não irá mais disparar.",
+    confirmLabel: "Excluir",
+    cancelLabel: "Agora não",
+    variant: "danger" as ConfirmVariant,
+  },
+  deleteBook: {
+    title: "Remover livro?",
+    description:
+      "Este livro e todo o seu histórico de sessões serão removidos permanentemente da biblioteca.",
+    confirmLabel: "Remover",
+    cancelLabel: "Agora não",
+    variant: "danger" as ConfirmVariant,
+  },
+  deleteReadingSession: {
+    title: "Remover sessão de leitura?",
+    description:
+      "Esta sessão será removida e afetará seu progresso registrado.",
+    confirmLabel: "Remover",
+    cancelLabel: "Agora não",
+    variant: "danger" as ConfirmVariant,
   },
 } as const;

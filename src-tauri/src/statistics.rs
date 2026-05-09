@@ -8,6 +8,7 @@ use tauri::{AppHandle, Manager};
 // Estruturas de Dados
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CrossMetric {
     pub date: String,
     pub sleep_hours: f64,
@@ -21,6 +22,7 @@ pub struct CrossMetric {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SubjectStats {
     pub name: String,
     pub hours: f64,
@@ -29,6 +31,7 @@ pub struct SubjectStats {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PerformanceSummary {
     pub avg_sleep_hours: f64,
     pub avg_study_hours: f64,
@@ -82,9 +85,10 @@ impl StatisticsManager {
         let conn = self.conn();
         let mut metrics = Vec::new();
 
+        let now_local = now.with_timezone(&chrono::Local);
         // Gera lista de datas para o período
         for i in (0..days).rev() {
-            let date = (now - chrono::Duration::days(i as i64)).format("%Y-%m-%d").to_string();
+            let date = (now_local - chrono::Duration::days(i as i64)).format("%Y-%m-%d").to_string();
             
             // Busca dados de estudo para este dia
             let study_data: (f64, i32, i32, Option<f64>) = conn.query_row(
@@ -144,7 +148,8 @@ impl StatisticsManager {
     pub fn get_performance_summary(&self, user_id: &str, days: i32, now: DateTime<Utc>) -> PerformanceSummary {
         let metrics = self.get_cross_metrics(user_id, days, now);
         let conn = self.conn();
-        let cutoff_date = (now - chrono::Duration::days(days as i64)).format("%Y-%m-%d").to_string();
+        let now_local = now.with_timezone(&chrono::Local);
+        let cutoff_date = (now_local - chrono::Duration::days(days as i64)).format("%Y-%m-%d").to_string();
 
         if metrics.is_empty() {
             return PerformanceSummary {
@@ -323,8 +328,9 @@ impl StatisticsManager {
         
         if dates.is_empty() { return 0; }
         
-        let today = now.format("%Y-%m-%d").to_string();
-        let yesterday = (now - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+        let now_local = now.with_timezone(&chrono::Local);
+        let today = now_local.format("%Y-%m-%d").to_string();
+        let yesterday = (now_local - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
         
         // Se não estudou nem hoje nem ontem, streak é 0
         if dates[0] != today && dates[0] != yesterday { return 0; }

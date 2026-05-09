@@ -1,5 +1,5 @@
 /**
- * useLog — Wrapper centralizado para logging frontend.
+ * useLog - Wrapper centralizado para logging frontend.
  *
  * Em produção, roteia os erros para o `tauri-plugin-log` (arquivo em disco).
  * Em desenvolvimento, usa o console do browser normalmente.
