@@ -61,7 +61,6 @@ export function SleepInfoModal({ show, onClose }: SleepInfoModalProps) {
         />
         <StatRow
           label="Qualidade Média"
-          hideDivider
           value="Avaliação subjetiva do seu vigor matinal"
         />
       </InfoSection>

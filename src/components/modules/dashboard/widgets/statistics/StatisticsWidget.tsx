@@ -9,11 +9,15 @@ import { BaseWidget } from "../BaseWidget";
 interface StatisticsWidgetProps {
   summary: PerformanceSummary | null;
   isEditMode?: boolean;
+  isInteractive?: boolean;
+  onToggleInteractive?: () => void;
 }
 
 export function StatisticsWidget({
   summary,
   isEditMode,
+  isInteractive,
+  onToggleInteractive,
 }: StatisticsWidgetProps) {
   const color = getModuleColor("statistics");
   const theme = getColorTheme(color);
@@ -26,6 +30,8 @@ export function StatisticsWidget({
         color={color}
         route="statistics"
         isEditMode={isEditMode}
+        isInteractive={isInteractive}
+        onToggleInteractive={onToggleInteractive}
       >
         <p className="text-xs text-neutral-600 italic">Processando dados...</p>
       </BaseWidget>
@@ -38,6 +44,8 @@ export function StatisticsWidget({
       color={color}
       route="statistics"
       isEditMode={isEditMode}
+      isInteractive={isInteractive}
+      onToggleInteractive={onToggleInteractive}
     >
       <div className="flex flex-col gap-[6cqw] @sm:gap-4">
         <div className="grid grid-cols-2 gap-[4cqw] @sm:gap-4">

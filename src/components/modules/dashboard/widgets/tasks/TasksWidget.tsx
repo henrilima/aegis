@@ -22,6 +22,7 @@ interface TasksWidgetProps {
   onDeleteTask?: (task: Task) => void;
   isEditMode?: boolean;
   isInteractive?: boolean;
+  onToggleInteractive?: () => void;
 }
 
 export function TasksWidget({
@@ -31,6 +32,7 @@ export function TasksWidget({
   onDeleteTask,
   isEditMode,
   isInteractive,
+  onToggleInteractive,
 }: TasksWidgetProps) {
   const moduleColor = getModuleColor("tasks");
   const theme = getColorTheme(moduleColor);
@@ -50,7 +52,7 @@ export function TasksWidget({
         route="tasks"
         isEditMode={isEditMode}
         isInteractive={isInteractive}
-        onToggleInteractive={() => {}}
+        onToggleInteractive={onToggleInteractive}
       >
         <div className="flex flex-col gap-[4cqw] @sm:gap-4">
           <div className="flex items-center justify-between">

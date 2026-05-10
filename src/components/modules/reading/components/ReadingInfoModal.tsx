@@ -67,7 +67,6 @@ export function ReadingInfoModal({ show, onClose }: ReadingInfoModalProps) {
         />
         <StatRow
           label="Histórico"
-          hideDivider
           value="Log detalhado de todas as suas sessões"
         />
       </InfoSection>

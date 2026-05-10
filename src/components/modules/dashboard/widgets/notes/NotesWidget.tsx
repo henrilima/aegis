@@ -15,6 +15,7 @@ interface NotesWidgetProps {
   onCreateNote: (title: string, content: string) => void;
   isEditMode?: boolean;
   isInteractive?: boolean;
+  onToggleInteractive?: () => void;
 }
 
 export function NotesWidget({
@@ -22,6 +23,7 @@ export function NotesWidget({
   onCreateNote,
   isEditMode,
   isInteractive,
+  onToggleInteractive,
 }: NotesWidgetProps) {
   const color = getModuleColor("notes");
   const theme = getColorTheme(color);
@@ -39,7 +41,7 @@ export function NotesWidget({
         route="notes"
         isEditMode={isEditMode}
         isInteractive={isInteractive}
-        onToggleInteractive={() => {}}
+        onToggleInteractive={onToggleInteractive}
       >
         <div className="flex flex-col gap-[4cqw] @sm:gap-4">
           <div className="flex items-center justify-between">

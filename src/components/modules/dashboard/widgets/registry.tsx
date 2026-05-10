@@ -8,7 +8,6 @@ import { DictionaryWidget } from "./dictionary/DictionaryWidget";
 import { HabitsWidget } from "./habits/HabitsWidget";
 import { MoviesWidget } from "./movies/MoviesWidget";
 import { NotesWidget } from "./notes/NotesWidget";
-import { PasswordsWidget } from "./passwords/PasswordsWidget";
 import { PomodoroWidget } from "./pomodoro/PomodoroWidget";
 import { ReadingWidget } from "./reading/ReadingWidget";
 import { SonoWidget } from "./sleep/SleepWidget";
@@ -25,7 +24,6 @@ export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   studies: EstudosWidget,
   sleep: SonoWidget,
   calendar: CalendarWidget,
-  passwords: PasswordsWidget,
   alarms: AlarmsWidget,
   statistics: StatisticsWidget,
   reading: ReadingWidget,
@@ -45,7 +43,6 @@ export const WIDGET_METADATA = [
     name: "Calendário",
     description: "Eventos e prazos importantes",
   },
-  { id: "passwords", name: "Cofre", description: "Segurança e senhas" },
   {
     id: "alarms",
     name: "Alarmes",

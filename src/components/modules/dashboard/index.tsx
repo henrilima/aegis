@@ -3,15 +3,18 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { AlarmFormState } from "@/components/modules/alarms/hooks/useAlarmsLogic";
 import { DashboardConfigModal } from "@/components/modules/dashboard/components/modals/DashboardConfigModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { type ModuleId, useModules } from "@/context/ModuleContext";
 import { useTime } from "@/context/TimeContext";
-import type { Habit } from "../habits/types";
+import type { CalendarEvent } from "../calendar/types";
+import type { ReadingSession } from "../reading/types";
 import type { Task } from "../tasks/types";
 import { DashboardHeader } from "./dashboardHeader";
 import { isToday } from "./helpers";
+import type { Habit, SleepEntry, StudySession } from "./types";
 import { useDashboardData, useWidgetLayout } from "./useDashboardData";
 import { WIDGET_REGISTRY } from "./widgets/registry";
 
@@ -126,8 +129,8 @@ export default function Dashboard() {
                       accumulatedSeconds: newAccumulated,
                       cycleType:
                         isStarting && data.pomodoro.cyclesCompleted === 0
-                           ? "Work"
-                           : data.pomodoro.cycleType,
+                          ? "Work"
+                          : data.pomodoro.cycleType,
                     };
                     try {
                       await invoke("save_pomodoro_state", {
@@ -234,57 +237,160 @@ export default function Dashboard() {
                   widgetProps.goalSleepMin = goalSleepMin;
                   widgetProps.sleepPct = sleepPct;
                 }
-                if (id === "passwords") {
-                  widgetProps.passwords = data.passwords;
-                  widgetProps.vaultExists = data.vaultExists;
+                if (id === "alarms") {
+                  widgetProps.alarms = data.alarms;
+                  widgetProps.onAddAlarm = async (form: AlarmFormState) => {
+                    try {
+                      const alarmData = {
+                        userId: String(user?.id),
+                        title: form.title.trim(),
+                        alarmType: form.alarmType,
+                        time: form.time,
+                        intervalMinutes:
+                          form.alarmType === "interval"
+                            ? Number(form.intervalMinutes)
+                            : null,
+                        lastTriggered: null,
+                        soundFile: form.soundFile,
+                        icon: form.iconName || "Bell",
+                        color: form.color || "red",
+                        enabled: true,
+                      };
+                      await invoke("add_alarm", { alarm: alarmData });
+                      fetchAll();
+                      toast.success("Alarme adicionado!");
+                    } catch {
+                      toast.error("Erro ao adicionar alarme");
+                    }
+                  };
                 }
-                if (id === "alarms") widgetProps.alarms = data.alarms;
 
-                if (id === "statistics")
-                  widgetProps.summary = data.statsSummary;
-                if (id === "calendar")
+                if (id === "calendar") {
                   widgetProps.showHolidays = data.showHolidays;
+                  widgetProps.onAddEvent = async (event: CalendarEvent) => {
+                    try {
+                      await invoke("calendar_add_event", {
+                        event: { ...event, userId: String(user?.id) },
+                      });
+                      fetchAll();
+                      toast.success("Evento agendado!");
+                    } catch {
+                      toast.error("Erro ao agendar evento");
+                    }
+                  };
+                }
+
                 if (id === "reading") {
                   widgetProps.books = data.readingBooks;
                   widgetProps.recentSessions = data.readingSessions.slice(0, 5);
                   widgetProps.weekPages = weekPages;
                   widgetProps.goalWeekPages = goalWeekPages;
                   widgetProps.onLogSession = async (
-                    bookId: number,
-                    pages: number,
+                    session: ReadingSession,
                   ) => {
                     try {
-                      const book = data.readingBooks.find(
-                        (b) => b.id === bookId,
-                      );
-                      if (!book) return;
-
-                      const newPage = Math.min(
-                        book.totalPages,
-                        book.currentPage + pages,
-                      );
-
-                      await invoke("reading_upsert_book", {
-                        book: { ...book, currentPage: newPage },
-                      });
-
+                      const sessionData = {
+                        id: session.id || undefined,
+                        userId: String(user?.id),
+                        bookId: session.bookId
+                          ? Number(session.bookId)
+                          : undefined,
+                        pagesRead: Number(session.pagesRead || 0),
+                        durationMinutes: Number(session.durationMinutes || 0),
+                        date:
+                          session.date ||
+                          new Date().toISOString().split("T")[0],
+                        note: session.note || "",
+                        focus: Number(session.focus || 5), // Valor padrão se estiver faltando
+                      };
                       await invoke("reading_upsert_session", {
-                        session: {
-                          userId: String(user?.id),
-                          bookId: bookId,
-                          pagesRead: pages,
-                          date: time.toISOString().split("T")[0],
-                          durationMinutes: 0,
-                        },
+                        session: sessionData,
                       });
 
+                      // Atualiza progresso do livro
+                      const book = data.readingBooks.find(
+                        (b) => b.id === sessionData.bookId,
+                      );
+                      if (book) {
+                        const newPage =
+                          Number(book.currentPage) +
+                          Number(sessionData.pagesRead);
+                        await invoke("reading_upsert_book", {
+                          book: {
+                            ...book,
+                            currentPage: newPage,
+                          },
+                        });
+                      }
                       fetchAll();
-                      toast.success("Progresso salvo!");
-                    } catch {
-                      toast.error("Erro ao salvar progresso");
+                      toast.success("Leitura registrada!");
+                    } catch (err) {
+                      console.error("Erro ao salvar leitura:", err);
+                      toast.error("Erro ao salvar sessão");
                     }
                   };
                 }
+
+                if (id === "sleep") {
+                  widgetProps.recentSleep = recentSleep;
+                  widgetProps.avgSleepMin = avgSleepMin;
+                  widgetProps.avgQuality = avgQuality;
+                  widgetProps.goalSleepMin = goalSleepMin;
+                  widgetProps.sleepPct = sleepPct;
+                  widgetProps.onAddSleep = async (entry: SleepEntry) => {
+                    try {
+                      const entryData = {
+                        id: entry.id || undefined,
+                        userId: String(user?.id),
+                        date: entry.date,
+                        bedtime: entry.bedtime,
+                        wakeTime: entry.wakeTime,
+                        durationMinutes: Number(entry.durationMinutes || 0),
+                        nap_minutes: Number(entry.nap_minutes || 0),
+                        quality: Number(entry.quality || 5),
+                        note: entry.note || "",
+                      };
+                      await invoke("sono_upsert_entry", {
+                        entry: entryData,
+                      });
+                      fetchAll();
+                      toast.success("Sono registrado!");
+                    } catch (err) {
+                      console.error("Erro ao salvar sono:", err);
+                      toast.error("Erro ao salvar sono");
+                    }
+                  };
+                }
+
+                if (id === "studies") {
+                  const allSubjects = Array.from(
+                    new Set(
+                      (data.studySessions || []).map(
+                        (s: StudySession) => s.subject,
+                      ),
+                    ),
+                  ).sort();
+                  widgetProps.sessions = weekSessions;
+                  widgetProps.allSubjects = allSubjects;
+                  widgetProps.weekHours = weekHours;
+                  widgetProps.weekQuestions = weekQuestions;
+                  widgetProps.goalWeekHours = goalWeekHours;
+                  widgetProps.goalWeekQuestions = goalWeekQuestions;
+                  widgetProps.onAddSession = async (session: StudySession) => {
+                    try {
+                      await invoke("estudos_add_session", {
+                        session: { ...session, userId: String(user?.id) },
+                      });
+                      fetchAll();
+                      toast.success("Estudo registrado!");
+                    } catch {
+                      toast.error("Erro ao salvar sessão");
+                    }
+                  };
+                }
+
+                if (id === "statistics")
+                  widgetProps.summary = data.statsSummary;
                 if (id === "movies") {
                   widgetProps.movies = data.movies;
                 }
@@ -293,19 +399,22 @@ export default function Dashboard() {
                 }
 
                 const config = widgetConfigs[id] || { interactive: false };
-                const isInteractive =
-                  id !== "reading"
-                    ? config.interactive
-                    : false;
+                const isNonInteractive = [
+                  "movies",
+                  "statistics",
+                  "dictionary",
+                ].includes(id);
+                const isInteractive = isNonInteractive
+                  ? false
+                  : config.interactive;
 
                 widgetProps.isInteractive = isInteractive;
-                widgetProps.onToggleInteractive =
-                  id !== "reading"
-                    ? () =>
-                        handleUpdateWidgetConfig(id, {
-                          interactive: !config.interactive,
-                        })
-                    : undefined;
+                widgetProps.onToggleInteractive = !isNonInteractive
+                  ? () =>
+                      handleUpdateWidgetConfig(id, {
+                        interactive: !config.interactive,
+                      })
+                  : undefined;
 
                 if (id === "habits") {
                   widgetProps.onToggleHabit = (habitId: number) => {

@@ -70,7 +70,6 @@ export function PasswordsInfoModal({ show, onClose }: PasswordsInfoModalProps) {
         />
         <StatRow
           label="Import/Export"
-          hideDivider
           value="Backup seguro em formato compatível"
         />
       </InfoSection>

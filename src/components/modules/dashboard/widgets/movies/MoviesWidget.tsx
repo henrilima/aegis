@@ -9,9 +9,16 @@ import { BaseWidget } from "../BaseWidget";
 interface MoviesWidgetProps {
   movies: Movie[];
   isEditMode?: boolean;
+  isInteractive?: boolean;
+  onToggleInteractive?: () => void;
 }
 
-export function MoviesWidget({ movies, isEditMode }: MoviesWidgetProps) {
+export function MoviesWidget({
+  movies,
+  isEditMode,
+  isInteractive,
+  onToggleInteractive,
+}: MoviesWidgetProps) {
   const color = getModuleColor("movies");
   const theme = getColorTheme(color);
 
@@ -30,6 +37,8 @@ export function MoviesWidget({ movies, isEditMode }: MoviesWidgetProps) {
       color={color}
       route="movies"
       isEditMode={isEditMode}
+      isInteractive={isInteractive}
+      onToggleInteractive={onToggleInteractive}
     >
       {!hasData ? (
         <div className="flex flex-col items-center justify-center h-full py-6 text-center">

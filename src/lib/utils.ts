@@ -9,7 +9,7 @@ import {
 
 export type { ThemeColorKey };
 
-import { CHROMATIC_THEMES, type ChromaticThemeId } from "@/themes.config";
+import { CHROMATIC_THEMES } from "@/themes.config";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,14 +28,17 @@ export function getColorTheme(colorName: string) {
   return THEME_COLORS[key] || THEME_COLORS.blue;
 }
 
-export function getThemeColor(themeId?: ChromaticThemeId) {
-  let primary = APP_CONFIG.theme.primary;
+export function getThemeColor(themeId?: string) {
+  let primary: ThemeColorKey = APP_CONFIG.theme.primary as ThemeColorKey;
 
-  // Se um tema cromático for fornecido, usamos a cor primária harmonizada
   if (themeId) {
+    // Tenta encontrar nos temas cromáticos primeiro
     const config = CHROMATIC_THEMES.find((t) => t.id === themeId);
     if (config) {
       primary = config.primary;
+    } else {
+      // Se não for um tema, assume que é uma chave de cor direta (para o Aegis Default dinâmico)
+      primary = themeId as ThemeColorKey;
     }
   }
 

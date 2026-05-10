@@ -63,7 +63,12 @@ export function BaseWidget({
               theme.border,
             )}
           >
-            <Icon className={cn("w-[4.5cqw] h-[4.5cqw] @sm:w-5 @sm:h-5", theme.text)} />
+            <Icon
+              className={cn(
+                "w-[4.5cqw] h-[4.5cqw] @sm:w-5 @sm:h-5",
+                theme.text,
+              )}
+            />
           </div>
           <div>
             <h3 className="text-[3.5cqw] @sm:text-sm font-bold text-foreground leading-tight">

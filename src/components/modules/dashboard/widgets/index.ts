@@ -2,7 +2,6 @@ export * from "./alarms/AlarmsWidget";
 export * from "./calendar/CalendarWidget";
 export * from "./habits/HabitsWidget";
 export * from "./notes/NotesWidget";
-export * from "./passwords/PasswordsWidget";
 export * from "./pomodoro/PomodoroWidget";
 export * from "./reading/ReadingWidget";
 export * from "./sleep/SleepWidget";

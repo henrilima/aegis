@@ -78,15 +78,19 @@ export function SessionModal({
 
     if (show) {
       window.addEventListener("keydown", handleEscape);
+    }
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [show, onClose]);
+
+  useEffect(() => {
+    if (show) {
       if (editSession) {
         const bid = editSession.bookId;
         const dread = editSession.pagesRead;
         const dtotal = editSession.durationMinutes || 0;
-
         const hours = Math.floor(dtotal / 60);
         const minutes = dtotal % 60;
 
-        // Encontra o livro para calcular onde a sessão terminou
         const book = books.find((b) => String(b.id) === String(bid));
         const startPage = book
           ? Math.max(0, book.currentPage - Number(dread))
@@ -112,7 +116,7 @@ export function SessionModal({
         setFormData({
           bookId: defaultBookId ? Number(defaultBookId) : undefined,
           date: new Date().toISOString().split("T")[0],
-          pagesRead: defaultBook?.currentPage ?? 0, // Padrão para o progresso atual
+          pagesRead: defaultBook?.currentPage ?? 0,
           duration_hours: 0,
           durationMinutes: 0,
           note: "",
@@ -121,8 +125,7 @@ export function SessionModal({
         });
       }
     }
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [show, books, onClose, editSession, uid]);
+  }, [show, editSession, books, uid]);
 
   if (!show) return null;
 

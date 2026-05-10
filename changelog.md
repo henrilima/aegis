@@ -1,19 +1,23 @@
-# Aegis v2.3.0 - "Eos"
+# Aegis v2.5.0 - "Prisma"
 **Status:** Versão Estável (Atual)
 **Build:** Produção Final
 
 ### 🚀 Visão Geral
-A versão **v2.3.0** consolida o Aegis como uma central completa de produtividade. Esta atualização traz uma harmonia visual sem precedentes com o novo sistema de cores centralizado, expande as capacidades dos módulos de Hábitos e Alarmes, e refina a experiência de uso com carregamentos inteligentes e animações fluidas.
+A versão **v2.5.0** eleva a personalização do Aegis a um novo patamar. Esta atualização introduz o sistema de **Temas Dinâmicos**, permitindo que você escolha sua cor de destaque favorita nos temas base, além de consolidar melhorias críticas em performance, UX e estabilidade em todos os módulos principais.
 
 ---
 
 ### ✨ Novas Funcionalidades
 
+- **Temas Dinâmicos**: Liberdade total para escolher a cor de destaque principal nos temas *Default*, *Midnight* e *Clarify*.
 - **Módulo de Filmes**: Área dedicada para exploração e organização de biblioteca cinematográfica com metadados detalhados via TMDb.
+- **Ajustes do app**: F11 agora ativa e desativa o modo tela cheia. Também é possível alterar o zoom do app.
 - **Relatório Visual de Hábitos**: Agora você pode exportar seu progresso, ofensivas e estatísticas em um formato visual elegante (Canvas).
 - **Gestão de Alarmes em Lote**: Implementação de seleção múltipla para organização e deleção rápida de múltiplos alarmes.
 - **Módulo de Dicionário**: Suporte bilíngue avançado e glossário pessoal com títulos no formato "Traduzido (Original)".
-- **Sistema de Cores Centralizado**: Identidade visual de todos os módulos unificada em uma única fonte de verdade (`modules.config.ts`).
+- **Sistema de Cores Centralizado**: Identidade visual de todos os módulos unificada em uma única fonte.
+- **Gerenciamento de Módulos**: Agora é possível ativar e desativar módulos nas configurações do app, isso oculta o módulo da barra lateral.
+- **Clima**: Um novo widget é exibido na header da dashboard com informações do tempo atual da sua região. Pode ser desativado nas configurações.
 - **Redesign das Configurações**: Interface de ajustes totalmente reformulada, organizada por módulos, notificações e perfil.
 - **Notificações Inteligentes**: Alertas em tempo real, lembretes de hábitos pendentes e resumos matinais integrados.
 - **Toaster Customizado**: Sistema de notificações in-app totalmente integrado aos temas e com suporte a gestos.

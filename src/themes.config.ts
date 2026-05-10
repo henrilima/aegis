@@ -6,6 +6,7 @@ export type ChromaticThemeId =
   | "midnight"
   | "nordic"
   | "carbon"
+  | "amber-eclipse"
   | "indigo"
   | "coffee"
   | "purple"
@@ -28,7 +29,8 @@ export interface ChromaticTheme {
     | "orange"
     | "carbon"
     | "coffee"
-    | "sky";
+    | "sky"
+    | "indigo";
 }
 
 export const CHROMATIC_THEMES: ChromaticTheme[] = [
@@ -61,11 +63,18 @@ export const CHROMATIC_THEMES: ChromaticTheme[] = [
     primary: "carbon",
   },
   {
-    id: "indigo",
+    id: "amber-eclipse",
     label: "Amber Eclipse",
     description: "Contraste vibrante entre o preto profundo e o laranja brasa.",
     previewColor: "#0A0A0A",
     primary: "orange",
+  },
+  {
+    id: "indigo",
+    label: "Indigo Nights",
+    description: "O equilíbrio clássico entre o azul e o roxo profundo.",
+    previewColor: "#10101A",
+    primary: "indigo",
   },
   {
     id: "purple",
@@ -90,7 +99,7 @@ export const CHROMATIC_THEMES: ChromaticTheme[] = [
   },
   {
     id: "light",
-    label: "Clarity (Light)",
+    label: "Clarify",
     description: "Um visual limpo e claro em tons de branco e cinza.",
     previewColor: "#F5F5F5",
     primary: "blue",

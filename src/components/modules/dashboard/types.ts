@@ -81,6 +81,7 @@ export interface SleepEntry {
   bedtime: string;
   wakeTime: string;
   durationMinutes: number;
+  nap_minutes?: number;
   quality: number;
   note?: string;
 }

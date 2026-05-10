@@ -66,7 +66,6 @@ export function CalendarInfoModal({ show, onClose }: CalendarInfoModalProps) {
         />
         <StatRow
           label="Filtro Visual"
-          hideDivider
           value="Oculte ou exiba feriados no grid"
         />
       </InfoSection>

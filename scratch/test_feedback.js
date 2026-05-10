@@ -10,7 +10,7 @@ async function testFeedback() {
         title: "🧪 Teste de Integração (Script)",
         color: 3447003, // Blue
         fields: [
-          { name: "Versão", value: "v2.1.0-test", inline: true },
+          { name: "Versão", value: "v0.0.0-test", inline: true },
           { name: "Ambiente", value: "Node.js Script", inline: true },
           {
             name: "Mensagem",
