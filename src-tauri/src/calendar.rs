@@ -184,7 +184,7 @@ impl CalendarManager {
                 list.into_iter().map(|h| (h.date, h.name)).collect::<Vec<_>>()
             },
             Err(e) => {
-                log::warn!("Falha ao buscar feriados da API ({}). Usando cálculo local.", e);
+                crate::log_warn!("Falha ao buscar feriados da API ({}). Usando cálculo local.", e);
                 self.generate_local_holidays(year)
             }
         };

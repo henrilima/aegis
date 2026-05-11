@@ -400,6 +400,10 @@ button,
   .markdown-preview code {
     @apply bg-neutral-800 text-orange-200 px-1.5 py-0.5 rounded font-mono text-xs md:text-sm;
   }
+  .markdown-preview code::before,
+  .markdown-preview code::after {
+    content: none !important;
+  }
   .markdown-preview pre {
     @apply bg-neutral-950 p-4 rounded-xl overflow-x-auto border border-neutral-800 mb-4;
   }

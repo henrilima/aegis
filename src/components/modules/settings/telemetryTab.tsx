@@ -20,7 +20,7 @@ import { useLog } from "@/hooks/useLog";
 import { cn } from "@/lib/utils";
 
 interface LogEntry {
-  level: "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE";
+  level: "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE" | "STATUS" | "SUCCESS" | "NOTIFY";
   message: string;
   timestamp: string;
   raw: string;
@@ -35,6 +35,11 @@ const LEVEL_STYLES: Record<
     bg: "bg-red-500/10",
     icon: <AlertCircle className="w-3 h-3" />,
   },
+  NOTIFY: {
+    color: "text-red-500 font-bold",
+    bg: "bg-red-500/10",
+    icon: <AlertCircle className="w-3 h-3" />,
+  },
   WARN: {
     color: "text-yellow-400",
     bg: "bg-yellow-500/10",
@@ -45,8 +50,18 @@ const LEVEL_STYLES: Record<
     bg: "bg-blue-500/10",
     icon: <Info className="w-3 h-3" />,
   },
+  STATUS: {
+    color: "text-blue-500 font-semibold",
+    bg: "bg-blue-600/10",
+    icon: <Info className="w-3 h-3" />,
+  },
+  SUCCESS: {
+    color: "text-green-400",
+    bg: "bg-green-500/10",
+    icon: <Activity className="w-3 h-3" />,
+  },
   DEBUG: {
-    color: "text-muted-foreground",
+    color: "text-green-500",
     bg: "",
     icon: <Bug className="w-3 h-3" />,
   },
@@ -58,17 +73,70 @@ const LEVEL_STYLES: Record<
 };
 
 function parseLine(raw: string): LogEntry {
-  const match = raw.match(
+  // Remover possíveis códigos de cor ANSI que o Tauri injete no arquivo de log
+  const cleanRaw = raw.replace(/\x1b\[[0-9;]*m/g, "").trim();
+
+  // Formato nativo do tauri_plugin_log v2: [YYYY-MM-DD][HH:MM:SS][Target][Level] Message
+  const newFormatMatch = cleanRaw.match(
+    /\[(\d{4}-\d{2}-\d{2})\]\[([\d:]+)\]\[(.*?)\]\[(ERROR|WARN|INFO|DEBUG|TRACE)\]\s*(.*)/
+  );
+
+  if (newFormatMatch) {
+    const date = newFormatMatch[1];
+    const time = newFormatMatch[2];
+    const target = newFormatMatch[3];
+    let level = newFormatMatch[4] as LogEntry["level"];
+    let message = newFormatMatch[5];
+
+    // Detectar targets customizados do back-end para injetar estilos
+    if (target === "STATUS" || message.includes("[STATUS]")) {
+      level = "STATUS" as any;
+      message = message.replace("[STATUS]", "").trim();
+    } else if (target === "SUCCESS" || message.includes("[SUCCESS]")) {
+      level = "SUCCESS" as any;
+      message = message.replace("[SUCCESS]", "").trim();
+    } else if (target === "SYSTEM_NOTIFICATIONS" || message.includes("[SYSTEM_NOTIFICATIONS]")) {
+      level = "NOTIFY" as any;
+      message = message.replace("[SYSTEM_NOTIFICATIONS]", "").trim();
+    }
+
+    return {
+      timestamp: `${date}T${time}`,
+      level,
+      message,
+      raw: cleanRaw,
+    };
+  }
+
+  // Fallback: Formato antigo (antes da v2)
+  const oldMatch = cleanRaw.match(
     /(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)\s+(ERROR|WARN|INFO|DEBUG|TRACE)\s+(.*)/,
   );
-  if (match) {
+  if (oldMatch) {
+    let level = oldMatch[2] as LogEntry["level"];
+    let message = oldMatch[3];
+
+    if (message.includes("[STATUS]")) {
+      level = "STATUS" as any;
+      message = message.replace("[STATUS]", "").trim();
+    } else if (message.includes("[SUCCESS]")) {
+      level = "SUCCESS" as any;
+      message = message.replace("[SUCCESS]", "").trim();
+    } else if (message.includes("[SYSTEM_NOTIFICATIONS]")) {
+      level = "NOTIFY" as any;
+      message = message.replace("[SYSTEM_NOTIFICATIONS]", "").trim();
+    }
+
+    message = message.replace(/^\[app_lib\]\s*/, "");
+
     return {
-      timestamp: match[1],
-      level: match[2] as LogEntry["level"],
-      message: match[3],
+      timestamp: oldMatch[1],
+      level,
+      message,
       raw,
     };
   }
+
   return { timestamp: "", level: "INFO", message: raw, raw };
 }
 
@@ -160,13 +228,6 @@ export function TelemetryTab() {
     {} as Record<string, number>,
   );
 
-  const handleCopyAll = () => {
-    const text = filtered
-      .map((e) => e.raw || `${e.timestamp} ${e.level} ${e.message}`)
-      .join("\n");
-    navigator.clipboard.writeText(text).catch(() => {});
-  };
-
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -181,15 +242,6 @@ export function TelemetryTab() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyAll}
-            className="h-8 text-xs gap-1.5"
-          >
-            <Download className="w-3 h-3" /> Exportar
-          </Button>
-
           <Button
             variant="outline"
             size="sm"
@@ -212,8 +264,8 @@ export function TelemetryTab() {
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-5 gap-2">
-        {(["ALL", "ERROR", "WARN", "INFO", "DEBUG"] as const).map((level) => {
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+        {(["ALL", "ERROR", "WARN", "NOTIFY", "INFO", "STATUS", "SUCCESS", "DEBUG"] as const).map((level) => {
           const count =
             level === "ALL" ? logContent.length : counts[level] || 0;
           const style =

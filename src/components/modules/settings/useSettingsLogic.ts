@@ -3,6 +3,7 @@ import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigation } from "@/context/NavigationContext";
 
 export type Tab =
   | "profile"
@@ -60,6 +61,7 @@ export function useSettingsLogic() {
   const [showWeatherWidget, setShowWeatherWidget] = useState(true);
   const [appZoom, setAppZoom] = useState(100);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
+  const { navigate, setSettingsOpen } = useNavigation();
   const username = user?.username || "Usuário";
   const email = user?.email || "sem-email@aegis.local";
 
@@ -351,8 +353,42 @@ export function useSettingsLogic() {
 
   const handleInternalCommand = async (command: string) => {
     try {
+      const cmd = command.trim();
+      const normalizedCmd = cmd.startsWith("/") ? cmd.slice(1).trim() : cmd.startsWith("--dev ") ? cmd.slice(6).trim() : cmd;
+
+      // 1. Forçar navegação para um módulo
+      if (normalizedCmd.startsWith("module open ")) {
+        const moduleName = normalizedCmd.replace("module open ", "").trim();
+        navigate(moduleName as any);
+        setSettingsOpen(false);
+        toast.success(`Forçando abertura do módulo: ${moduleName}`);
+        return;
+      }
+
+      // 2. Disparar uma notificação do sistema
+      if (normalizedCmd.startsWith("notify force ")) {
+        const msg = normalizedCmd.replace("notify force ", "").trim();
+        toast("Notificação de Sistema", { description: msg, icon: "🔔" });
+        return;
+      }
+
+      // 3. Limpar Cache
+      if (normalizedCmd === "cache clear") {
+        localStorage.clear();
+        toast.success("Memória de Cache (Local Storage) foi completamente zerada. Por favor, reinicie o app.");
+        return;
+      }
+
+      // 4. Teste de som global
+      if (normalizedCmd === "sound test") {
+        new Audio(`/sounds/${notificationSound}`).play().catch(console.error);
+        toast.success("Reproduzindo som de notificação atual.");
+        return;
+      }
+
+      // Se não for um comando do Frontend, envia pro Backend (time skipto, db, sys info, etc)
       const response = await invoke<string>("apply_internal_command", {
-        command,
+        command: normalizedCmd,
       });
       toast.success(response);
     } catch (e: unknown) {

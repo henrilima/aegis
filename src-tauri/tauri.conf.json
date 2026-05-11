@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",
@@ -41,10 +41,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["../aegis.changelog", "../public/sounds/*"],
+    "resources": [
+      "../aegis.changelog",
+      "../public/sounds/*"
+    ],
     "windows": {
       "nsis": {
-        "languages": ["PortugueseBR"]
+        "languages": [
+          "PortugueseBR"
+        ]
       },
       "wix": {
         "language": "pt-BR"

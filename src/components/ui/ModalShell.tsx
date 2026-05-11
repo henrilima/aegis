@@ -70,14 +70,19 @@ export function ModalShell({
 
   return (
     <div
-      className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200`}
+      className={cn(
+        "fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200",
+        zIndex,
+        size === "full" ? "p-0" : "p-4"
+      )}
       role="dialog"
       aria-modal="true"
     >
       <div
         className={cn(
           "relative w-full bg-background border border-border rounded-xl",
-          "animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]",
+          "animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col",
+          size === "full" ? "h-full max-h-none rounded-none border-none" : "max-h-[90vh]",
           SIZE_MAP[size],
           className,
         )}

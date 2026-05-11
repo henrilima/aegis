@@ -31,7 +31,9 @@ struct NoteMeta {
     pub id: i32,
     pub user_id: String,
     pub created_at: String,
+    #[serde(default)]
     pub pinned: bool,
+    #[serde(default)]
     pub color: Option<String>,
 }
 

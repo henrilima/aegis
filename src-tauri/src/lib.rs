@@ -1,3 +1,29 @@
+// ─── Macros de Log Semântico ─────────────────────────────────────────────────
+#[macro_export]
+macro_rules! log_info {
+    ($($arg:tt)*) => { log::info!($($arg)*); };
+}
+#[macro_export]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { log::warn!($($arg)*); };
+}
+#[macro_export]
+macro_rules! log_error {
+    ($($arg:tt)*) => { log::error!($($arg)*); };
+}
+#[macro_export]
+macro_rules! log_success {
+    ($($arg:tt)*) => { log::info!(target: "SUCCESS", $($arg)*); };
+}
+#[macro_export]
+macro_rules! log_status {
+    ($($arg:tt)*) => { log::info!(target: "STATUS", $($arg)*); };
+}
+#[macro_export]
+macro_rules! log_notify {
+    ($($arg:tt)*) => { log::info!(target: "SYSTEM_NOTIFICATIONS", $($arg)*); };
+}
+
 mod passwords;
 mod pomodoro;
 
@@ -33,10 +59,9 @@ use notifications::NotificationsManager;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_notification::NotificationExt;
 use chrono::{Utc, Timelike, Local, DateTime};
-use log::{info, error};
+use log::{info, warn, error};
 use std::thread;
 use std::time::Duration;
-
 
 use migration::*;
 
@@ -194,7 +219,7 @@ async fn capture_screenshot() -> Result<Vec<u8>, String> {
 }
 
 fn notify_critical(app: &tauri::AppHandle, title: &str, body: &str) {
-    info!("[Aegis] Enviando notificação crítica: {} - {}", title, body);
+    log_success!("[Aegis] Notificação enviada: {} — {}", title, body);
     
     // Tenta obter o som do config
     let sound = {
@@ -211,7 +236,7 @@ fn notify_critical(app: &tauri::AppHandle, title: &str, body: &str) {
     }
 
     if let Err(e) = builder.show() {
-        error!("[Aegis] Erro ao mostrar notificação: {}", e);
+        log_error!("[Aegis] Falha ao exibir notificação do sistema: {}", e);
     }
 }
 
@@ -646,8 +671,8 @@ async fn set_app_config(state: State<'_, AppState>, config: AppConfig) -> Result
 }
 
 #[tauri::command]
-async fn apply_internal_command(_app_handle: tauri::AppHandle, state: State<'_, AppState>, command: String) -> Result<(), String> {
-    state.config.apply_debug_command(&command).map(|_| ())
+async fn apply_internal_command(_app_handle: tauri::AppHandle, state: State<'_, AppState>, command: String) -> Result<String, String> {
+    state.config.apply_debug_command(&command)
 }
 
 #[tauri::command]
@@ -1472,7 +1497,7 @@ pub fn run() {
                             }
 
                             if trigger {
-                                info!("[Aegis Loop] !!! DISPARANDO ALARME: {} !!!", a.title);
+                                log_notify!("[Aegis Loop] ALARME DISPARADO → '{}' (tipo: {})", a.title, a.alarm_type);
                                 // Atualiza estado ANTES de notificar para segurança
                                 if a.alarm_type == "interval" {
                                     let iso_to_save = new_trigger_iso.clone().unwrap_or_else(|| now_aegis.to_rfc3339());
@@ -1488,13 +1513,13 @@ pub fn run() {
                                 
                                 notify_critical(&app_handle, &title, &body);
                                 if let Err(e) = app_handle.emit("trigger-alarm", a.clone()) {
-                                    error!("[Aegis Loop] Erro ao emitir trigger-alarm: {}", e);
+                                    log_error!("[Aegis Loop] Falha ao emitir trigger-alarm: {}", e);
                                 }
                                 if let Err(e) = notif_clone.push(&a.user_id, &title, &body, "alarms", None, a.color.as_deref(), Some(&a.icon)) {
-                                    error!("[Aegis Loop] Erro ao salvar notificação no banco: {}", e);
+                                    log_error!("[Aegis Loop] Falha ao salvar notificação de alarme no banco: {}", e);
                                 }
                                 if let Err(e) = app_handle.emit("new-notification", ()) {
-                                    error!("[Aegis Loop] Erro ao emitir new-notification: {}", e);
+                                    log_error!("[Aegis Loop] Falha ao emitir new-notification: {}", e);
                                 }
                             }
                         }
@@ -1620,6 +1645,64 @@ pub fn run() {
             });
 
             app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies });
+
+            // ─── Startup Data Summary ──────────────────────────────────────────
+            {
+                let pm_report  = PasswordManager::new(app.handle());
+                let note_report = notes::NoteManager::new(app.handle());
+                let habit_report = HabitManager::new(app.handle());
+                let task_report = TaskManager::new(app.handle());
+                let reading_report = ReadingManager::new(app.handle());
+                let sleep_report = SleepManager::new(app.handle());
+                let calendar_report = CalendarManager::new(app.handle());
+                let alarm_report = AlarmManager::new(app.handle());
+                let studies_report = StudiesManager::new(app.handle());
+                let dict_report = dictionary::DictionaryManager::new(app.handle());
+                let movies_report = movies::MovieManager::new(app.handle());
+                let config_report = ConfigManager::new(app.handle());
+                let now_report = config_report.get_now();
+
+                crate::log_status!("Aegis iniciado — Resumo de Dados");
+
+                if let Ok(users) = pm_report.list_users() {
+                    crate::log_status!("Usuários registrados: {}", users.len());
+                    for user_val in &users {
+                        let uid = user_val.get("id").and_then(|v| v.as_str()).unwrap_or("?");
+                        let name = user_val.get("username").and_then(|v| v.as_str()).unwrap_or("?");
+
+                        let pw_count = pm_report.list_passwords(uid).map(|v| v.len()).unwrap_or(0);
+                        let note_count = note_report.list_notes(uid).len();
+                        let habit_count = habit_report.list_habits(uid, now_report).len();
+                        let task_count = task_report.list_tasks(uid).len();
+                        let book_count = reading_report.list_books(uid).len();
+                        let sleep_count = sleep_report.list_entries(uid, 1, now_report).len();
+                        let event_count = calendar_report.list_events(uid).len();
+                        let alarm_count = alarm_report.list_alarms(uid).len();
+                        let study_count = studies_report.list_sessions(uid, 12, now_report).len(); // ultimos 12 meses
+                        let dict_count = dict_report.list_words(uid).len();
+                        let movies_count = movies_report.list_movies(uid).len();
+
+                        crate::log_status!("  ┌─ Usuário: {} ({})", name, uid);
+                        crate::log_status!("  │  Senhas no cofre : {}", pw_count);
+                        crate::log_status!("  │  Notas           : {}", note_count);
+                        crate::log_status!("  │  Hábitos         : {}", habit_count);
+                        crate::log_status!("  │  Tarefas         : {}", task_count);
+                        crate::log_status!("  │  Alertas         : {}", alarm_count);
+                        crate::log_status!("  │  Sessões Estudos : {}", study_count);
+                        crate::log_status!("  │  Palavras Dic.   : {}", dict_count);
+                        crate::log_status!("  │  Filmes/Séries   : {}", movies_count);
+                        crate::log_status!("  │  Livros (leitura): {}", book_count);
+                        crate::log_status!("  │  Sono (últ. mês) : {} registros", sleep_count);
+                        crate::log_status!("  └─ Eventos (agenda): {}", event_count);
+                    }
+                } else {
+                    crate::log_warn!("Não foi possível listar usuários no startup.");
+                }
+
+                
+            }
+            // ──────────────────────────────────────────────────────────────────
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

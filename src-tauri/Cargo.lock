@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "Aegis"
-version = "2.5.0"
+version = "2.5.1"
 dependencies = [
  "aes-gcm",
  "argon2",

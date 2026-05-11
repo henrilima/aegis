@@ -1,13 +1,12 @@
 import { Eye, FileText, Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { resolveColor } from "@/colors.config";
-import { ColorPicker } from "@/components/global/ColorPicker";
+import { MarkdownToolbar } from "@/components/modules/notes/components/MarkdownToolbar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, getColorTheme } from "@/lib/utils";
@@ -26,11 +25,11 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [noteColor, setNoteColor] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const moduleColor = getModuleColor("notes");
   const theme = getColorTheme(moduleColor);
 
-  // A cor de destaque do preview usa a cor selecionada ou a cor padrão do módulo
   const previewColorKey = noteColor || moduleColor;
   const previewHex = resolveColor(previewColorKey);
 
@@ -53,14 +52,15 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-999 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-999 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="note-create-title"
     >
-      <div className="relative w-full max-w-[950px]! bg-background border border-border rounded-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+      {/* Container fullscreen com margens mínimas */}
+      <div className="relative w-full h-full bg-background border-x border-border animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0 bg-background/50 backdrop-blur-sm z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 shrink-0 bg-background/50 backdrop-blur-sm z-10">
           <div className="flex items-center gap-3">
             <div
               className={cn(
@@ -105,61 +105,63 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
           </ToolTip>
         </div>
 
-        {/* Área de Conteúdo Split */}
+        {/* Área de Conteúdo Split — ocupa o restante da altura */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* Esquerda: Editor */}
           <form
             id="note-form"
             onSubmit={handleSubmit}
-            className="flex-1 flex flex-col p-6 space-y-6 border-r border-border/50 overflow-y-auto custom-scrollbar"
+            className="flex-1 flex flex-col p-6 gap-4 border-r border-border/50 overflow-hidden"
           >
-            {/* Título e Cor Lado a Lado */}
-            <div className="flex flex-col sm:flex-row gap-5 items-start">
-              <div className="flex-1 space-y-2.5 w-full">
-                <Label htmlFor="ncm-title" className={lc}>
-                  Título da Nota
-                </Label>
-                <Input
-                  id="ncm-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Resumo de estudo, ideias de projeto..."
-                  className={cn(ic, "h-12 rounded-xl px-4 w-full")}
-                  autoFocus
-                  required
-                />
-              </div>
-
-              <div className="w-full sm:w-[180px] space-y-2.5 relative">
-                <Label className={lc}>Cor</Label>
-                <ColorPicker
-                  value={noteColor}
-                  onChange={setNoteColor}
-                  className="w-full"
-                />
-              </div>
+            {/* Título */}
+            <div className="space-y-2 shrink-0">
+              <Label htmlFor="ncm-title" className={lc}>
+                Título da Nota
+              </Label>
+              <Input
+                id="ncm-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Resumo de estudo, ideias de projeto..."
+                className={cn(ic, "h-12 rounded-xl px-4 w-full")}
+                autoFocus
+                required
+              />
             </div>
 
-            <div className="flex-1 flex flex-col space-y-2 pb-2">
-              <Label htmlFor="ncm-content" className={lc}>
-                Conteúdo{" "}
-                <span className="text-neutral-600 font-normal">(Markdown)</span>
-              </Label>
+            {/* Toolbar + Textarea */}
+            <div className="flex-1 flex flex-col gap-2 min-h-0">
+              <div className="flex items-center justify-between shrink-0">
+                <Label htmlFor="ncm-content" className={lc}>
+                  Conteúdo{" "}
+                  <span className="text-neutral-600 font-normal">(Markdown)</span>
+                </Label>
+              </div>
+              <MarkdownToolbar
+                textareaRef={textareaRef}
+                value={content}
+                onChange={setContent}
+                accentHex={previewHex}
+                colorKey={noteColor}
+                onColorChange={setNoteColor}
+                className="self-start shrink-0"
+              />
               <Textarea
                 id="ncm-content"
+                ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Escreva livremente aqui..."
                 className={cn(
                   ic,
-                  "flex-1 rounded-xl min-h-[250px] resize-none leading-relaxed p-4",
+                  "flex-1 rounded-xl resize-none leading-relaxed p-4 min-h-0",
                 )}
                 required
               />
             </div>
           </form>
 
-          {/* Direita: Preview */}
+          {/* Direita: Preview com scroll */}
           <div className="flex-1 bg-black/20 flex flex-col overflow-hidden">
             <div className="px-6 py-3 border-b border-border/40 flex items-center gap-2 shrink-0">
               <Eye className="w-3.5 h-3.5 text-muted-foreground" />
@@ -168,7 +170,7 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
               </span>
             </div>
 
-            <ScrollArea className="flex-1 p-8">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
               <div
                 className={cn(
                   "prose prose-invert max-w-none",
@@ -193,6 +195,22 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
                       strong: ({ node, ...props }) => (
                         <strong style={{ color: previewHex }} {...props} />
                       ),
+                      a: ({ node, ...props }) => (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (props.href) open(props.href);
+                          }}
+                          className={cn(
+                            "underline cursor-pointer font-bold inline-block border-none bg-transparent p-0",
+                            theme.text,
+                          )}
+                          style={{ color: previewHex }}
+                        >
+                          {props.children}
+                        </button>
+                      ),
                     }}
                   >
                     {content}
@@ -209,12 +227,12 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         </div>
 
         {/* Rodapé Fixo */}
-        <div className="p-6 border-t border-border shrink-0 bg-background/50 flex gap-3">
+        <div className="px-6 py-4 border-t border-border shrink-0 bg-background/50 flex gap-3">
           <button
             type="button"
             onClick={onClose}

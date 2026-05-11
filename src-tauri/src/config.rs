@@ -455,21 +455,46 @@ impl ConfigManager {
         Utc::now() + chrono::Duration::seconds(offset)
     }
 
-    pub fn apply_debug_command(&self, command: &str) -> Result<String, String> {
-        if !command.starts_with("--dev") {
-            return Err("Comando deve começar com --dev".to_string());
+    pub fn apply_debug_command(&self, mut command: &str) -> Result<String, String> {
+        command = command.trim();
+        
+        // Suporte retrocompatível e limpeza de prefixos
+        if command.starts_with("--dev ") {
+            command = &command[6..];
+        } else if command.starts_with("/") {
+            command = &command[1..];
         }
 
-        if command == "--dev @reset" {
+        if command == "time reset" || command == "@reset" {
             self.set_time_offset(0)?;
             return Ok("Tempo resetado para o real.".to_string());
         }
 
-        let parse_target = |cmd: &str, tag: &str| -> Result<i64, String> {
-            if let Some(start) = cmd.find(tag) {
-                let rest = &cmd[start + tag.len()..];
-                if let Some(end) = rest.find(')') {
-                    let date_str = &rest[..end].trim();
+        if command == "db optimize" {
+            let conn = self.get_connection();
+            conn.execute("VACUUM", []).map_err(|e| e.to_string())?;
+            return Ok("Banco de dados desfragmentado e otimizado (VACUUM concluído).".to_string());
+        }
+
+        if command == "sys info" {
+            let os = std::env::consts::OS;
+            let arch = std::env::consts::ARCH;
+            return Ok(format!("Aegis Core rodando em {} ({}).", os, arch));
+        }
+
+        if command == "test error" {
+            return Err("Isso é um erro simulado disparado pelo backend do Aegis para testar as fronteiras de erro do frontend.".to_string());
+        }
+
+        let parse_target = |cmd: &str, tags: &[&str]| -> Result<i64, String> {
+            for &tag in tags {
+                if let Some(start) = cmd.find(tag) {
+                    let mut rest = cmd[start + tag.len()..].trim();
+                    // Limpar parênteses se o usuário digitou ex: @skipto(10-10-2020)
+                    if rest.starts_with('(') && rest.ends_with(')') {
+                        rest = &rest[1..rest.len() - 1];
+                    }
+                    let date_str = rest.trim();
                     
                     // Tenta DD-MM-YYYY HH:MM
                     let dt_str = format!("{} +0000", date_str);
@@ -490,18 +515,18 @@ impl ConfigManager {
             Err("Não encontrado".to_string())
         };
 
-        if command.contains("@skipto") {
-            let diff = parse_target(command, "@skipto(")?;
+        if command.contains("@skipto") || command.starts_with("time skipto") {
+            let diff = parse_target(command, &["@skipto", "time skipto"])?;
             self.set_time_offset(diff)?;
-            return Ok("Tempo simulado com sucesso.".to_string());
+            return Ok("Tempo simulado avançado com sucesso.".to_string());
         }
 
-        if command.contains("@backto") {
-            let diff = parse_target(command, "@backto(")?;
+        if command.contains("@backto") || command.starts_with("time backto") {
+            let diff = parse_target(command, &["@backto", "time backto"])?;
             self.set_time_offset(diff)?;
-            return Ok("Tempo retrocedido com sucesso.".to_string());
+            return Ok("Tempo simulado retrocedido com sucesso.".to_string());
         }
 
-        Err("Comando interno não reconhecido.".to_string())
+        Err("Comando interno não reconhecido pelo núcleo (Backend).".to_string())
     }
 }
