@@ -1,13 +1,13 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { useNavigation } from "@/context/NavigationContext";
-import { getModuleColor } from "@/modules.config";
-import { cn, getColorTheme } from "@/lib/utils";
-import { useSettingsLogic } from "../modules/settings/useSettingsLogic";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
+import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
+import { useSettingsLogic } from "../modules/settings/useSettingsLogic";
 
 interface SidebarTriggerProps {
   isOpen: boolean;
@@ -39,7 +39,8 @@ export function SidebarTrigger({
   }
 
   // Se for dashboard, usa a cor do tema. Se não, usa a cor fixa do módulo.
-  const moduleColor = route === "dashboard" ? accentColor : getModuleColor(route);
+  const moduleColor =
+    route === "dashboard" ? accentColor : getModuleColor(route);
   const theme = getColorTheme(moduleColor);
 
   return (

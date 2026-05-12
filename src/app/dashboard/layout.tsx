@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { GlobalShortcuts } from "@/components/GlobalShortcuts";
 import { DictionaryQuickSearch } from "@/components/global/DictionaryQuickSearch";
 import { SettingsModal } from "@/components/global/SettingsModal";
-import { SidebarTrigger } from "@/components/sidebar/SidebarTrigger";
 import { AppSidebar } from "@/components/sidebar/appSidebar";
+import { SidebarTrigger } from "@/components/sidebar/SidebarTrigger";
 import { NavigationProvider } from "@/context/NavigationContext";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +25,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <DictionaryQuickSearch />
         <SettingsModal />
         <AppSidebar isOpen={isSidebarOpen} />
-        
+
         {/* Floating Trigger (visible when sidebar is closed) */}
-        <SidebarTrigger 
-          isOpen={isSidebarOpen} 
-          onToggle={() => setIsSidebarOpen(true)} 
-          floating 
+        <SidebarTrigger
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(true)}
+          floating
         />
 
         {isSidebarOpen && (

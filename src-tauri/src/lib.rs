@@ -59,7 +59,6 @@ use notifications::NotificationsManager;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_notification::NotificationExt;
 use chrono::{Utc, Timelike, Local, DateTime};
-use log::{info, warn, error};
 use std::thread;
 use std::time::Duration;
 
