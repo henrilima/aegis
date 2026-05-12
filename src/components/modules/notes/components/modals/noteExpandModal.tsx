@@ -1,16 +1,11 @@
-import {
-  FileText,
-  Pencil,
-  Save,
-  X,
-} from "lucide-react";
+import { FileText, Pencil, Save, X } from "lucide-react";
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { resolveColor } from "@/colors.config";
-import type { Note } from "@/components/modules/notes/types";
 import { MarkdownToolbar } from "@/components/modules/notes/components/MarkdownToolbar";
+import type { Note } from "@/components/modules/notes/types";
 import { Input } from "@/components/ui/input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
@@ -21,17 +16,19 @@ interface NoteExpandModalProps {
   note: Note;
   onSave: (note: Note) => void;
   onClose: () => void;
+  initialEditMode?: boolean;
 }
 
 export function NoteExpandModal({
   note,
   onSave,
   onClose,
+  initialEditMode = false,
 }: NoteExpandModalProps) {
   const moduleColor = getModuleColor("notes");
   const theme = getColorTheme(moduleColor);
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditMode);
 
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);

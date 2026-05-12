@@ -3,7 +3,7 @@ import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigation } from "@/context/NavigationContext";
+import { type AppRoute, useNavigation } from "@/context/NavigationContext";
 
 export type Tab =
   | "profile"
@@ -34,6 +34,8 @@ export interface AppConfig {
   weatherLocation: string;
   showWeatherWidget: boolean;
   appZoom?: number;
+  showSidebarTrigger: boolean;
+  showFloatingTrigger: boolean;
 }
 
 export function useSettingsLogic() {
@@ -60,6 +62,8 @@ export function useSettingsLogic() {
   const [weatherLocation, setWeatherLocation] = useState("");
   const [showWeatherWidget, setShowWeatherWidget] = useState(true);
   const [appZoom, setAppZoom] = useState(100);
+  const [showSidebarTrigger, setShowSidebarTrigger] = useState(true);
+  const [showFloatingTrigger, setShowFloatingTrigger] = useState(true);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const { navigate, setSettingsOpen } = useNavigation();
   const username = user?.username || "Usuário";
@@ -102,6 +106,10 @@ export function useSettingsLogic() {
       if (config.showWeatherWidget !== undefined)
         setShowWeatherWidget(config.showWeatherWidget);
       if (config.appZoom !== undefined) setAppZoom(config.appZoom);
+      if (config.showSidebarTrigger !== undefined)
+        setShowSidebarTrigger(config.showSidebarTrigger);
+      if (config.showFloatingTrigger !== undefined)
+        setShowFloatingTrigger(config.showFloatingTrigger);
       setIsConfigLoading(false);
     } catch (err) {
       console.error("Failed to load config:", err);
@@ -143,6 +151,8 @@ export function useSettingsLogic() {
       weatherLocation,
       showWeatherWidget,
       appZoom,
+      showSidebarTrigger,
+      showFloatingTrigger,
       [key]: value,
     };
 
@@ -171,6 +181,9 @@ export function useSettingsLogic() {
       if (key === "weatherLocation") setWeatherLocation(value as string);
       if (key === "showWeatherWidget") setShowWeatherWidget(value as boolean);
       if (key === "appZoom") setAppZoom(value as number);
+      if (key === "showSidebarTrigger") setShowSidebarTrigger(value as boolean);
+      if (key === "showFloatingTrigger")
+        setShowFloatingTrigger(value as boolean);
       toast.success("Configuração atualizada");
     } catch (err) {
       console.error("Failed to save config:", err);
@@ -204,6 +217,8 @@ export function useSettingsLogic() {
       weatherLocation,
       showWeatherWidget,
       appZoom,
+      showSidebarTrigger,
+      showFloatingTrigger,
     };
 
     try {
@@ -251,6 +266,8 @@ export function useSettingsLogic() {
       weatherLocation,
       showWeatherWidget,
       appZoom,
+      showSidebarTrigger,
+      showFloatingTrigger,
     };
 
     try {
@@ -287,6 +304,8 @@ export function useSettingsLogic() {
       weatherLocation,
       showWeatherWidget,
       appZoom,
+      showSidebarTrigger,
+      showFloatingTrigger,
     };
 
     try {
@@ -326,6 +345,8 @@ export function useSettingsLogic() {
       weatherLocation,
       showWeatherWidget,
       appZoom,
+      showSidebarTrigger,
+      showFloatingTrigger,
     };
 
     try {
@@ -354,12 +375,16 @@ export function useSettingsLogic() {
   const handleInternalCommand = async (command: string) => {
     try {
       const cmd = command.trim();
-      const normalizedCmd = cmd.startsWith("/") ? cmd.slice(1).trim() : cmd.startsWith("--dev ") ? cmd.slice(6).trim() : cmd;
+      const normalizedCmd = cmd.startsWith("/")
+        ? cmd.slice(1).trim()
+        : cmd.startsWith("--dev ")
+          ? cmd.slice(6).trim()
+          : cmd;
 
       // 1. Forçar navegação para um módulo
       if (normalizedCmd.startsWith("module open ")) {
         const moduleName = normalizedCmd.replace("module open ", "").trim();
-        navigate(moduleName as any);
+        navigate(moduleName as AppRoute);
         setSettingsOpen(false);
         toast.success(`Forçando abertura do módulo: ${moduleName}`);
         return;
@@ -375,7 +400,9 @@ export function useSettingsLogic() {
       // 3. Limpar Cache
       if (normalizedCmd === "cache clear") {
         localStorage.clear();
-        toast.success("Memória de Cache (Local Storage) foi completamente zerada. Por favor, reinicie o app.");
+        toast.success(
+          "Memória de Cache (Local Storage) foi completamente zerada. Por favor, reinicie o app.",
+        );
         return;
       }
 
@@ -415,6 +442,8 @@ export function useSettingsLogic() {
     weatherLocation,
     showWeatherWidget,
     appZoom,
+    showSidebarTrigger,
+    showFloatingTrigger,
     updateConfigField,
     showHolidays,
     username,

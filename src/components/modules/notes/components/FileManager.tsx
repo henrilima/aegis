@@ -37,7 +37,7 @@ import { DroppableBreadcrumb } from "./DroppableBreadcrumb";
 import { ItemCard } from "./ItemCard";
 
 interface FileManagerProps {
-  onNoteClick: (note: Note) => void;
+  onNoteClick: (note: Note, edit?: boolean) => void;
   onNewNote?: (path: string) => void;
   refreshTrigger: number;
   searchQuery: string;
@@ -301,8 +301,9 @@ export function FileManager({
                   onNavigate={() =>
                     item.isDir
                       ? setCurrentPath(item.path)
-                      : item.note && onNoteClick(item.note)
+                      : item.note && onNoteClick(item.note, false)
                   }
+                  onEdit={() => item.note && onNoteClick(item.note, true)}
                   onDelete={() => handleDelete(item)}
                   onRename={() => {
                     setRenameTarget(item);

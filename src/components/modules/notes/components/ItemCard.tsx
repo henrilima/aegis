@@ -29,6 +29,7 @@ import type { FileSystemItem } from "../types";
 interface ItemCardProps {
   item: FileSystemItem;
   onNavigate: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   onRename: () => void;
   onTogglePin: () => void;
@@ -39,6 +40,7 @@ interface ItemCardProps {
 export function ItemCard({
   item,
   onNavigate,
+  onEdit,
   onDelete,
   onRename,
   onTogglePin,
@@ -186,6 +188,21 @@ export function ItemCard({
                   className="hover:bg-accent/50 cursor-pointer rounded-lg m-1"
                   onClick={(e) => {
                     e.stopPropagation();
+                    isFolder ? onNavigate() : onEdit();
+                  }}
+                >
+                  {isFolder ? (
+                    <Folder className="w-4 h-4 mr-2" />
+                  ) : (
+                    <FileText className="w-4 h-4 mr-2" />
+                  )}
+                  {isFolder ? "Abrir pasta" : "Editar nota"}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  className="hover:bg-accent/50 cursor-pointer rounded-lg m-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onRename();
                   }}
                 >
@@ -225,6 +242,18 @@ export function ItemCard({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="bg-card border-border text-foreground min-w-[170px] rounded-xl">
+        <ContextMenuItem
+          className="hover:bg-accent/50 rounded-lg m-1"
+          onClick={isFolder ? onNavigate : onEdit}
+        >
+          {isFolder ? (
+            <Folder className="w-4 h-4 mr-2" />
+          ) : (
+            <FileText className="w-4 h-4 mr-2" />
+          )}
+          {isFolder ? "Abrir pasta" : "Editar nota"}
+        </ContextMenuItem>
+
         <ContextMenuItem
           className="hover:bg-accent/50 rounded-lg m-1"
           onClick={onRename}

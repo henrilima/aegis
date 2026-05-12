@@ -134,7 +134,9 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
               <div className="flex items-center justify-between shrink-0">
                 <Label htmlFor="ncm-content" className={lc}>
                   Conteúdo{" "}
-                  <span className="text-neutral-600 font-normal">(Markdown)</span>
+                  <span className="text-neutral-600 font-normal">
+                    (Markdown)
+                  </span>
                 </Label>
               </div>
               <MarkdownToolbar

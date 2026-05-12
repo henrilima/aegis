@@ -7,7 +7,6 @@ import {
   Bug,
   ChevronDown,
   Copy,
-  Download,
   Info,
   RefreshCw,
   Terminal,
@@ -20,7 +19,15 @@ import { useLog } from "@/hooks/useLog";
 import { cn } from "@/lib/utils";
 
 interface LogEntry {
-  level: "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE" | "STATUS" | "SUCCESS" | "NOTIFY";
+  level:
+    | "ERROR"
+    | "WARN"
+    | "INFO"
+    | "DEBUG"
+    | "TRACE"
+    | "STATUS"
+    | "SUCCESS"
+    | "NOTIFY";
   message: string;
   timestamp: string;
   raw: string;
@@ -74,11 +81,13 @@ const LEVEL_STYLES: Record<
 
 function parseLine(raw: string): LogEntry {
   // Remover possíveis códigos de cor ANSI que o Tauri injete no arquivo de log
-  const cleanRaw = raw.replace(/\x1b\[[0-9;]*m/g, "").trim();
+  const cleanRaw = raw
+    .replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g"), "")
+    .trim();
 
   // Formato nativo do tauri_plugin_log v2: [YYYY-MM-DD][HH:MM:SS][Target][Level] Message
   const newFormatMatch = cleanRaw.match(
-    /\[(\d{4}-\d{2}-\d{2})\]\[([\d:]+)\]\[(.*?)\]\[(ERROR|WARN|INFO|DEBUG|TRACE)\]\s*(.*)/
+    /\[(\d{4}-\d{2}-\d{2})\]\[([\d:]+)\]\[(.*?)\]\[(ERROR|WARN|INFO|DEBUG|TRACE)\]\s*(.*)/,
   );
 
   if (newFormatMatch) {
@@ -90,13 +99,16 @@ function parseLine(raw: string): LogEntry {
 
     // Detectar targets customizados do back-end para injetar estilos
     if (target === "STATUS" || message.includes("[STATUS]")) {
-      level = "STATUS" as any;
+      level = "STATUS";
       message = message.replace("[STATUS]", "").trim();
     } else if (target === "SUCCESS" || message.includes("[SUCCESS]")) {
-      level = "SUCCESS" as any;
+      level = "SUCCESS";
       message = message.replace("[SUCCESS]", "").trim();
-    } else if (target === "SYSTEM_NOTIFICATIONS" || message.includes("[SYSTEM_NOTIFICATIONS]")) {
-      level = "NOTIFY" as any;
+    } else if (
+      target === "SYSTEM_NOTIFICATIONS" ||
+      message.includes("[SYSTEM_NOTIFICATIONS]")
+    ) {
+      level = "NOTIFY";
       message = message.replace("[SYSTEM_NOTIFICATIONS]", "").trim();
     }
 
@@ -117,13 +129,13 @@ function parseLine(raw: string): LogEntry {
     let message = oldMatch[3];
 
     if (message.includes("[STATUS]")) {
-      level = "STATUS" as any;
+      level = "STATUS";
       message = message.replace("[STATUS]", "").trim();
     } else if (message.includes("[SUCCESS]")) {
-      level = "SUCCESS" as any;
+      level = "SUCCESS";
       message = message.replace("[SUCCESS]", "").trim();
     } else if (message.includes("[SYSTEM_NOTIFICATIONS]")) {
-      level = "NOTIFY" as any;
+      level = "NOTIFY";
       message = message.replace("[SYSTEM_NOTIFICATIONS]", "").trim();
     }
 
@@ -265,7 +277,18 @@ export function TelemetryTab() {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-        {(["ALL", "ERROR", "WARN", "NOTIFY", "INFO", "STATUS", "SUCCESS", "DEBUG"] as const).map((level) => {
+        {(
+          [
+            "ALL",
+            "ERROR",
+            "WARN",
+            "NOTIFY",
+            "INFO",
+            "STATUS",
+            "SUCCESS",
+            "DEBUG",
+          ] as const
+        ).map((level) => {
           const count =
             level === "ALL" ? logContent.length : counts[level] || 0;
           const style =

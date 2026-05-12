@@ -2,6 +2,7 @@
 
 import {
   Bold,
+  ChevronDown,
   Code,
   Code2,
   Heading1,
@@ -15,11 +16,9 @@ import {
   Quote,
   Strikethrough,
 } from "lucide-react";
-import { ChevronDown } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { resolveColor, SELECTABLE_COLORS } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -276,9 +275,7 @@ function InlineColorPicker({ value, onChange }: InlineColorPickerProps) {
       </ToolTip>
 
       {isOpen && (
-        <div
-          className="absolute top-[calc(100%+6px)] left-0 w-44 bg-card border border-border rounded-xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-        >
+        <div className="absolute top-[calc(100%+6px)] left-0 w-44 bg-card border border-border rounded-xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-1.5">
             <button
               type="button"
@@ -421,10 +418,7 @@ export function MarkdownToolbar({
       {onColorChange && (
         <>
           {divider}
-          <InlineColorPicker
-            value={colorKey ?? ""}
-            onChange={onColorChange}
-          />
+          <InlineColorPicker value={colorKey ?? ""} onChange={onColorChange} />
         </>
       )}
     </div>

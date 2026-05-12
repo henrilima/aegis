@@ -38,6 +38,7 @@ export default function NotesPage() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [creationPath, setCreationPath] = useState("");
   const [expandedNote, setExpandedNote] = useState<Note | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Estados compartilhados com o Header e FileManager
@@ -62,6 +63,11 @@ export default function NotesPage() {
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
+
+  const handleNoteClick = (note: Note, edit = false) => {
+    setEditMode(edit);
+    setExpandedNote(note);
+  };
 
   const handleAdd = async (title: string, content: string, color?: string) => {
     if (!uid) return;
@@ -94,6 +100,7 @@ export default function NotesPage() {
       fetchNotes();
       toast.success("Nota atualizada!");
       setExpandedNote(null);
+      setEditMode(false);
     } catch (err) {
       toast.error(typeof err === "string" ? err : "Erro na atualização");
     }
@@ -105,7 +112,10 @@ export default function NotesPage() {
       setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota removida");
-      if (expandedNote?.id === id) setExpandedNote(null);
+      if (expandedNote?.id === id) {
+        setExpandedNote(null);
+        setEditMode(false);
+      }
     } catch {
       toast.error("Erro ao remover");
     } finally {
@@ -184,8 +194,12 @@ export default function NotesPage() {
       {expandedNote && (
         <NoteExpandModal
           note={expandedNote}
+          initialEditMode={editMode}
           onSave={handleUpdate}
-          onClose={() => setExpandedNote(null)}
+          onClose={() => {
+            setExpandedNote(null);
+            setEditMode(false);
+          }}
         />
       )}
 
@@ -200,7 +214,7 @@ export default function NotesPage() {
         }
       >
         <FileManager
-          onNoteClick={(note) => setExpandedNote(note)}
+          onNoteClick={handleNoteClick}
           onNewNote={(path) => {
             setCreationPath(path);
             setIsNoteModalOpen(true);

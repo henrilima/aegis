@@ -28,6 +28,8 @@ pub struct AppConfig {
     pub weather_location: String,
     pub show_weather_widget: bool,
     pub app_zoom: f64,
+    pub show_sidebar_trigger: bool,
+    pub show_floating_trigger: bool,
 }
 
 pub struct ConfigManager {
@@ -73,6 +75,8 @@ impl ConfigManager {
             ("weather_location", ""),
             ("show_weather_widget", "true"),
             ("app_zoom", "100"),
+            ("show_sidebar_trigger", "true"),
+            ("show_floating_trigger", "true"),
         ];
 
         for (key, val) in defaults {
@@ -260,6 +264,24 @@ impl ConfigManager {
                 Ok(s.parse::<f64>().unwrap_or(100.0))
             }
         ).unwrap_or(100.0);
+        
+        let show_sidebar_trigger: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'show_sidebar_trigger'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let show_floating_trigger: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'show_floating_trigger'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
 
         AppConfig {
             minimize_on_close,
@@ -283,6 +305,8 @@ impl ConfigManager {
             weather_location,
             show_weather_widget,
             app_zoom,
+            show_sidebar_trigger,
+            show_floating_trigger,
         }
     }
 
@@ -391,6 +415,16 @@ impl ConfigManager {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES ('app_zoom', ?1)",
             params![config.app_zoom.to_string()],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_sidebar_trigger', ?1)",
+            params![if config.show_sidebar_trigger { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_floating_trigger', ?1)",
+            params![if config.show_floating_trigger { "true" } else { "false" }],
         ).map_err(|e| e.to_string())?;
 
         Ok(())

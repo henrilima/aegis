@@ -33,6 +33,8 @@ export function SystemTab() {
     weatherLocation,
     showWeatherWidget,
     appZoom,
+    showSidebarTrigger,
+    showFloatingTrigger,
     isConfigLoading,
   } = useSettingsLogic();
 
@@ -146,8 +148,33 @@ export function SystemTab() {
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
           <Maximize className="w-4 h-4" />
-          Interface e Zoom
+          Interface e Navegação
         </h3>
+        <div className="space-y-2">
+          <ToggleRow
+            icon={Maximize}
+            title="Exibir Trigger da Sidebar"
+            description="Mostra o botão de expansão dentro da barra lateral"
+            active={showSidebarTrigger}
+            onClick={() =>
+              updateConfigField("showSidebarTrigger", !showSidebarTrigger)
+            }
+            theme={theme}
+            disabled={isConfigLoading}
+          />
+          <ToggleRow
+            icon={Maximize}
+            title="Exibir Trigger Flutuante"
+            description="Mostra o botão flutuante para abrir a sidebar quando ela estiver fechada"
+            active={showFloatingTrigger}
+            onClick={() =>
+              updateConfigField("showFloatingTrigger", !showFloatingTrigger)
+            }
+            theme={theme}
+            disabled={isConfigLoading}
+          />
+        </div>
+
         <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">

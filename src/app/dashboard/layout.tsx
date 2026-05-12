@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { GlobalShortcuts } from "@/components/GlobalShortcuts";
 import { DictionaryQuickSearch } from "@/components/global/DictionaryQuickSearch";
 import { SettingsModal } from "@/components/global/SettingsModal";
+import { SidebarTrigger } from "@/components/sidebar/SidebarTrigger";
 import { AppSidebar } from "@/components/sidebar/appSidebar";
 import { NavigationProvider } from "@/context/NavigationContext";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <DictionaryQuickSearch />
         <SettingsModal />
         <AppSidebar isOpen={isSidebarOpen} />
+        
+        {/* Floating Trigger (visible when sidebar is closed) */}
+        <SidebarTrigger 
+          isOpen={isSidebarOpen} 
+          onToggle={() => setIsSidebarOpen(true)} 
+          floating 
+        />
 
         {isSidebarOpen && (
           <button
@@ -37,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main
           className={cn(
             "flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden p-6 md:p-10 scrollbar-stable scroll-smooth",
-            isSidebarOpen ? "lg:ml-64" : "ml-0",
+            isSidebarOpen ? "lg:ml-72" : "ml-0",
           )}
         >
           {children}

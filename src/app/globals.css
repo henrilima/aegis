@@ -402,7 +402,7 @@ button,
   }
   .markdown-preview code::before,
   .markdown-preview code::after {
-    content: none !important;
+    content: none;
   }
   .markdown-preview pre {
     @apply bg-neutral-950 p-4 rounded-xl overflow-x-auto border border-neutral-800 mb-4;

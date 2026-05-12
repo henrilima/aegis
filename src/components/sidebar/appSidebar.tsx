@@ -151,6 +151,8 @@ const NAV_GROUPS_WITH_THEMES = NAV_GROUPS.map((group) => ({
   })),
 }));
 
+import { SidebarTrigger } from "./SidebarTrigger";
+
 interface AppSidebarProps {
   isOpen: boolean;
 }
@@ -160,6 +162,10 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
   const { route, navigate, isSettingsOpen, setSettingsOpen } = useNavigation();
   const { user, logout } = useAuth();
   const { isModuleEnabled } = useModules();
+
+  const handleToggle = () => {
+    window.dispatchEvent(new Event("toggle-sidebar"));
+  };
 
   const isActive = (r: AppRoute) => route === r;
 
@@ -213,6 +219,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
+        <SidebarTrigger isOpen={isOpen} onToggle={handleToggle} />
         <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70">
           <div
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold overflow-hidden ${themeStyles.bg} border ${themeStyles.border} ${themeStyles.text}`}
