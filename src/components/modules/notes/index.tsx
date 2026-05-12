@@ -17,7 +17,7 @@ import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { getModuleColor } from "@/modules.config";
 
-// Lazy import: @dnd-kit só carrega quando o módulo de Notas for aberto
+// O gerenciador usa DnD e só é carregado ao abrir Notas.
 const FileManager = lazy(() =>
   import("./components/FileManager").then((m) => ({ default: m.FileManager })),
 );
@@ -27,9 +27,6 @@ import type { Note } from "./types";
 
 const MAX_PINS = 3;
 
-/**
- * Módulo de Notas: Gestão de anotações com suporte a markdown, fixação e status
- */
 export default function NotesPage() {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -41,7 +38,6 @@ export default function NotesPage() {
   const [editMode, setEditMode] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Estados compartilhados com o Header e FileManager
   const [searchQuery, setSearchQuery] = useState("");
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -226,7 +222,6 @@ export default function NotesPage() {
         />
       </Suspense>
 
-      {/* Confirmação */}
       {deletingId !== null && (
         <ConfirmModal
           {...CONFIRM_PRESETS.deleteNote}

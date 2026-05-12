@@ -12,12 +12,12 @@ interface NoteCardProps {
 const stripMarkdown = (text: string) => {
   if (!text) return "";
   return text
-    .replace(/^#+\s+/gm, "") // Remove headers
-    .replace(/(\*\*|__)(.*?)\1/g, "$2") // Remove bold
-    .replace(/(\*|_)(.*?)\1/g, "$2") // Remove italic
-    .replace(/~~(.*?)~~/g, "$1") // Remove strikethrough
-    .replace(/`{1,3}([^`\n]+)`{1,3}/g, "$1") // Remove inline code
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Remove links
+    .replace(/^#+\s+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/`{1,3}([^`\n]+)`{1,3}/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .trim();
 };
 

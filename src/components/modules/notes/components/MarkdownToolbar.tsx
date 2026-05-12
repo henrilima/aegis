@@ -21,8 +21,6 @@ import { resolveColor, SELECTABLE_COLORS } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn } from "@/lib/utils";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-
 type InsertMode =
   | { type: "wrap"; before: string; after: string; placeholder: string }
   | { type: "line-prefix"; prefix: string }
@@ -45,8 +43,6 @@ interface MarkdownToolbarProps {
   onColorChange?: (key: string) => void;
   className?: string;
 }
-
-// ─── Ações do toolbar ─────────────────────────────────────────────────────────
 
 const ACTIONS: ToolbarAction[] = [
   {
@@ -146,8 +142,6 @@ const ACTIONS_BLOCK: ToolbarAction[] = [
   },
 ];
 
-// ─── Função de inserção ───────────────────────────────────────────────────────
-
 function applyInsert(
   textarea: HTMLTextAreaElement,
   value: string,
@@ -215,8 +209,6 @@ function applyInsert(
     textarea.setSelectionRange(newCursorStart, newCursorEnd);
   });
 }
-
-// ─── Color Picker compacto (inline no toolbar) ───────────────────────────────
 
 interface InlineColorPickerProps {
   value: string;
@@ -321,8 +313,6 @@ function InlineColorPicker({ value, onChange }: InlineColorPickerProps) {
   );
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
-
 export function MarkdownToolbar({
   textareaRef,
   value,
@@ -338,7 +328,6 @@ export function MarkdownToolbar({
     applyInsert(ta, value, action.insert, onChange);
   };
 
-  // Botão maior (w-9 h-9 em vez de w-7 h-7)
   const btnClass = cn(
     "w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground",
     "hover:text-foreground hover:bg-white/10 transition-all cursor-pointer active:scale-95",
@@ -354,7 +343,6 @@ export function MarkdownToolbar({
         className,
       )}
     >
-      {/* Headings */}
       {ACTIONS.map((action) => (
         <ToolTip
           key={action.id}
@@ -377,7 +365,6 @@ export function MarkdownToolbar({
 
       {divider}
 
-      {/* Formatação inline */}
       {ACTIONS_FORMAT.map((action) => (
         <ToolTip
           key={action.id}
@@ -400,7 +387,6 @@ export function MarkdownToolbar({
 
       {divider}
 
-      {/* Blocos */}
       {ACTIONS_BLOCK.map((action) => (
         <ToolTip key={action.id} content={action.label}>
           <button
@@ -414,7 +400,6 @@ export function MarkdownToolbar({
         </ToolTip>
       ))}
 
-      {/* Seletor de cor */}
       {onColorChange && (
         <>
           {divider}

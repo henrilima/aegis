@@ -12,7 +12,6 @@ interface DroppableBreadcrumbProps {
   isCurrent: boolean;
 }
 
-/** Item de breadcrumb que aceita drops via DnD para mover itens */
 export function DroppableBreadcrumb({
   id,
   children,

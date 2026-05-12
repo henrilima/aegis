@@ -4,9 +4,7 @@ import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn } from "@/lib/utils";
 import type { Note } from "../types";
 
-/**
- * Utilitário para limpar markdown do conteúdo para preview
- */
+// Remove marcações de markdown antes de exibir o resumo.
 const stripMarkdown = (text: string) => {
   if (!text) return "";
   return text
@@ -26,9 +24,6 @@ interface NoteCardProps {
   onDelete: (id: number) => void;
 }
 
-/**
- * Card individual de nota: Suporta preview limpo e fixação
- */
 export function NoteCard({
   note: n,
   onClick,
@@ -51,7 +46,6 @@ export function NoteCard({
         } as React.CSSProperties
       }
     >
-      {/* Clique na área do card */}
       <button
         type="button"
         onClick={onClick}
@@ -70,7 +64,6 @@ export function NoteCard({
           {n.title}
         </p>
 
-        {/* Ações Rápidas (Hover) */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
           <ToolTip content={n.pinned ? "Desafixar" : "Fixar nota"}>
             <button
@@ -109,14 +102,12 @@ export function NoteCard({
         </div>
       </div>
 
-      {/* Preview do conteúdo truncado */}
       {n.content && (
         <div className="relative z-10 text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap leading-relaxed pl-6 pointer-events-none opacity-80">
           {stripMarkdown(n.content)}
         </div>
       )}
 
-      {/* Rodapé do Card */}
       <div className="relative z-10 mt-auto pt-2 border-t border-border/50 pl-6 flex items-center justify-between pointer-events-none">
         <p className="text-[10px] text-muted-foreground/60 font-bold uppercase">
           {new Date(n.createdAt).toLocaleDateString("pt-BR")}
