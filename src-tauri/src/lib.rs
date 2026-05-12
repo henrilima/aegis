@@ -1648,6 +1648,24 @@ pub fn run() {
 
             // ─── Startup Data Summary ──────────────────────────────────────────
             {
+                use std::panic::{catch_unwind, AssertUnwindSafe};
+
+                fn safe_startup_count<F>(label: &str, f: F) -> usize
+                where
+                    F: FnOnce() -> usize,
+                {
+                    match catch_unwind(AssertUnwindSafe(f)) {
+                        Ok(count) => count,
+                        Err(_) => {
+                            crate::log_warn!(
+                                "Resumo de startup ignorou '{}' porque a leitura falhou; o app continuará abrindo.",
+                                label
+                            );
+                            0
+                        }
+                    }
+                }
+
                 let pm_report  = PasswordManager::new(app.handle());
                 let note_report = notes::NoteManager::new(app.handle());
                 let habit_report = HabitManager::new(app.handle());
@@ -1670,17 +1688,19 @@ pub fn run() {
                         let uid = user_val.get("id").and_then(|v| v.as_str()).unwrap_or("?");
                         let name = user_val.get("username").and_then(|v| v.as_str()).unwrap_or("?");
 
-                        let pw_count = pm_report.list_passwords(uid).map(|v| v.len()).unwrap_or(0);
-                        let note_count = note_report.list_notes(uid).len();
-                        let habit_count = habit_report.list_habits(uid, now_report).len();
-                        let task_count = task_report.list_tasks(uid).len();
-                        let book_count = reading_report.list_books(uid).len();
-                        let sleep_count = sleep_report.list_entries(uid, 1, now_report).len();
-                        let event_count = calendar_report.list_events(uid).len();
-                        let alarm_count = alarm_report.list_alarms(uid).len();
-                        let study_count = studies_report.list_sessions(uid, 12, now_report).len(); // ultimos 12 meses
-                        let dict_count = dict_report.list_words(uid).len();
-                        let movies_count = movies_report.list_movies(uid).len();
+                        let pw_count = safe_startup_count("senhas", || {
+                            pm_report.list_passwords(uid).map(|v| v.len()).unwrap_or(0)
+                        });
+                        let note_count = safe_startup_count("notas", || note_report.list_notes(uid).len());
+                        let habit_count = safe_startup_count("hábitos", || habit_report.list_habits(uid, now_report).len());
+                        let task_count = safe_startup_count("tarefas", || task_report.list_tasks(uid).len());
+                        let book_count = safe_startup_count("leitura", || reading_report.list_books(uid).len());
+                        let sleep_count = safe_startup_count("sono", || sleep_report.list_entries(uid, 1, now_report).len());
+                        let event_count = safe_startup_count("agenda", || calendar_report.list_events(uid).len());
+                        let alarm_count = safe_startup_count("alertas", || alarm_report.list_alarms(uid).len());
+                        let study_count = safe_startup_count("estudos", || studies_report.list_sessions(uid, 12, now_report).len());
+                        let dict_count = safe_startup_count("dicionário", || dict_report.list_words(uid).len());
+                        let movies_count = safe_startup_count("filmes/séries", || movies_report.list_movies(uid).len());
 
                         crate::log_status!("  ┌─ Usuário: {} ({})", name, uid);
                         crate::log_status!("  │  Senhas no cofre : {}", pw_count);
@@ -1698,8 +1718,6 @@ pub fn run() {
                 } else {
                     crate::log_warn!("Não foi possível listar usuários no startup.");
                 }
-
-                
             }
             // ──────────────────────────────────────────────────────────────────
 
