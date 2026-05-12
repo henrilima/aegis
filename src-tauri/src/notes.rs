@@ -26,10 +26,11 @@ pub struct FileSystemItem {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct NoteMeta {
     pub id: i32,
+    #[serde(rename = "userId", alias = "user_id")]
     pub user_id: String,
+    #[serde(rename = "createdAt", alias = "created_at")]
     pub created_at: String,
     #[serde(default)]
     pub pinned: bool,
@@ -45,22 +46,31 @@ impl NoteManager {
     pub fn new(_app_handle: &AppHandle) -> Self {
         let current_exe = std::env::current_exe().unwrap_or_default();
         let current_dir = std::env::current_dir().unwrap_or_default();
-        
+
         let path_str = current_exe.to_string_lossy();
-        let base_dir = if path_str.contains("target\\debug") || path_str.contains("target\\release") {
+        let base_dir = if path_str.contains("target\\debug") || path_str.contains("target\\release")
+        {
             current_dir
         } else {
             current_exe.parent().unwrap_or(&current_dir).to_path_buf()
         };
-        
+
         let notes_dir = base_dir.join("notes");
         let _ = fs::create_dir_all(&notes_dir);
-        
+
         NoteManager { notes_dir }
     }
 
     fn sanitize_filename(name: &str) -> String {
-        name.chars().map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { '_' }).collect()
+        name.chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect()
     }
 
     fn get_note_path(&self, id: i32, title: &str, parent_path: Option<&str>) -> PathBuf {
@@ -99,54 +109,54 @@ impl NoteManager {
     }
 
     fn parse_note_file(&self, path: &PathBuf) -> Result<Note, String> {
-    let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let content = content.replace("\r\n", "\n");
+        let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+        let content = content.replace("\r\n", "\n");
 
-    if content.starts_with("---\n") {
-        if let Some(end_idx) = content[4..].find("\n---\n") {
-            let frontmatter_str = &content[4..end_idx + 4];
-            let body = &content[end_idx + 9..];
+        if content.starts_with("---\n") {
+            if let Some(end_idx) = content[4..].find("\n---\n") {
+                let frontmatter_str = &content[4..end_idx + 4];
+                let body = &content[end_idx + 9..];
 
-            let meta: NoteMeta =
-                serde_yaml::from_str(frontmatter_str).map_err(|e| e.to_string())?;
+                let meta: NoteMeta =
+                    serde_yaml::from_str(frontmatter_str).map_err(|e| e.to_string())?;
 
-            let mut title = String::new();
-            let mut stripped_body = body;
-            if let Some(first_line) = body.lines().next() {
-                if first_line.starts_with("# ") {
-                    title = first_line[2..].trim().to_string();
-                    if let Some(rest_idx) = body.find('\n') {
-                        stripped_body = &body[rest_idx + 1..];
+                let mut title = String::new();
+                let mut stripped_body = body;
+                if let Some(first_line) = body.lines().next() {
+                    if first_line.starts_with("# ") {
+                        title = first_line[2..].trim().to_string();
+                        if let Some(rest_idx) = body.find('\n') {
+                            stripped_body = &body[rest_idx + 1..];
+                        }
                     }
                 }
+
+                let relative_path = path
+                    .strip_prefix(&self.notes_dir)
+                    .ok()
+                    .and_then(|p| p.parent())
+                    .map(|p| p.to_string_lossy().to_string());
+
+                return Ok(Note {
+                    id: Some(meta.id),
+                    user_id: meta.user_id,
+                    title,
+                    content: stripped_body.trim().to_string(),
+                    created_at: meta.created_at,
+                    pinned: meta.pinned,
+                    path: relative_path,
+                    color: meta.color,
+                });
             }
-
-            let relative_path = path
-                .strip_prefix(&self.notes_dir)
-                .ok()
-                .and_then(|p| p.parent())
-                .map(|p| p.to_string_lossy().to_string());
-
-            return Ok(Note {
-                id: Some(meta.id),
-                user_id: meta.user_id,
-                title,
-                content: stripped_body.trim().to_string(),
-                created_at: meta.created_at,
-                pinned: meta.pinned,
-                path: relative_path,
-                color: meta.color,
-            });
         }
-    }
-        
-        Err("Formato invalido".to_string())
+
+        Err("Formato inválido".to_string())
     }
 
     fn write_note_file(&self, note: &Note) -> Result<(), String> {
         let id = note.id.unwrap_or(0);
         let path = self.get_note_path(id, &note.title, note.path.as_deref());
-        
+
         // Garante que o diretório pai existe
         if let Some(parent) = path.parent() {
             let _ = fs::create_dir_all(parent);
@@ -159,10 +169,15 @@ impl NoteManager {
             pinned: note.pinned,
             color: note.color.clone(),
         };
-        
+
         let frontmatter = serde_yaml::to_string(&meta).unwrap_or_default();
-        let content = format!("---\n{}\n---\n# {}\n\n{}", frontmatter.trim(), note.title, note.content);
-        
+        let content = format!(
+            "---\n{}\n---\n# {}\n\n{}",
+            frontmatter.trim(),
+            note.title,
+            note.content
+        );
+
         fs::write(&path, content).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -177,14 +192,19 @@ impl NoteManager {
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                let rel_path = path.strip_prefix(&self.notes_dir)
+                let rel_path = path
+                    .strip_prefix(&self.notes_dir)
                     .unwrap_or(&path)
                     .to_string_lossy()
                     .to_string();
 
                 if path.is_dir() {
                     items.push(FileSystemItem {
-                        name: path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                        name: path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string(),
                         is_dir: true,
                         path: rel_path,
                         note: None,
@@ -209,7 +229,7 @@ impl NoteManager {
     pub fn add_note(&self, note: Note) -> Result<(), String> {
         let mut next_id = 1;
         self.find_max_id(&self.notes_dir, &mut next_id);
-        
+
         let mut new_note = note.clone();
         new_note.id = Some(next_id);
         self.write_note_file(&new_note)
@@ -280,7 +300,7 @@ impl NoteManager {
     pub fn move_item(&self, source_path: String, dest_path: String) -> Result<(), String> {
         let source = self.notes_dir.join(&source_path);
         let mut dest = self.notes_dir.join(&dest_path);
-        
+
         if !source.exists() {
             return Err("Origem não encontrada".to_string());
         }
@@ -303,9 +323,7 @@ impl NoteManager {
     pub fn list_notes(&self, user_id: &str) -> Vec<Note> {
         let mut notes = Vec::new();
         self.list_notes_recursive(&self.notes_dir, user_id, &mut notes);
-        notes.sort_by(|a, b| {
-            b.pinned.cmp(&a.pinned).then(b.id.cmp(&a.id))
-        });
+        notes.sort_by(|a, b| b.pinned.cmp(&a.pinned).then(b.id.cmp(&a.id)));
         notes
     }
 
@@ -339,3 +357,55 @@ impl NoteManager {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn manager_for_test(name: &str) -> NoteManager {
+        let dir =
+            std::env::temp_dir().join(format!("aegis_notes_test_{}_{}", name, std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        NoteManager { notes_dir: dir }
+    }
+
+    #[test]
+    fn le_notas_antigas_sem_cor_e_com_metadados_snake_case() {
+        let manager = manager_for_test("snake_case");
+        let path = manager.notes_dir.join("1_Antiga.md");
+        fs::write(
+            &path,
+            "---\nid: 1\nuser_id: usuario\ncreated_at: 2026-05-01T00:00:00Z\npinned: true\n---\n# Antiga\n\nConteúdo antigo",
+        )
+        .unwrap();
+
+        let note = manager.parse_note_file(&path).unwrap();
+
+        assert_eq!(note.id, Some(1));
+        assert_eq!(note.user_id, "usuario");
+        assert_eq!(note.title, "Antiga");
+        assert_eq!(note.content, "Conteúdo antigo");
+        assert!(note.pinned);
+        assert_eq!(note.color, None);
+    }
+
+    #[test]
+    fn le_notas_novas_com_cor_e_metadados_camel_case() {
+        let manager = manager_for_test("camel_case");
+        let path = manager.notes_dir.join("2_Nova.md");
+        fs::write(
+            &path,
+            "---\nid: 2\nuserId: usuario\ncreatedAt: 2026-05-02T00:00:00Z\npinned: false\ncolor: fuchsia\n---\n# Nova\n\nConteúdo novo",
+        )
+        .unwrap();
+
+        let note = manager.parse_note_file(&path).unwrap();
+
+        assert_eq!(note.id, Some(2));
+        assert_eq!(note.user_id, "usuario");
+        assert_eq!(note.title, "Nova");
+        assert_eq!(note.content, "Conteúdo novo");
+        assert!(!note.pinned);
+        assert_eq!(note.color, Some("fuchsia".to_string()));
+    }
+}

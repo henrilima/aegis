@@ -17,9 +17,6 @@ interface NoteCreateModalProps {
   onClose: () => void;
 }
 
-/**
- * Modal para criação de novas notas com visualização em tempo real (Markdown).
- */
 export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
@@ -57,9 +54,7 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
       aria-modal="true"
       aria-labelledby="note-create-title"
     >
-      {/* Container fullscreen com margens mínimas */}
       <div className="relative w-full h-full bg-background border-x border-border animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col">
-        {/* Cabeçalho */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 shrink-0 bg-background/50 backdrop-blur-sm z-10">
           <div className="flex items-center gap-3">
             <div
@@ -105,15 +100,12 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
           </ToolTip>
         </div>
 
-        {/* Área de Conteúdo Split — ocupa o restante da altura */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-          {/* Esquerda: Editor */}
           <form
             id="note-form"
             onSubmit={handleSubmit}
             className="flex-1 flex flex-col p-6 gap-4 border-r border-border/50 overflow-hidden"
           >
-            {/* Título */}
             <div className="space-y-2 shrink-0">
               <Label htmlFor="ncm-title" className={lc}>
                 Título da Nota
@@ -129,7 +121,6 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
               />
             </div>
 
-            {/* Toolbar + Textarea */}
             <div className="flex-1 flex flex-col gap-2 min-h-0">
               <div className="flex items-center justify-between shrink-0">
                 <Label htmlFor="ncm-content" className={lc}>
@@ -163,7 +154,6 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
             </div>
           </form>
 
-          {/* Direita: Preview com scroll */}
           <div className="flex-1 bg-black/20 flex flex-col overflow-hidden">
             <div className="px-6 py-3 border-b border-border/40 flex items-center gap-2 shrink-0">
               <Eye className="w-3.5 h-3.5 text-muted-foreground" />
@@ -233,7 +223,6 @@ export function NoteCreateModal({ onAdd, onClose }: NoteCreateModalProps) {
           </div>
         </div>
 
-        {/* Rodapé Fixo */}
         <div className="px-6 py-4 border-t border-border shrink-0 bg-background/50 flex gap-3">
           <button
             type="button"

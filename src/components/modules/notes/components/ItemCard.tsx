@@ -36,7 +36,6 @@ interface ItemCardProps {
   searchQuery?: string;
 }
 
-/** Card de arquivo/pasta com suporte a drag-and-drop e menu de contexto */
 export function ItemCard({
   item,
   onNavigate,
@@ -51,7 +50,6 @@ export function ItemCard({
   const isFolder = item.isDir;
   const isPinned = !isFolder && item.note?.pinned;
 
-  // Usar resolveTaskStyles para notas
   const noteStyles =
     !isFolder && item.note ? resolveTaskStyles(item.note.color) : null;
 

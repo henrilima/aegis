@@ -56,7 +56,6 @@ export function NoteExpandModal({
       zIndex="z-60"
       disableClose={isEditing}
     >
-      {/* Barra de Ferramentas Superior */}
       <div className="flex items-center justify-between p-5 border-b border-neutral-900 bg-background/50 backdrop-blur-xl z-20">
         <div className="flex items-center gap-4 flex-1 mr-4">
           <div
@@ -120,15 +119,11 @@ export function NoteExpandModal({
         </div>
       </div>
 
-      {/* Bloco de cor removido — seletor agora fica no MarkdownToolbar */}
-
-      {/* Área de Visualização/Edição */}
       <div
         className={`flex-1 overflow-hidden flex ${isEditing ? "flex-col lg:flex-row" : "flex-col"}`}
       >
         {isEditing ? (
           <>
-            {/* Editor de Texto */}
             <div className="flex-1 relative w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-neutral-900 bg-background flex flex-col">
               <div className="px-8 lg:px-12 pt-4 pb-2 shrink-0">
                 <MarkdownToolbar
@@ -148,7 +143,6 @@ export function NoteExpandModal({
                 placeholder="Escreva sua nota aqui..."
               />
             </div>
-            {/* Preview */}
             <div className="flex-1 h-full w-full lg:w-1/2 overflow-y-auto p-8 lg:p-12 custom-scrollbar bg-card/10">
               <div
                 className={cn(
@@ -193,7 +187,6 @@ export function NoteExpandModal({
             </div>
           </>
         ) : (
-          /* Modo Leitura */
           <div className="flex-1 overflow-y-auto p-8 lg:p-16 custom-scrollbar ">
             <div className="max-w-4xl mx-auto w-full">
               <div

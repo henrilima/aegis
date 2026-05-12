@@ -6,9 +6,6 @@ interface StatsCardProps {
   count: number;
 }
 
-/**
- * Card de estatística simples para o resumo de notas
- */
 export function StatsCard({ count }: StatsCardProps) {
   const theme = getColorTheme(getModuleColor("notes"));
   return (
