@@ -12,7 +12,9 @@ export function useZoom() {
   useEffect(() => {
     const applyZoom = async () => {
       try {
-        const config = await invoke<{ appZoom: number }>("get_app_config");
+        const config = await invoke<{ appZoom: number }>(
+          "global_get_app_config",
+        );
         const zoom = config.appZoom || 100;
 
         // Converte para fator decimal (ex: 1.25)
@@ -21,13 +23,23 @@ export function useZoom() {
         // Em Tauri 2, o zoom é controlado pelo Webview
         const webview = getCurrentWebview();
 
-        // Remove zoom CSS antigo se existir
-        document.documentElement.style.zoom = "";
-
-        // Aplica o zoom nativo do Webview
+        // Aplica o zoom nativo do Webview com tratamento de fallback real
         if (webview && typeof webview.setZoom === "function") {
-          await webview.setZoom(factor);
-          // Fallback para CSS se a API nativa falhar
+          try {
+            await webview.setZoom(factor);
+            // Garante que o zoom CSS está limpo se a API nativa funcionou
+            document.documentElement.style.zoom = "";
+          } catch (err) {
+            console.warn(
+              "Native webview.setZoom failed, falling back to CSS zoom:",
+              err,
+            );
+            (
+              document.documentElement.style as unknown as { zoom: string }
+            ).zoom = `${zoom}%`;
+          }
+        } else {
+          // Fallback para CSS se a API nativa não estiver disponível
           (document.documentElement.style as unknown as { zoom: string }).zoom =
             `${zoom}%`;
         }

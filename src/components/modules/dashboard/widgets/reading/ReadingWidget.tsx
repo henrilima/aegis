@@ -59,27 +59,27 @@ export function ReadingWidget({
         <div className="flex flex-col gap-[4cqw] @sm:gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-[6cqw] @sm:gap-6">
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl @sm:text-3xl font-black text-foreground tabular-nums">
+                  <span className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                     {weekPages}
                   </span>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                  <span className="text-xs font-bold text-muted-foreground">
                     pág.
                   </span>
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Semana
                 </p>
               </div>
               <div className="w-px h-8 bg-muted" />
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl @sm:text-3xl font-black text-foreground tabular-nums">
+                  <span className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                     {completedBooks}
                   </span>
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Lidos
                 </p>
               </div>
@@ -115,11 +115,11 @@ export function ReadingWidget({
                 </span>
                 <span className={theme.text}>{weekProgress}%</span>
               </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
-                    theme.bgHover.replace("hover:bg", "bg").replace("/20", ""),
+                    theme.solid,
                   )}
                   style={{ width: `${weekProgress}%` }}
                 />
@@ -141,42 +141,47 @@ export function ReadingWidget({
                 return (
                   <div
                     key={book.id}
-                    className="p-[2.5cqw] @sm:p-2.5 rounded-xl bg-muted border border-border/50 space-y-2"
+                    className="flex flex-col p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-2"
                   >
-                    <div className="flex items-start gap-2">
-                      <div
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full shrink-0 mt-1.5",
-                          theme.bgHover
-                            .replace("hover:bg", "bg")
-                            .replace("/20", "/70"),
-                        )}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[3cqw] @sm:text-xs font-semibold text-foreground truncate">
-                          {book.title}
-                        </p>
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-indigo-500">
+                          <BookOpen className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-bold text-foreground truncate">
+                            {book.title}
+                          </span>
+                          <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                            Lendo atualmente
+                          </span>
+                        </div>
                       </div>
-                      <span
-                        className={cn(
-                          "text-[2.5cqw] @sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0",
-                          theme.text,
-                          theme.bg,
-                        )}
-                      >
-                        {progress}%
-                      </span>
+
+                      <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                        <span
+                          className={cn(
+                            "block text-xs font-bold leading-none",
+                            theme.text,
+                          )}
+                        >
+                          {progress}%
+                        </span>
+                        <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                          {book.currentPage}/{book.totalPages} p.
+                        </span>
+                      </div>
                     </div>
                     {/* Mini barra de progresso do livro */}
-                    <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
                           progress >= 80
                             ? "bg-emerald-500"
                             : progress >= 40
-                              ? theme.text.replace("text-", "bg-")
-                              : "bg-neutral-600",
+                              ? theme.solid
+                              : "bg-neutral-500 dark:bg-neutral-600",
                         )}
                         style={{ width: `${progress}%` }}
                       />
@@ -191,28 +196,35 @@ export function ReadingWidget({
               {recentSessions.slice(0, 3).map((s, i) => (
                 <div
                   key={s.id ?? i}
-                  className="flex items-center gap-[2cqw] @sm:gap-2 p-[2cqw] @sm:p-2 rounded-xl bg-muted border border-border/50"
+                  className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
                 >
-                  <div
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      theme.bgHover
-                        .replace("hover:bg", "bg")
-                        .replace("/20", "/60"),
-                    )}
-                  />
-                  <span className="text-[3cqw] @sm:text-xs font-medium text-muted-foreground truncate flex-1">
-                    {s.date}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[2.5cqw] @sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap",
-                      theme.text,
-                      theme.bg,
-                    )}
-                  >
-                    {s.pagesRead} pág.
-                  </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-indigo-500">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold text-foreground truncate">
+                        Sessão de Leitura
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                        {s.date}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                    <span
+                      className={cn(
+                        "block text-xs font-bold leading-none",
+                        theme.text,
+                      )}
+                    >
+                      {s.pagesRead}
+                    </span>
+                    <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                      Páginas
+                    </span>
+                  </div>
                 </div>
               ))}
               {recentSessions.length === 0 && (

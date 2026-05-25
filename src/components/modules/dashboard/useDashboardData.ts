@@ -207,11 +207,11 @@ export function useDashboardData() {
       const config = await invoke<{
         weekStartDay: number;
         showHolidays: boolean;
-      }>("get_app_config");
+      }>("global_get_app_config");
       const results = await Promise.allSettled([
-        invoke<Habit[]>("list_habits", { userId: uid }),
-        invoke<Note[]>("list_notes", { userId: uid }),
-        invoke<PomodoroState>("get_pomodoro_state", { userId: uid }),
+        invoke<Habit[]>("habit_list_habits", { userId: uid }),
+        invoke<Note[]>("note_list_notes", { userId: uid }),
+        invoke<PomodoroState>("pomodoro_get_pomodoro_state", { userId: uid }),
         invoke<StudySession[]>("estudos_list_sessions", {
           userId: uid,
           monthsBack: 1,
@@ -222,9 +222,9 @@ export function useDashboardData() {
           monthsBack: 1,
         }),
         invoke<SleepGoal>("sono_get_goal", { userId: uid }),
-        invoke<PasswordEntry[]>("list_passwords", { userId: uid }),
-        invoke<boolean>("check_vault", { userId: uid }),
-        invoke<AppAlarm[]>("list_alarms", { userId: uid }),
+        invoke<PasswordEntry[]>("password_list_passwords", { userId: uid }),
+        invoke<boolean>("password_check_vault", { userId: uid }),
+        invoke<AppAlarm[]>("alarm_list_alarms", { userId: uid }),
 
         invoke<PerformanceSummary>("stats_get_performance_summary", {
           userId: uid,
@@ -365,7 +365,7 @@ export function useDashboardData() {
   const handleCreateNote = async (title: string, content: string) => {
     if (!user?.id) return;
     try {
-      await invoke("add_note", {
+      await invoke("note_add_note", {
         note: {
           userId: String(user.id),
           title: title.trim(),

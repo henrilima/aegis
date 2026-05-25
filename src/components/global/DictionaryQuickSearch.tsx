@@ -142,7 +142,7 @@ export function DictionaryQuickSearch() {
           <div
             className={cn(
               "relative w-full max-w-xl bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200",
-              "border-t-2",
+
               theme.border.split(" ")[0].replace("/20", ""),
             )}
           >

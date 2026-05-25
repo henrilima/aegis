@@ -16,8 +16,8 @@ export function VersionGuard() {
   const prepareChangelog = useCallback(async () => {
     console.log("[Aegis] Iniciando carregamento do changelog...");
     try {
-      const currentVersion = await invoke<string>("get_app_version");
-      const content = await invoke<string>("read_changelog");
+      const currentVersion = await invoke<string>("global_get_app_version");
+      const content = await invoke<string>("global_read_changelog");
 
       const parsed: { updates: string[]; fixes: string[] } = {
         updates: [],
@@ -70,7 +70,7 @@ export function VersionGuard() {
     // Verificação automática ao iniciar (apenas se a versão mudou)
     const checkVersion = async () => {
       await new Promise((r) => setTimeout(r, 2000));
-      const currentVersion = await invoke<string>("get_app_version");
+      const currentVersion = await invoke<string>("global_get_app_version");
       const store = await load("aegis-app-metadata.json", {
         defaults: {},
         autoSave: true,
@@ -93,8 +93,13 @@ export function VersionGuard() {
 
     checkVersion();
     window.addEventListener("open-whats-new", handleManualOpen);
+    const handleCloseAll = () => setShowModal(false);
+    window.addEventListener("close-all-modals", handleCloseAll);
 
-    return () => window.removeEventListener("open-whats-new", handleManualOpen);
+    return () => {
+      window.removeEventListener("open-whats-new", handleManualOpen);
+      window.removeEventListener("close-all-modals", handleCloseAll);
+    };
   }, [prepareChangelog]);
 
   const handleClose = async () => {

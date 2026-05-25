@@ -47,7 +47,7 @@ export default function NotesPage() {
   const fetchNotes = useCallback(async () => {
     if (!uid) return;
     try {
-      const res = await invoke<Note[]>("list_notes", { userId: uid });
+      const res = await invoke<Note[]>("note_list_notes", { userId: uid });
       setNotes(res);
     } catch {
       toast.error("Erro ao sincronizar notas");
@@ -68,7 +68,7 @@ export default function NotesPage() {
   const handleAdd = async (title: string, content: string, color?: string) => {
     if (!uid) return;
     try {
-      await invoke("add_note", {
+      await invoke("note_add_note", {
         note: {
           userId: uid,
           title: title.trim(),
@@ -91,7 +91,7 @@ export default function NotesPage() {
 
   const handleUpdate = async (note: Note) => {
     try {
-      await invoke("update_note", { note });
+      await invoke("note_update_note", { note });
       setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota atualizada!");
@@ -104,7 +104,7 @@ export default function NotesPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await invoke("delete_note", { id });
+      await invoke("note_delete_note", { id });
       setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota removida");
@@ -148,7 +148,7 @@ export default function NotesPage() {
             label: "Abrir Pasta",
             icon: FolderOpen,
             tooltip: "Abrir pasta de notas",
-            onClick: () => invoke("open_notes_folder"),
+            onClick: () => invoke("note_open_notes_folder"),
           },
           {
             id: "info",

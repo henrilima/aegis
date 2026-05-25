@@ -1,20 +1,17 @@
 "use client";
 
-import { AlertTriangle, Calendar as CalendarIcon, Check } from "lucide-react";
+import { AlertTriangle, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { resolveColor } from "@/colors.config";
+import { ColorPicker } from "@/components/global/ColorPicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTime } from "@/context/TimeContext";
 import { formatDateLocal } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
 import type { CalendarEvent, DeadlineCategory } from "../../types";
-import {
-  DEADLINE_COLORS,
-  DEADLINE_LABELS,
-  EVENT_COLOR_OPTIONS,
-} from "../../types";
+import { DEADLINE_COLORS, DEADLINE_LABELS } from "../../types";
 
 interface EventFormProps {
   userId: string;
@@ -37,7 +34,7 @@ export function EventForm({ userId, initial, onSave }: EventFormProps) {
     time: initial?.time ?? "",
     eventType: initial?.eventType ?? "event",
     deadlineCategory: initial?.deadlineCategory,
-    color: initial?.color ?? EVENT_COLOR_OPTIONS[0].value,
+    color: initial?.color ?? "",
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -190,29 +187,13 @@ export function EventForm({ userId, initial, onSave }: EventFormProps) {
           ) : (
             <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-300">
               <Label className={lc}>Cor do marcador</Label>
-              <div className="grid grid-cols-6 gap-2 px-0.5 max-h-[120px] overflow-y-auto custom-scrollbar p-1">
-                {EVENT_COLOR_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    title={opt.label}
-                    onClick={() => set("color", opt.value)}
-                    className={`w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center border-2 shadow-sm ${
-                      form.color === opt.value
-                        ? "border-foreground scale-110 shadow-md"
-                        : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
-                    }`}
-                    style={{ backgroundColor: resolveColor(opt.value) }}
-                  >
-                    {form.color === opt.value && (
-                      <Check
-                        className="w-4 h-4 text-white drop-shadow-md"
-                        strokeWidth={4}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
+              <ColorPicker
+                value={form.color || ""}
+                onChange={(c) => set("color", c)}
+                placeholder="Padrão"
+                defaultColor={getModuleColor("calendar")}
+                className="w-full"
+              />
             </div>
           )}
         </div>

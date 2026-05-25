@@ -1,22 +1,20 @@
-use serde::{Deserialize, Serialize};
+use crate::config::ConfigManager;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
-use crate::config::ConfigManager;
-
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SleepEntry {
     pub id: Option<i64>,
     pub user_id: String,
-    pub date: String,            
-    pub bedtime: String,         
-    pub wake_time: String,       
-    pub duration_minutes: i32,   
-    pub quality: i32,            
+    pub date: String,
+    pub bedtime: String,
+    pub wake_time: String,
+    pub duration_minutes: i32,
+    pub quality: i32,
     pub note: Option<String>,
     pub created_at: Option<String>,
 }
@@ -25,12 +23,10 @@ pub struct SleepEntry {
 #[serde(rename_all = "camelCase")]
 pub struct SleepGoal {
     pub user_id: String,
-    pub target_hours: f64,       
+    pub target_hours: f64,
     pub target_bedtime: String,
     pub reminder_enabled: bool,
 }
-
-
 
 pub struct SleepManager {
     db_path: PathBuf,
@@ -38,7 +34,10 @@ pub struct SleepManager {
 
 impl SleepManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("Falha ao obter diretório de dados");
+        let app_dir = app_handle
+            .path()
+            .app_data_dir()
+            .expect("Falha ao obter diretório de dados");
         let db_path = app_dir.join("passwords.db");
 
         let conn = Connection::open(&db_path).expect("Falha ao abrir banco");
@@ -61,20 +60,24 @@ impl SleepManager {
                 target_hours    REAL NOT NULL DEFAULT 8.0,
                 target_bedtime  TEXT NOT NULL DEFAULT '23:00'
             );",
-        ).ok();
+        )
+        .ok();
 
-        conn.execute("ALTER TABLE sleep_goals ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 0", []).ok();
+        conn.execute(
+            "ALTER TABLE sleep_goals ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 0",
+            [],
+        )
+        .ok();
 
         Self { db_path }
     }
 
     fn conn(&self) -> Connection {
         let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha ao definir timeout de espera");
+        conn.busy_timeout(std::time::Duration::from_millis(5000))
+            .expect("Falha ao definir timeout de espera");
         conn
     }
-
-    
 
     pub fn upsert_entry(&self, e: SleepEntry) -> Result<i64, String> {
         let conn = self.conn();
@@ -94,21 +97,33 @@ impl SleepManager {
 
     pub fn delete_entry(&self, id: i64, user_id: &str) -> Result<(), String> {
         let conn = self.conn();
-        conn.execute("DELETE FROM sleep_entries WHERE id=?1 AND user_id=?2", params![id, user_id])
-            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "DELETE FROM sleep_entries WHERE id=?1 AND user_id=?2",
+            params![id, user_id],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
-    pub fn list_entries(&self, user_id: &str, months_back: i32, now: DateTime<Utc>) -> Vec<SleepEntry> {
+    pub fn list_entries(
+        &self,
+        user_id: &str,
+        months_back: i32,
+        now: DateTime<Utc>,
+    ) -> Vec<SleepEntry> {
         let conn = self.conn();
         let now_local = now.with_timezone(&chrono::Local);
-        let cutoff_date = (now_local - chrono::Duration::days((months_back * 30) as i64)).format("%Y-%m-%d").to_string();
-        let mut stmt = conn.prepare(
-            "SELECT id, date, bedtime, wake_time, duration_minutes, quality, note, created_at
+        let cutoff_date = (now_local - chrono::Duration::days((months_back * 30) as i64))
+            .format("%Y-%m-%d")
+            .to_string();
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, date, bedtime, wake_time, duration_minutes, quality, note, created_at
              FROM sleep_entries
              WHERE user_id=?1 AND date >= ?2
-             ORDER BY date DESC"
-        ).unwrap();
+             ORDER BY date DESC",
+            )
+            .unwrap();
 
         stmt.query_map(params![user_id, cutoff_date], |row| {
             Ok(SleepEntry {
@@ -122,18 +137,28 @@ impl SleepManager {
                 note: row.get(6)?,
                 created_at: row.get(7)?,
             })
-        }).unwrap().filter_map(|r| r.ok()).collect()
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect()
     }
-
-    
 
     pub fn upsert_goal(&self, g: SleepGoal, app_handle: &AppHandle) -> Result<(), String> {
         let config_manager = ConfigManager::new(app_handle);
-        
+
         // Sincroniza com a config global
-        let _ = config_manager.update_config("notif_sleep_bedtime", serde_json::Value::Bool(g.reminder_enabled));
-        let _ = config_manager.update_config("notif_sleep_bedtime_time", serde_json::Value::String(g.target_bedtime.clone()));
-        let _ = config_manager.update_config("notif_sleep_target_hours", serde_json::Value::Number(serde_json::Number::from_f64(g.target_hours).unwrap()));
+        let _ = config_manager.update_config(
+            "notif_sleep_bedtime",
+            serde_json::Value::Bool(g.reminder_enabled),
+        );
+        let _ = config_manager.update_config(
+            "notif_sleep_bedtime_time",
+            serde_json::Value::String(g.target_bedtime.clone()),
+        );
+        let _ = config_manager.update_config(
+            "notif_sleep_target_hours",
+            serde_json::Value::Number(serde_json::Number::from_f64(g.target_hours).unwrap()),
+        );
 
         let conn = self.conn();
         conn.execute(
@@ -143,15 +168,21 @@ impl SleepManager {
                 target_hours     = excluded.target_hours,
                 target_bedtime   = excluded.target_bedtime,
                 reminder_enabled = excluded.reminder_enabled",
-            params![g.user_id, g.target_hours, g.target_bedtime, if g.reminder_enabled { 1 } else { 0 }],
-        ).map_err(|e| e.to_string())?;
+            params![
+                g.user_id,
+                g.target_hours,
+                g.target_bedtime,
+                if g.reminder_enabled { 1 } else { 0 }
+            ],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn get_goal(&self, user_id: &str, app_handle: &AppHandle) -> SleepGoal {
         let config_manager = ConfigManager::new(app_handle);
         let config = config_manager.get_config();
-        
+
         let conn = self.conn();
         let db_goal: Option<(f64, String, bool)> = conn.query_row(
             "SELECT target_hours, target_bedtime, reminder_enabled FROM sleep_goals WHERE user_id=?1",
@@ -168,21 +199,25 @@ impl SleepManager {
                     target_bedtime: config.notif_sleep_bedtime_time,
                     reminder_enabled: config.notif_sleep_bedtime,
                 }
-            },
+            }
             None => SleepGoal {
                 user_id: user_id.to_string(),
                 target_hours: config.notif_sleep_target_hours,
                 target_bedtime: config.notif_sleep_bedtime_time,
                 reminder_enabled: config.notif_sleep_bedtime,
-            }
+            },
         }
     }
 
-    pub fn export_csv(&self, user_id: &str, dest_path: &str, now: DateTime<Utc>) -> Result<(), String> {
+    pub fn export_csv(
+        &self,
+        user_id: &str,
+        dest_path: &str,
+        now: DateTime<Utc>,
+    ) -> Result<(), String> {
         let entries = self.list_entries(user_id, 120, now);
-        let mut out = String::from(
-            "data,hora_dormir,hora_acordar,duracao_minutos,qualidade,nota\n"
-        );
+        let mut out =
+            String::from("data,hora_dormir,hora_acordar,duracao_minutos,qualidade,nota\n");
         for e in entries {
             out.push_str(&format!(
                 "{},{},{},{},{},{}\n",
@@ -191,7 +226,10 @@ impl SleepManager {
                 e.wake_time,
                 e.duration_minutes,
                 e.quality,
-                e.note.unwrap_or_default().replace(',', ";").replace('\n', " ")
+                e.note
+                    .unwrap_or_default()
+                    .replace(',', ";")
+                    .replace('\n', " ")
             ));
         }
         std::fs::write(dest_path, out).map_err(|e| e.to_string())?;
@@ -202,9 +240,13 @@ impl SleepManager {
         let csv = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
         let mut count = 0usize;
         for (i, line) in csv.lines().enumerate() {
-            if i == 0 { continue; } 
+            if i == 0 {
+                continue;
+            }
             let cols: Vec<&str> = line.splitn(6, ',').collect();
-            if cols.len() < 5 { continue; }
+            if cols.len() < 5 {
+                continue;
+            }
             let e = SleepEntry {
                 id: None,
                 user_id: user_id.to_string(),
@@ -221,4 +263,68 @@ impl SleepManager {
         }
         Ok(count)
     }
+}
+
+#[tauri::command]
+pub async fn sono_upsert_entry(
+    state: tauri::State<'_, crate::AppState>,
+    entry: SleepEntry,
+) -> Result<i64, String> {
+    state.sleep.upsert_entry(entry)
+}
+
+#[tauri::command]
+pub async fn sono_delete_entry(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+) -> Result<(), String> {
+    state.sleep.delete_entry(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn sono_list_entries(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    months_back: i32,
+) -> Result<Vec<SleepEntry>, String> {
+    let now = state.config.get_now();
+    Ok(state.sleep.list_entries(&user_id, months_back, now))
+}
+
+#[tauri::command]
+pub async fn sono_upsert_goal(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    goal: SleepGoal,
+) -> Result<(), String> {
+    state.sleep.upsert_goal(goal, &app_handle)
+}
+
+#[tauri::command]
+pub async fn sono_get_goal(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<SleepGoal, String> {
+    Ok(state.sleep.get_goal(&user_id, &app_handle))
+}
+
+#[tauri::command]
+pub async fn sono_export_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    dest_path: String,
+) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.sleep.export_csv(&user_id, &dest_path, now)
+}
+
+#[tauri::command]
+pub async fn sono_import_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    file_path: String,
+) -> Result<usize, String> {
+    state.sleep.import_csv(&user_id, &file_path)
 }

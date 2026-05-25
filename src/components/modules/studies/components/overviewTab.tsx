@@ -125,7 +125,6 @@ export function OverviewTab({
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl border border-border bg-card/40 backdrop-blur-xl p-8 flex flex-col md:flex-row items-center gap-8",
-          "border-t-2",
           theme.border.split(" ")[0].replace("/20", ""),
         )}
       >

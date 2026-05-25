@@ -33,7 +33,7 @@ export const MODULE_CONFIGS = {
   calendar: {
     route: "calendar",
     label: "Calendário",
-    color: "emerald",
+    color: "green",
   },
   pomodoro: {
     route: "pomodoro",
@@ -50,7 +50,7 @@ export const MODULE_CONFIGS = {
   notes: {
     route: "notes",
     label: "Anotações",
-    color: "lime",
+    color: "amber",
   },
   studies: {
     route: "studies",
@@ -65,7 +65,12 @@ export const MODULE_CONFIGS = {
   dictionary: {
     route: "dictionary",
     label: "Dicionário",
-    color: "sky",
+    color: "lime",
+  },
+  flashcards: {
+    route: "flashcards",
+    label: "Flashcards",
+    color: "cyan",
   },
 
   //  Entretenimento & Estilo de Vida
@@ -99,6 +104,27 @@ export const MODULE_CONFIGS = {
 } as const satisfies Record<string, ModuleConfig>;
 
 export type ModuleId = keyof typeof MODULE_CONFIGS;
+
+export const PORTAL_DESCRIPTIONS: Record<string, string> = {
+  passwords:
+    "Cofre de segurança local de senhas com criptografia avançada AES-256-GCM.",
+  tasks:
+    "Gerenciador de tarefas com prioridades, datas de vencimento e sub-tarefas.",
+  calendar:
+    "Visualização integrada de eventos e tarefas agendadas em calendário.",
+  notes: "Editor pessoal de anotações com suporte nativo a Markdown.",
+  studies:
+    "Controle do tempo de estudo por matéria, progresso e metas semanais.",
+  reading: "Acompanhamento de hábitos de leitura, páginas lidas e progresso.",
+  dictionary: "Glossário e dicionário bilíngue pessoal de termos e idiomas.",
+  movies: "Acervo cinematográfico pessoal integrado com busca automática TMDb.",
+  habits: "Rastreamento diário de hábitos e sequências de consistência.",
+  pomodoro: "Temporizador Pomodoro com contagem regressiva suave.",
+  sleep: "Registro e análise de horas de sono e eficiência de repouso.",
+  alarms: "Gerenciamento de despertadores e múltiplos alarmes recorrentes.",
+  statistics: "Painel central de estatísticas integradas e heatmaps.",
+  flashcards: "Memorização ativa com baralhos, repetição espaçada e flip 3D.",
+};
 
 /**
  * Retorna a configuração de um módulo pelo ID da rota.

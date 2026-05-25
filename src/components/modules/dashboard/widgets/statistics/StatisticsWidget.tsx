@@ -49,13 +49,7 @@ export function StatisticsWidget({
     >
       <div className="flex flex-col gap-[6cqw] @sm:gap-4">
         <div className="grid grid-cols-2 gap-[4cqw] @sm:gap-4">
-          <div
-            className={cn(
-              "p-[5cqw] @sm:p-5 rounded-xl border",
-              theme.bg,
-              theme.border,
-            )}
-          >
+          <div className="p-[5cqw] @sm:p-5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all text-left">
             <div className="flex items-center gap-1.5 mb-2">
               <TrendingUp
                 className={cn(
@@ -63,82 +57,112 @@ export function StatisticsWidget({
                   theme.text,
                 )}
               />
-              <span className="text-[3.5cqw] @sm:text-[11px] font-bold text-muted-foregroundr">
+              <span className="text-[3.5cqw] @sm:text-[11px] font-bold text-muted-foreground">
                 Consistência
               </span>
             </div>
-            <p className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
+            <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
               {summary.consistencyScore.toFixed(0)}%
             </p>
           </div>
-          <div className="p-[5cqw] @sm:p-5 rounded-xl bg-amber-500/5 border border-amber-500/10">
+          <div className="p-[5cqw] @sm:p-5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all text-left">
             <div className="flex items-center gap-1.5 mb-2">
-              <Zap className="w-[4cqw] h-[4cqw] @sm:w-3.5 @sm:h-3.5 text-amber-600 dark:text-amber-500" />
-              <span className="text-[3.5cqw] @sm:text-[11px] font-bold text-muted-foregroundr">
+              <Zap className="w-[4cqw] h-[4cqw] @sm:w-3.5 @sm:h-3.5 text-amber-500" />
+              <span className="text-[3.5cqw] @sm:text-[11px] font-bold text-muted-foreground">
                 Eficiência
               </span>
             </div>
-            <p className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
+            <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
               {summary.studyEfficiency.toFixed(1)}
             </p>
           </div>
         </div>
 
         <div className="space-y-[2.5cqw] @sm:space-y-3">
-          <div className="flex items-center justify-between p-[3.5cqw] @sm:p-4 rounded-xl bg-neutral-800/20 border border-border/40">
-            <div className="flex items-center gap-[3cqw] @sm:gap-3">
-              <Target className="w-[4.5cqw] h-[4.5cqw] @sm:w-4.5 @sm:h-4.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-[3.8cqw] @sm:text-sm font-semibold text-muted-foreground">
-                Taxa de Acerto
+          <div className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30 text-emerald-500">
+                <Target className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-foreground truncate">
+                  Taxa de Acerto
+                </span>
+                <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                  Questões respondidas
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
+              <span className="block text-xs font-bold leading-none text-emerald-400">
+                {summary.avgHitRate.toFixed(1)}%
+              </span>
+              <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                Acertos
               </span>
             </div>
-            <span className="text-[4cqw] @sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
-              {summary.avgHitRate.toFixed(1)}%
-            </span>
           </div>
 
-          <div className="flex items-center justify-between p-[3.5cqw] @sm:p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
-            <div className="flex items-center gap-[3cqw] @sm:gap-3">
-              <BookOpen className="w-[4.5cqw] h-[4.5cqw] @sm:w-4.5 @sm:h-4.5 text-orange-600 dark:text-orange-400" />
-              <span className="text-[3.8cqw] @sm:text-sm font-semibold text-muted-foreground">
-                PPM Médio (Leitura)
+          <div className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30 text-orange-500">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-foreground truncate">
+                  PPM Médio
+                </span>
+                <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                  Velocidade de leitura
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
+              <span className="block text-xs font-bold leading-none text-orange-400">
+                {summary.avgPpm.toFixed(1)}
+              </span>
+              <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                Pág / Min
               </span>
             </div>
-            <span className="text-[4cqw] @sm:text-sm font-black text-orange-600 dark:text-orange-400">
-              {summary.avgPpm.toFixed(1)}
-            </span>
           </div>
 
-          <div className="flex items-center justify-between p-[3.5cqw] @sm:p-4 rounded-xl bg-neutral-800/20 border border-border/40">
-            <div className="flex items-center gap-[3cqw] @sm:gap-3">
-              <BarChart3
+          <div className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
                 className={cn(
-                  "w-[4.5cqw] h-[4.5cqw] @sm:w-4.5 @sm:h-4.5",
+                  "shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30",
                   theme.text,
                 )}
-              />
-              <span className="text-[3.8cqw] @sm:text-sm font-semibold text-muted-foreground">
-                Dias Analisados
+              >
+                <BarChart3 className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-foreground truncate">
+                  Dias Analisados
+                </span>
+                <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                  Período avaliado
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
+              <span className="block text-xs font-bold leading-none text-zinc-300">
+                {summary.totalDaysAnalyzed}d
+              </span>
+              <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                Total
               </span>
             </div>
-            <span className="text-[4cqw] @sm:text-sm font-black text-foreground">
-              {summary.totalDaysAnalyzed}d
-            </span>
           </div>
         </div>
 
         {summary.peakStudySubject && (
-          <div className="mt-1">
+          <div className="mt-1 text-left">
             <p className="text-[10px] font-bold text-neutral-600 mb-1.5">
               Foco Principal
             </p>
-            <div
-              className={cn(
-                "px-3 py-1.5 rounded-lg border w-fit",
-                theme.bg,
-                theme.border,
-              )}
-            >
+            <div className="px-3 py-1.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 transition-all w-fit text-left">
               <span className={cn("text-xs font-bold", theme.text)}>
                 {summary.peakStudySubject}
               </span>

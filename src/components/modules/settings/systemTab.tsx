@@ -10,6 +10,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import type { ElementType } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -39,7 +40,6 @@ export function SystemTab() {
   } = useSettingsLogic();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-
   useEffect(() => {
     const checkFullscreen = async () => {
       const win = getCurrentWindow();
@@ -111,7 +111,7 @@ export function SystemTab() {
         <div className="space-y-2">
           <ToggleRow
             icon={Power}
-            title="Iniciar com o Windows"
+            title="Iniciar com o Sistema"
             description="Abre o Aegis automaticamente ao ligar o computador"
             active={startAtLogin}
             onClick={() => updateSystemConfig("autostart", !startAtLogin)}
@@ -213,10 +213,7 @@ export function SystemTab() {
           </div>
           <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
             <div
-              className={cn(
-                "h-full transition-all duration-300",
-                theme.text.replace("text-", "bg-"),
-              )}
+              className={cn("h-full transition-all duration-300", theme.solid)}
               style={{ width: `${((appZoom - 75) / (125 - 75)) * 100}%` }}
             />
           </div>
@@ -282,7 +279,7 @@ export function SystemTab() {
                 type="button"
                 className={cn(
                   "px-4 py-2 rounded-lg text-white font-bold text-xs lowercase transition-all cursor-pointer",
-                  theme.text.replace("text-", "bg-"),
+                  theme.solid,
                 )}
                 onClick={() => {
                   setShowSuggestions(false);
@@ -349,7 +346,7 @@ function ToggleRow({
   theme,
   disabled = false,
 }: {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   description: string;
   active: boolean;
@@ -371,10 +368,7 @@ function ToggleRow({
     >
       <div className="flex items-start gap-4">
         <div
-          className={cn(
-            "p-2 rounded-lg",
-            active ? theme.text.replace("text-", "bg-") : "bg-muted",
-          )}
+          className={cn("p-2 rounded-lg", active ? theme.solid : "bg-muted")}
         >
           <Icon
             className={cn(
@@ -393,7 +387,7 @@ function ToggleRow({
       <div
         className={cn(
           "w-10 h-6 rounded-full p-1 transition-colors relative",
-          active ? theme.text.replace("text-", "bg-") : "bg-muted",
+          active ? theme.solid : "bg-muted",
         )}
       >
         <div

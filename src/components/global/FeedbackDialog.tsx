@@ -111,7 +111,7 @@ export function FeedbackDialog({
       // Só envia logs se for BUG
       if (reportType === "bug" && includeLogs) {
         try {
-          logs = await invoke<string>("read_app_logs");
+          logs = await invoke<string>("global_read_app_logs");
           // Limita o tamanho do log para não estourar o limite do Discord (2000 chars por mensagem, mas usaremos arquivo)
           logs = logs.split("\n").slice(-100).join("\n");
         } catch (_) {
@@ -120,7 +120,7 @@ export function FeedbackDialog({
         }
       }
 
-      const version = await invoke<string>("get_app_version");
+      const version = await invoke<string>("global_get_app_version");
 
       const isBug = reportType === "bug";
 
@@ -252,7 +252,7 @@ export function FeedbackDialog({
       // Espera o diálogo sumir visualmente
       await new Promise((r) => setTimeout(r, 250));
 
-      const bytes = await invoke<number[]>("capture_screenshot");
+      const bytes = await invoke<number[]>("global_capture_screenshot");
       setScreenshot(new Uint8Array(bytes));
       toast.success("Captura de tela realizada!");
     } catch (err) {

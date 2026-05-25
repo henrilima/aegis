@@ -138,7 +138,7 @@ export function MovieSearchModal({
         <div
           className={cn(
             "flex flex-col h-full bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden",
-            "border-t-2",
+
             theme.border.split(" ")[0].replace("/20", ""),
           )}
         >
@@ -301,7 +301,7 @@ export function MovieSearchModal({
       <div
         className={cn(
           "flex flex-col h-full bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden",
-          "border-t-2",
+
           theme.border.split(" ")[0].replace("/20", ""),
         )}
       >

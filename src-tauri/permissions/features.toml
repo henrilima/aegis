@@ -1,56 +1,84 @@
 # src-tauri/permissions/features.toml
 
 [[permission]]
-identifier = "allow-feature-management"
-description = "Todas as funcionalidades do aplicativo"
+identifier = "password-management"
+description = "Permissões de gerenciamento de senhas e cofre Aegis"
 commands.allow = [
-    "get_pomodoro_state",
-    "save_pomodoro_state",
-    "record_pomodoro_session",
-    "get_pomodoro_history",
-    "clear_pomodoro_history",
-    "get_currency_rates",
-    "update_currency_rates",
-    "list_alarms",
-    "add_alarm",
-    "update_alarm",
-    "delete_alarm",
-    "toggle_alarm",
-    "list_notification_sounds",
-    "list_habits",
-    "add_habit",
-    "update_habit",
-    "mark_habit_done",
-    "use_habit_charge",
-    "reset_habit",
-    "hard_reset_habit",
-    "delete_habit",
-    "local_register",
-    "check_user_availability",
-    "local_login",
-    "get_local_user",
-    "list_local_users",
-    "delete_account",
-    "change_account_password",
-    "change_username",
-    "change_vault_password",
-    "revert_vault_to_master",
-    "has_separate_vault_password",
-    "setup_local_vault",
-    "list_notes",
-    "list_note_items",
-    "add_note",
-    "update_note",
-    "delete_note",
-    "create_note_folder",
-    "delete_note_folder",
-    "move_note_item",
-    "update_note_pinned",
-    "get_app_config",
-    "set_app_config",
-    "quit_app",
-    "test_notification",
-    "check_dnd_status",
+    "global_verify_master",
+    "password_add_password",
+    "password_update_password",
+    "password_list_passwords",
+    "password_decrypt_entry",
+    "password_import_passwords",
+    "password_export_passwords",
+    "password_delete_password",
+    "password_check_vault",
+    "password_reset_vault",
+    "password_setup_local_vault",
+    "global_change_vault_password",
+    "global_revert_vault_to_master",
+    "global_has_separate_vault_password"
+]
+
+[[permission]]
+identifier = "pomodoro-management"
+description = "Permissões do módulo Pomodoro"
+commands.allow = [
+    "pomodoro_get_pomodoro_state",
+    "pomodoro_save_pomodoro_state",
+    "pomodoro_record_pomodoro_session",
+    "pomodoro_get_pomodoro_history",
+    "pomodoro_clear_pomodoro_history"
+]
+
+[[permission]]
+identifier = "alarm-management"
+description = "Permissões do módulo de Alarmes e sons"
+commands.allow = [
+    "alarm_list_alarms",
+    "alarm_add_alarm",
+    "alarm_update_alarm",
+    "alarm_delete_alarm",
+    "alarm_toggle_alarm",
+    "global_list_notification_sounds"
+]
+
+[[permission]]
+identifier = "habit-management"
+description = "Permissões do módulo de Hábitos e exportações"
+commands.allow = [
+    "habit_list_habits",
+    "habit_add_habit",
+    "habit_update_habit",
+    "habit_mark_habit_done",
+    "habit_use_habit_charge",
+    "habit_reset_habit",
+    "habit_hard_reset_habit",
+    "habit_delete_habit",
+    "habit_export_habits_csv",
+    "habit_import_habits_csv"
+]
+
+[[permission]]
+identifier = "note-management"
+description = "Permissões do módulo de Anotações"
+commands.allow = [
+    "note_list_notes",
+    "note_list_note_items",
+    "note_add_note",
+    "note_update_note",
+    "note_delete_note",
+    "note_create_note_folder",
+    "note_delete_note_folder",
+    "note_move_note_item",
+    "note_update_note_pinned",
+    "note_open_notes_folder"
+]
+
+[[permission]]
+identifier = "study-management"
+description = "Permissões do módulo de Estudos e estatísticas locais"
+commands.allow = [
     "estudos_add_session",
     "estudos_update_session",
     "estudos_delete_session",
@@ -58,26 +86,46 @@ commands.allow = [
     "estudos_upsert_goal",
     "estudos_list_goals",
     "estudos_export_csv",
-    "estudos_import_csv",
+    "estudos_import_csv"
+]
+
+[[permission]]
+identifier = "sleep-management"
+description = "Permissões do módulo de Sono e metas locais"
+commands.allow = [
     "sono_upsert_entry",
     "sono_delete_entry",
     "sono_list_entries",
     "sono_upsert_goal",
     "sono_get_goal",
     "sono_export_csv",
-    "sono_import_csv",
-    "open_notification_settings",
+    "sono_import_csv"
+]
+
+[[permission]]
+identifier = "calendar-management"
+description = "Permissões do módulo de Calendário e feriados"
+commands.allow = [
     "calendar_add_event",
     "calendar_update_event",
     "calendar_delete_event",
     "calendar_list_events",
     "calendar_list_upcoming_deadlines",
-    "sync_br_holidays",
+    "sync_br_holidays"
+]
+
+[[permission]]
+identifier = "statistic-management"
+description = "Permissões do módulo de Estatísticas de performance"
+commands.allow = [
     "stats_get_cross_metrics",
-    "stats_get_performance_summary",
-    "open_notes_folder",
-    "apply_internal_command",
-    "get_simulation_status",
+    "stats_get_performance_summary"
+]
+
+[[permission]]
+identifier = "reading-management"
+description = "Permissões do módulo de Leitura"
+commands.allow = [
     "reading_list_books",
     "reading_upsert_book",
     "reading_delete_book",
@@ -89,13 +137,27 @@ commands.allow = [
     "reading_export_json",
     "reading_import_json",
     "reading_search_books",
-    "reading_toggle_favorite",
+    "reading_toggle_favorite"
+]
+
+[[permission]]
+identifier = "dictionary-management"
+description = "Permissões do módulo de Dicionário"
+commands.allow = [
     "dictionary_search",
     "dictionary_list",
     "dictionary_add",
     "dictionary_delete",
     "dictionary_toggle_favorite",
     "dictionary_suggestions",
+    "dictionary_export_csv",
+    "dictionary_import_csv"
+]
+
+[[permission]]
+identifier = "movie-management"
+description = "Permissões do módulo de Filmes"
+commands.allow = [
     "movies_search",
     "movies_list",
     "movies_upsert",
@@ -103,38 +165,82 @@ commands.allow = [
     "movies_toggle_favorite",
     "get_tmdb_api_key",
     "set_tmdb_api_key",
+    "movies_export_json",
+    "movies_import_json"
+]
+
+[[permission]]
+identifier = "task-management"
+description = "Permissões do módulo de Tarefas"
+commands.allow = [
     "tasks_list",
     "tasks_upsert",
     "tasks_toggle",
     "tasks_delete",
-    "notif_list",
-    "notif_unread_count",
-    "notif_mark_read",
-    "notif_mark_all_read",
-    "notif_delete",
-    "notif_clear_read",
-    "send_critical_notification",
-    "ensure_discord_invite",
-    "save_avatar",
-    "get_avatar",
-    "delete_avatar",
     "export_tasks_csv",
-    "import_tasks_csv",
-    "export_habits_csv",
-    "import_habits_csv",
-    "get_app_version",
-    "get_log_path",
-    "read_app_logs",
-    "capture_screenshot",
-    "read_changelog",
-    "pre_update_backup",
-    "export_user_package",
-    "import_user_package",
-    "export_full_system_bundle",
-    "import_full_system_bundle",
-    "check_github_update",
-    "movies_export_json",
-    "movies_import_json",
-    "dictionary_export_csv",
-    "dictionary_import_csv"
+    "import_tasks_csv"
+]
+
+[[permission]]
+identifier = "flashcard-management"
+description = "Permissões do módulo de Flashcards"
+commands.allow = [
+    "flashcards_list_decks",
+    "flashcards_add_deck",
+    "flashcards_update_deck",
+    "flashcards_delete_deck",
+    "flashcards_list_cards",
+    "flashcards_add_card",
+    "flashcards_update_card",
+    "flashcards_delete_card",
+    "flashcards_record_review",
+    "flashcards_export_json",
+    "flashcards_import_json"
+]
+
+[[permission]]
+identifier = "global-management"
+description = "Permissões globais compartilhadas do Aegis"
+commands.allow = [
+    "global_local_register",
+    "global_check_user_availability",
+    "global_local_login",
+    "global_get_local_user",
+    "global_list_local_users",
+    "global_delete_account",
+    "global_change_account_password",
+    "global_change_username",
+    "global_get_app_config",
+    "global_set_app_config",
+    "global_quit_app",
+    "global_test_notification",
+    "global_check_dnd_status",
+    "global_open_notification_settings",
+    "global_notif_list",
+    "global_notif_unread_count",
+    "global_notif_mark_read",
+    "global_notif_mark_all_read",
+    "global_notif_delete",
+    "global_notif_clear_read",
+    "global_send_critical_notification",
+    "global_ensure_discord_invite",
+    "global_save_avatar",
+    "global_get_avatar",
+    "global_delete_avatar",
+    "global_get_app_version",
+    "global_get_log_path",
+    "global_read_app_logs",
+    "global_capture_screenshot",
+    "global_read_changelog",
+    "global_pre_update_backup",
+    "global_export_user_package",
+    "global_import_user_package",
+    "global_export_full_system_bundle",
+    "global_import_full_system_bundle",
+    "global_check_github_update",
+    "global_apply_internal_command",
+    "global_get_simulation_status",
+    "global_export_raw_user_json",
+    "global_import_raw_user_json",
+    "global_open_app_data_folder"
 ]

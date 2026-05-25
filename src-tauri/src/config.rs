@@ -30,6 +30,9 @@ pub struct AppConfig {
     pub app_zoom: f64,
     pub show_sidebar_trigger: bool,
     pub show_floating_trigger: bool,
+    pub dashboard_clock_style: String,
+    pub dashboard_clock_animated: bool,
+    pub dashboard_header_style: String,
 }
 
 pub struct ConfigManager {
@@ -77,6 +80,9 @@ impl ConfigManager {
             ("app_zoom", "100"),
             ("show_sidebar_trigger", "true"),
             ("show_floating_trigger", "true"),
+            ("dashboard_clock_style", "default"),
+            ("dashboard_clock_animated", "true"),
+            ("dashboard_header_style", "default"),
         ];
 
         for (key, val) in defaults {
@@ -283,6 +289,27 @@ impl ConfigManager {
             }
         ).unwrap_or(true);
 
+        let dashboard_clock_style: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'dashboard_clock_style'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("default".to_string());
+
+        let dashboard_clock_animated: bool = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'dashboard_clock_animated'",
+            [],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(s == "true")
+            }
+        ).unwrap_or(true);
+
+        let dashboard_header_style: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'dashboard_header_style'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or("default".to_string());
+
         AppConfig {
             minimize_on_close,
             start_at_login,
@@ -307,6 +334,9 @@ impl ConfigManager {
             app_zoom,
             show_sidebar_trigger,
             show_floating_trigger,
+            dashboard_clock_style,
+            dashboard_clock_animated,
+            dashboard_header_style,
         }
     }
 
@@ -425,6 +455,21 @@ impl ConfigManager {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_floating_trigger', ?1)",
             params![if config.show_floating_trigger { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_clock_style', ?1)",
+            params![config.dashboard_clock_style],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_clock_animated', ?1)",
+            params![if config.dashboard_clock_animated { "true" } else { "false" }],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_header_style', ?1)",
+            params![config.dashboard_header_style],
         ).map_err(|e| e.to_string())?;
 
         Ok(())

@@ -2,23 +2,37 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import type React from "react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  getConfiguredNotificationSound,
+  playNotificationSound,
+} from "@/lib/sounds";
+import type { NotificationButton } from "@/persistentNotifications.config";
 
 export interface AppNotification {
   id: number;
-  userId: string;
+  userId?: string;
   title: string;
   body: string;
   category: string;
   tag?: string;
   color?: string;
-  icon?: string;
+  icon?: string | React.ComponentType<{ className?: string }>;
   persistent: boolean;
   isRead: boolean;
   createdAt: string;
+  buttons?: NotificationButton[];
 }
 
-/** Intervalo de polling para sincronização de notificações (em ms). */
+interface NotificationEventPayload {
+  id?: number;
+  origin?: string;
+  soundFile?: string;
+  skipSound?: boolean;
+}
+
+/** Intervalo de polling para sincronizacao de notificacoes (em ms). */
 const _NOTIFICATIONS_POLL_INTERVAL_MS = 30_000;
 
 export function useNotifications(userId: string | undefined) {
@@ -29,62 +43,46 @@ export function useNotifications(userId: string | undefined) {
     if (!userId) return;
     try {
       const [list, count] = await Promise.all([
-        invoke<AppNotification[]>("notif_list", { userId }),
-        invoke<number>("notif_unread_count", { userId }),
+        invoke<AppNotification[]>("global_notif_list", { userId }),
+        invoke<number>("global_notif_unread_count", { userId }),
       ]);
       setNotifications(list);
       setUnreadCount(count);
     } catch (err) {
-      console.error("[useNotifications] Erro ao buscar notificações:", err);
+      console.error("[useNotifications] Erro ao buscar notificacoes:", err);
     }
   }, [userId]);
 
   useEffect(() => {
     refresh();
 
-    // Escuta eventos em tempo real do Tauri
-    const unlistenPromise = listen("new-notification", async () => {
-      refresh();
+    const unlistenPromise = listen(
+      "new-notification",
+      async (event: { payload?: NotificationEventPayload }) => {
+        refresh();
 
-      // Toca o som de notificação configurado
-      try {
-        const config = await invoke<{ notificationSound: string }>(
-          "get_app_config",
-        );
-        const playSound = (soundFile: string) => {
-          const audio = new Audio(`/sounds/${soundFile}`);
-          audio.play().catch(() => {
-            new Audio(`/sounds/${soundFile}`).play().catch((err) => {
-              console.error(
-                "[Aegis Audio] Falha total ao carregar áudio:",
-                err,
-              );
-            });
-          });
-        };
-        playSound(config.notificationSound);
-      } catch (err) {
-        console.error("[useNotifications] Erro ao processar som:", err);
-      }
-    });
+        if (event.payload?.skipSound) return;
 
-    // Escuta disparos de alarmes customizados
+        try {
+          const soundFile =
+            event.payload?.soundFile ??
+            (await getConfiguredNotificationSound());
+          await playNotificationSound(soundFile);
+        } catch (err) {
+          console.error("[useNotifications] Erro ao processar som:", err);
+        }
+      },
+    );
+
     const unlistenAlarm = listen(
       "trigger-alarm",
-      async (event: { payload: { soundFile: string } }) => {
+      async (event: { payload?: NotificationEventPayload }) => {
         refresh();
+        if (event.payload?.skipSound !== false) return;
+        if (!event.payload?.soundFile) return;
+
         try {
-          const soundFile = event.payload.soundFile;
-          const audio = new Audio(`/sounds/${soundFile}`);
-          audio.play().catch((e) => {
-            console.warn(
-              "[Aegis Alarms] Falha ao tocar som do alarme, tentando fallback:",
-              e,
-            );
-            new Audio(`sounds/${soundFile}`)
-              .play()
-              .catch((err) => console.error("Alarm sound failed", err));
-          });
+          await playNotificationSound(event.payload.soundFile);
         } catch (err) {
           console.error("[useNotifications] Erro ao processar alarme:", err);
         }
@@ -100,7 +98,7 @@ export function useNotifications(userId: string | undefined) {
   const markRead = useCallback(
     async (id: number) => {
       if (!userId) return;
-      await invoke("notif_mark_read", { id, userId });
+      await invoke("global_notif_mark_read", { id, userId });
       await refresh();
     },
     [userId, refresh],
@@ -108,14 +106,14 @@ export function useNotifications(userId: string | undefined) {
 
   const markAllRead = useCallback(async () => {
     if (!userId) return;
-    await invoke("notif_mark_all_read", { userId });
+    await invoke("global_notif_mark_all_read", { userId });
     await refresh();
   }, [userId, refresh]);
 
   const remove = useCallback(
     async (id: number) => {
       if (!userId) return;
-      await invoke("notif_delete", { id, userId });
+      await invoke("global_notif_delete", { id, userId });
       await refresh();
     },
     [userId, refresh],
@@ -123,7 +121,7 @@ export function useNotifications(userId: string | undefined) {
 
   const clearRead = useCallback(async () => {
     if (!userId) return;
-    await invoke("notif_clear_read", { userId });
+    await invoke("global_notif_clear_read", { userId });
     await refresh();
   }, [userId, refresh]);
 

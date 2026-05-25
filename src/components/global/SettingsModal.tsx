@@ -4,8 +4,10 @@ import {
   Bell,
   Code2,
   Database,
+  HeartPulse,
   Info,
   LayoutGrid,
+  LogOut,
   Menu,
   Monitor,
   Palette,
@@ -18,7 +20,13 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -31,6 +39,7 @@ import { ModulesTab } from "../modules/settings/modulesTab";
 import { NotificationsTab } from "../modules/settings/notificationsTab";
 import { ProfileTab } from "../modules/settings/profileTab";
 import { SecurityTab } from "../modules/settings/securityTab";
+import { SystemHealthTab } from "../modules/settings/systemHealthTab";
 import { SystemTab } from "../modules/settings/systemTab";
 import { ThemesTab } from "../modules/settings/themesTab";
 import { useSettingsLogic } from "../modules/settings/useSettingsLogic";
@@ -65,7 +74,10 @@ const GROUPS: { label: string; items: SettingsItem[] }[] = [
   },
   {
     label: "Desenvolvedor",
-    items: [{ id: "developer", label: "Área Restrita", icon: Code2 }],
+    items: [
+      { id: "developer", label: "Área Restrita", icon: Code2 },
+      { id: "system-health", label: "Saúde do Sistema", icon: HeartPulse },
+    ],
   },
   {
     label: "Outros",
@@ -81,6 +93,7 @@ type SettingsTabId = string | "telemetry";
 export function SettingsModal() {
   const { isSettingsOpen, setSettingsOpen } = useNavigation();
   const { themeStyles } = useTheme();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("profile");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -150,6 +163,8 @@ export function SettingsModal() {
         return <IntegrationsTab />;
       case "developer":
         return <DeveloperTab handleInternalCommand={handleInternalCommand} />;
+      case "system-health":
+        return <SystemHealthTab />;
       case "about":
         return <AboutTab />;
       case "danger":
@@ -180,6 +195,9 @@ export function SettingsModal() {
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">Configurações</DialogTitle>
+        <DialogDescription className="sr-only">
+          Gerencie as configurações do sistema Aegis.
+        </DialogDescription>
 
         <div className="flex h-full w-full relative">
           {/* Sidebar - Desktop */}
@@ -229,6 +247,20 @@ export function SettingsModal() {
                 </div>
               ))}
             </nav>
+
+            <div className="mt-auto pt-4 border-t border-border/20">
+              <button
+                type="button"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  logout();
+                }}
+                className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                Trocar de conta
+              </button>
+            </div>
           </aside>
 
           {/* Sidebar - Menu Mobile */}
@@ -280,6 +312,21 @@ export function SettingsModal() {
                     </div>
                   ))}
                 </nav>
+
+                <div className="mt-auto pt-4 border-t border-border/20">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      setIsMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm font-medium text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Trocar de conta
+                  </button>
+                </div>
               </div>
             </div>
           )}

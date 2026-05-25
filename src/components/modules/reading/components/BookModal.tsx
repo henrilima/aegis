@@ -294,7 +294,7 @@ export function BookModal({
                 <div className="space-y-1.5">
                   <Label className={labelClass}>Título</Label>
                   <div className="relative">
-                    <Book className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                    <Book className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                     <Input
                       value={formData.title ?? ""}
                       onChange={(e) => set("title", e.target.value)}
@@ -307,7 +307,7 @@ export function BookModal({
                 <div className="space-y-1.5">
                   <Label className={labelClass}>Autor</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                     <Input
                       value={formData.author ?? ""}
                       onChange={(e) => set("author", e.target.value)}
@@ -321,7 +321,7 @@ export function BookModal({
                   <div className="space-y-1.5">
                     <Label className={labelClass}>Páginas totais</Label>
                     <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                       <Input
                         type="number"
                         value={formData.totalPages || ""}
@@ -336,7 +336,7 @@ export function BookModal({
                   <div className="space-y-1.5">
                     <Label className={labelClass}>Página atual</Label>
                     <div className="relative">
-                      <Bookmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                      <Bookmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                       <Input
                         type="number"
                         value={formData.currentPage || ""}
@@ -384,7 +384,7 @@ export function BookModal({
                 <div className="space-y-1.5">
                   <Label className={labelClass}>Gênero / Categoria</Label>
                   <div className="relative group">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                     <Input
                       value={formData.category ?? ""}
                       onChange={(e) => {
@@ -421,7 +421,7 @@ export function BookModal({
                 <div className="space-y-1.5">
                   <Label className={labelClass}>URL da capa</Label>
                   <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                     <Input
                       value={formData.thumbnail ?? ""}
                       onChange={(e) => set("thumbnail", e.target.value)}
@@ -495,7 +495,7 @@ export function BookModal({
               <div className="space-y-1.5">
                 <Label className={labelClass}>Resenha / Notas</Label>
                 <div className="relative">
-                  <AlignLeft className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/40" />
+                  <AlignLeft className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                   <textarea
                     value={formData.review ?? ""}
                     onChange={(e) => set("review", e.target.value)}

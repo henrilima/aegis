@@ -77,16 +77,6 @@ export function TaskForm({ task, onSave }: TaskFormProps) {
               required
             />
           </div>
-
-          <div className="w-full sm:w-[160px] space-y-2">
-            <Label className={labelClass}>Cor</Label>
-            <ColorPicker
-              value={color}
-              onChange={setColor}
-              placeholder="Nenhuma"
-              className="w-full"
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
@@ -147,6 +137,16 @@ export function TaskForm({ task, onSave }: TaskFormProps) {
                   ? "Sem prioridade definida"
                   : `Prioridade ${["", "Baixa", "Média", "Alta"][priority]}`}
               </p>
+            </div>
+
+            <div className="w-full space-y-2">
+              <Label className={labelClass}>Cor</Label>
+              <ColorPicker
+                value={color}
+                onChange={setColor}
+                placeholder="Nenhuma"
+                className="w-full"
+              />
             </div>
           </div>
         </div>

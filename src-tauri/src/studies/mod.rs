@@ -264,3 +264,45 @@ impl StudiesManager {
         Ok(count)
     }
 }
+
+#[tauri::command]
+pub async fn estudos_add_session(state: tauri::State<'_, crate::AppState>, session: StudySession) -> Result<i64, String> {
+    state.studies.add_session(session)
+}
+
+#[tauri::command]
+pub async fn estudos_update_session(state: tauri::State<'_, crate::AppState>, session: StudySession) -> Result<(), String> {
+    state.studies.update_session(session)
+}
+
+#[tauri::command]
+pub async fn estudos_delete_session(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.studies.delete_session(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn estudos_list_sessions(state: tauri::State<'_, crate::AppState>, user_id: String, months_back: i32) -> Result<Vec<StudySession>, String> {
+    let now = state.config.get_now();
+    Ok(state.studies.list_sessions(&user_id, months_back, now))
+}
+
+#[tauri::command]
+pub async fn estudos_upsert_goal(state: tauri::State<'_, crate::AppState>, goal: StudyGoal) -> Result<(), String> {
+    state.studies.upsert_goal(goal)
+}
+
+#[tauri::command]
+pub async fn estudos_list_goals(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<StudyGoal>, String> {
+    Ok(state.studies.list_goals(&user_id))
+}
+
+#[tauri::command]
+pub async fn estudos_export_csv(state: tauri::State<'_, crate::AppState>, user_id: String, dest_path: String) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.studies.export_csv(&user_id, &dest_path, now)
+}
+
+#[tauri::command]
+pub async fn estudos_import_csv(state: tauri::State<'_, crate::AppState>, user_id: String, file_path: String) -> Result<usize, String> {
+    state.studies.import_csv(&user_id, &file_path)
+}

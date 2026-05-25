@@ -55,7 +55,7 @@ export default function HabitsPage() {
   const fetchHabits = useCallback(async () => {
     if (!uid) return;
     try {
-      const res = await invoke<Habit[]>("list_habits", { userId: uid });
+      const res = await invoke<Habit[]>("habit_list_habits", { userId: uid });
       setHabits(res);
     } catch {
       toast.error("Erro ao sincronizar hábitos");
@@ -80,7 +80,7 @@ export default function HabitsPage() {
     setIsAdding(true);
     const now = simulatedNow.toISOString();
     try {
-      await invoke("add_habit", {
+      await invoke("habit_add_habit", {
         habit: {
           userId: uid,
           name,
@@ -113,7 +113,7 @@ export default function HabitsPage() {
   const handleUpdate = async () => {
     if (!editingHabit) return;
     try {
-      await invoke("update_habit", {
+      await invoke("habit_update_habit", {
         habit: {
           ...editingHabit,
           cooldownDays: Math.max(1, editingHabit.cooldownDays),
@@ -130,7 +130,7 @@ export default function HabitsPage() {
   const confirmReset = async () => {
     if (!resetId) return;
     try {
-      await invoke("reset_habit", {
+      await invoke("habit_reset_habit", {
         id: resetId,
         timestamp: simulatedNow.toISOString(),
       });
@@ -145,7 +145,7 @@ export default function HabitsPage() {
   const confirmHardReset = async () => {
     if (!hardResetId) return;
     try {
-      await invoke("hard_reset_habit", {
+      await invoke("habit_hard_reset_habit", {
         id: hardResetId,
         timestamp: simulatedNow.toISOString(),
       });
@@ -160,7 +160,7 @@ export default function HabitsPage() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await invoke("delete_habit", { id: deleteId });
+      await invoke("habit_delete_habit", { id: deleteId });
       setDeleteId(null);
       fetchHabits();
       toast.success("Hábito removido da lista");
@@ -184,7 +184,7 @@ export default function HabitsPage() {
 
       if (!filePath) return;
 
-      await invoke("export_habits_csv", { userId: uid, path: filePath });
+      await invoke("habit_export_habits_csv", { userId: uid, path: filePath });
       toast.success("Exportação de hábitos concluída!");
     } catch (e) {
       toast.error(
@@ -200,7 +200,7 @@ export default function HabitsPage() {
         filters: [{ name: "CSV", extensions: ["csv"] }],
       });
       if (filePath && typeof filePath === "string") {
-        const count = await invoke<number>("import_habits_csv", {
+        const count = await invoke<number>("habit_import_habits_csv", {
           userId: uid,
           path: filePath,
         });

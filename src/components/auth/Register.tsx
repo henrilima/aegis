@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { Shield, X } from "lucide-react";
+import { Eye, EyeOff, Shield, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -33,6 +33,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
   });
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -59,7 +60,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
 
     setChecking(true);
     try {
-      await invoke("check_user_availability", {
+      await invoke("global_check_user_availability", {
         username: formData.username,
         email: formData.email,
       });
@@ -84,7 +85,7 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
     setShowTermsModal(false);
 
     try {
-      const userId = await invoke<string>("local_register", {
+      const userId = await invoke<string>("global_local_register", {
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -212,15 +213,28 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
                 <Label htmlFor="password" className={lc}>
                   Senha mestre
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Defina uma senha"
-                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Defina uma senha"
+                    className={`bg-card border-border h-11 rounded-xl pl-4 pr-11 text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="passwordHint" className={lc}>
@@ -263,7 +277,10 @@ export default function RegisterComponent({ onSwitchToLogin }: RegisterProps) {
             Já possui acesso?{" "}
             <button
               type="button"
-              onClick={onSwitchToLogin}
+              onClick={() => {
+                setShowPassword(false);
+                onSwitchToLogin();
+              }}
               className={`${theme.text} ${theme.textDarkHover.replace("hover:", "hover:text-")} underline font-black cursor-pointer transition-colors`}
             >
               Autenticar

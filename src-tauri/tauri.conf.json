@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
-  "version": "2.5.1",
+  "version": "3.0.0",
   "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",

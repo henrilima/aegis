@@ -2,6 +2,7 @@
 
 import { Activity, X } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import {
   Select,
@@ -157,7 +158,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                   Meta de Dias (opcional)
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="hcm-goal"
                     type="number"
                     min={0}
@@ -189,7 +190,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                     {type === "Negative" ? "Tolerância" : "Recorrência"}
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       id="hcm-cooldown"
                       type="number"
                       min={minCooldown}
@@ -210,7 +211,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                   <label htmlFor="hcm-charges" className={lc}>
                     Cargas iniciais
                   </label>
-                  <input
+                  <Input
                     id="hcm-charges"
                     type="number"
                     min={0}
@@ -229,7 +230,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                     Intervalo de recuperação
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       id="hcm-interval"
                       type="number"
                       min={2}

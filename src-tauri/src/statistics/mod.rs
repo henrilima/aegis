@@ -353,3 +353,15 @@ impl StatisticsManager {
     }
 }
 
+#[tauri::command]
+pub async fn stats_get_cross_metrics(state: tauri::State<'_, crate::AppState>, user_id: String, days: i32) -> Result<Vec<CrossMetric>, String> {
+    let now = state.config.get_now();
+    Ok(state.stats.get_cross_metrics(&user_id, days, now))
+}
+
+#[tauri::command]
+pub async fn stats_get_performance_summary(state: tauri::State<'_, crate::AppState>, user_id: String, days: i32) -> Result<PerformanceSummary, String> {
+    let now = state.config.get_now();
+    Ok(state.stats.get_performance_summary(&user_id, days, now))
+}
+

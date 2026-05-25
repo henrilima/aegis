@@ -51,6 +51,9 @@ impl NotificationsManager {
         let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN color TEXT", []);
         let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN icon TEXT", []);
 
+        // Limpa todas as notificações persistentes legadas do banco de dados ao inicializar
+        let _ = conn.execute("DELETE FROM app_notifications WHERE persistent = 1", []);
+
         // Garante constraint UNIQUE em (user_id, tag) para idempotência
         let _ = conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_notifications_user_tag ON app_notifications(user_id, tag) WHERE tag IS NOT NULL",
@@ -112,12 +115,12 @@ impl NotificationsManager {
         Ok(conn.last_insert_rowid())
     }
 
-    /// Verifica se já existe uma notificação não lida com o mesmo título (evita duplicatas no mesmo dia).
+    /// Verifica se já existe qualquer notificação enviada hoje com o mesmo título (evita duplicatas no mesmo dia).
     pub fn has_unread_today(&self, user_id: &str, title: &str) -> bool {
         let conn = self.conn();
         let today = Utc::now().format("%Y-%m-%d").to_string();
         let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM app_notifications WHERE user_id=?1 AND title=?2 AND is_read=0 AND DATE(created_at)=?3",
+            "SELECT COUNT(*) FROM app_notifications WHERE user_id=?1 AND title=?2 AND DATE(created_at)=?3",
             params![user_id, title, today],
             |row| row.get(0),
         ).unwrap_or(0);
@@ -132,15 +135,6 @@ impl NotificationsManager {
             return Ok(false);
         }
         self.mark_system_event(user_id, event_key);
-
-        let tag = "discord-invite";
-        let title = "Bem-vindo à Comunidade!";
-        let body = "Obrigado por usar o Aegis! Para uma experiência melhor, junte-se ao nosso servidor oficial no Discord. Lá você encontrará suporte, poderá enviar feedback direto aos desenvolvedores e ficar por dentro de todas as novidades.";
-        let conn = self.conn();
-        let _ = conn.execute(
-            "INSERT OR IGNORE INTO app_notifications (user_id, title, body, category, tag, persistent, color, icon) VALUES (?1, ?2, ?3, 'system', ?4, 1, 'blue', 'Bell')",
-            params![user_id, title, body, tag],
-        );
         Ok(true)
     }
 

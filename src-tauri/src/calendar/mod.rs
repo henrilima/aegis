@@ -274,3 +274,34 @@ impl CalendarManager {
         h
     }
 }
+
+#[tauri::command]
+pub async fn calendar_add_event(state: tauri::State<'_, crate::AppState>, event: CalendarEvent) -> Result<i64, String> {
+    state.calendar.add_event(event)
+}
+
+#[tauri::command]
+pub async fn calendar_update_event(state: tauri::State<'_, crate::AppState>, event: CalendarEvent) -> Result<(), String> {
+    state.calendar.update_event(event)
+}
+
+#[tauri::command]
+pub async fn sync_br_holidays(state: tauri::State<'_, crate::AppState>, user_id: String, year: i32) -> Result<i32, String> {
+    state.calendar.sync_holidays(&user_id, year).await
+}
+
+#[tauri::command]
+pub async fn calendar_delete_event(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.calendar.delete_event(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn calendar_list_events(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
+    Ok(state.calendar.list_events(&user_id))
+}
+
+#[tauri::command]
+pub async fn calendar_list_upcoming_deadlines(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
+    let now = state.config.get_now();
+    Ok(state.calendar.list_upcoming_deadlines(&user_id, now))
+}

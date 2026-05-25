@@ -724,5 +724,82 @@ impl PasswordManager {
     }
 }
 
+#[tauri::command]
+pub async fn password_add_password(
+    state: tauri::State<'_, crate::AppState>, 
+    user_id: String, 
+    master_pwd: String, 
+    name: String, 
+    url: String, 
+    username: String, 
+    password_raw: String, 
+    note_raw: String
+) -> Result<(), String> {
+    state.pm.add_password(&user_id, &master_pwd, &name, &url, &username, &password_raw, &note_raw)
+}
+
+#[tauri::command]
+pub async fn password_list_passwords(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<PasswordEntry>, String> {
+    state.pm.list_passwords(&user_id)
+}
+
+#[tauri::command]
+pub async fn password_decrypt_entry(state: tauri::State<'_, crate::AppState>, user_id: String, master_pwd: String, entry_id: i32) -> Result<DecryptedEntry, String> {
+    state.pm.decrypt_entry(&user_id, &master_pwd, entry_id)
+}
+
+#[tauri::command]
+pub async fn password_import_passwords(state: tauri::State<'_, crate::AppState>, user_id: String, master_pwd: String, file_path: String) -> Result<usize, String> {
+    state.pm.import_google_csv(&user_id, &master_pwd, &file_path)
+}
+
+#[tauri::command]
+pub async fn password_export_passwords(state: tauri::State<'_, crate::AppState>, user_id: String, master_pwd: String, dest_path: String) -> Result<(), String> {
+    state.pm.export_google_csv(&user_id, &master_pwd, &dest_path)
+}
+
+#[tauri::command]
+pub async fn password_delete_password(state: tauri::State<'_, crate::AppState>, user_id: String, entry_id: i32) -> Result<(), String> {
+    state.pm.delete_password(&user_id, entry_id)
+}
+
+#[tauri::command]
+pub async fn password_update_password(
+    state: tauri::State<'_, crate::AppState>, 
+    user_id: String, 
+    master_pwd: String, 
+    entry_id: i32,
+    name: String, 
+    url: String, 
+    username: String, 
+    password_raw: String, 
+    note_raw: String
+) -> Result<(), String> {
+    state.pm.update_password(&user_id, &master_pwd, entry_id, &name, &url, &username, &password_raw, &note_raw)
+}
+
+#[tauri::command]
+pub async fn password_check_vault(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<bool, String> {
+    Ok(state.pm.check_user_exists(&user_id))
+}
+
+#[tauri::command]
+pub async fn password_reset_vault(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<(), String> {
+    state.alarm.delete_user_alarms(&user_id).ok();
+    state.pm.delete_user(&user_id)
+}
+
+#[tauri::command]
+pub async fn password_setup_local_vault(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    username: String,
+    master_password: String,
+    password_hint: String,
+) -> Result<(), String> {
+    let local_email = format!("{}@aegis.local", username.to_lowercase());
+    state.pm.register_user_with_id(&user_id, &username, &local_email, &master_password, &password_hint)
+}
+
 
 

@@ -46,19 +46,19 @@ export function NotesWidget({
         <div className="flex flex-col gap-[4cqw] @sm:gap-4">
           <div className="flex items-center justify-between">
             <div className="flex gap-[8cqw] @sm:gap-10">
-              <div className="text-center">
-                <p className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {notes.length}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Total
                 </p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {pinnedNotes.length}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Fixadas
                 </p>
               </div>
@@ -86,13 +86,10 @@ export function NotesWidget({
 
           <div className="space-y-1.5">
             {pinnedNotes.length > 0 && (
-              <div className="flex items-center gap-1 mb-1">
+              <div className="flex items-center gap-1 mb-1 text-left">
                 <Pin className={cn("w-2.5 h-2.5 opacity-60", theme.text)} />
                 <span
-                  className={cn(
-                    "text-[10px] font-bold opacity-60 uppercase",
-                    theme.text,
-                  )}
+                  className={cn("text-[10px] font-bold opacity-60", theme.text)}
                 >
                   Fixadas
                 </span>
@@ -104,17 +101,35 @@ export function NotesWidget({
               .map((n) => (
                 <div
                   key={n.id}
-                  className="flex items-start gap-[2.5cqw] @sm:gap-3 p-[3cqw] @sm:p-3 rounded-xl bg-muted/50 border border-border/50 group/note"
+                  className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4 group/note cursor-pointer text-left"
                 >
-                  <StickyNote
-                    className={cn(
-                      "w-[3.5cqw] h-[3.5cqw] @sm:w-4 @sm:h-4 opacity-70 shrink-0 mt-0.5",
-                      theme.text,
-                    )}
-                  />
-                  <span className="text-[3.5cqw] @sm:text-sm font-medium text-muted-foreground truncate flex-1 group-hover/note:text-foreground transition-colors">
-                    {n.title}
-                  </span>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div
+                      className={cn(
+                        "shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30",
+                        theme.text,
+                      )}
+                    >
+                      <StickyNote className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-bold text-foreground truncate group-hover/note:text-foreground transition-colors">
+                        {n.title}
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                        {n.pinned ? "Nota fixada" : "Nota rápida"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {n.pinned && (
+                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[50px] text-left">
+                      <Pin className={cn("w-3.5 h-3.5", theme.text)} />
+                      <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                        Fixada
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             {notes.length === 0 && (

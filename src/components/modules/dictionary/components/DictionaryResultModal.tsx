@@ -157,7 +157,7 @@ export function DictionaryResultModal({
                               </ToolTip>
                             </div>
                             {def.example && (
-                              <p className="mt-2 text-xs text-muted-foreground pl-4 border-l-2 border-border italic">
+                              <p className="mt-2 text-xs text-muted-foreground pl-4 border-border italic">
                                 ex: {def.example}
                               </p>
                             )}

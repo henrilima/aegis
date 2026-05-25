@@ -78,14 +78,14 @@ export function PomodoroLive({ p }: { p: PomodoroState | null }) {
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <span
-            className={`text-xs font-black font-mono tabular-nums ${p?.isRunning ? "text-red-600 dark:text-red-400" : "text-neutral-600"}`}
+            className={`text-xs font-bold ${p?.isRunning ? "text-red-600 dark:text-red-400" : "text-neutral-600"}`}
           >
             {fmtTime(t)}
           </span>
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <span className="text-2xl font-black font-mono text-red-600 dark:text-red-400 leading-none">
+        <span className="text-2xl font-bold text-red-600 dark:text-red-400 leading-none">
           {p?.cyclesCompleted ?? 0}
         </span>
         <span className="text-[10px] font-bold text-neutral-600 ">ciclos</span>
@@ -203,9 +203,9 @@ export function Widget({
             <Icon className={`w-5 h-5 ${c.text}`} />
           </div>
           <div>
-            <h3 className="font-black  text-foreground uppercase">{title}</h3>
+            <h3 className="font-bold text-foreground">{title}</h3>
             {description && (
-              <p className="text-[10px] text-muted-foreground font-bold uppercase mt-0.5">
+              <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
                 {description}
               </p>
             )}

@@ -54,7 +54,7 @@ export function SessionForm({
       modes.push("questions");
     if (initial?.pagesRead) modes.push("pages");
     if (initial?.custom_metric_label) modes.push("custom");
-    return modes.length ? modes : ["questions"];
+    return modes.length ? modes : [];
   });
 
   const [durH, setDurH] = useState(Math.floor(initial?.hours || 0));
@@ -108,7 +108,7 @@ export function SessionForm({
     });
   }
 
-  const inputStyle = `w-full bg-card border-border h-11 rounded-xl text-sm font-medium transition-all placeholder:text-neutral-700 ${theme.borderHover.replace("hover:", "focus:")}`;
+  const inputStyle = `w-full bg-card p-4 border-border h-11 rounded-xl text-sm font-medium transition-all placeholder:text-neutral-700 ${theme.borderHover.replace("hover:", "focus:")}`;
   const lc = "text-xs font-medium text-muted-foreground ml-0.5";
   const asterisk = <span className={cn("ml-1", theme.text)}>*</span>;
 
@@ -142,13 +142,8 @@ export function SessionForm({
                 <Input
                   id="sf-date"
                   type="date"
-                  className={`${inputStyle} cursor-pointer`}
+                  className={inputStyle}
                   value={form.date}
-                  onClick={(e) => {
-                    if ("showPicker" in HTMLInputElement.prototype) {
-                      e.currentTarget.showPicker();
-                    }
-                  }}
                   onChange={(e) => setField("date", e.target.value)}
                   required
                 />
@@ -165,11 +160,11 @@ export function SessionForm({
                       theme.borderHover.replace("hover:", "focus-within:"),
                     )}
                   >
-                    <input
+                    <Input
                       type="number"
                       min="0"
                       max="24"
-                      className="w-full bg-transparent text-sm text-foreground focus:outline-none font-bold placeholder:text-neutral-700"
+                      className="w-full bg-transparent text-sm text-foreground focus:outline-none font-bold placeholder:text-neutral-700 border-none p-0 h-full text-center"
                       placeholder="0"
                       value={durH || ""}
                       onChange={(e) => {
@@ -191,11 +186,11 @@ export function SessionForm({
                       theme.borderHover.replace("hover:", "focus-within:"),
                     )}
                   >
-                    <input
+                    <Input
                       type="number"
                       min="0"
                       max="59"
-                      className="w-full bg-transparent text-sm text-foreground focus:outline-none font-bold placeholder:text-neutral-700"
+                      className="w-full bg-transparent text-sm text-foreground focus:outline-none font-bold placeholder:text-neutral-700 border-none p-0 h-full text-center"
                       placeholder="0"
                       value={durM || ""}
                       onChange={(e) =>
@@ -312,7 +307,10 @@ export function SessionForm({
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
                     <div className="space-y-3 font-bold">
                       <Label
-                        className={`text-[10px] font-bold ml-0.5 uppercase ${theme.text} opacity-80`}
+                        className={cn(
+                          "text-[10px] font-bold ml-0.5 uppercase opacity-80",
+                          theme.text,
+                        )}
                       >
                         Questões inéditas
                       </Label>
@@ -333,7 +331,10 @@ export function SessionForm({
                         <Input
                           type="number"
                           min="0"
-                          className={`${inputStyle} text-green-400/90 focus:border-green-500/40`}
+                          className={cn(
+                            inputStyle,
+                            "text-green-400/90 focus:border-green-500/40",
+                          )}
                           placeholder="Acertos"
                           value={form.correctNew || ""}
                           onChange={(e) =>
@@ -347,7 +348,10 @@ export function SessionForm({
                     </div>
                     <div className="space-y-3 font-bold">
                       <Label
-                        className={`text-[10px] font-bold ml-0.5 uppercase ${theme.text} opacity-80`}
+                        className={cn(
+                          "text-[10px] font-bold ml-0.5 uppercase opacity-80",
+                          theme.text,
+                        )}
                       >
                         Questões de revisão
                       </Label>
@@ -368,7 +372,10 @@ export function SessionForm({
                         <Input
                           type="number"
                           min="0"
-                          className={`${inputStyle} text-green-400/90 focus:border-green-500/40`}
+                          className={cn(
+                            inputStyle,
+                            "text-green-400/90 focus:border-green-500/40",
+                          )}
                           placeholder="Acertos"
                           value={form.correctReview || ""}
                           onChange={(e) =>
@@ -412,7 +419,7 @@ export function SessionForm({
                       <div className="flex gap-2">
                         <Input
                           id="custom-label"
-                          className={`${inputStyle} flex-1`}
+                          className={cn(inputStyle, "flex-1")}
                           placeholder="Ex: Flashcards"
                           value={form.custom_metric_label || ""}
                           onChange={(e) =>
@@ -422,7 +429,7 @@ export function SessionForm({
                         <Input
                           type="number"
                           min="0"
-                          className={`${inputStyle} w-20 px-2 text-center`}
+                          className={cn(inputStyle, "w-28 px-3 text-center")}
                           placeholder="Qtd"
                           value={form.custom_metric_value || ""}
                           onChange={(e) =>

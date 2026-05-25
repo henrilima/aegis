@@ -207,3 +207,28 @@ impl PomodoroManager {
         rows.filter_map(|r| r.ok()).collect()
     }
 }
+
+#[tauri::command]
+pub async fn pomodoro_get_pomodoro_state(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<PomodoroState, String> {
+    Ok(state.pomo.get_state(&user_id))
+}
+
+#[tauri::command]
+pub async fn pomodoro_save_pomodoro_state(state: tauri::State<'_, crate::AppState>, user_id: String, pomo_state: PomodoroState) -> Result<(), String> {
+    state.pomo.save_state(&user_id, &pomo_state)
+}
+
+#[tauri::command]
+pub async fn pomodoro_record_pomodoro_session(state: tauri::State<'_, crate::AppState>, session: PomodoroHistory) -> Result<(), String> {
+    state.pomo.record_session(session)
+}
+
+#[tauri::command]
+pub async fn pomodoro_get_pomodoro_history(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<PomodoroHistory>, String> {
+    Ok(state.pomo.get_history(&user_id))
+}
+
+#[tauri::command]
+pub async fn pomodoro_clear_pomodoro_history(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<(), String> {
+    state.pomo.clear_history(&user_id)
+}

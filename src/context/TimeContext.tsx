@@ -28,7 +28,7 @@ export function TimeProvider({ children }: { children: ReactNode }) {
         isActive: boolean;
         simulatedTime: string;
         offsetSeconds: number;
-      }>("get_simulation_status");
+      }>("global_get_simulation_status");
       setIsSimulated(status.isActive);
       setNow(new Date(status.simulatedTime));
     } catch (error) {

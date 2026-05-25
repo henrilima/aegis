@@ -112,7 +112,7 @@ export function ItemCard({
             {isPinned && (
               <div
                 className={cn(
-                  "absolute top-[-8px] left-[-8px] p-1 rounded-lg z-10 scale-90 shadow-sm",
+                  "absolute top-[-8px] left-[-8px] p-1 rounded-lg z-10 scale-90",
                   noteStyles ? "" : theme.solid,
                 )}
                 style={

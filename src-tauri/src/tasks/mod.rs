@@ -66,9 +66,15 @@ impl TaskManager {
 
     pub fn list_tasks(&self, user_id: &str) -> Vec<Task> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC").unwrap();
+        let mut stmt = match conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC") {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("[TaskManager] Erro ao preparar query list_tasks: {}", e);
+                return vec![];
+            }
+        };
         
-        let rows = stmt.query_map(params![user_id], |row| {
+        let rows = match stmt.query_map(params![user_id], |row| {
             Ok(Task {
                 id: Some(row.get(0)?),
                 user_id: row.get(1)?,
@@ -82,7 +88,13 @@ impl TaskManager {
                 category: row.get(9)?,
                 color: row.get(10)?,
             })
-        }).unwrap();
+        }) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("[TaskManager] Erro ao executar query list_tasks: {}", e);
+                return vec![];
+            }
+        };
 
         rows.filter_map(Result::ok).collect()
     }
@@ -172,4 +184,34 @@ impl TaskManager {
         }
         Ok(count)
     }
+}
+
+#[tauri::command]
+pub async fn tasks_list(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Task>, String> {
+    Ok(state.tasks.list_tasks(&user_id))
+}
+
+#[tauri::command]
+pub async fn tasks_upsert(state: tauri::State<'_, crate::AppState>, task: Task) -> Result<(), String> {
+    state.tasks.upsert_task(task)
+}
+
+#[tauri::command]
+pub async fn tasks_toggle(state: tauri::State<'_, crate::AppState>, id: i32, completed: bool) -> Result<(), String> {
+    state.tasks.toggle_task(id, completed)
+}
+
+#[tauri::command]
+pub async fn tasks_delete(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
+    state.tasks.delete_task(id)
+}
+
+#[tauri::command]
+pub async fn export_tasks_csv(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<(), String> {
+    state.tasks.export_csv(&user_id, &path)
+}
+
+#[tauri::command]
+pub async fn import_tasks_csv(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<usize, String> {
+    state.tasks.import_csv(&user_id, &path)
 }

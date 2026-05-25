@@ -1,5 +1,6 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
@@ -45,7 +46,7 @@ export function SleepGoalTab({
             </span>
           </div>
           <div className="flex items-center gap-3 relative">
-            <input
+            <Input
               type="number"
               min="1"
               max="14"
@@ -70,16 +71,15 @@ export function SleepGoalTab({
             </span>
           </div>
           <div className="flex items-center gap-3 relative">
-            <input
+            <Input
               type="time"
-              className={cn(inputClass, "appearance-none")}
+              className={cn(
+                inputClass,
+                "appearance-none focus-visible:ring-0 focus-visible:ring-offset-0",
+              )}
               value={goalBedtime}
               onChange={(e) => setGoalBedtime(e.target.value)}
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
-              <div className="w-px h-4 bg-border mx-1" />
-              <span className={cn("text-xs font-bold", theme.text)}>24h</span>
-            </div>
           </div>
         </div>
       </div>

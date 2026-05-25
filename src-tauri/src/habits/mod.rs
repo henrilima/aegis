@@ -494,3 +494,75 @@ impl HabitManager {
     }
 }
 
+#[tauri::command]
+pub async fn habit_list_habits(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Habit>, String> {
+    let now = state.config.get_now();
+    Ok(state.habit.list_habits(&user_id, now))
+}
+
+#[tauri::command]
+pub async fn habit_add_habit(state: tauri::State<'_, crate::AppState>, habit: Habit) -> Result<(), String> {
+    state.habit.add_habit(habit)
+}
+
+#[tauri::command]
+pub async fn habit_update_habit(state: tauri::State<'_, crate::AppState>, habit: Habit) -> Result<(), String> {
+    state.habit.update_habit(habit)
+}
+
+#[tauri::command]
+pub async fn habit_mark_habit_done(
+    state: tauri::State<'_, crate::AppState>, 
+    id: i32, 
+    _user_id: Option<String>, 
+    timestamp: Option<String>
+) -> Result<(), String> {
+    let now = state.config.get_now();
+    let ts = timestamp.unwrap_or_default();
+    state.habit.mark_done(id, &ts, now)
+}
+
+#[tauri::command]
+pub async fn habit_use_habit_charge(
+    state: tauri::State<'_, crate::AppState>, 
+    id: i32, 
+    _user_id: Option<String>
+) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.habit.use_charge(id, now)
+}
+
+#[tauri::command]
+pub async fn habit_reset_habit(
+    state: tauri::State<'_, crate::AppState>, 
+    id: i32, 
+    _user_id: Option<String>, 
+    timestamp: Option<String>
+) -> Result<(), String> {
+    let now = state.config.get_now();
+    let ts = timestamp.unwrap_or_default();
+    state.habit.reset_habit(id, &ts, now)
+}
+
+#[tauri::command]
+pub async fn habit_hard_reset_habit(state: tauri::State<'_, crate::AppState>, id: i32, _user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
+    let now = state.config.get_now().to_rfc3339();
+    state.habit.hard_reset_habit(id, &now)
+}
+
+#[tauri::command]
+pub async fn habit_delete_habit(state: tauri::State<'_, crate::AppState>, id: i32, _user_id: Option<String>) -> Result<(), String> {
+    state.habit.delete_habit(id)
+}
+
+#[tauri::command]
+pub async fn habit_export_habits_csv(state: tauri::State<'_, crate::AppState>, user_id: String, dest_path: String) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.habit.export_csv(&user_id, &dest_path, now)
+}
+
+#[tauri::command]
+pub async fn habit_import_habits_csv(state: tauri::State<'_, crate::AppState>, user_id: String, file_path: String) -> Result<usize, String> {
+    state.habit.import_csv(&user_id, &file_path)
+}
+

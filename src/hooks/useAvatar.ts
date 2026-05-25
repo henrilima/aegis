@@ -22,7 +22,7 @@ export function useAvatar(userId: string | undefined) {
 
   const fetchAvatar = useCallback(async () => {
     if (!userId) return;
-    const data = await invoke<string | null>("get_avatar", { userId });
+    const data = await invoke<string | null>("global_get_avatar", { userId });
     setAvatarSrc(data ? toDataUrl(data) : null);
   }, [userId]);
 
@@ -54,7 +54,7 @@ export function useAvatar(userId: string | undefined) {
       ).join("");
       const base64 = btoa(binary);
 
-      await invoke("save_avatar", { userId, base64Data: base64 });
+      await invoke("global_save_avatar", { userId, base64Data: base64 });
       setAvatarSrc(toDataUrl(base64));
       window.dispatchEvent(new Event("avatar-updated"));
       console.log("Avatar atualizado com sucesso");
@@ -68,7 +68,7 @@ export function useAvatar(userId: string | undefined) {
   /** Remove o avatar do usuário. */
   const removeAvatar = useCallback(async () => {
     if (!userId) return;
-    await invoke("delete_avatar", { userId });
+    await invoke("global_delete_avatar", { userId });
     setAvatarSrc(null);
     window.dispatchEvent(new Event("avatar-updated"));
   }, [userId]);

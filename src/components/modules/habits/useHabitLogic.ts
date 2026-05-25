@@ -78,7 +78,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     try {
       setIsActionPending(true);
       const nowStr = simulatedNow.toISOString();
-      await invoke("mark_habit_done", { id, timestamp: nowStr });
+      await invoke("habit_mark_habit_done", { id, timestamp: nowStr });
       onRefresh?.();
       toast.success("Hábito concluído com sucesso!");
     } catch (e) {
@@ -95,7 +95,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
       return;
     }
     try {
-      await invoke("use_habit_charge", { id });
+      await invoke("habit_use_habit_charge", { id });
       onRefresh?.();
       toast.success("Carga utilizada!");
     } catch {
@@ -106,7 +106,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   // Reiniciar sequência por falha ou deslize
   const resetStreak = useCallback(async () => {
     try {
-      await invoke("reset_habit", {
+      await invoke("habit_reset_habit", {
         id,
         timestamp: simulatedNow.toISOString(),
       });
@@ -124,7 +124,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   // Reset total (zerar todas as métricas)
   const hardReset = useCallback(async () => {
     try {
-      await invoke("hard_reset_habit", {
+      await invoke("habit_hard_reset_habit", {
         id,
         timestamp: simulatedNow.toISOString(),
       });
@@ -138,7 +138,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   // Excluir hábito
   const deleteHabit = useCallback(async () => {
     try {
-      await invoke("delete_habit", { id });
+      await invoke("habit_delete_habit", { id });
       onRefresh?.();
       toast.success("Registro removido");
     } catch {

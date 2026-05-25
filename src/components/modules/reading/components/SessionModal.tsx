@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookOpen, Calendar, X } from "lucide-react";
+import { Bookmark, BookOpen, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -269,20 +269,12 @@ export function SessionModal({
                 <Label className={labelClass}>
                   Data <span className={requiredClass}>*</span>
                 </Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onClick={(e) => {
-                      if ("showPicker" in HTMLInputElement.prototype) {
-                        e.currentTarget.showPicker();
-                      }
-                    }}
-                    onChange={(e) => set("date", e.target.value)}
-                    className={cn(inputClass, "h-12 w-full cursor-pointer")}
-                  />
-                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-700 pointer-events-none" />
-                </div>
+                <Input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => set("date", e.target.value)}
+                  className={cn(inputClass, "h-12 w-full")}
+                />
               </div>
               <div className="flex flex-col">
                 <Label className={labelClass}>
@@ -300,7 +292,7 @@ export function SessionModal({
                       className={cn(inputClass, "h-12 pr-6 text-center")}
                       placeholder="0"
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600">
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600 pointer-events-none">
                       h
                     </span>
                   </div>
@@ -319,7 +311,7 @@ export function SessionModal({
                       className={cn(inputClass, "h-12 pr-8 text-center")}
                       placeholder="0"
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600">
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600 pointer-events-none">
                       min
                     </span>
                   </div>
@@ -407,7 +399,7 @@ export function SessionModal({
                   <div className="relative group/field">
                     <Bookmark
                       className={cn(
-                        "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-700 transition-colors",
+                        "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-700 transition-colors pointer-events-none",
                         `group-hover/field:${theme.text}`,
                       )}
                     />
@@ -424,7 +416,7 @@ export function SessionModal({
                       )}
                       placeholder={String(startPage)}
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end opacity-60">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end opacity-60 pointer-events-none">
                       <span className="text-[10px] font-bold uppercase text-neutral-500">
                         Início
                       </span>

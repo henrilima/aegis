@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   BookOpen,
   ChevronDown,
@@ -10,11 +11,35 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme } from "@/lib/utils";
+import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudySession } from "../types";
 import { formatHours, hitRate, parseDate } from "../utils";
 import { StudyStars } from "./studyStars";
+
+// Variantes de animação para entrada escalonada (staggered entrance)
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 260,
+      damping: 25,
+    },
+  },
+};
 
 interface HistoryTabProps {
   sessions: StudySession[];
@@ -85,15 +110,30 @@ export function HistoryTab({
           className="py-12"
         />
       ) : (
-        <div className="flex flex-col gap-2">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="flex flex-col gap-2"
+        >
           {sessions.map((s) => {
             const totalQ = s.questionsNew + s.questionsReview;
             const totalC = s.correctNew + s.correctReview;
             const hRate = hitRate(totalC, totalQ);
 
             return (
-              <div
+              <motion.div
                 key={s.id}
+                variants={itemVariants}
+                whileHover={{
+                  y: -4,
+                  boxShadow: "0 12px 30px -10px rgba(0,0,0,0.15)",
+                }}
+                transition={{
+                  type: "spring" as const,
+                  stiffness: 300,
+                  damping: 20,
+                }}
                 className={cn(
                   "group bg-card/50 border border-border rounded-xl p-5 transition-all duration-300",
                   theme.borderHover,
@@ -176,7 +216,7 @@ export function HistoryTab({
 
                     {/* Nota */}
                     {s.note && (
-                      <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-border pl-3 py-0.5 mt-1 border-dashed">
+                      <p className="text-xs text-muted-foreground leading-relaxed italic border-border pl-3 py-0.5 mt-1 border-dashed">
                         {s.note}
                       </p>
                     )}
@@ -191,7 +231,7 @@ export function HistoryTab({
                         className={cn(
                           "p-2.5 text-neutral-600 transition-all border-r border-border active:scale-95",
                           theme.bgHover,
-                          `hover:${theme.text}`,
+                          toHoverClass(theme.text),
                         )}
                       >
                         <Pencil className="w-4 h-4" />
@@ -208,10 +248,10 @@ export function HistoryTab({
                     </ToolTip>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   );

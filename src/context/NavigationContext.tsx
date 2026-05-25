@@ -23,7 +23,8 @@ export type AppRoute =
   | "reading"
   | "dictionary"
   | "tasks"
-  | "movies";
+  | "movies"
+  | "flashcards";
 
 const VALID_ROUTES = new Set<AppRoute>([
   "dashboard",
@@ -40,6 +41,7 @@ const VALID_ROUTES = new Set<AppRoute>([
   "dictionary",
   "tasks",
   "movies",
+  "flashcards",
 ]);
 
 function parsePathname(raw: string): AppRoute {
@@ -89,13 +91,33 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
 
-  // Escuta atalhos globais ou eventos para abrir configurações
+  // Escuta atalhos globais ou eventos para abrir/fechar configurações
   useEffect(() => {
     const handleOpenSettings = () => setSettingsOpen(true);
+    const handleCloseSettings = () => setSettingsOpen(false);
     window.addEventListener("open-settings", handleOpenSettings);
-    return () =>
+    window.addEventListener("close-settings", handleCloseSettings);
+    window.addEventListener("close-all-modals", handleCloseSettings);
+    return () => {
       window.removeEventListener("open-settings", handleOpenSettings);
+      window.removeEventListener("close-settings", handleCloseSettings);
+      window.removeEventListener("close-all-modals", handleCloseSettings);
+    };
   }, []);
+
+  // Escuta evento global para mudar de rota/módulo
+  useEffect(() => {
+    const handleNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent<AppRoute>;
+      if (customEvent.detail) {
+        navigate(customEvent.detail);
+      }
+    };
+    window.addEventListener("aegis-navigate", handleNavigate);
+    return () => {
+      window.removeEventListener("aegis-navigate", handleNavigate);
+    };
+  }, [navigate]);
 
   return (
     <NavigationContext.Provider

@@ -55,13 +55,13 @@ export function TasksWidget({
         onToggleInteractive={onToggleInteractive}
       >
         <div className="flex flex-col gap-[4cqw] @sm:gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-black text-foreground leading-none">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-[4cqw] @sm:gap-4">
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {pendingTasks.length}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Pendentes
                 </p>
               </div>
@@ -96,74 +96,120 @@ export function TasksWidget({
                 return (
                   <div
                     key={task.id}
-                    className={cn(
-                      "group w-full flex items-center gap-3 p-3 rounded-xl bg-card border transition-all cursor-default text-left",
-                      !task.color && "border-border/50 hover:border-border",
-                    )}
+                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4 group w-full cursor-default text-left focus:outline-none"
                     style={
-                      { borderColor: styles.borderColor } as React.CSSProperties
+                      {
+                        borderColor: styles.borderColor || undefined,
+                      } as React.CSSProperties
                     }
                   >
-                    {isInteractive ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleTask?.(task);
-                        }}
-                        className="shrink-0 transition-transform active:scale-90"
-                      >
-                        {task.completed ? (
-                          <CheckCircle2
-                            className="w-4 h-4"
-                            style={{ color: styles.iconColor }}
-                          />
-                        ) : (
-                          <Circle
-                            className="w-4 h-4 transition-colors group-hover:scale-110"
-                            style={{ color: styles.iconColorMuted }}
-                          />
-                        )}
-                      </button>
-                    ) : (
-                      <div className="shrink-0">
-                        {task.completed ? (
-                          <CheckCircle2
-                            className="w-4 h-4 opacity-50"
-                            style={{ color: styles.iconColor }}
-                          />
-                        ) : (
-                          <Circle
-                            className="w-4 h-4 opacity-50"
-                            style={{ color: styles.iconColorMuted }}
-                          />
-                        )}
-                      </div>
-                    )}
-
-                    <span
-                      className={cn(
-                        "text-sm font-medium truncate flex-1 transition-colors",
-                        task.completed
-                          ? "text-muted-foreground"
-                          : "text-muted-foreground group-hover:text-foreground",
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {isInteractive ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleTask?.(task);
+                          }}
+                          className={cn(
+                            "shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 transition-all active:scale-95",
+                            task.completed
+                              ? "opacity-60"
+                              : "hover:bg-neutral-300 dark:hover:bg-neutral-900/60",
+                          )}
+                          style={
+                            {
+                              borderColor: styles.borderColor || undefined,
+                            } as React.CSSProperties
+                          }
+                        >
+                          {task.completed ? (
+                            <CheckCircle2
+                              className="w-4 h-4"
+                              style={{ color: styles.iconColor }}
+                            />
+                          ) : (
+                            <Circle
+                              className="w-4 h-4 transition-colors text-zinc-650 dark:text-zinc-500 hover:text-foreground"
+                              style={{ color: styles.iconColorMuted }}
+                            />
+                          )}
+                        </button>
+                      ) : (
+                        <div
+                          className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 opacity-60"
+                          style={
+                            {
+                              borderColor: styles.borderColor || undefined,
+                            } as React.CSSProperties
+                          }
+                        >
+                          {task.completed ? (
+                            <CheckCircle2
+                              className="w-4 h-4"
+                              style={{ color: styles.iconColor }}
+                            />
+                          ) : (
+                            <Circle
+                              className="w-4 h-4"
+                              style={{ color: styles.iconColorMuted }}
+                            />
+                          )}
+                        </div>
                       )}
-                    >
-                      {task.title}
-                    </span>
 
-                    {isInteractive && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteTask?.(task);
-                        }}
-                        className="p-1 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-md"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            "text-sm font-bold text-foreground truncate",
+                            task.completed &&
+                              "text-muted-foreground/60 line-through",
+                          )}
+                        >
+                          {task.title}
+                        </span>
+                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                          {task.category ||
+                            (task.completed ? "Concluída" : "Tarefa pendente")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-2">
+                      {task.priority !== undefined && task.priority > 0 && (
+                        <div
+                          className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[48px] text-left"
+                          style={
+                            {
+                              borderColor: styles.borderColor || undefined,
+                            } as React.CSSProperties
+                          }
+                        >
+                          <span
+                            className="block text-xs font-bold leading-none"
+                            style={{ color: styles.iconColor }}
+                          >
+                            P{task.priority}
+                          </span>
+                          <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                            Prioridade
+                          </span>
+                        </div>
+                      )}
+
+                      {isInteractive && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteTask?.(task);
+                          }}
+                          className="p-1.5 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-md shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

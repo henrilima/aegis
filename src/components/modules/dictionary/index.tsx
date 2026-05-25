@@ -257,8 +257,6 @@ export default function DictionaryPage() {
         ]}
       />
 
-      <div className="w-full h-px bg-border/50" />
-
       {/* LISTA DE CARDS COMPACTOS */}
       <div className="flex flex-col gap-4">
         {filteredGlossary.length === 0 ? (

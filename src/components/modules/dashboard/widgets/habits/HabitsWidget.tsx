@@ -82,14 +82,14 @@ export function HabitsWidget({
         </div>
         <div className="flex flex-col">
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl @sm:text-3xl font-black text-foreground">
+            <span className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
               {doneToday.length}
             </span>
             <span className="text-lg @sm:text-xl font-bold text-muted-foreground">
               / {positiveHabits.length}
             </span>
           </div>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+          <p className="text-[10px] font-bold text-muted-foreground mt-1">
             Concluídos hoje
           </p>
           <div className="flex items-center gap-1.5 mt-2">
@@ -104,75 +104,89 @@ export function HabitsWidget({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="w-full space-y-2">
         {positiveHabits.slice(0, 3).map((h) => {
           const done = h.lastDone && isToday(h.lastDone);
+          const streak = getHabitStreak(h, time);
           return (
-            <div
+            <button
               key={h.id}
+              type="button"
+              tabIndex={isInteractive && !done ? 0 : undefined}
               className={cn(
-                "flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-border/50",
-                isInteractive &&
-                  !done &&
-                  "hover:bg-neutral-800/50 transition-colors",
+                "flex w-full items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4 outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
+                isInteractive && !done && "cursor-pointer",
               )}
+              onClick={(e) => {
+                if (isInteractive) {
+                  e.stopPropagation();
+                  if (!done && onToggleHabit && h.id !== undefined) {
+                    onToggleHabit(h.id);
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                if (
+                  isInteractive &&
+                  !done &&
+                  onToggleHabit &&
+                  h.id !== undefined &&
+                  (e.key === "Enter" || e.key === " ")
+                ) {
+                  e.preventDefault();
+                  onToggleHabit(h.id);
+                }
+              }}
             >
-              <div className="flex items-center gap-[2cqw] @sm:gap-2 min-w-0">
-                {isInteractive ? (
-                  <button
-                    type="button"
-                    disabled={!!done}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!done && onToggleHabit && h.id !== undefined)
-                        onToggleHabit(h.id);
-                    }}
-                    className={cn(
-                      "shrink-0 transition-transform",
-                      !done && "hover:scale-110 active:scale-95",
-                    )}
-                  >
-                    {done ? (
-                      <CheckCircle2
-                        className={cn(
-                          "w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4",
-                          theme.text,
-                        )}
-                      />
-                    ) : (
-                      <Circle
-                        className={cn(
-                          "w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 text-neutral-600 transition-colors",
-                          theme.textDarkHover.replace("hover:", "hover:"),
-                        )}
-                      />
-                    )}
-                  </button>
-                ) : done ? (
-                  <CheckCircle2
-                    className={cn(
-                      "w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 shrink-0",
-                      theme.text,
-                    )}
-                  />
-                ) : (
-                  <Circle className="w-[4cqw] h-[4cqw] @sm:w-4 @sm:h-4 text-neutral-600 shrink-0" />
-                )}
-                <span
+              <div className="flex items-center gap-3 min-w-0">
+                <div
                   className={cn(
-                    "text-[3cqw] @sm:text-xs font-medium truncate",
-                    done
-                      ? "text-muted-foreground line-through"
-                      : "text-muted-foreground",
+                    "shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-teal-500",
+                    isInteractive &&
+                      !done &&
+                      "transition-transform hover:scale-105 active:scale-95",
                   )}
                 >
-                  {h.name}
+                  {done ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <Circle
+                      className={cn(
+                        "w-4 h-4 text-zinc-500",
+                        isInteractive && "hover:text-foreground",
+                      )}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span
+                    className={cn(
+                      "text-sm font-bold text-foreground truncate",
+                      done && "text-muted-foreground/60 line-through",
+                    )}
+                  >
+                    {h.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                    {done ? "Concluído hoje" : "Pendente"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                <span
+                  className={cn(
+                    "block text-xs font-bold leading-none",
+                    done ? theme.text : "text-zinc-650 dark:text-zinc-500",
+                  )}
+                >
+                  {streak}d
+                </span>
+                <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                  Sequência
                 </span>
               </div>
-              <span className="text-[2.5cqw] @sm:text-[10px] font-bold text-neutral-600 ml-2">
-                {getHabitStreak(h, time)}d
-              </span>
-            </div>
+            </button>
           );
         })}
         {positiveHabits.length === 0 && (

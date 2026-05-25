@@ -167,7 +167,7 @@ export function WhatsNewModal({
             </button>
           </div>
           <span className="text-[9px] text-foreground font-medium opacity-30">
-            Aegis Medusa • Release Update
+            Aegis Prisma • Release Update
           </span>
         </div>
       </div>

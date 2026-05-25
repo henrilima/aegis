@@ -1,16 +1,36 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
+import { GlobalScheduler } from "@/components/GlobalScheduler";
 import { GlobalShortcuts } from "@/components/GlobalShortcuts";
 import { DictionaryQuickSearch } from "@/components/global/DictionaryQuickSearch";
+import { FeedbackDialog } from "@/components/global/FeedbackDialog";
 import { SettingsModal } from "@/components/global/SettingsModal";
+import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { AppSidebar } from "@/components/sidebar/appSidebar";
 import { SidebarTrigger } from "@/components/sidebar/SidebarTrigger";
+import { useAuth } from "@/context/AuthContext";
 import { NavigationProvider } from "@/context/NavigationContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { appMode } = useTheme();
+  const { user } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    markRead,
+    markAllRead,
+    remove,
+    clearRead,
+  } = useNotifications(user?.id);
+
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     const handleToggle = () => setIsSidebarOpen((prev) => !prev);
@@ -18,25 +38,67 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("toggle-sidebar", handleToggle);
   }, []);
 
+  useEffect(() => {
+    const handleOpenFeedback = () => setShowFeedback(true);
+    const handleOpenNotifications = () => setShowNotifications(true);
+    const handleToggleNotifications = () =>
+      setShowNotifications((prev) => !prev);
+    const handleCloseAll = () => {
+      setShowFeedback(false);
+      setShowNotifications(false);
+    };
+
+    window.addEventListener("open-feedback", handleOpenFeedback);
+    window.addEventListener("open-notifications", handleOpenNotifications);
+    window.addEventListener(
+      "toggle-notifications-panel",
+      handleToggleNotifications,
+    );
+    window.addEventListener("close-all-modals", handleCloseAll);
+
+    return () => {
+      window.removeEventListener("open-feedback", handleOpenFeedback);
+      window.removeEventListener("open-notifications", handleOpenNotifications);
+      window.removeEventListener(
+        "toggle-notifications-panel",
+        handleToggleNotifications,
+      );
+      window.removeEventListener("close-all-modals", handleCloseAll);
+    };
+  }, []);
+
+  const isSidebarVisible = appMode === "default";
+
   return (
     <NavigationProvider>
-      <div className="flex min-h-screen bg-background text-foreground overflow-x-hidden">
+      <div
+        className="flex min-h-screen bg-background text-foreground overflow-x-hidden"
+        style={
+          {
+            "--sidebar-w": isSidebarVisible && isSidebarOpen ? "288px" : "0px",
+          } as CSSProperties
+        }
+      >
+        <GlobalScheduler />
         <GlobalShortcuts />
         <DictionaryQuickSearch />
         <SettingsModal />
-        <AppSidebar isOpen={isSidebarOpen} />
+
+        {isSidebarVisible && <AppSidebar isOpen={isSidebarOpen} />}
 
         {/* Floating Trigger (visible when sidebar is closed) */}
-        <SidebarTrigger
-          isOpen={isSidebarOpen}
-          onToggle={() => setIsSidebarOpen(true)}
-          floating
-        />
+        {isSidebarVisible && (
+          <SidebarTrigger
+            isOpen={isSidebarOpen}
+            onToggle={() => setIsSidebarOpen(true)}
+            floating
+          />
+        )}
 
-        {isSidebarOpen && (
+        {isSidebarVisible && isSidebarOpen && (
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 z-10 bg-black/60 backdrop-blur-sm lg:hidden w-full h-full border-none cursor-default"
+            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden w-full h-full border-none cursor-default"
             aria-label="Close sidebar"
             type="button"
           />
@@ -44,12 +106,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         <main
           className={cn(
-            "flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden p-6 md:p-10 scrollbar-stable scroll-smooth",
-            isSidebarOpen ? "lg:ml-72" : "ml-0",
+            "relative z-0 flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden p-6 md:p-10 scrollbar-stable scroll-smooth",
+            isSidebarVisible && isSidebarOpen ? "lg:ml-72" : "ml-0",
           )}
         >
           {children}
         </main>
+
+        <FeedbackDialog
+          isOpen={showFeedback}
+          onClose={() => setShowFeedback(false)}
+        />
+
+        <NotificationsPanel
+          notifications={notifications}
+          unreadCount={unreadCount}
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+          onMarkRead={markRead}
+          onMarkAllRead={markAllRead}
+          onDelete={remove}
+          onClearRead={clearRead}
+        />
       </div>
     </NavigationProvider>
   );

@@ -188,7 +188,7 @@ export function HistoryTab({
                 <div className="relative pl-6 py-1">
                   <div
                     className={cn(
-                      "absolute left-1 top-0 bottom-0 w-px border-l-2 border-dotted",
+                      "absolute left-1 top-0 bottom-0 w-px border-dotted",
                       theme.border.replace("20", "40"),
                     )}
                   />

@@ -29,7 +29,7 @@ export function MetricCard({
 }: MetricCardProps) {
   const content = (
     <div
-      className="bg-card border rounded-xl p-4 flex flex-col gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+      className="bg-card border rounded-xl p-4 min-h-[128px] flex flex-col justify-between gap-3 transition-all hover:border-border/90 hover:bg-accent/20"
       style={{ borderColor }}
     >
       <div className="flex items-center justify-between">
@@ -40,12 +40,16 @@ export function MetricCard({
           <Icon className="w-3.5 h-3.5" style={{ color }} />
         </div>
       </div>
-      <span className="text-2xl font-bold leading-none" style={{ color }}>
-        {value}
-      </span>
-      {sub && (
-        <span className="text-[11px] text-neutral-600 font-medium">{sub}</span>
-      )}
+      <div>
+        <span className="text-3xl font-bold leading-none" style={{ color }}>
+          {value}
+        </span>
+        {sub && (
+          <span className="block text-[11px] text-muted-foreground font-medium mt-2">
+            {sub}
+          </span>
+        )}
+      </div>
     </div>
   );
 

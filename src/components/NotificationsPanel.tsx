@@ -31,7 +31,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { APP_CONFIG } from "@/app.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
@@ -39,6 +39,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useLog } from "@/hooks/useLog";
 import type { AppNotification } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
+import { PERSISTENT_NOTIFICATIONS } from "@/persistentNotifications.config";
 
 interface NotificationsPanelProps {
   notifications: AppNotification[];
@@ -80,27 +81,35 @@ const CATEGORY_ICON: Record<string, string> = {
 };
 
 const CATEGORY_COLOR: Record<string, string> = {
-  sleep: "bg-blue-500/10 border-blue-500/20 text-blue-500",
+  sleep: "bg-cyan-500/10 border-cyan-500/20 text-cyan-500",
   system: "bg-muted border-border/40 text-muted-foreground",
-  habit: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
+  habit: "bg-teal-500/10 border-teal-500/20 text-teal-500",
   hydration: "bg-sky-500/10 border-sky-500/20 text-sky-500",
-  alarms: "bg-orange-500/10 border-orange-500/20 text-orange-500",
+  alarms: "bg-red-500/10 border-red-500/20 text-red-500",
 };
 
 const NOTIF_COLORS: Record<string, string> = {
   red: "bg-red-500/10 border-red-500/20 text-red-500",
   orange: "bg-orange-500/10 border-orange-500/20 text-orange-500",
   amber: "bg-amber-500/10 border-amber-500/20 text-amber-500",
+  yellow: "bg-yellow-500/10 border-yellow-500/20 text-yellow-500",
+  lime: "bg-lime-500/10 border-lime-500/20 text-lime-500",
+  green: "bg-green-500/10 border-green-500/20 text-green-500",
   emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
   teal: "bg-teal-500/10 border-teal-500/20 text-teal-500",
-  blue: "bg-blue-500/10 border-blue-500/20 text-blue-500",
+  cyan: "bg-cyan-500/10 border-cyan-500/20 text-cyan-500",
   sky: "bg-sky-500/10 border-sky-500/20 text-sky-500",
-  purple: "bg-purple-500/10 border-purple-500/20 text-purple-500",
+  blue: "bg-blue-500/10 border-blue-500/20 text-blue-500",
+  indigo: "bg-indigo-500/10 border-indigo-500/20 text-indigo-500",
   violet: "bg-violet-500/10 border-violet-500/20 text-violet-500",
+  purple: "bg-purple-500/10 border-purple-500/20 text-purple-500",
+  fuchsia: "bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-500",
   pink: "bg-pink-500/10 border-pink-500/20 text-pink-500",
   rose: "bg-rose-500/10 border-rose-500/20 text-rose-500",
-  indigo: "bg-indigo-500/10 border-indigo-500/20 text-indigo-500",
-  cyan: "bg-cyan-500/10 border-cyan-500/20 text-cyan-500",
+  slate: "bg-slate-500/10 border-slate-500/20 text-slate-500",
+  neutral: "bg-neutral-500/10 border-neutral-500/20 text-neutral-500",
+  coffee: "bg-[#8d7767]/10 border-[#8d7767]/20 text-[#8d7767]",
+  carbon: "bg-zinc-800/40 border-zinc-700/50 text-zinc-400",
 };
 
 function formatDate(dateStr: string) {
@@ -146,49 +155,129 @@ function VersionCard({
   const { themeStyles: theme } = useTheme();
   const isCaveMode = vDiff >= 1.0;
 
-  if (vState === "update-available") {
-    return (
-      <button
-        type="button"
-        onClick={() => setShowUpdateDialog(true)}
-        className={cn(
-          "w-[calc(100%-2.5rem)] mx-5 mb-3 p-3 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-left",
-          isCaveMode
-            ? "bg-amber-500/10 border-amber-500/20"
-            : `${theme.bg} ${theme.border.replace("/70", "/20")}`,
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "p-2 rounded-xl",
-              isCaveMode
-                ? "bg-amber-500/20"
-                : "bg-background/80 border border-border/50",
-            )}
-          >
-            <Package
-              className={cn(
-                "w-4 h-4",
-                isCaveMode ? "text-amber-500" : theme.text,
-              )}
-            />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-foreground">
-              Atualização disponível
-            </p>
-            <p className="text-[10px] text-muted-foreground">
-              Atualize para receber novidades e correções de bugs.
-            </p>
-          </div>
-        </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
-      </button>
-    );
+  let icon: React.ReactNode = null;
+  let title = "";
+  let subtitle = "";
+  let iconContainerClass = "";
+  let iconClass = "";
+  let onClick: (() => void) | undefined;
+  let extraElement: React.ReactNode = null;
+
+  switch (vState) {
+    case "loading":
+      title = "Buscando atualizações";
+      subtitle = "Vasculhando os servidores atrás de novidades e correções...";
+      iconClass = cn("w-4 h-4 animate-spin", theme.text);
+      icon = <Activity className={iconClass} />;
+      iconContainerClass = theme.bg;
+      break;
+
+    case "up-to-date":
+      title = "Sistema atualizado";
+      subtitle =
+        "Ainda não temos novas versões disponíveis, mas aproveite para tomar um bom café.";
+      iconClass = cn("w-4 h-4", theme.text);
+      icon = <Coffee className={iconClass} />;
+      iconContainerClass = theme.bg;
+      break;
+
+    case "update-available":
+      title = "Atualização disponível";
+      subtitle =
+        "Há novidades prontas para você. Clique aqui para iniciar a instalação.";
+      iconClass = isCaveMode
+        ? "text-amber-500 w-4 h-4 animate-pulse"
+        : cn("w-4 h-4 animate-pulse", theme.text);
+      icon = <Package className={iconClass} />;
+      iconContainerClass = isCaveMode ? "bg-amber-500/20" : theme.bg;
+      onClick = () => setShowUpdateDialog(true);
+      extraElement = (
+        <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+      );
+      break;
+
+    case "downloading":
+      title = "Baixando atualização";
+      subtitle =
+        "Carregando novos recursos. Aguarde a finalização do processo...";
+      iconClass = cn("w-4 h-4 animate-bounce", theme.text);
+      icon = <Download className={iconClass} />;
+      iconContainerClass = theme.bg;
+      break;
+
+    case "ready":
+      title = "Reinicialização necessária";
+      subtitle =
+        "Download concluído. Clique aqui para reiniciar o Aegis e aplicar as mudanças.";
+      iconClass = "w-4 h-4 text-purple-500 animate-pulse";
+      icon = <Zap className={iconClass} />;
+      iconContainerClass = "bg-purple-500/10";
+      onClick = () => {
+        relaunch().catch((e) => console.error("Relaunch failed", e));
+      };
+      extraElement = (
+        <ChevronRight className="w-4 h-4 text-purple-500/50 shrink-0" />
+      );
+      break;
+
+    case "beta":
+      title = "Versão experimental ativa";
+      subtitle =
+        "Você está utilizando uma build beta em desenvolvimento do sistema.";
+      iconClass = cn("w-4 h-4 animate-pulse", theme.text);
+      icon = <Ghost className={iconClass} />;
+      iconContainerClass = theme.bg;
+      break;
+
+    case "error":
+      title = "Falha na verificação";
+      subtitle = "Não foi possível conectar. Tente novamente mais tarde.";
+      iconClass = "w-4 h-4 text-red-500";
+      icon = <Info className={iconClass} />;
+      iconContainerClass = "bg-red-500/10";
+      break;
+
+    default:
+      return null;
   }
 
-  return null;
+  const isClickable = !!onClick;
+  const Tag = isClickable ? "button" : "div";
+
+  const containerStyles = cn(
+    "w-[calc(100%-2.5rem)] mx-5 mb-3 p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-all text-left",
+    isCaveMode
+      ? "bg-amber-500/5 border-amber-500/15"
+      : "bg-card/45 border-border/30",
+    isClickable
+      ? "cursor-pointer hover:scale-[1.01] active:scale-[0.99] hover:bg-muted/20 hover:border-border/50"
+      : "cursor-default",
+  );
+
+  return (
+    <Tag
+      {...(isClickable ? { type: "button", onClick } : {})}
+      className={containerStyles}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "p-2 rounded-xl shrink-0 border border-border/10",
+            iconContainerClass,
+          )}
+        >
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-foreground">{title}</p>
+          <p className="text-[11px] text-muted-foreground leading-normal mt-0.5">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      {extraElement}
+    </Tag>
+  );
 }
 
 export function NotificationsPanel({
@@ -249,20 +338,13 @@ export function NotificationsPanel({
             cachedRelease = newRelease;
             lastCheckTime = Date.now();
             return;
-          } else {
-            // Se o updater oficial responder que não há updates, confiamos nele
-            const newState: VersionState = "up-to-date";
-            setVState(newState);
-            cachedVState = newState;
-            lastCheckTime = Date.now();
-            return;
           }
         } catch (_) {
           log.warn("Updater oficial indisponível, tentando GitHub API...");
         }
 
         // 2. Se não houver update oficial, faz o check visual via Rust command (mais estável)
-        const data: GithubRelease = await invoke("check_github_update");
+        const data: GithubRelease = await invoke("global_check_github_update");
         setRelease(data);
         cachedRelease = data;
 
@@ -331,7 +413,7 @@ export function NotificationsPanel({
 
       // Realiza o backup preventivo antes de baixar
       try {
-        await invoke("pre_update_backup");
+        await invoke("global_pre_update_backup");
         log.info("Backup pré-update realizado com sucesso.");
       } catch (e) {
         log.error("Falha no backup pré-update (continuando mesmo assim)", e);
@@ -502,6 +584,16 @@ export function NotificationsPanel({
     );
   }
 
+  // Intercepta o fechamento para exibir animação de saída
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+      setShowUpdateDialog(false); // Reset update dialog on close
+    }, 280);
+  }, [onClose]);
+
   // Reseta estado ao abrir
   useEffect(() => {
     if (isOpen) {
@@ -511,7 +603,7 @@ export function NotificationsPanel({
 
       // Auto-read logic
       if (unreadCount > 0) {
-        invoke<{ autoReadNotifications: boolean }>("get_app_config")
+        invoke<{ autoReadNotifications: boolean }>("global_get_app_config")
           .then((config) => {
             if (config.autoReadNotifications) {
               onMarkAllRead();
@@ -522,15 +614,40 @@ export function NotificationsPanel({
     }
   }, [isOpen, unreadCount, onMarkAllRead]);
 
-  // Intercepta o fechamento para exibir animação de saída
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-      setIsClosing(false);
-      setShowUpdateDialog(false); // Reset update dialog on close
-    }, 280);
-  };
+  // Captura robusta de Alt + N e do evento toggle para fechamento gracioso
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleClose();
+      }
+    };
+
+    const handleToggleEvent = (e: Event) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      handleClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    window.addEventListener(
+      "toggle-notifications-panel",
+      handleToggleEvent,
+      true,
+    );
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+      window.removeEventListener(
+        "toggle-notifications-panel",
+        handleToggleEvent,
+        true,
+      );
+    };
+  }, [isOpen, handleClose]);
 
   // Focus trap: impede que Tab vaze para o conteúdo por trás do painel
   const handlePanelKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -582,15 +699,24 @@ export function NotificationsPanel({
     }
   };
 
+  const combinedNotifications = useMemo(() => {
+    const dbNotifs = notifications.filter((n) => !n.persistent);
+    if (activeFilter === "all") {
+      return dbNotifs;
+    }
+    if (activeFilter === "fixas") {
+      return PERSISTENT_NOTIFICATIONS as AppNotification[];
+    }
+    return dbNotifs.filter((n) => n.category === activeFilter);
+  }, [notifications, activeFilter]);
+
   const groupedNotifications = useMemo(() => {
     const groups: Map<
       string,
       AppNotification & { count: number; ids: number[] }
     > = new Map();
 
-    for (const n of notifications) {
-      if (activeFilter !== "all" && n.category !== activeFilter) continue;
-
+    for (const n of combinedNotifications) {
       const key = `${n.category}-${n.title}-${n.isRead}`;
       const existing = groups.get(key);
       if (existing) {
@@ -608,19 +734,24 @@ export function NotificationsPanel({
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [notifications, activeFilter]);
+  }, [combinedNotifications]);
 
-  const uniqueCategories = Array.from(
-    new Set(notifications.map((n) => n.category)),
-  );
+  const uniqueCategories = useMemo(() => {
+    const dbCats = Array.from(
+      new Set(
+        notifications.filter((n) => !n.persistent).map((n) => n.category),
+      ),
+    );
+    return ["fixas", ...dbCats.filter((c) => c !== "fixas")];
+  }, [notifications]);
 
   const categoryLabels: Record<string, string> = {
     system: "Sistema",
     sleep: "Sono",
     habit: "Hábitos",
-    hydration: "Hidratação",
     alarms: "Alarmes",
     alarmes: "Alarmes",
+    fixas: "Fixas",
   };
 
   const hasRead = notifications.some((n) => n.isRead);
@@ -820,6 +951,7 @@ export function NotificationsPanel({
                   exitingIds={exitingIds}
                   handleMarkRead={handleMarkRead}
                   handleDeleteGroup={handleDeleteGroup}
+                  onClose={onClose}
                 />
               ))
             )}
@@ -847,6 +979,7 @@ function NotificationCard({
   exitingIds,
   handleMarkRead,
   handleDeleteGroup,
+  onClose,
 }: {
   n: AppNotification & { count: number; ids: number[] };
   idx: number;
@@ -854,6 +987,7 @@ function NotificationCard({
   exitingIds: Set<number>;
   handleMarkRead: (ids: number[]) => void;
   handleDeleteGroup: (ids: number[]) => void;
+  onClose: () => void;
 }) {
   return (
     <div
@@ -868,12 +1002,14 @@ function NotificationCard({
       )}
     >
       {/* Botão de ação principal (Overlay) - Satisfaz a semântica sem aninhar botões */}
-      <button
-        type="button"
-        onClick={() => !n.isRead && handleMarkRead(n.ids)}
-        className="absolute inset-0 w-full h-full bg-transparent cursor-pointer z-0 outline-none focus-visible:bg-muted/20"
-        aria-label={`Marcar "${n.title}" como lida`}
-      />
+      {!n.persistent && (
+        <button
+          type="button"
+          onClick={() => !n.isRead && handleMarkRead(n.ids)}
+          className="absolute inset-0 w-full h-full bg-transparent cursor-pointer z-0 outline-none focus-visible:bg-muted/20"
+          aria-label={`Marcar "${n.title}" como lida`}
+        />
+      )}
 
       {/* Conteúdo e botões secundários */}
       <div className="relative z-10 flex gap-3 px-4 py-3.5 pointer-events-none">
@@ -888,7 +1024,7 @@ function NotificationCard({
         >
           {(() => {
             const IconComp =
-              ICON_MAP[n.icon || ""] ||
+              (typeof n.icon === "string" ? ICON_MAP[n.icon] : n.icon) ||
               ICON_MAP[CATEGORY_ICON[n.category]] ||
               Bell;
             return <IconComp className="w-4 h-4" />;
@@ -965,7 +1101,7 @@ function NotificationCard({
                 </ToolTip>
               )}
 
-              {!n.isRead && (
+              {!n.isRead && !n.persistent && (
                 <ToolTip content="Marcar todas como lidas">
                   <button
                     type="button"
@@ -982,48 +1118,85 @@ function NotificationCard({
             </div>
           </div>
 
-          {n.body.match(/https?:\/\/[^\s]+/) && (
-            <div className="mt-1 flex gap-2 pointer-events-auto">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const match = n.body.match(/(https?:\/\/[^\s]+)/);
-                  if (match) {
-                    open(match[0]);
-                  } else if (
-                    n.tag === "discord-invite" ||
-                    n.title.toLowerCase().includes("discord")
-                  ) {
-                    open("https://discord.gg/pCQTuTGJUx");
-                  }
-                }}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-2",
-                  n.title.toLowerCase().includes("discord") ||
-                    n.body.toLowerCase().includes("discord")
-                    ? "bg-[#5865F2] hover:bg-[#4752C4] text-white"
-                    : `${theme.solid} ${theme.solidHover} text-white`,
-                )}
-              >
-                {n.body.toLowerCase().includes("discord") ? (
-                  <svg
-                    className="w-3.5 h-3.5"
-                    viewBox="0 0 127.14 96.36"
-                    fill="currentColor"
-                    role="img"
+          {/* Botões customizados para notificações fixas */}
+          {n.persistent && n.buttons && n.buttons.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-2 pointer-events-auto">
+              {n.buttons.map((btn, btnIdx) => {
+                const BtnIcon = btn.icon;
+                return (
+                  <button
+                    key={`${n.id}-btn-${btnIdx}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+
+                      if (btn.url) {
+                        open(btn.url);
+                      } else if (btn.action) {
+                        btn.action();
+                      }
+                      onClose();
+                    }}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-2",
+                      btn.className ||
+                        `${theme.solid} ${theme.solidHover} text-white`,
+                    )}
                   >
-                    <title>Discord Icon</title>
-                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.48,80.21a105.73,105.73,0,0,0,32.22,16.15c2.51-3.45,4.76-7.1,6.69-10.94a74.84,74.84,0,0,1-10.65-5.14,53.27,53.27,0,0,0,1.31-1,80,80,0,0,0,74.15,0c.41.34.88.67,1.31,1a74.11,74.11,0,0,1-10.65,5.14c1.93,3.84,4.18,7.49,6.69,10.94a105.31,105.31,0,0,0,32.29-16.16C130,50.12,125.09,26.28,117.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.1,65.69,84.69,65.69Z" />
-                  </svg>
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                )}
-                Ver no{" "}
-                {n.body.toLowerCase().includes("discord") ? "Discord" : "Site"}
-              </button>
+                    {BtnIcon && <BtnIcon className="w-3.5 h-3.5" />}
+                    {btn.label}
+                  </button>
+                );
+              })}
             </div>
           )}
+
+          {/* Dynamic Link buttons for Non-persistent database notifications */}
+          {n.body.match(/https?:\/\/[^\s]+/) &&
+            !(n.buttons && n.buttons.length > 0) && (
+              <div className="mt-1 flex gap-2 pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const match = n.body.match(/(https?:\/\/[^\s]+)/);
+                    if (match) {
+                      open(match[0]);
+                    } else if (
+                      n.tag === "discord-invite" ||
+                      n.title.toLowerCase().includes("discord")
+                    ) {
+                      open("https://discord.gg/pCQTuTGJUx");
+                    }
+                  }}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center gap-2",
+                    n.title.toLowerCase().includes("discord") ||
+                      n.body.toLowerCase().includes("discord")
+                      ? "bg-[#5865F2] hover:bg-[#4752C4] text-white"
+                      : `${theme.solid} ${theme.solidHover} text-white`,
+                  )}
+                >
+                  {n.body.toLowerCase().includes("discord") ? (
+                    <svg
+                      className="w-3.5 h-3.5"
+                      viewBox="0 0 127.14 96.36"
+                      fill="currentColor"
+                      role="img"
+                    >
+                      <title>Discord Icon</title>
+                      <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.48,80.21a105.73,105.73,0,0,0,32.22,16.15c2.51-3.45,4.76-7.1,6.69-10.94a74.84,74.84,0,0,1-10.65-5.14,53.27,53.27,0,0,0,1.31-1,80,80,0,0,0,74.15,0c.41.34.88.67,1.31,1a74.11,74.11,0,0,1-10.65,5.14c1.93,3.84,4.18,7.49,6.69,10.94a105.31,105.31,0,0,0,32.29-16.16C130,50.12,125.09,26.28,117.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.1,65.69,84.69,65.69Z" />
+                    </svg>
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                  Ver no{" "}
+                  {n.body.toLowerCase().includes("discord")
+                    ? "Discord"
+                    : "Site"}
+                </button>
+              </div>
+            )}
         </div>
       </div>
     </div>

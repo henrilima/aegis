@@ -82,7 +82,7 @@ export function SecurityTab() {
   const loadVaultStatus = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const has = await invoke<boolean>("has_separate_vault_password", {
+      const has = await invoke<boolean>("global_has_separate_vault_password", {
         userId: user.id,
       });
       setHasVaultPwd(has);
@@ -103,7 +103,7 @@ export function SecurityTab() {
     if (!user?.id) return;
     setAcpLoading(true);
     try {
-      await invoke("change_account_password", {
+      await invoke("global_change_account_password", {
         userId: user.id,
         currentPassword: acpCurrent,
         newPassword: acpNew,
@@ -127,7 +127,7 @@ export function SecurityTab() {
     if (!user?.id) return;
     setVaultLoading(true);
     try {
-      await invoke("change_vault_password", {
+      await invoke("global_change_vault_password", {
         userId: user.id,
         currentVaultPwd: vaultCurrent,
         newVaultPwd: vaultNew,

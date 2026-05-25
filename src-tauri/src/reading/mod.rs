@@ -404,3 +404,72 @@ impl ReadingManager {
         Ok(count)
     }
 }
+
+#[tauri::command]
+pub async fn reading_list_books(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<ReadingBook>, String> {
+    Ok(state.reading.list_books(&user_id))
+}
+
+#[tauri::command]
+pub async fn reading_upsert_book(state: tauri::State<'_, crate::AppState>, book: ReadingBook) -> Result<i64, String> {
+    state.reading.upsert_book(book)
+}
+
+#[tauri::command]
+pub async fn reading_delete_book(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.reading.delete_book(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn reading_upsert_session(state: tauri::State<'_, crate::AppState>, session: ReadingSession) -> Result<i64, String> {
+    state.reading.upsert_session(session)
+}
+
+#[tauri::command]
+pub async fn reading_list_sessions(state: tauri::State<'_, crate::AppState>, user_id: String, months_back: i32) -> Result<Vec<ReadingSession>, String> {
+    let now = state.config.get_now();
+    Ok(state.reading.list_sessions(&user_id, months_back, now))
+}
+
+#[tauri::command]
+pub async fn reading_delete_session(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.reading.delete_session(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn reading_upsert_goal(state: tauri::State<'_, crate::AppState>, goal: ReadingGoal) -> Result<(), String> {
+    state.reading.upsert_goal(goal)
+}
+
+#[tauri::command]
+pub async fn reading_list_goals(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<ReadingGoal>, String> {
+    Ok(state.reading.list_goals(&user_id))
+}
+
+#[tauri::command]
+pub async fn reading_import_json(state: tauri::State<'_, crate::AppState>, user_id: String, file_path: String) -> Result<usize, String> {
+    state.reading.import_json(&user_id, &file_path)
+}
+
+#[tauri::command]
+pub async fn reading_export_json(state: tauri::State<'_, crate::AppState>, user_id: String, dest_path: String) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.reading.export_json(&user_id, &dest_path, now)
+}
+
+#[tauri::command]
+pub async fn reading_search_books(query: String) -> Result<serde_json::Value, String> {
+    let url = format!(
+        "https://www.googleapis.com/books/v1/volumes?q={}&maxResults=5&langRestrict=pt",
+        urlencoding::encode(&query)
+    );
+    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    Ok(json)
+}
+
+#[tauri::command]
+pub async fn reading_toggle_favorite(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
+    state.reading.toggle_favorite_book(id, &user_id, is_favorite)
+}

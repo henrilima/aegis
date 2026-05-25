@@ -1,11 +1,24 @@
 "use client";
 
-import { Keyboard, Search, Sparkles, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Bell,
+  Keyboard,
+  MessageSquare,
+  Plus,
+  Search,
+  Settings,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NAV_GROUPS } from "@/components/sidebar/appSidebar";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { useAuth } from "@/context/AuthContext";
 import type { AppRoute } from "@/context/NavigationContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import { type ShortcutDetails, shortcuts } from "@/lib/shortcuts";
 import { cn, getColorTheme, type ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
@@ -21,6 +34,35 @@ export function GlobalShortcuts() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const { navigate, route, setSettingsOpen } = useNavigation();
+  const { user } = useAuth();
+  const { unreadCount } = useNotifications(user?.id);
+  const { themeStyles, appMode } = useTheme();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    if (route) {
+      setIsDropdownOpen(false);
+    }
+  }, [route]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,6 +138,15 @@ export function GlobalShortcuts() {
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [navigate, route, isPaletteOpen, isGuideOpen, setSettingsOpen]);
 
+  useEffect(() => {
+    const handleCloseAll = () => {
+      setIsPaletteOpen(false);
+      setIsGuideOpen(false);
+    };
+    window.addEventListener("close-all-modals", handleCloseAll);
+    return () => window.removeEventListener("close-all-modals", handleCloseAll);
+  }, []);
+
   return (
     <>
       <CommandPalette
@@ -116,14 +167,131 @@ export function GlobalShortcuts() {
         currentRoute={route}
       />
 
-      <button
-        type="button"
-        onClick={() => setIsGuideOpen(true)}
-        className="fixed bottom-6 right-6 z-40 p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer group"
-        aria-label="Ver Atalhos"
-      >
-        <Keyboard className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-      </button>
+      {appMode !== "default" && route !== "dashboard" ? (
+        <div
+          ref={dropdownRef}
+          className="fixed bottom-6 right-6 z-40 flex flex-col gap-2.5 items-end"
+        >
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 15, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 15, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                className="flex flex-col gap-2.5 items-end mb-1"
+              >
+                <ToolTip content="Configurações">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(true);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer border-none shadow-none"
+                    aria-label="Configurações"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                </ToolTip>
+
+                <ToolTip
+                  content={
+                    unreadCount > 0
+                      ? `${unreadCount} notificações não lidas`
+                      : "Notificações"
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new Event("toggle-notifications-panel"),
+                      );
+                      setIsDropdownOpen(false);
+                    }}
+                    className="relative p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer border-none shadow-none"
+                    aria-label="Notificações"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span
+                        className={cn(
+                          "absolute top-0 right-0 w-4.5 h-4.5 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background",
+                          themeStyles.solid,
+                        )}
+                      >
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </ToolTip>
+
+                <ToolTip content="Feedback / Reportar bug">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.dispatchEvent(new Event("open-feedback"));
+                      setIsDropdownOpen(false);
+                    }}
+                    className="p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer border-none shadow-none"
+                    aria-label="Feedback / Reportar bug"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                  </button>
+                </ToolTip>
+
+                <ToolTip content="Guia de Atalhos">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGuideOpen(true);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer group border-none shadow-none"
+                    aria-label="Guia de Atalhos"
+                  >
+                    <Keyboard className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  </button>
+                </ToolTip>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Trigger Button */}
+          <ToolTip
+            content={isDropdownOpen ? "Fechar menu" : "Menu de utilitários"}
+          >
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+              className={cn(
+                "p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all cursor-pointer relative",
+                isDropdownOpen
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-label="Menu de utilitários"
+            >
+              <motion.div
+                animate={{ rotate: isDropdownOpen ? 135 : 0 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                className="w-5 h-5 flex items-center justify-center"
+              >
+                <Plus className="w-5 h-5" />
+              </motion.div>
+              {!isDropdownOpen && unreadCount > 0 && (
+                <span
+                  className={cn(
+                    "absolute top-0 right-0 w-3 h-3 text-white rounded-full flex items-center justify-center border border-background",
+                    themeStyles.solid,
+                  )}
+                />
+              )}
+            </button>
+          </ToolTip>
+        </div>
+      ) : null}
     </>
   );
 }

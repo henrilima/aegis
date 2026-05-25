@@ -3,7 +3,7 @@
 import { Moon, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme } from "@/lib/utils";
+import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import {
   formatDuration,
@@ -109,7 +109,7 @@ export function SleepHistory({
                   className={cn(
                     "p-2 transition-all border-r border-border active:scale-95 text-neutral-600",
                     theme.bgHover.replace("hover:bg-", "hover:bg-"),
-                    `hover:${theme.text}`,
+                    toHoverClass(theme.text),
                   )}
                 >
                   <Pencil className="w-3.5 h-3.5" />

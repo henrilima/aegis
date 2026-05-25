@@ -21,6 +21,7 @@ export async function generateStaticParams() {
     { slug: ["tasks"] },
     { slug: ["alarms"] },
     { slug: ["movies"] },
+    { slug: ["flashcards"] },
   ];
 }
 

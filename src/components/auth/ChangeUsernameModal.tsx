@@ -40,7 +40,7 @@ export default function ChangeUsernameModal({
     setError(null);
 
     try {
-      await invoke("change_username", {
+      await invoke("global_change_username", {
         userId: user.id,
         newUsername: newUsername.trim(),
       });

@@ -57,7 +57,7 @@ export default function PasswordManager() {
   const checkVault = useCallback(async () => {
     if (!user) return;
     try {
-      const exists = await invoke<boolean>("check_vault", {
+      const exists = await invoke<boolean>("password_check_vault", {
         userId: String(user.id),
       });
       setVaultExists(exists);
@@ -70,7 +70,7 @@ export default function PasswordManager() {
   const loadPasswords = useCallback(async () => {
     if (!user) return;
     try {
-      const list = await invoke<PasswordEntry[]>("list_passwords", {
+      const list = await invoke<PasswordEntry[]>("password_list_passwords", {
         userId: String(user.id),
       });
       setPasswords(list);
@@ -95,7 +95,7 @@ export default function PasswordManager() {
     try {
       if (!vaultExists) {
         // Se o cofre não existir, cria um novo
-        await invoke("setup_local_vault", {
+        await invoke("password_setup_local_vault", {
           userId: String(user.id),
           username: user.username,
           masterPassword: masterPassword,
@@ -104,7 +104,7 @@ export default function PasswordManager() {
       }
 
       // Verifica se a senha mestre está correta
-      await invoke("verify_master", {
+      await invoke("global_verify_master", {
         userId: String(user.id),
         masterPassword: masterPassword,
       });
@@ -136,7 +136,7 @@ export default function PasswordManager() {
     }
 
     try {
-      await invoke("reset_vault", { userId: String(user.id) });
+      await invoke("password_reset_vault", { userId: String(user.id) });
       setVaultExists(false);
       setIsVerified(false);
       setMasterPassword("");
@@ -150,7 +150,7 @@ export default function PasswordManager() {
   const handleEditStart = async (id: number) => {
     try {
       if (!user) return;
-      const data = await invoke<DecryptedEntry>("decrypt_entry", {
+      const data = await invoke<DecryptedEntry>("password_decrypt_entry", {
         userId: String(user.id),
         masterPwd: masterPassword,
         entryId: id,
@@ -172,7 +172,7 @@ export default function PasswordManager() {
     if (!user || !isVerified) return;
     try {
       if (isEditing && editingId !== null) {
-        await invoke("update_password", {
+        await invoke("password_update_password", {
           userId: String(user.id),
           masterPwd: masterPassword,
           entryId: editingId,
@@ -184,7 +184,7 @@ export default function PasswordManager() {
         });
         toast.success("Credencial atualizada");
       } else {
-        await invoke("add_password", {
+        await invoke("password_add_password", {
           userId: String(user.id),
           masterPwd: masterPassword,
           name: newName,
@@ -214,7 +214,7 @@ export default function PasswordManager() {
   const handleDelete = async () => {
     if (!user || deleteId === null) return;
     try {
-      await invoke("delete_password", {
+      await invoke("password_delete_password", {
         userId: String(user.id),
         entryId: deleteId,
       });
@@ -236,7 +236,7 @@ export default function PasswordManager() {
     }
     try {
       if (!user) return;
-      const data = await invoke<DecryptedEntry>("decrypt_entry", {
+      const data = await invoke<DecryptedEntry>("password_decrypt_entry", {
         userId: String(user.id),
         masterPwd: masterPassword,
         entryId: id,
@@ -255,7 +255,7 @@ export default function PasswordManager() {
         filters: [{ name: "CSV", extensions: ["csv"] }],
       });
       if (path && user) {
-        const count = await invoke<number>("import_passwords", {
+        const count = await invoke<number>("password_import_passwords", {
           userId: String(user.id),
           masterPwd: masterPassword,
           filePath: path,
@@ -275,7 +275,7 @@ export default function PasswordManager() {
         defaultPath: "aegis_senhas_backup.csv",
       });
       if (path && user) {
-        await invoke("export_passwords", {
+        await invoke("password_export_passwords", {
           userId: String(user.id),
           masterPwd: masterPassword,
           destPath: path,

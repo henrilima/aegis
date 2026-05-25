@@ -59,20 +59,20 @@ export function EstudosWidget({
         <div className="flex flex-col gap-[6cqw] @sm:gap-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-[4cqw] @sm:gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-black text-foreground leading-none">
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {weekHours.toFixed(1)}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Horas / Semana
                 </p>
               </div>
-              <div className="w-px h-6 bg-muted" />
-              <div className="text-center">
-                <p className="text-2xl font-black text-foreground leading-none">
+              <div className="w-px h-8 bg-muted" />
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {weekQuestions}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Questões
                 </p>
               </div>
@@ -107,7 +107,7 @@ export function EstudosWidget({
                 </span>
                 <span className={theme.text}>{Math.round(hourProgress)}%</span>
               </div>
-              <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
@@ -123,26 +123,41 @@ export function EstudosWidget({
             {sessions.slice(0, 3).map((s, i) => (
               <div
                 key={s.id ?? i}
-                className="flex items-center gap-[2cqw] @sm:gap-2 p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-border/50"
+                className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
               >
-                <div
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full",
-                    theme.text.replace("text-", "bg-").concat("/60"),
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-violet-500">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-foreground truncate">
+                      {s.subject}
+                    </span>
+                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                      Sessão de estudo
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                  <span
+                    className={cn(
+                      "block text-xs font-bold leading-none",
+                      theme.text,
+                    )}
+                  >
+                    {formatHours(s.hours)}
+                  </span>
+                  {(s.questionsNew ?? 0) + (s.questionsReview ?? 0) > 0 ? (
+                    <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                      {(s.questionsNew ?? 0) + (s.questionsReview ?? 0)} Qs
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                      Foco
+                    </span>
                   )}
-                />
-                <span className="text-[3cqw] @sm:text-xs font-medium text-muted-foreground truncate flex-1">
-                  {s.subject}
-                </span>
-                <span
-                  className={cn(
-                    "text-[2.5cqw] @sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap",
-                    theme.text,
-                    theme.bg,
-                  )}
-                >
-                  {formatHours(s.hours)}
-                </span>
+                </div>
               </div>
             ))}
             {sessions.length === 0 && (

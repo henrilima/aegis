@@ -48,7 +48,10 @@ impl NoteManager {
         let current_dir = std::env::current_dir().unwrap_or_default();
 
         let path_str = current_exe.to_string_lossy();
-        let base_dir = if path_str.contains("target\\debug") || path_str.contains("target\\release")
+        let base_dir = if path_str.contains("target/debug")
+            || path_str.contains("target/release")
+            || path_str.contains("target\\debug")
+            || path_str.contains("target\\release")
         {
             current_dir
         } else {
@@ -285,12 +288,12 @@ impl NoteManager {
     }
 
     pub fn create_folder(&self, path: String) -> Result<(), String> {
-        let full_path = self.notes_dir.join(path);
+        let full_path = self.notes_dir.join(path.replace('\\', "/"));
         fs::create_dir_all(full_path).map_err(|e| e.to_string())
     }
 
     pub fn delete_folder(&self, path: String) -> Result<(), String> {
-        let full_path = self.notes_dir.join(path);
+        let full_path = self.notes_dir.join(path.replace('\\', "/"));
         if full_path.exists() && full_path.is_dir() {
             fs::remove_dir_all(full_path).map_err(|e| e.to_string())?;
         }
@@ -298,8 +301,8 @@ impl NoteManager {
     }
 
     pub fn move_item(&self, source_path: String, dest_path: String) -> Result<(), String> {
-        let source = self.notes_dir.join(&source_path);
-        let mut dest = self.notes_dir.join(&dest_path);
+        let source = self.notes_dir.join(source_path.replace('\\', "/"));
+        let mut dest = self.notes_dir.join(dest_path.replace('\\', "/"));
 
         if !source.exists() {
             return Err("Origem não encontrada".to_string());
@@ -353,8 +356,75 @@ impl NoteManager {
                 .spawn()
                 .map_err(|e| e.to_string())?;
         }
+        #[cfg(target_os = "macos")]
+        {
+            use std::process::Command;
+            Command::new("open")
+                .arg(&self.notes_dir)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
+        #[cfg(target_os = "linux")]
+        {
+            use std::process::Command;
+            Command::new("xdg-open")
+                .arg(&self.notes_dir)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
         Ok(())
     }
+}
+
+#[tauri::command]
+pub async fn note_list_notes(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Note>, String> {
+    Ok(state.note.list_notes(&user_id))
+}
+
+#[tauri::command]
+pub async fn note_list_note_items(state: tauri::State<'_, crate::AppState>, user_id: String, _parent_id: Option<i64>) -> Result<Vec<FileSystemItem>, String> {
+    Ok(state.note.list_items(&user_id))
+}
+
+#[tauri::command]
+pub async fn note_add_note(state: tauri::State<'_, crate::AppState>, note: Note) -> Result<i64, String> {
+    state.note.add_note(note)?;
+    Ok(0)
+}
+
+#[tauri::command]
+pub async fn note_update_note(state: tauri::State<'_, crate::AppState>, note: Note) -> Result<(), String> {
+    state.note.update_note(note)
+}
+
+#[tauri::command]
+pub async fn note_create_note_folder(state: tauri::State<'_, crate::AppState>, path: String) -> Result<(), String> {
+    state.note.create_folder(path)
+}
+
+#[tauri::command]
+pub async fn note_delete_note_folder(state: tauri::State<'_, crate::AppState>, path: String) -> Result<(), String> {
+    state.note.delete_folder(path)
+}
+
+#[tauri::command]
+pub async fn note_move_note_item(state: tauri::State<'_, crate::AppState>, source_path: String, dest_path: String) -> Result<(), String> {
+    state.note.move_item(source_path, dest_path)
+}
+
+#[tauri::command]
+pub async fn note_delete_note(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
+    state.note.delete_note(id)
+}
+
+#[tauri::command]
+pub async fn note_update_note_pinned(state: tauri::State<'_, crate::AppState>, id: i32, pinned: bool) -> Result<(), String> {
+    state.note.update_note_pinned(id, pinned)
+}
+
+#[tauri::command]
+pub async fn note_open_notes_folder(state: tauri::State<'_, crate::AppState>) -> Result<(), String> {
+    state.note.open_folder()
 }
 
 #[cfg(test)]

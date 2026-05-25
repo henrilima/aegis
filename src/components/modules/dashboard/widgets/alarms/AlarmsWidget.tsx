@@ -2,6 +2,10 @@
 
 import { AlarmClock, Bell, Clock, Plus } from "lucide-react";
 import type React from "react";
+import {
+  getNextAlarmSummary,
+  sortByNextTrigger,
+} from "@/components/modules/alarms/alarmSchedule";
 import { AlarmFormModal } from "@/components/modules/alarms/components/AlarmFormModal";
 import {
   type AlarmFormState,
@@ -52,10 +56,9 @@ export function AlarmsWidget({
 
   const enabledCount = alarms.filter((a) => a.enabled).length;
 
-  // Encontra o próximo alarme
-  const nextAlarm = [...alarms]
-    .filter((a) => a.enabled)
-    .sort((a, b) => a.time.localeCompare(b.time))[0];
+  const sortedAlarms = sortByNextTrigger(alarms);
+  const nextAlarm = sortedAlarms.find((a) => a.enabled);
+  const nextAlarmSummary = nextAlarm ? getNextAlarmSummary(nextAlarm) : null;
 
   return (
     <>
@@ -71,20 +74,20 @@ export function AlarmsWidget({
         <div className="flex flex-col gap-[6cqw] @sm:gap-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-[4cqw] @sm:gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-black text-foreground leading-none">
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {enabledCount}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Ativos
                 </p>
               </div>
-              <div className="w-px h-6 bg-muted" />
-              <div className="text-center">
-                <p className="text-2xl font-black text-foreground leading-none">
+              <div className="w-px h-8 bg-muted" />
+              <div className="text-left">
+                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                   {alarms.length}
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Total
                 </p>
               </div>
@@ -112,27 +115,35 @@ export function AlarmsWidget({
 
           <div className="space-y-[2cqw] @sm:space-y-2">
             {nextAlarm ? (
-              <div
-                className={cn(
-                  "p-4 rounded-xl border animate-pulse-subtle",
-                  theme.bg,
-                  theme.border,
-                )}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={cn("text-[10px] font-bold", theme.text)}>
-                    Próximo alerta
-                  </span>
-                  <Clock className={cn("w-3 h-3 opacity-50", theme.text)} />
+              <div className="p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 transition-all text-left animate-pulse-subtle flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30 text-rose-500">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-foreground truncate">
+                      {nextAlarm.title}
+                    </span>
+                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                      Próximo alerta
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm font-bold text-foreground truncate">
-                  {nextAlarm.title}
-                </p>
-                <p className={cn("text-lg font-black", theme.text)}>
-                  {nextAlarm.alarmType === "fixed"
-                    ? nextAlarm.time
-                    : `A cada ${nextAlarm.intervalMinutes}m`}
-                </p>
+                <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
+                  <span
+                    className={cn(
+                      "block text-xs font-bold leading-none",
+                      theme.text,
+                    )}
+                  >
+                    {nextAlarmSummary?.shortLabel}
+                  </span>
+                  <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                    {nextAlarmSummary?.label.startsWith("Hoje")
+                      ? "Hoje"
+                      : "Amanha"}
+                  </span>
+                </div>
               </div>
             ) : (
               <p className="text-xs text-neutral-600 italic px-1">
@@ -143,24 +154,44 @@ export function AlarmsWidget({
             <div className="mt-2 space-y-1.5">
               {alarms
                 .filter((a) => a.id !== nextAlarm?.id)
-                .slice(0, 1)
+                .slice(0, 2)
                 .map((a) => (
                   <div
                     key={`a-key${a.id}`}
                     className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-lg bg-neutral-800/20 border border-border/40",
+                      "flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4 text-left",
                       !a.enabled && "opacity-50",
                     )}
                   >
-                    <Bell className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs font-bold text-muted-foreground flex-1 truncate">
-                      {a.title}
-                    </span>
-                    <span className="text-xs font-black text-foreground">
-                      {a.alarmType === "fixed"
-                        ? a.time
-                        : `${a.intervalMinutes}m`}
-                    </span>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30 text-rose-400">
+                        <Bell className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-bold text-foreground truncate">
+                          {a.title}
+                        </span>
+                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                          {a.enabled ? "Alarme ativo" : "Desativado"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
+                      <span
+                        className={cn(
+                          "block text-xs font-bold leading-none",
+                          a.enabled ? theme.text : "text-zinc-500",
+                        )}
+                      >
+                        {a.alarmType === "fixed"
+                          ? a.time
+                          : `${a.intervalMinutes}m`}
+                      </span>
+                      <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                        {a.alarmType === "fixed" ? "Horário" : "Intervalo"}
+                      </span>
+                    </div>
                   </div>
                 ))}
             </div>

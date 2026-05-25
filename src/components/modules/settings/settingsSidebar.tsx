@@ -30,7 +30,7 @@ export function SettingsSidebar({
           className={cn(
             "justify-start gap-3 transition-all",
             activeTab === tab.id
-              ? "bg-accent text-foreground border-l-2 border-primary rounded-l-none font-bold"
+              ? "bg-accent text-foreground border-primary rounded-l-none font-bold"
               : "hover:bg-accent/50 text-muted-foreground",
           )}
         >

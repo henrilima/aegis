@@ -69,7 +69,7 @@ export default function SleepPage() {
           monthsBack: 3,
         }),
         invoke<SleepGoal>("sono_get_goal", { userId: uid }),
-        invoke<AppConfig>("get_app_config"),
+        invoke<AppConfig>("global_get_app_config"),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -145,13 +145,13 @@ export default function SleepPage() {
 
       // Sincroniza com a configuração global de notificações
       try {
-        const currentConfig = await invoke<AppConfig>("get_app_config");
+        const currentConfig = await invoke<AppConfig>("global_get_app_config");
         const newConfig: AppConfig = {
           ...currentConfig,
           notifSleepBedtime: reminderEnabled,
           notifSleepBedtimeTime: goalBedtime,
         };
-        await invoke("set_app_config", { config: newConfig });
+        await invoke("global_set_app_config", { config: newConfig });
       } catch (e) {
         console.error("Erro ao sincronizar config global de sono:", e);
       }

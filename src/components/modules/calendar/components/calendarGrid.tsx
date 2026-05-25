@@ -18,6 +18,7 @@ interface CalendarGridProps {
   selectedDate: string | null;
   onDayClick: (date: string) => void;
   onDayDoubleClick: (date: string) => void;
+  onEventDrop?: (eventId: number, date: string) => void; // Callback executado ao arrastar e soltar um evento
 }
 
 export function CalendarGrid({
@@ -27,6 +28,7 @@ export function CalendarGrid({
   selectedDate,
   onDayClick,
   onDayDoubleClick,
+  onEventDrop,
 }: CalendarGridProps) {
   const color = getModuleColor("calendar");
   const themeStyles = getColorTheme(color);
@@ -121,7 +123,7 @@ export function CalendarGrid({
                                 ? DEADLINE_COLORS[
                                     ev.deadlineCategory as DeadlineCategory
                                   ]
-                                : resolveColor(ev.color),
+                                : resolveColor(ev.color || "green"),
                           }}
                         />
                         <span className="text-[10px] font-bold text-foreground truncate">
@@ -140,6 +142,20 @@ export function CalendarGrid({
                 type="button"
                 onClick={() => onDayClick(cell.date)}
                 onDoubleClick={() => onDayDoubleClick(cell.date)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const eventIdStr = e.dataTransfer.getData("text/plain");
+                  if (eventIdStr && onEventDrop) {
+                    const eventId = parseInt(eventIdStr, 10);
+                    if (!Number.isNaN(eventId)) {
+                      onEventDrop(eventId, cell.date);
+                    }
+                  }
+                }}
                 className={`min-h-[110px] p-2.5 border-b border-r border-border/40 text-left transition-all cursor-pointer group relative overflow-hidden w-full ${
                   isSelected
                     ? `${themeStyles.bg} ring-1 ring-inset ${themeStyles.border.replace("20", "40")} z-10`
@@ -177,7 +193,7 @@ export function CalendarGrid({
                                 ? DEADLINE_COLORS[
                                     ev.deadlineCategory as DeadlineCategory
                                   ]
-                                : resolveColor(ev.color),
+                                : resolveColor(ev.color || "green"),
                           }}
                         />
                       ))}
@@ -185,16 +201,27 @@ export function CalendarGrid({
                   )}
                 </div>
 
-                {/* Event Tags */}
+                {/* Tags de Evento (Suporta arrastar compromissos) */}
                 <div className="flex flex-col gap-1">
                   {deadlines.slice(0, 2).map((ev) => {
                     const color = ev.deadlineCategory
                       ? DEADLINE_COLORS[ev.deadlineCategory as DeadlineCategory]
                       : "#ef4444";
                     return (
+                      // biome-ignore lint/a11y/noStaticElementInteractions: Elemento arrastável do calendário
                       <div
                         key={ev.id}
-                        className="text-[9px] font-bold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2"
+                        draggable={ev.id !== undefined}
+                        onDragStart={(e) => {
+                          if (ev.id !== undefined) {
+                            e.dataTransfer.setData(
+                              "text/plain",
+                              ev.id.toString(),
+                            );
+                            e.dataTransfer.effectAllowed = "move";
+                          }
+                        }}
+                        className="text-[9px] font-bold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2 cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity"
                         style={{
                           backgroundColor: `${color}10`,
                           color,
@@ -208,13 +235,24 @@ export function CalendarGrid({
                   {normalEvents
                     .slice(0, 2 - deadlines.slice(0, 2).length)
                     .map((ev) => (
+                      // biome-ignore lint/a11y/noStaticElementInteractions: Elemento arrastável do calendário
                       <div
                         key={ev.id}
-                        className="text-[9px] font-semibold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2"
+                        draggable={ev.id !== undefined}
+                        onDragStart={(e) => {
+                          if (ev.id !== undefined) {
+                            e.dataTransfer.setData(
+                              "text/plain",
+                              ev.id.toString(),
+                            );
+                            e.dataTransfer.effectAllowed = "move";
+                          }
+                        }}
+                        className="text-[9px] font-semibold px-2 py-1 rounded-lg truncate border animate-in slide-in-from-left-2 cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity"
                         style={{
-                          backgroundColor: `${resolveColor(ev.color)}10`,
-                          color: resolveColor(ev.color),
-                          borderColor: `${resolveColor(ev.color)}15`,
+                          backgroundColor: `${resolveColor(ev.color || "green")}10`,
+                          color: resolveColor(ev.color || "green"),
+                          borderColor: `${resolveColor(ev.color || "green")}15`,
                         }}
                       >
                         {ev.title}

@@ -5,6 +5,7 @@ import {
   Film,
   Heart,
   Pencil,
+  Share2,
   Star,
   StarHalf,
   User,
@@ -21,6 +22,7 @@ interface MovieDetailModalProps {
   onClose: () => void;
   onEdit: (m: Movie) => void;
   onUpdateRating: (id: number, stars: number) => void;
+  onGenerateCanvas?: (m: Movie) => void;
 }
 
 function StarPicker({
@@ -75,6 +77,7 @@ export function MovieDetailModal({
   onClose,
   onEdit,
   onUpdateRating,
+  onGenerateCanvas,
 }: MovieDetailModalProps) {
   const color = getModuleColor("movies");
   const theme = getColorTheme(color);
@@ -233,6 +236,16 @@ export function MovieDetailModal({
         >
           Fechar
         </button>
+        {isWatched && onGenerateCanvas && (
+          <button
+            type="button"
+            onClick={() => onGenerateCanvas(movie)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-rose-600 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer active:scale-95"
+          >
+            <Share2 className="w-4 h-4" />
+            Gerar story
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {

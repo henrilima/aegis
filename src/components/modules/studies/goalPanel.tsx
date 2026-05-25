@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudyGoal } from "./types";
@@ -110,7 +111,7 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
               </span>
             </div>
             <div className="flex items-center gap-3 relative">
-              <input
+              <Input
                 type="number"
                 min="0"
                 className={ic}

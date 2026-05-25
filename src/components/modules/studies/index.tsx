@@ -85,7 +85,9 @@ export default function StudiesPage() {
         setGoals(results[1].value);
       }
 
-      const config = await invoke<{ weekStartDay: number }>("get_app_config");
+      const config = await invoke<{ weekStartDay: number }>(
+        "global_get_app_config",
+      );
       setWeekStartDay(config.weekStartDay);
     } finally {
       setLoading(false);
@@ -407,8 +409,10 @@ export default function StudiesPage() {
                   weekStartDay={weekStartDay}
                   onWeekStartChange={async (val: number) => {
                     setWeekStartDay(val);
-                    const config = await invoke<AppConfig>("get_app_config");
-                    await invoke("set_app_config", {
+                    const config = await invoke<AppConfig>(
+                      "global_get_app_config",
+                    );
+                    await invoke("global_set_app_config", {
                       config: { ...config, weekStartDay: val },
                     });
                     toast.success("Início da semana atualizado!");

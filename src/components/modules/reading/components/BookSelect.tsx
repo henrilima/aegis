@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, ChevronDown } from "lucide-react";
+import { BookOpen, ChevronDown, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
@@ -19,8 +19,19 @@ interface BookSelectProps {
 export function BookSelect({ books, value, onChange }: BookSelectProps) {
   const theme = getColorTheme(getModuleColor("reading"));
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const selected = books.find((b) => Number(b.id) === Number(value));
+
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery("");
+    }
+  }, [open]);
+
+  const filteredBooks = books.filter((b) =>
+    b.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -60,13 +71,27 @@ export function BookSelect({ books, value, onChange }: BookSelectProps) {
 
       {open && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-card overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="max-h-56 overflow-y-auto p-1">
-            {books.length === 0 ? (
-              <div className="px-3 py-6 text-center text-xs text-neutral-600">
-                Nenhum livro na biblioteca
+          <div className="p-2 border-b border-border/40 bg-card">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar livro..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-muted/40 text-xs font-semibold rounded-lg h-9 pl-8 pr-3 border border-border/50 focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring placeholder:text-muted-foreground/30 transition-all text-foreground"
+              />
+            </div>
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1 custom-scrollbar">
+            {filteredBooks.length === 0 ? (
+              <div className="px-3 py-6 text-center text-xs text-neutral-600 font-medium">
+                {books.length === 0
+                  ? "Nenhum livro na biblioteca"
+                  : "Nenhum livro correspondente"}
               </div>
             ) : (
-              books.map((b) => (
+              filteredBooks.map((b) => (
                 <button
                   key={b.id}
                   type="button"

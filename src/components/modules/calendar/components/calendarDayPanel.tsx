@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { resolveColor } from "@/colors.config";
 import { Button } from "@/components/ui/button";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
@@ -100,7 +101,7 @@ export function CalendarDayPanel({
                 ? DEADLINE_COLORS[
                     (ev.deadlineCategory ?? "prova") as DeadlineCategory
                   ]
-                : (ev.color ?? "#6366f1");
+                : resolveColor(ev.color || "green");
               const days = daysUntil(ev.date);
 
               return (

@@ -81,7 +81,7 @@ export function FileManager({
     if (!uid) return;
     const _ = refreshTrigger;
     try {
-      const res = await invoke<FileSystemItem[]>("list_note_items", {
+      const res = await invoke<FileSystemItem[]>("note_list_note_items", {
         userId: uid,
       });
       setItems(res);
@@ -131,7 +131,7 @@ export function FileManager({
       const path = currentPath
         ? `${currentPath}/${newFolderName.trim()}`
         : newFolderName.trim();
-      await invoke("create_note_folder", { path });
+      await invoke("note_create_note_folder", { path });
       setNewFolderName("");
       setIsNewFolderOpen(false);
       onFolderModalClose?.();
@@ -150,9 +150,11 @@ export function FileManager({
     if (!deleteConfirmTarget) return;
     try {
       if (deleteConfirmTarget.isDir) {
-        await invoke("delete_note_folder", { path: deleteConfirmTarget.path });
+        await invoke("note_delete_note_folder", {
+          path: deleteConfirmTarget.path,
+        });
       } else {
-        await invoke("delete_note", { id: deleteConfirmTarget.note?.id });
+        await invoke("note_delete_note", { id: deleteConfirmTarget.note?.id });
       }
       setDeleteConfirmTarget(null);
       fetchItems();
@@ -166,10 +168,30 @@ export function FileManager({
     if (!renameTarget || !renameValue.trim()) return;
     try {
       const parent = renameTarget.path.split(/[\\/]/).slice(0, -1).join("/");
-      const newPath = parent
-        ? `${parent}/${renameValue.trim()}`
-        : renameValue.trim();
-      await invoke("move_note_item", {
+      let newName = renameValue.trim();
+
+      // For files, preserve the original extension and the `{id}_` prefix
+      if (!renameTarget.isDir) {
+        const oldFileName = renameTarget.path.split(/[\\/]/).pop() || "";
+
+        // Extract prefix if it matches ID_ pattern (e.g. "1_")
+        const prefixMatch = oldFileName.match(/^(\d+_)/);
+        const prefix = prefixMatch ? prefixMatch[1] : "";
+
+        const dotIndex = oldFileName.lastIndexOf(".");
+        const originalExt = dotIndex >= 0 ? oldFileName.slice(dotIndex) : "";
+        if (originalExt && !newName.endsWith(originalExt)) {
+          newName = newName + originalExt;
+        }
+
+        // Prepend prefix to newName if it doesn't already have it
+        if (prefix && !newName.startsWith(prefix)) {
+          newName = prefix + newName;
+        }
+      }
+
+      const newPath = parent ? `${parent}/${newName}` : newName;
+      await invoke("note_move_note_item", {
         sourcePath: renameTarget.path,
         destPath: newPath,
       });
@@ -184,7 +206,7 @@ export function FileManager({
   const handleMove = async (sourcePath: string, destPath: string) => {
     if (sourcePath === destPath) return;
     try {
-      await invoke("move_note_item", { sourcePath, destPath });
+      await invoke("note_move_note_item", { sourcePath, destPath });
       fetchItems();
       toast.success("Item movido");
     } catch {
@@ -195,7 +217,7 @@ export function FileManager({
   const handleTogglePin = async (item: FileSystemItem) => {
     if (item.isDir || !item.note) return;
     try {
-      await invoke("update_note_pinned", {
+      await invoke("note_update_note_pinned", {
         id: item.note.id,
         pinned: !item.note.pinned,
       });

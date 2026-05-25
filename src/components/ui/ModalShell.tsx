@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,12 @@ export function ModalShell({
 }: ModalShellProps) {
   useLockBodyScroll(isOpen);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -67,14 +74,25 @@ export function ModalShell({
   }, [isOpen, onClose, disableClose]);
 
   if (!isOpen) return null;
+  if (!mounted) return null;
 
-  return (
+  const isFull = size === "full";
+
+  return createPortal(
     <div
       className={cn(
-        "fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200",
+        "fixed inset-y-0 right-0 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200",
         zIndex,
-        size === "full" ? "p-0" : "p-4",
+        isFull ? "p-0" : "p-4 left-0",
       )}
+      style={
+        isFull
+          ? {
+              left: "var(--sidebar-w, 0px)",
+              transition: "left 0.3s ease-in-out",
+            }
+          : undefined
+      }
       role="dialog"
       aria-modal="true"
     >
@@ -82,7 +100,7 @@ export function ModalShell({
         className={cn(
           "relative w-full bg-background border border-border rounded-xl",
           "animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col",
-          size === "full"
+          isFull
             ? "h-full max-h-none rounded-none border-none"
             : "max-h-[90vh]",
           SIZE_MAP[size],
@@ -91,6 +109,7 @@ export function ModalShell({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

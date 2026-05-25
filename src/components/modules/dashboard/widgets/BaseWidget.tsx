@@ -47,18 +47,18 @@ export function BaseWidget({
     // biome-ignore lint/a11y/noStaticElementInteractions: Widget inteiro é clicável por design, mas sem cursor pointer
     <div
       className={cn(
-        "group relative flex flex-col bg-card border border-border/50 rounded-3xl overflow-hidden transition-all duration-300 hover:border-border/80 @container h-full outline-none cursor-default",
+        "group relative flex flex-col bg-card border border-border/70 rounded-2xl overflow-hidden transition-all duration-300 hover:border-border @container h-full outline-none cursor-default",
         isEditMode && "border-emerald-500 ring-1 ring-emerald-500/20",
         className,
       )}
       onClick={handleClick}
     >
       {/* Header */}
-      <div className="p-[4cqw] @sm:p-5 flex items-center justify-between shrink-0 relative z-20">
+      <div className="p-[4cqw] @sm:p-4 flex items-center justify-between shrink-0 relative z-20">
         <div className="flex items-center gap-[3cqw] @sm:gap-3.5">
           <div
             className={cn(
-              "p-[2cqw] @sm:p-2.5 rounded-xl border transition-colors",
+              "p-[2cqw] @sm:p-2 rounded-lg border transition-colors",
               theme.bg,
               theme.border,
             )}
@@ -74,7 +74,7 @@ export function BaseWidget({
             <h3 className="text-[3.5cqw] @sm:text-sm font-bold text-foreground leading-tight">
               {title}
             </h3>
-            <p className="text-[2.5cqw] @sm:text-[10px] text-muted-foreground font-medium uppercase mt-0.5">
+            <p className="text-[2.5cqw] @sm:text-[10px] text-muted-foreground font-medium mt-0.5">
               Módulo
             </p>
           </div>
@@ -119,12 +119,18 @@ export function BaseWidget({
           )}
         </div>
       </div>
-
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Click propagation interception does not require keyboard actions */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Click propagation interception does not require a widget role */}
       <div
         className={cn(
           "flex-1 w-full p-[4cqw] @sm:p-4 pt-0 @sm:pt-0 overflow-auto custom-scrollbar min-h-0 relative z-20",
           isEditMode && "pointer-events-none select-none",
         )}
+        onClick={(e) => {
+          if (isInteractive) {
+            e.stopPropagation();
+          }
+        }}
       >
         <div className="h-full w-full flex flex-col">{children}</div>
       </div>

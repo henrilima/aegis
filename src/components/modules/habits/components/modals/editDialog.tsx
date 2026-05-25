@@ -1,5 +1,6 @@
 import { Edit2, X } from "lucide-react";
 import type { Habit } from "@/components/modules/habits/types";
+import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
@@ -88,7 +89,7 @@ export function EditHabitDialog({
                   ? "Frequência (dias)"
                   : "Tolerância (dias)"}
               </label>
-              <input
+              <Input
                 id="ed-cooldown"
                 type="number"
                 min="1"
@@ -105,7 +106,7 @@ export function EditHabitDialog({
               <label htmlFor="ed-charges" className={lc}>
                 Cargas
               </label>
-              <input
+              <Input
                 id="ed-charges"
                 type="number"
                 min={0}
@@ -127,7 +128,7 @@ export function EditHabitDialog({
               <label htmlFor="ed-interval" className={lc}>
                 Recuperação (dias)
               </label>
-              <input
+              <Input
                 id="ed-interval"
                 type="number"
                 min={2}
@@ -147,7 +148,7 @@ export function EditHabitDialog({
             <label htmlFor="ed-goal" className={lc}>
               Meta de Dias (0 para sem meta)
             </label>
-            <input
+            <Input
               id="ed-goal"
               type="number"
               min={0}

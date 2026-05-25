@@ -128,7 +128,7 @@ export function CalendarWidget({
               items.map((ev) => {
                 const isDeadline = ev.eventType === "deadline";
                 const days = daysUntil(ev.date, time);
-                const color =
+                const deadlineColor =
                   isDeadline && ev.deadlineCategory
                     ? DEADLINE_COLORS[ev.deadlineCategory as DeadlineCategory]
                     : null;
@@ -136,27 +136,25 @@ export function CalendarWidget({
                 return (
                   <div
                     key={ev.id}
-                    className={cn(
-                      "flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl border transition-all",
-                      ev.isHoliday
-                        ? "bg-zinc-500/5 border-zinc-500/10 hover:border-zinc-500/20"
-                        : isDeadline
-                          ? "bg-amber-500/5 border-amber-500/10 hover:border-amber-500/20"
-                          : "bg-muted border-border/50 hover:border-border/50",
-                    )}
+                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {ev.isHoliday ? (
-                        <div className="shrink-0 p-1.5 rounded-lg bg-zinc-500/10">
-                          <Flag className="w-3 h-3 text-zinc-500" />
+                        <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-zinc-600 dark:text-zinc-450">
+                          <Flag className="w-4 h-4" />
                         </div>
                       ) : isDeadline ? (
-                        <div className="shrink-0 p-1.5 rounded-lg bg-amber-500/10">
-                          <AlertCircle className="w-3 h-3 text-amber-600 dark:text-amber-500" />
+                        <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-amber-600 dark:text-amber-500">
+                          <AlertCircle className="w-4 h-4" />
                         </div>
                       ) : (
-                        <div className="shrink-0 p-1.5 rounded-lg bg-emerald-500/10">
-                          <CalendarDays className="w-3 h-3 text-emerald-500" />
+                        <div
+                          className={cn(
+                            "shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30",
+                            theme.text,
+                          )}
+                        >
+                          <CalendarDays className="w-4 h-4" />
                         </div>
                       )}
                       <div className="flex flex-col min-w-0">
@@ -164,13 +162,13 @@ export function CalendarWidget({
                           {ev.title}
                         </span>
                         {ev.isHoliday ? (
-                          <span className="text-xs font-bold text-zinc-500/80">
+                          <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-500/80 mt-0.5">
                             Feriado Nacional
                           </span>
                         ) : isDeadline && ev.deadlineCategory ? (
                           <span
-                            className="text-xs font-bold opacity-90"
-                            style={{ color: color ?? "#f59e0b" }}
+                            className="text-[10px] font-bold mt-0.5 opacity-95"
+                            style={{ color: deadlineColor ?? "#d97706" }}
                           >
                             {
                               DEADLINE_LABELS[
@@ -178,35 +176,22 @@ export function CalendarWidget({
                               ]
                             }
                           </span>
-                        ) : ev.time ? (
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {ev.time}
-                          </span>
                         ) : (
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Dia todo
+                          <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                            {ev.time || "Dia todo"}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-right shrink-0",
-                        ev.isHoliday
-                          ? "bg-zinc-500/5"
-                          : isDeadline
-                            ? "bg-amber-500/5"
-                            : theme.bg,
-                      )}
-                    >
+                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
                       <span
                         className={cn(
-                          "block text-xs font-black leading-none",
+                          "block text-xs font-bold leading-none",
                           ev.isHoliday
-                            ? "text-zinc-500"
+                            ? "text-zinc-600 dark:text-zinc-400"
                             : isDeadline
-                              ? "text-amber-400"
+                              ? "text-amber-700 dark:text-amber-400"
                               : theme.text,
                         )}
                       >
@@ -216,7 +201,7 @@ export function CalendarWidget({
                             ? "Amanhã"
                             : `${days}d`}
                       </span>
-                      <span className="text-[10px] font-bold text-neutral-600 block mt-0.5">
+                      <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
                         {new Date(`${ev.date}T12:00:00`).toLocaleDateString(
                           "pt-BR",
                           {

@@ -1,7 +1,17 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { ChevronLeft, Plus, Shield, Trash2, X } from "lucide-react";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  HardDriveDownload,
+  Plus,
+  Shield,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { APP_CONFIG } from "@/app.config";
@@ -52,15 +62,71 @@ export default function LoginComponent() {
   const [selectedUser, setSelectedUser] = useState<LocalUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LocalUser | null>(null);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchingUsers, setFetchingUsers] = useState(true);
+
+  // Estados para restauração direta de backup na tela de login
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restorePassword, setRestorePassword] = useState("");
+  const [showRestorePassword, setShowRestorePassword] = useState(false);
+  const [restoreFilePath, setRestoreFilePath] = useState("");
+  const [restoring, setRestoring] = useState(false);
+
+  const handleSelectRestoreFile = async () => {
+    try {
+      const selected = await open({
+        filters: [{ name: "Aegis System Bundle", extensions: ["aegissystem"] }],
+        multiple: false,
+      });
+      if (selected) {
+        setRestoreFilePath(selected as string);
+      }
+    } catch (_e) {
+      toast.error("Erro ao selecionar arquivo de backup");
+    }
+  };
+
+  const handleRestoreSystem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restoreFilePath) {
+      toast.error("Por favor, selecione o arquivo .aegissystem");
+      return;
+    }
+    if (!restorePassword || restorePassword.length < 4) {
+      toast.error("A senha do arquivo deve ter no mínimo 4 caracteres");
+      return;
+    }
+
+    setRestoring(true);
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(restorePassword);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const keyBytes = Array.from(new Uint8Array(hashBuffer));
+
+      await invoke("global_import_full_system_bundle", {
+        path: restoreFilePath,
+        keyBytes,
+      });
+      toast.success("Sistema restaurado com sucesso! Recarregando...");
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    } catch (err) {
+      console.error("[Login] Falha ao restaurar backup completo:", err);
+      toast.error(`Falha ao restaurar: ${String(err)}`);
+      setRestoring(false);
+    }
+  };
 
   // Carrega usuários locais
   const loadUsers = useCallback(async () => {
     setFetchingUsers(true);
     try {
-      const list = await invoke<LocalUser[]>("list_local_users");
+      const list = await invoke<LocalUser[]>("global_list_local_users");
       setUsers(list);
     } catch (err) {
       console.error("Failed to fetch users:", err);
@@ -81,7 +147,10 @@ export default function LoginComponent() {
   const confirmDeleteAccount = async (password: string) => {
     if (!deleteTarget) return;
     try {
-      await invoke("delete_account", { userId: deleteTarget.id, password });
+      await invoke("global_delete_account", {
+        userId: deleteTarget.id,
+        password,
+      });
       toast.success(`Conta "${deleteTarget.username}" removida.`);
       setDeleteTarget(null);
       await loadUsers();
@@ -99,7 +168,7 @@ export default function LoginComponent() {
 
     try {
       console.log("[Login] Tentando autenticação para:", selectedUser.email);
-      const userId = await invoke<string>("local_login", {
+      const userId = await invoke<string>("global_local_login", {
         email: selectedUser.email,
         password: password,
       });
@@ -134,6 +203,145 @@ export default function LoginComponent() {
           onConfirm={confirmDeleteAccount}
           onCancel={() => setDeleteTarget(null)}
         />
+      )}
+
+      {showRestoreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-md bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 ${theme.bg} rounded-xl border ${theme.border}`}
+                >
+                  <HardDriveDownload className={`w-5 h-5 ${theme.textSub}`} />
+                </div>
+                <h2 className="text-base font-bold text-foreground">
+                  Restaurar Backup do Sistema
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!restoring) {
+                    setShowRestoreModal(false);
+                    setRestorePassword("");
+                    setShowRestorePassword(false);
+                    setRestoreFilePath("");
+                  }
+                }}
+                disabled={restoring}
+                className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRestoreSystem} className="p-6 space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Este processo substituirá permanentemente todo o banco de dados
+                atual por aquele contido no arquivo{" "}
+                <strong className="text-foreground">.aegissystem</strong>.
+              </p>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="restore-file-input"
+                  className="text-[10px] font-bold text-muted-foreground uppercase ml-1 block"
+                >
+                  Arquivo de Backup
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="restore-file-input"
+                    type="text"
+                    readOnly
+                    placeholder="Selecione o arquivo..."
+                    value={
+                      restoreFilePath
+                        ? restoreFilePath.split("/").pop()?.split("\\").pop() ||
+                          restoreFilePath
+                        : ""
+                    }
+                    onClick={handleSelectRestoreFile}
+                    className="flex-1 h-11 bg-background border border-border rounded-xl px-4 text-xs font-semibold outline-none truncate cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSelectRestoreFile}
+                    disabled={restoring}
+                    className={`px-4 h-11 rounded-xl ${theme.bg} hover:${theme.bgHover} text-foreground font-semibold text-xs transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap`}
+                  >
+                    Procurar
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="restore-password-input"
+                  className="text-[10px] font-bold text-muted-foreground uppercase ml-1 block"
+                >
+                  Senha do Arquivo de Backup
+                </label>
+                <div className="relative">
+                  <input
+                    id="restore-password-input"
+                    type={showRestorePassword ? "text" : "password"}
+                    placeholder="Senha definida durante a exportação"
+                    value={restorePassword}
+                    onChange={(e) => setRestorePassword(e.target.value)}
+                    disabled={restoring}
+                    className="w-full h-11 bg-background border border-border rounded-xl pl-4 pr-11 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRestorePassword((prev) => !prev)}
+                    disabled={restoring}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {showRestorePassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-4">
+                <button
+                  type="submit"
+                  disabled={restoring || !restoreFilePath || !restorePassword}
+                  className={`w-full py-3 rounded-xl ${theme.solid} ${theme.solidHover} border ${theme.border} text-white text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2`}
+                >
+                  {restoring ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Restaurando e Reiniciando...
+                    </>
+                  ) : (
+                    "Confirmar Restauração"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRestoreModal(false);
+                    setRestorePassword("");
+                    setShowRestorePassword(false);
+                    setRestoreFilePath("");
+                  }}
+                  disabled={restoring}
+                  className="w-full text-muted-foreground hover:text-foreground py-2 text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showTerms && (
@@ -196,7 +404,7 @@ export default function LoginComponent() {
           {fetchingUsers ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <div
-                className={`w-10 h-10 border-2 ${theme.bg} border-t-2 border-t-current ${theme.text} rounded-full animate-spin`}
+                className={`w-10 h-10 border-2 ${theme.bg} ${theme.text} rounded-full animate-spin`}
               />
               <p className="text-xs font-bold text-muted-foreground uppercase">
                 Sincronizando...
@@ -275,6 +483,28 @@ export default function LoginComponent() {
                     </p>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowRestoreModal(true)}
+                  className={`flex items-center gap-4 p-4 rounded-xl border border-dashed border-border hover:${theme.border.split(" ")[0]} ${theme.bgHover} transition-all text-left group cursor-pointer`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl bg-background/60 border border-dashed border-border flex items-center justify-center text-muted-foreground group-hover:${theme.text} group-hover:${theme.border.split(" ")[0]} transition-all`}
+                  >
+                    <HardDriveDownload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span
+                      className={`font-bold text-muted-foreground group-hover:${theme.text} transition-colors`}
+                    >
+                      Restaurar Backup do Sistema
+                    </span>
+                    <p className="text-[10px] font-bold text-neutral-600 uppercase mt-0.5">
+                      Recuperar base de dados (.aegissystem)
+                    </p>
+                  </div>
+                </button>
               </div>
             </div>
           ) : (
@@ -288,6 +518,7 @@ export default function LoginComponent() {
                 onClick={() => {
                   setSelectedUser(null);
                   setPassword("");
+                  setShowPassword(false);
                   setError(null);
                 }}
                 className={`flex items-center gap-2 text-xs font-medium text-muted-foreground hover:${theme.text} transition-all cursor-pointer`}
@@ -326,16 +557,29 @@ export default function LoginComponent() {
                 <Label htmlFor="password" className={lc}>
                   Senha de acesso
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Insira sua senha"
-                  className={`bg-card border-border h-11 rounded-xl text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoFocus
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Insira sua senha"
+                    className={`bg-card border-border h-11 rounded-xl pl-4 pr-11 text-sm font-medium placeholder:text-neutral-700 focus:${theme.border.split(" ")[0]}`}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
                 {selectedUser.passwordHint && (
                   <p className="text-[10px] font-medium text-muted-foreground mt-1.5 px-1">
                     <span className="text-muted-foreground font-bold">

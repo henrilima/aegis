@@ -1,8 +1,11 @@
 "use client";
 
-import { type LucideIcon, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, type LucideIcon, Search } from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme } from "@/lib/utils";
+import { useNavigation } from "@/context/NavigationContext";
+import { useTheme } from "@/context/ThemeContext";
+import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
 
 // Tipos
 
@@ -56,6 +59,10 @@ export function ModuleHeader({
   searchPlaceholder = "Pesquisar...",
 }: ModuleHeaderProps) {
   const m = getColorTheme(color as string);
+  const { appMode } = useTheme();
+  const { navigate } = useNavigation();
+
+  const filteredActions = actions;
 
   const iconBox = cn("p-2 rounded-xl border transition-all", m.bg, m.border);
 
@@ -65,6 +72,18 @@ export function ModuleHeader({
       <div className="flex items-center justify-between flex-wrap gap-3">
         {/* Identidade do módulo */}
         <div className="flex items-center gap-3">
+          {appMode !== "default" && (
+            <ToolTip content="Voltar para o início">
+              <button
+                type="button"
+                onClick={() => navigate("dashboard")}
+                className="p-2 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all cursor-pointer mr-1"
+                aria-label="Voltar para o início"
+              >
+                <ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+              </button>
+            </ToolTip>
+          )}
           <div className={iconBox}>
             <Icon className={cn("w-5 h-5", m.text)} />
           </div>
@@ -77,48 +96,50 @@ export function ModuleHeader({
         </div>
 
         {/* Ações */}
-        {actions.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {actions.map((action) =>
-              action.primary ? (
-                <ToolTip
-                  key={action.id}
-                  content={action.tooltip ?? action.label}
-                >
-                  <button
-                    type="button"
-                    onClick={action.onClick}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer active:scale-95",
-                      m.solid,
-                      m.solidHover,
-                    )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {filteredActions.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {filteredActions.map((action) =>
+                action.primary ? (
+                  <ToolTip
+                    key={action.id}
+                    content={action.tooltip ?? action.label}
                   >
-                    <action.icon className="w-4 h-4" />
-                    {action.label}
-                  </button>
-                </ToolTip>
-              ) : (
-                <ToolTip
-                  key={action.id}
-                  content={action.tooltip ?? action.label}
-                >
-                  <button
-                    type="button"
-                    onClick={action.onClick}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
-                      `hover:${m.text}`,
-                    )}
+                    <button
+                      type="button"
+                      onClick={action.onClick}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer active:scale-95",
+                        m.solid,
+                        m.solidHover,
+                      )}
+                    >
+                      <action.icon className="w-4 h-4" />
+                      {action.label}
+                    </button>
+                  </ToolTip>
+                ) : (
+                  <ToolTip
+                    key={action.id}
+                    content={action.tooltip ?? action.label}
                   >
-                    <action.icon className="w-4 h-4" />
-                    {action.label}
-                  </button>
-                </ToolTip>
-              ),
-            )}
-          </div>
-        )}
+                    <button
+                      type="button"
+                      onClick={action.onClick}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                        toHoverClass(m.text),
+                      )}
+                    >
+                      <action.icon className="w-4 h-4" />
+                      {action.label}
+                    </button>
+                  </ToolTip>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Linha inferior: tabs + pesquisa */}
@@ -134,18 +155,33 @@ export function ModuleHeader({
                     type="button"
                     onClick={() => onTabChange(t.id)}
                     className={cn(
-                      "flex items-center justify-center gap-2 px-4 h-full rounded-lg text-xs font-bold transition-all cursor-pointer border",
+                      "relative flex items-center justify-center gap-2 px-4 h-full rounded-lg text-xs font-bold transition-colors cursor-pointer border select-none focus:outline-none z-10",
                       activeTab === t.id
-                        ? cn(m.bg, m.text, m.border)
-                        : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted",
+                        ? cn(m.text)
+                        : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50",
                     )}
                   >
+                    {activeTab === t.id && (
+                      <motion.div
+                        layoutId="activeHeaderTab"
+                        className={cn(
+                          "absolute inset-0 rounded-lg -z-10 border",
+                          m.bg,
+                          m.border,
+                        )}
+                        transition={{
+                          type: "spring",
+                          stiffness: 380,
+                          damping: 30,
+                        }}
+                      />
+                    )}
                     {t.icon && <t.icon className="w-4 h-4" />}
                     {t.label}
                     {t.count !== undefined && (
                       <span
                         className={cn(
-                          "ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold min-w-[20px] text-center flex items-center justify-center",
+                          "ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold min-w-[20px] text-center flex items-center justify-center transition-all",
                           activeTab === t.id
                             ? cn(m.text, m.bg, m.border)
                             : "bg-muted text-muted-foreground border border-border/50",
@@ -172,13 +208,14 @@ export function ModuleHeader({
                 placeholder={searchPlaceholder}
                 className={cn(
                   "w-full h-full pl-10 pr-4 text-xs font-medium bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground transition-all outline-none",
-                  `focus:${m.borderHover}`,
+                  m.borderHover.replace("hover:", "focus:"),
                 )}
               />
             </div>
           )}
         </div>
       )}
+      <div className="w-full h-px bg-border/50 mt-1" />
     </div>
   );
 }

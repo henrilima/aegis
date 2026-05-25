@@ -150,3 +150,91 @@ impl MovieManager {
         Ok(count)
     }
 }
+
+#[tauri::command]
+pub async fn movies_search(state: tauri::State<'_, crate::AppState>, query: String) -> Result<serde_json::Value, String> {
+    let api_key = state.config.get_tmdb_api_key();
+
+    if api_key.is_empty() {
+        return Err("tmdb_no_key".to_string());
+    }
+
+    let url = format!(
+        "https://api.themoviedb.org/3/search/movie?api_key={}&query={}&language=pt-BR&include_adult=false",
+        api_key,
+        urlencoding::encode(&query)
+    );
+    let client = reqwest::Client::builder()
+        .user_agent("Aegis")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let status = res.status();
+    if status.as_u16() == 401 {
+        return Err("tmdb_invalid_key".to_string());
+    }
+    if !status.is_success() {
+        return Err(format!("TMDb API error {}", status));
+    }
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "source": "tmdb", "data": json }))
+}
+
+#[tauri::command]
+pub async fn get_tmdb_api_key(state: tauri::State<'_, crate::AppState>) -> Result<String, String> {
+    Ok(state.config.get_tmdb_api_key())
+}
+
+#[tauri::command]
+pub async fn set_tmdb_api_key(state: tauri::State<'_, crate::AppState>, api_key: String) -> Result<(), String> {
+    if !api_key.is_empty() {
+        let url = format!(
+            "https://api.themoviedb.org/3/configuration?api_key={}",
+            api_key
+        );
+        let client = reqwest::Client::builder()
+            .user_agent("Aegis")
+            .timeout(std::time::Duration::from_secs(8))
+            .build()
+            .map_err(|e| e.to_string())?;
+        let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+        if res.status().as_u16() == 401 {
+            return Err("Chave de API inválida. Verifique e tente novamente.".to_string());
+        }
+        if !res.status().is_success() {
+            return Err(format!("Erro ao validar chave: HTTP {}", res.status()));
+        }
+    }
+    state.config.set_tmdb_api_key(&api_key)
+}
+
+#[tauri::command]
+pub async fn movies_list(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Movie>, String> {
+    Ok(state.movies.list_movies(&user_id))
+}
+
+#[tauri::command]
+pub async fn movies_upsert(state: tauri::State<'_, crate::AppState>, movie: Movie) -> Result<i64, String> {
+    state.movies.upsert_movie(movie).map(|(id, _)| id)
+}
+
+#[tauri::command]
+pub async fn movies_delete(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.movies.delete_movie(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn movies_toggle_favorite(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
+    state.movies.toggle_favorite_movie(id, &user_id, is_favorite)
+}
+
+#[tauri::command]
+pub async fn movies_export_json(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<(), String> {
+    state.movies.export_json(&user_id, &path)
+}
+
+#[tauri::command]
+pub async fn movies_import_json(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<usize, String> {
+    state.movies.import_json(&user_id, &path)
+}

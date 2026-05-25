@@ -77,7 +77,7 @@ export default function ReadingPage() {
             monthsBack: 12,
           }),
           invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
-          invoke<AppConfig>("get_app_config", { userId: uid }),
+          invoke<AppConfig>("global_get_app_config", { userId: uid }),
         ]);
       const sortedBooks = (booksData || []).sort((a, b) => {
         const priority: Record<string, number> = {
@@ -183,7 +183,7 @@ export default function ReadingPage() {
     try {
       await Promise.all([
         ...newGoals.map((goal) => invoke("reading_upsert_goal", { goal })),
-        invoke("set_app_config", {
+        invoke("global_set_app_config", {
           config: { ...appConfig, week_starts_on_monday: weekStartsOnMonday },
         }),
       ]);

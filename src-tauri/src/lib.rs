@@ -41,19 +41,20 @@ mod tasks;
 mod notifications;
 mod dictionary;
 mod movies;
+mod flashcards;
 
-use passwords::{PasswordEntry, DecryptedEntry, PasswordManager};
-use pomodoro::{PomodoroState, PomodoroManager, PomodoroHistory};
+use passwords::PasswordManager;
+use pomodoro::PomodoroManager;
 
-use alarms::{AppAlarm, AlarmManager};
-use habits::{Habit, HabitManager};
+use alarms::AlarmManager;
+use habits::HabitManager;
 use config::{AppConfig, ConfigManager};
-use studies::{StudiesManager, StudySession, StudyGoal};
-use sleep::{SleepManager, SleepEntry, SleepGoal};
-use calendar::{CalendarManager, CalendarEvent};
-use statistics::{StatisticsManager, CrossMetric, PerformanceSummary};
-use reading::{ReadingManager, ReadingBook, ReadingSession, ReadingGoal};
-use tasks::{Task, TaskManager};
+use studies::StudiesManager;
+use sleep::SleepManager;
+use calendar::CalendarManager;
+use statistics::StatisticsManager;
+use reading::ReadingManager;
+use tasks::TaskManager;
 use notifications::NotificationsManager;
 
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -89,10 +90,11 @@ pub struct AppState {
     notif: NotificationsManager,
     dictionary: dictionary::DictionaryManager,
     movies: movies::MovieManager,
+    flashcards: flashcards::FlashcardManager,
 }
 
 #[tauri::command]
-async fn verify_master(
+async fn global_verify_master(
     app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
     user_id: String,
@@ -128,22 +130,22 @@ async fn verify_master(
 }
 
 #[tauri::command]
-async fn send_critical_notification(app_handle: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
+async fn global_send_critical_notification(app_handle: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
     notify_critical(&app_handle, &title, &body);
     Ok(())
 }
 #[tauri::command]
-async fn test_notification(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn global_test_notification(app_handle: tauri::AppHandle) -> Result<(), String> {
     notify_critical(&app_handle, "Aegis Teste", "Se você vê isso, as notificações críticas estão funcionando!");
     Ok(())
 }
 #[tauri::command]
-fn get_app_version(app_handle: tauri::AppHandle) -> String {
+fn global_get_app_version(app_handle: tauri::AppHandle) -> String {
     app_handle.package_info().version.to_string()
 }
 
 #[tauri::command]
-async fn read_changelog(app_handle: tauri::AppHandle) -> Result<String, String> {
+async fn global_read_changelog(app_handle: tauri::AppHandle) -> Result<String, String> {
     // Primeiro, tenta localizar via diretório de recursos (ideal para produção)
     if let Ok(resource_dir) = app_handle.path().resource_dir() {
         let paths = [
@@ -175,14 +177,14 @@ async fn read_changelog(app_handle: tauri::AppHandle) -> Result<String, String> 
 }
 
 #[tauri::command]
-async fn get_log_path(app_handle: tauri::AppHandle) -> Result<String, String> {
+async fn global_get_log_path(app_handle: tauri::AppHandle) -> Result<String, String> {
     app_handle.path().app_log_dir()
         .map(|p| p.join("Aegis.log").to_string_lossy().to_string())
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn read_app_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
+async fn global_read_app_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
     let log_path = app_handle.path().app_log_dir()
         .map(|p| p.join("Aegis.log"))
         .map_err(|e| e.to_string())?;
@@ -206,7 +208,7 @@ async fn read_app_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
 
 
 #[tauri::command]
-async fn capture_screenshot() -> Result<Vec<u8>, String> {
+async fn global_capture_screenshot() -> Result<Vec<u8>, String> {
     use screenshots::Screen;
     let screens = Screen::all().map_err(|e| e.to_string())?;
     let screen = screens.first().ok_or("Nenhuma tela encontrada")?;
@@ -251,12 +253,12 @@ fn time_to_minutes(time_str: &str) -> i32 {
 }
 
 #[tauri::command]
-fn check_dnd_status() -> bool {
+fn global_check_dnd_status() -> bool {
     false
 }
 
 #[tauri::command]
-async fn open_notification_settings() -> Result<(), String> {
+async fn global_open_notification_settings() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
@@ -268,141 +270,32 @@ async fn open_notification_settings() -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
-async fn add_password(
-    state: State<'_, AppState>, 
-    user_id: String, 
-    master_pwd: String, 
-    name: String, 
-    url: String, 
-    username: String, 
-    password_raw: String, 
-    note_raw: String
-) -> Result<(), String> {
-    state.pm.add_password(&user_id, &master_pwd, &name, &url, &username, &password_raw, &note_raw)
-}
-
-#[tauri::command]
-async fn list_passwords(state: State<'_, AppState>, user_id: String) -> Result<Vec<PasswordEntry>, String> {
-    state.pm.list_passwords(&user_id)
-}
-
-#[tauri::command]
-async fn decrypt_entry(state: State<'_, AppState>, user_id: String, master_pwd: String, entry_id: i32) -> Result<DecryptedEntry, String> {
-    state.pm.decrypt_entry(&user_id, &master_pwd, entry_id)
-}
-
-#[tauri::command]
-async fn import_passwords(state: State<'_, AppState>, user_id: String, master_pwd: String, file_path: String) -> Result<usize, String> {
-    state.pm.import_google_csv(&user_id, &master_pwd, &file_path)
-}
-
-#[tauri::command]
-async fn export_passwords(state: State<'_, AppState>, user_id: String, master_pwd: String, dest_path: String) -> Result<(), String> {
-    state.pm.export_google_csv(&user_id, &master_pwd, &dest_path)
-}
-
-#[tauri::command]
-async fn delete_password(state: State<'_, AppState>, user_id: String, entry_id: i32) -> Result<(), String> {
-    state.pm.delete_password(&user_id, entry_id)
-}
-
-#[tauri::command]
-async fn update_password(
-    state: State<'_, AppState>, 
-    user_id: String, 
-    master_pwd: String, 
-    entry_id: i32,
-    name: String, 
-    url: String, 
-    username: String, 
-    password_raw: String, 
-    note_raw: String
-) -> Result<(), String> {
-    state.pm.update_password(&user_id, &master_pwd, entry_id, &name, &url, &username, &password_raw, &note_raw)
-}
-
-#[tauri::command]
-async fn check_vault(state: State<'_, AppState>, user_id: String) -> Result<bool, String> {
-    Ok(state.pm.check_user_exists(&user_id))
-}
-
-#[tauri::command]
-async fn reset_vault(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
-    state.pm.delete_user(&user_id)
-}
-
 
 
 #[tauri::command]
-async fn get_pomodoro_state(state: State<'_, AppState>, user_id: String) -> Result<PomodoroState, String> {
-    Ok(state.pomo.get_state(&user_id))
-}
-
-#[tauri::command]
-async fn save_pomodoro_state(state: State<'_, AppState>, user_id: String, pomo_state: PomodoroState) -> Result<(), String> {
-    state.pomo.save_state(&user_id, &pomo_state)
-}
-
-#[tauri::command]
-async fn record_pomodoro_session(state: State<'_, AppState>, session: PomodoroHistory) -> Result<(), String> {
-    state.pomo.record_session(session)
-}
-
-#[tauri::command]
-async fn get_pomodoro_history(state: State<'_, AppState>, user_id: String) -> Result<Vec<PomodoroHistory>, String> {
-    Ok(state.pomo.get_history(&user_id))
-}
-
-#[tauri::command]
-async fn clear_pomodoro_history(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
-    state.pomo.clear_history(&user_id)
-}
-
-
-
-#[tauri::command]
-async fn list_alarms(state: State<'_, AppState>, user_id: String) -> Result<Vec<AppAlarm>, String> {
-    Ok(state.alarm.list_alarms(&user_id))
-}
-
-#[tauri::command]
-async fn add_alarm(state: State<'_, AppState>, alarm: AppAlarm) -> Result<(), String> {
-    state.alarm.add_alarm(alarm)
-}
-
-#[tauri::command]
-async fn update_alarm(state: State<'_, AppState>, alarm: AppAlarm) -> Result<(), String> {
-    state.alarm.update_alarm(alarm)
-}
-
-#[tauri::command]
-async fn delete_alarm(state: State<'_, AppState>, id: i32, user_id: String) -> Result<(), String> {
-    state.alarm.delete_alarm(id, &user_id)
-}
-
-#[tauri::command]
-async fn toggle_alarm(state: State<'_, AppState>, id: i32, user_id: String) -> Result<(), String> {
-    state.alarm.toggle_alarm(id, &user_id)
-}
-
-#[tauri::command]
-async fn list_habits(state: State<'_, AppState>, user_id: String) -> Result<Vec<Habit>, String> {
-    let now = state.config.get_now();
-    Ok(state.habit.list_habits(&user_id, now))
-}
-
-#[tauri::command]
-async fn add_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), String> {
-    state.habit.add_habit(habit)
-}
-
-#[tauri::command]
-async fn list_notification_sounds(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+async fn global_list_notification_sounds(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let mut sounds = Vec::new();
     
     // Tenta localizar via diretório de recursos (produção)
     let mut found_dir = None;
+
+    // Em desenvolvimento (debug), prioriza o diretório real de sounds do projeto na raiz
+    #[cfg(debug_assertions)]
+    {
+        let dev_paths = [
+            "public/sounds", 
+            "../public/sounds", 
+            "../../public/sounds",
+            "../../../public/sounds"
+        ];
+        for p in &dev_paths {
+            let path = std::path::Path::new(p);
+            if path.exists() && path.is_dir() {
+                found_dir = Some(path.to_path_buf());
+                break;
+            }
+        }
+    }
     if let Ok(resource_dir) = app_handle.path().resource_dir() {
         let paths = [
             resource_dir.join("sounds"),
@@ -463,83 +356,35 @@ async fn list_notification_sounds(app_handle: tauri::AppHandle) -> Result<Vec<St
     Ok(sounds)
 }
 
-#[tauri::command]
-async fn update_habit(state: State<'_, AppState>, habit: Habit) -> Result<(), String> {
-    state.habit.update_habit(habit)
-}
+
 
 #[tauri::command]
-async fn mark_habit_done(
-    state: State<'_, AppState>, 
-    id: i32, 
-    _user_id: Option<String>, 
-    timestamp: Option<String>
-) -> Result<(), String> {
-    let now = state.config.get_now();
-    let ts = timestamp.unwrap_or_default();
-    state.habit.mark_done(id, &ts, now)
-}
-
-#[tauri::command]
-async fn use_habit_charge(
-    state: State<'_, AppState>, 
-    id: i32, 
-    _user_id: Option<String>
-) -> Result<(), String> {
-    let now = state.config.get_now();
-    state.habit.use_charge(id, now)
-}
-
-#[tauri::command]
-async fn reset_habit(
-    state: State<'_, AppState>, 
-    id: i32, 
-    _user_id: Option<String>, 
-    timestamp: Option<String>
-) -> Result<(), String> {
-    let now = state.config.get_now();
-    let ts = timestamp.unwrap_or_default();
-    state.habit.reset_habit(id, &ts, now)
-}
-
-#[tauri::command]
-async fn hard_reset_habit(state: State<'_, AppState>, id: i32, _user_id: Option<String>, _timestamp: Option<String>) -> Result<(), String> {
-    let now = state.config.get_now().to_rfc3339();
-    state.habit.hard_reset_habit(id, &now)
-}
-
-#[tauri::command]
-async fn delete_habit(state: State<'_, AppState>, id: i32, _user_id: Option<String>) -> Result<(), String> {
-    state.habit.delete_habit(id)
-}
-
-#[tauri::command]
-async fn local_register(state: State<'_, AppState>, username: String, email: String, password: String, password_hint: String) -> Result<String, String> {
+async fn global_local_register(state: State<'_, AppState>, username: String, email: String, password: String, password_hint: String) -> Result<String, String> {
     state.pm.register_user(&username, &email, &password, &password_hint)
 }
 
 #[tauri::command]
-async fn check_user_availability(state: State<'_, AppState>, username: String, email: String) -> Result<(), String> {
+async fn global_check_user_availability(state: State<'_, AppState>, username: String, email: String) -> Result<(), String> {
     state.pm.check_availability(&username, &email)
 }
 
 #[tauri::command]
-async fn local_login(state: State<'_, AppState>, email: String, password: String) -> Result<String, String> {
+async fn global_local_login(state: State<'_, AppState>, email: String, password: String) -> Result<String, String> {
     state.pm.login_user(&email, &password)
 }
 
 #[tauri::command]
-async fn get_local_user(state: State<'_, AppState>, user_id: String) -> Result<serde_json::Value, String> {
+async fn global_get_local_user(state: State<'_, AppState>, user_id: String) -> Result<serde_json::Value, String> {
     state.pm.get_user_data(&user_id)
 }
 
 #[tauri::command]
-async fn list_local_users(state: State<'_, AppState>) -> Result<Vec<serde_json::Value>, String> {
+async fn global_list_local_users(state: State<'_, AppState>) -> Result<Vec<serde_json::Value>, String> {
     state.pm.list_users()
 }
 
 #[tauri::command]
-async fn delete_account(state: State<'_, AppState>, user_id: String, password: String) -> Result<(), String> {
+async fn global_delete_account(state: State<'_, AppState>, user_id: String, password: String) -> Result<(), String> {
     let master_signs = [
         "aquarius", "pisces", "aries", "taurus", "gemini", "cancer",
         "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "ophiuchus"
@@ -553,83 +398,34 @@ async fn delete_account(state: State<'_, AppState>, user_id: String, password: S
 }
 
 #[tauri::command]
-async fn change_account_password(state: State<'_, AppState>, user_id: String, current_password: String, new_password: String) -> Result<(), String> {
+async fn global_change_account_password(state: State<'_, AppState>, user_id: String, current_password: String, new_password: String) -> Result<(), String> {
     state.pm.change_account_password(&user_id, &current_password, &new_password)
 }
 
 #[tauri::command]
-async fn change_username(state: State<'_, AppState>, user_id: String, new_username: String) -> Result<(), String> {
+async fn global_change_username(state: State<'_, AppState>, user_id: String, new_username: String) -> Result<(), String> {
     state.pm.change_username(&user_id, &new_username)
 }
 
 #[tauri::command]
-async fn change_vault_password(state: State<'_, AppState>, user_id: String, current_vault_password: String, new_vault_password: String) -> Result<(), String> {
+async fn global_change_vault_password(state: State<'_, AppState>, user_id: String, current_vault_password: String, new_vault_password: String) -> Result<(), String> {
     state.pm.change_vault_password(&user_id, &current_vault_password, Some(&new_vault_password))
 }
 
 #[tauri::command]
-async fn revert_vault_to_master(state: State<'_, AppState>, user_id: String, current_vault_password: String, master_password: String) -> Result<(), String> {
+async fn global_revert_vault_to_master(state: State<'_, AppState>, user_id: String, current_vault_password: String, master_password: String) -> Result<(), String> {
     state.pm.revert_vault_to_master(&user_id, &current_vault_password, &master_password)
 }
 
 #[tauri::command]
-async fn has_separate_vault_password(state: State<'_, AppState>, user_id: String) -> Result<bool, String> {
+async fn global_has_separate_vault_password(state: State<'_, AppState>, user_id: String) -> Result<bool, String> {
     Ok(state.pm.has_separate_vault_password(&user_id))
 }
 
-#[tauri::command]
-async fn list_notes(state: State<'_, AppState>, user_id: String) -> Result<Vec<notes::Note>, String> {
-    Ok(state.note.list_notes(&user_id))
-}
+
 
 #[tauri::command]
-async fn list_note_items(state: State<'_, AppState>, user_id: String, _parent_id: Option<i64>) -> Result<Vec<notes::FileSystemItem>, String> {
-    Ok(state.note.list_items(&user_id))
-}
-
-#[tauri::command]
-async fn add_note(state: State<'_, AppState>, note: notes::Note) -> Result<i64, String> {
-    state.note.add_note(note)?;
-    Ok(0)
-}
-
-#[tauri::command]
-async fn update_note(state: State<'_, AppState>, note: notes::Note) -> Result<(), String> {
-    state.note.update_note(note)
-}
-
-#[tauri::command]
-async fn create_note_folder(state: State<'_, AppState>, path: String) -> Result<(), String> {
-    state.note.create_folder(path)
-}
-
-#[tauri::command]
-async fn delete_note_folder(state: State<'_, AppState>, path: String) -> Result<(), String> {
-    state.note.delete_folder(path)
-}
-
-#[tauri::command]
-async fn move_note_item(state: State<'_, AppState>, source_path: String, dest_path: String) -> Result<(), String> {
-    state.note.move_item(source_path, dest_path)
-}
-
-#[tauri::command]
-async fn delete_note(state: State<'_, AppState>, id: i32) -> Result<(), String> {
-    state.note.delete_note(id)
-}
-
-#[tauri::command]
-async fn update_note_pinned(state: State<'_, AppState>, id: i32, pinned: bool) -> Result<(), String> {
-    state.note.update_note_pinned(id, pinned)
-}
-
-#[tauri::command]
-async fn open_notes_folder(state: State<'_, AppState>) -> Result<(), String> {
-    state.note.open_folder()
-}
-
-#[tauri::command]
-async fn open_app_data_folder(app: AppHandle) -> Result<(), String> {
+async fn global_open_app_data_folder(app: AppHandle) -> Result<(), String> {
     let path = app.path().app_data_dir().map_err(|e: tauri::Error| e.to_string())?;
     
     #[cfg(target_os = "windows")]
@@ -660,22 +456,22 @@ async fn open_app_data_folder(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn get_app_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
+async fn global_get_app_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
     Ok(state.config.get_config())
 }
 
 #[tauri::command]
-async fn set_app_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
+async fn global_set_app_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
     state.config.set_config(config)
 }
 
 #[tauri::command]
-async fn apply_internal_command(_app_handle: tauri::AppHandle, state: State<'_, AppState>, command: String) -> Result<String, String> {
+async fn global_apply_internal_command(_app_handle: tauri::AppHandle, state: State<'_, AppState>, command: String) -> Result<String, String> {
     state.config.apply_debug_command(&command)
 }
 
 #[tauri::command]
-async fn get_simulation_status(state: State<'_, AppState>) -> Result<SimulationStatus, String> {
+async fn global_get_simulation_status(state: State<'_, AppState>) -> Result<SimulationStatus, String> {
     let offset = state.config.get_time_offset();
     Ok(SimulationStatus {
         is_active: offset != 0,
@@ -686,281 +482,16 @@ async fn get_simulation_status(state: State<'_, AppState>) -> Result<SimulationS
 
 
 #[tauri::command]
-async fn quit_app(app_handle: tauri::AppHandle) {
+async fn global_quit_app(app_handle: tauri::AppHandle) {
     app_handle.exit(0);
 }
 
-#[tauri::command]
-async fn estudos_add_session(state: State<'_, AppState>, session: StudySession) -> Result<i64, String> {
-    state.studies.add_session(session)
-}
+
+
+
 
 #[tauri::command]
-async fn estudos_update_session(state: State<'_, AppState>, session: StudySession) -> Result<(), String> {
-    state.studies.update_session(session)
-}
-
-#[tauri::command]
-async fn estudos_delete_session(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.studies.delete_session(id, &user_id)
-}
-
-#[tauri::command]
-async fn estudos_list_sessions(state: State<'_, AppState>, user_id: String, months_back: i32) -> Result<Vec<StudySession>, String> {
-    let now = state.config.get_now();
-    Ok(state.studies.list_sessions(&user_id, months_back, now))
-}
-
-#[tauri::command]
-async fn estudos_upsert_goal(state: State<'_, AppState>, goal: StudyGoal) -> Result<(), String> {
-    state.studies.upsert_goal(goal)
-}
-
-#[tauri::command]
-async fn estudos_list_goals(state: State<'_, AppState>, user_id: String) -> Result<Vec<StudyGoal>, String> {
-    Ok(state.studies.list_goals(&user_id))
-}
-
-#[tauri::command]
-async fn estudos_export_csv(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
-    let now = state.config.get_now();
-    state.studies.export_csv(&user_id, &dest_path, now)
-}
-
-#[tauri::command]
-async fn estudos_import_csv(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
-    state.studies.import_csv(&user_id, &file_path)
-}
-
-#[tauri::command]
-async fn sono_upsert_entry(state: State<'_, AppState>, entry: SleepEntry) -> Result<i64, String> {
-    state.sleep.upsert_entry(entry)
-}
-
-#[tauri::command]
-async fn sono_delete_entry(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.sleep.delete_entry(id, &user_id)
-}
-
-#[tauri::command]
-async fn sono_list_entries(state: State<'_, AppState>, user_id: String, months_back: i32) -> Result<Vec<SleepEntry>, String> {
-    let now = state.config.get_now();
-    Ok(state.sleep.list_entries(&user_id, months_back, now))
-}
-
-#[tauri::command]
-async fn sono_upsert_goal(app_handle: tauri::AppHandle, state: State<'_, AppState>, goal: SleepGoal) -> Result<(), String> {
-    state.sleep.upsert_goal(goal, &app_handle)
-}
-
-#[tauri::command]
-async fn sono_get_goal(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<SleepGoal, String> {
-    Ok(state.sleep.get_goal(&user_id, &app_handle))
-}
-
-#[tauri::command]
-async fn sono_export_csv(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
-    let now = state.config.get_now();
-    state.sleep.export_csv(&user_id, &dest_path, now)
-}
-
-#[tauri::command]
-async fn sono_import_csv(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
-    state.sleep.import_csv(&user_id, &file_path)
-}
-
-#[tauri::command]
-async fn calendar_add_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<i64, String> {
-    state.calendar.add_event(event)
-}
-
-#[tauri::command]
-async fn calendar_update_event(state: State<'_, AppState>, event: CalendarEvent) -> Result<(), String> {
-    state.calendar.update_event(event)
-}
-
-#[tauri::command]
-async fn sync_br_holidays(state: State<'_, AppState>, user_id: String, year: i32) -> Result<i32, String> {
-    state.calendar.sync_holidays(&user_id, year).await
-}
-
-#[tauri::command]
-async fn calendar_delete_event(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.calendar.delete_event(id, &user_id)
-}
-
-#[tauri::command]
-async fn calendar_list_events(state: State<'_, AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
-    Ok(state.calendar.list_events(&user_id))
-}
-
-#[tauri::command]
-async fn calendar_list_upcoming_deadlines(state: State<'_, AppState>, user_id: String) -> Result<Vec<CalendarEvent>, String> {
-    let now = state.config.get_now();
-    Ok(state.calendar.list_upcoming_deadlines(&user_id, now))
-}
-
-#[tauri::command]
-async fn stats_get_cross_metrics(state: State<'_, AppState>, user_id: String, days: i32) -> Result<Vec<CrossMetric>, String> {
-    let now = state.config.get_now();
-    Ok(state.stats.get_cross_metrics(&user_id, days, now))
-}
-
-#[tauri::command]
-async fn stats_get_performance_summary(state: State<'_, AppState>, user_id: String, days: i32) -> Result<PerformanceSummary, String> {
-    let now = state.config.get_now();
-    Ok(state.stats.get_performance_summary(&user_id, days, now))
-}
-
-#[tauri::command]
-async fn reading_list_books(state: State<'_, AppState>, user_id: String) -> Result<Vec<ReadingBook>, String> {
-    Ok(state.reading.list_books(&user_id))
-}
-
-#[tauri::command]
-async fn reading_upsert_book(state: State<'_, AppState>, book: ReadingBook) -> Result<i64, String> {
-    state.reading.upsert_book(book)
-}
-
-#[tauri::command]
-async fn reading_delete_book(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.reading.delete_book(id, &user_id)
-}
-
-#[tauri::command]
-async fn reading_upsert_session(state: State<'_, AppState>, session: ReadingSession) -> Result<i64, String> {
-    state.reading.upsert_session(session)
-}
-
-#[tauri::command]
-async fn reading_list_sessions(state: State<'_, AppState>, user_id: String, months_back: i32) -> Result<Vec<ReadingSession>, String> {
-    let now = state.config.get_now();
-    Ok(state.reading.list_sessions(&user_id, months_back, now))
-}
-
-#[tauri::command]
-async fn reading_delete_session(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.reading.delete_session(id, &user_id)
-}
-
-#[tauri::command]
-async fn reading_upsert_goal(state: State<'_, AppState>, goal: ReadingGoal) -> Result<(), String> {
-    state.reading.upsert_goal(goal)
-}
-
-#[tauri::command]
-async fn reading_list_goals(state: State<'_, AppState>, user_id: String) -> Result<Vec<ReadingGoal>, String> {
-    Ok(state.reading.list_goals(&user_id))
-}
-
-#[tauri::command]
-async fn reading_import_json(state: State<'_, AppState>, user_id: String, file_path: String) -> Result<usize, String> {
-    state.reading.import_json(&user_id, &file_path)
-}
-
-#[tauri::command]
-async fn reading_export_json(state: State<'_, AppState>, user_id: String, dest_path: String) -> Result<(), String> {
-    let now = state.config.get_now();
-    state.reading.export_json(&user_id, &dest_path, now)
-}
-
-#[tauri::command]
-async fn reading_search_books(query: String) -> Result<serde_json::Value, String> {
-    let url = format!(
-        "https://www.googleapis.com/books/v1/volumes?q={}&maxResults=5&langRestrict=pt",
-        urlencoding::encode(&query)
-    );
-    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    Ok(json)
-}
-#[tauri::command]
-async fn movies_search(state: State<'_, AppState>, query: String) -> Result<serde_json::Value, String> {
-    let api_key = state.config.get_tmdb_api_key();
-
-    if api_key.is_empty() {
-        return Err("tmdb_no_key".to_string());
-    }
-
-    let url = format!(
-        "https://api.themoviedb.org/3/search/movie?api_key={}&query={}&language=pt-BR&include_adult=false",
-        api_key,
-        urlencoding::encode(&query)
-    );
-    let client = reqwest::Client::builder()
-        .user_agent("Aegis")
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    let status = res.status();
-    if status.as_u16() == 401 {
-        return Err("tmdb_invalid_key".to_string());
-    }
-    if !status.is_success() {
-        return Err(format!("TMDb API error {}", status));
-    }
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    Ok(serde_json::json!({ "source": "tmdb", "data": json }))
-}
-
-#[tauri::command]
-async fn get_tmdb_api_key(state: State<'_, AppState>) -> Result<String, String> {
-    Ok(state.config.get_tmdb_api_key())
-}
-
-#[tauri::command]
-async fn set_tmdb_api_key(state: State<'_, AppState>, api_key: String) -> Result<(), String> {
-    // Validate the key with a TMDb test request before saving
-    if !api_key.is_empty() {
-        let url = format!(
-            "https://api.themoviedb.org/3/configuration?api_key={}",
-            api_key
-        );
-        let client = reqwest::Client::builder()
-            .user_agent("Aegis")
-            .timeout(std::time::Duration::from_secs(8))
-            .build()
-            .map_err(|e| e.to_string())?;
-        let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-        if res.status().as_u16() == 401 {
-            return Err("Chave de API inválida. Verifique e tente novamente.".to_string());
-        }
-        if !res.status().is_success() {
-            return Err(format!("Erro ao validar chave: HTTP {}", res.status()));
-        }
-    }
-    state.config.set_tmdb_api_key(&api_key)
-}
-
-#[tauri::command]
-async fn movies_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<movies::Movie>, String> {
-    Ok(state.movies.list_movies(&user_id))
-}
-
-#[tauri::command]
-async fn movies_upsert(state: State<'_, AppState>, movie: movies::Movie) -> Result<i64, String> {
-    state.movies.upsert_movie(movie).map(|(id, _)| id)
-}
-
-#[tauri::command]
-async fn movies_delete(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.movies.delete_movie(id, &user_id)
-}
-
-#[tauri::command]
-async fn movies_toggle_favorite(state: State<'_, AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
-    state.movies.toggle_favorite_movie(id, &user_id, is_favorite)
-}
-
-#[tauri::command]
-async fn reading_toggle_favorite(state: State<'_, AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
-    state.reading.toggle_favorite_book(id, &user_id, is_favorite)
-}
-
-#[tauri::command]
-async fn check_github_update() -> Result<serde_json::Value, String> {
+async fn global_check_github_update() -> Result<serde_json::Value, String> {
     let url = "https://api.github.com/repos/henrilima/aegis/releases/latest";
     let client = reqwest::Client::builder()
         .user_agent("Aegis-App")
@@ -977,58 +508,40 @@ async fn check_github_update() -> Result<serde_json::Value, String> {
     Ok(json)
 }
 
-#[tauri::command]
-async fn tasks_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<Task>, String> {
-    Ok(state.tasks.list_tasks(&user_id))
-}
+
 
 #[tauri::command]
-async fn tasks_upsert(state: State<'_, AppState>, task: Task) -> Result<(), String> {
-    state.tasks.upsert_task(task)
-}
-
-#[tauri::command]
-async fn tasks_toggle(state: State<'_, AppState>, id: i32, completed: bool) -> Result<(), String> {
-    state.tasks.toggle_task(id, completed)
-}
-
-#[tauri::command]
-async fn tasks_delete(state: State<'_, AppState>, id: i32) -> Result<(), String> {
-    state.tasks.delete_task(id)
-}
-
-#[tauri::command]
-async fn notif_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<notifications::AppNotification>, String> {
+async fn global_notif_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<notifications::AppNotification>, String> {
     Ok(state.notif.list(&user_id))
 }
 
 #[tauri::command]
-async fn notif_unread_count(state: State<'_, AppState>, user_id: String) -> Result<i64, String> {
+async fn global_notif_unread_count(state: State<'_, AppState>, user_id: String) -> Result<i64, String> {
     Ok(state.notif.unread_count(&user_id))
 }
 
 #[tauri::command]
-async fn notif_mark_read(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+async fn global_notif_mark_read(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
     state.notif.mark_read(id, &user_id)
 }
 
 #[tauri::command]
-async fn notif_mark_all_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+async fn global_notif_mark_all_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
     state.notif.mark_all_read(&user_id)
 }
 
 #[tauri::command]
-async fn notif_delete(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+async fn global_notif_delete(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
     state.notif.delete(id, &user_id)
 }
 
 #[tauri::command]
-async fn notif_clear_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+async fn global_notif_clear_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
     state.notif.clear_read(&user_id)
 }
 
 #[tauri::command]
-async fn ensure_discord_invite(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+async fn global_ensure_discord_invite(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
     if state.notif.check_and_push_discord_invitation(&user_id)? {
         notify_critical(&app_handle, "Comunidade", "Junte-se ao nosso Discord!");
     }
@@ -1036,277 +549,28 @@ async fn ensure_discord_invite(app_handle: tauri::AppHandle, state: State<'_, Ap
 }
 
 #[tauri::command]
-async fn save_avatar(state: State<'_, AppState>, user_id: String, base64_data: String) -> Result<(), String> {
+async fn global_save_avatar(state: State<'_, AppState>, user_id: String, base64_data: String) -> Result<(), String> {
     state.pm.save_avatar(&user_id, &base64_data)
 }
 
 #[tauri::command]
-async fn get_avatar(state: State<'_, AppState>, user_id: String) -> Result<Option<String>, String> {
+async fn global_get_avatar(state: State<'_, AppState>, user_id: String) -> Result<Option<String>, String> {
     Ok(state.pm.get_avatar(&user_id))
 }
 
 #[tauri::command]
-async fn delete_avatar(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+async fn global_delete_avatar(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
     state.pm.delete_avatar(&user_id)
 }
 
-#[tauri::command]
-async fn export_tasks_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
-    state.tasks.export_csv(&user_id, &path)
-}
+
+
+
+
+
 
 #[tauri::command]
-async fn export_habits_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
-    let now = state.config.get_now();
-    state.habit.export_csv(&user_id, &path, now)
-}
-
-#[tauri::command]
-async fn import_tasks_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
-    state.tasks.import_csv(&user_id, &path)
-}
-
-async fn translate_text(text: &str, from: &str, to: &str) -> Result<String, String> {
-    let url = format!(
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl={}&tl={}&dt=t&q={}",
-        from,
-        to,
-        urlencoding::encode(text)
-    );
-    let client = reqwest::Client::builder()
-        .user_agent("Mozilla/5.0")
-        .timeout(std::time::Duration::from_secs(5))
-        .build()
-        .map_err(|e| e.to_string())?;
-        
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    
-    // O formato do Google é um array aninhado: [[["traducao", "original", ...]]]
-    let mut translated = String::new();
-    if let Some(sentences) = json[0].as_array() {
-        for sentence in sentences {
-            if let Some(t) = sentence[0].as_str() {
-                translated.push_str(t);
-            }
-        }
-    }
-
-    if translated.is_empty() {
-        return Err("Falha na tradução".to_string());
-    }
-    
-    Ok(translated)
-}
-
-#[tauri::command]
-async fn dictionary_search(
-    state: tauri::State<'_, AppState>,
-    query: String
-) -> Result<serde_json::Value, String> {
-    // 0. Verifica Cache
-    if let Some(cached) = state.dictionary.get_cached(&query) {
-        return Ok(cached);
-    }
-
-    let client = reqwest::Client::builder()
-        .user_agent("Aegis-App/2.0")
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    // 1. Traduz termo de busca (PT -> EN)
-    let en_query = translate_text(&query, "pt", "en").await.unwrap_or(query.clone());
-    let url_en = format!("https://api.dictionaryapi.dev/api/v2/entries/en/{}", urlencoding::encode(&en_query));
-    
-    let res = client.get(&url_en).send().await.map_err(|e| e.to_string())?;
-    if !res.status().is_success() {
-        return Err("Palavra não encontrada.".to_string());
-    }
-
-    let mut json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    
-    if let Some(entries) = json.as_array_mut() {
-        let mut batch_texts = vec![];
-        let sep = "\n[SEP]\n";
-
-        // 1. Coleta TODOS os textos de TODAS as entradas
-        let mut original_words = vec![];
-        for entry in entries.iter() {
-            if let Some(word) = entry["word"].as_str() {
-                original_words.push(word.to_string());
-                batch_texts.push(word.to_string());
-            }
-            if let Some(meanings) = entry["meanings"].as_array() {
-                for meaning in meanings {
-                    if let Some(pos) = meaning["partOfSpeech"].as_str() {
-                        batch_texts.push(pos.to_string());
-                    }
-                    if let Some(definitions) = meaning["definitions"].as_array() {
-                        // Limite de 4 definições
-                        for def in definitions.iter().take(4) {
-                            if let Some(def_text) = def["definition"].as_str() {
-                                batch_texts.push(def_text.to_string());
-                            }
-                            if let Some(ex_text) = def["example"].as_str() {
-                                batch_texts.push(ex_text.to_string());
-                            }
-                            if let Some(syns) = def["synonyms"].as_array() {
-                                for s in syns { if let Some(t) = s.as_str() { batch_texts.push(t.to_string()); } }
-                            }
-                        }
-                    }
-                    if let Some(syns) = meaning["synonyms"].as_array() {
-                        for s in syns { if let Some(t) = s.as_str() { batch_texts.push(t.to_string()); } }
-                    }
-                }
-            }
-        }
-
-        if !batch_texts.is_empty() {
-            let combined = batch_texts.join(sep);
-            let mut results = vec![];
-            let mut success = false;
-
-            if let Ok(translated_combined) = translate_text(&combined, "en", "pt").await {
-                let parts: Vec<String> = translated_combined
-                    .split("[SEP]")
-                    .map(|s| s.trim().to_string())
-                    .collect();
-                
-                if parts.len() == batch_texts.len() {
-                    results = parts;
-                    success = true;
-                }
-            }
-
-            if !success {
-                for text in &batch_texts {
-                    results.push(translate_text(text, "en", "pt").await.unwrap_or_else(|_| text.clone()));
-                }
-            }
-
-            // 2. Distribui os resultados de volta
-            let mut cursor = 0;
-            let mut word_cursor = 0;
-            for entry in entries.iter_mut() {
-                // Remove lixo
-                if let Some(obj) = entry.as_object_mut() {
-                    obj.remove("sourceUrls");
-                    obj.remove("license");
-                }
-
-                if entry["word"].is_string() {
-                    let translated = &results[cursor];
-                    let original = &original_words[word_cursor];
-                    // Formato: Traduzido (Original)
-                    entry["word"] = if translated.to_lowercase() != original.to_lowercase() {
-                        serde_json::json!(format!("{} ({})", translated, original))
-                    } else {
-                        serde_json::json!(translated)
-                    };
-                    cursor += 1;
-                    word_cursor += 1;
-                }
-
-                if let Some(meanings) = entry["meanings"].as_array_mut() {
-                    for meaning in meanings {
-                        if meaning["partOfSpeech"].is_string() {
-                            meaning["partOfSpeech"] = serde_json::json!(results[cursor]);
-                            cursor += 1;
-                        }
-                        if let Some(_definitions) = meaning["definitions"].as_array_mut() {
-                            // Limite de 4 no retorno também
-                            let mut truncated_defs = vec![];
-                            let defs_count = std::cmp::min(meaning["definitions"].as_array().unwrap().len(), 4);
-                            
-                            for _ in 0..defs_count {
-                                let mut def = meaning["definitions"].as_array_mut().unwrap().remove(0);
-                                if def["definition"].is_string() {
-                                    def["definition"] = serde_json::json!(results[cursor]);
-                                    cursor += 1;
-                                }
-                                if def["example"].is_string() {
-                                    def["example"] = serde_json::json!(results[cursor]);
-                                    cursor += 1;
-                                }
-                                if let Some(syns) = def["synonyms"].as_array_mut() {
-                                    for s in syns { *s = serde_json::json!(results[cursor]); cursor += 1; }
-                                }
-                                truncated_defs.push(def);
-                            }
-                            meaning["definitions"] = serde_json::json!(truncated_defs);
-                        }
-                        if let Some(syns) = meaning["synonyms"].as_array_mut() {
-                            for s in syns { *s = serde_json::json!(results[cursor]); cursor += 1; }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // Salva no Cache antes de retornar
-    state.dictionary.set_cache(query, json.clone());
-    Ok(json)
-}
-
-#[tauri::command]
-async fn dictionary_suggestions(query: String) -> Result<Vec<String>, String> {
-    let url = format!("https://api.dicionario-aberto.net/near/{}", urlencoding::encode(&query));
-    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    let suggestions: Vec<String> = res.json().await.map_err(|e| e.to_string())?;
-    Ok(suggestions)
-}
-
-#[tauri::command]
-async fn dictionary_list(state: State<'_, AppState>, user_id: String) -> Result<Vec<dictionary::GlossaryWord>, String> {
-    Ok(state.dictionary.list_words(&user_id))
-}
-
-#[tauri::command]
-async fn dictionary_add(state: State<'_, AppState>, word: dictionary::GlossaryWord) -> Result<(), String> {
-    state.dictionary.add_word(word).map(|_| ())
-}
-
-#[tauri::command]
-async fn dictionary_delete(state: State<'_, AppState>, id: i32) -> Result<(), String> {
-    state.dictionary.delete_word(id)
-}
-
-#[tauri::command]
-async fn dictionary_toggle_favorite(state: State<'_, AppState>, id: i32, is_favorite: bool) -> Result<(), String> {
-    state.dictionary.toggle_favorite(id, is_favorite)
-}
-
-#[tauri::command]
-async fn import_habits_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
-    state.habit.import_csv(&user_id, &path)
-}
-
-#[tauri::command]
-async fn movies_export_json(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
-    state.movies.export_json(&user_id, &path)
-}
-
-#[tauri::command]
-async fn movies_import_json(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
-    state.movies.import_json(&user_id, &path)
-}
-
-#[tauri::command]
-async fn dictionary_export_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<(), String> {
-    state.dictionary.export_csv(&user_id, &path)
-}
-
-#[tauri::command]
-async fn dictionary_import_csv(state: State<'_, AppState>, user_id: String, path: String) -> Result<usize, String> {
-    state.dictionary.import_csv(&user_id, &path)
-}
-
-#[tauri::command]
-async fn pre_update_backup(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn global_pre_update_backup(app_handle: tauri::AppHandle) -> Result<(), String> {
     let data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
     let backup_dir = data_dir.join("backups");
     if !backup_dir.exists() { std::fs::create_dir(&backup_dir).map_err(|e| e.to_string())?; }
@@ -1424,6 +688,7 @@ pub fn run() {
             let notif = NotificationsManager::new(app.handle());
             let dictionary = dictionary::DictionaryManager::new(app.handle());
             let movies = movies::MovieManager::new(app.handle());
+            let flashcards = flashcards::FlashcardManager::new(app.handle());
 
             let app_handle = app.handle().clone();
             let pm_clone = PasswordManager::new(app.handle());
@@ -1643,7 +908,7 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies });
+            app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies, flashcards });
 
             // ─── Startup Data Summary ──────────────────────────────────────────
             {
@@ -1723,31 +988,88 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            test_notification, open_notification_settings, send_critical_notification, verify_master,
-            add_password, update_password, list_passwords, decrypt_entry, import_passwords, export_passwords, delete_password, check_vault, reset_vault,
-            get_pomodoro_state, save_pomodoro_state, record_pomodoro_session, get_pomodoro_history, clear_pomodoro_history,
-            list_alarms, add_alarm, delete_alarm, toggle_alarm, update_alarm,
-            list_habits, add_habit, update_habit, mark_habit_done, use_habit_charge, reset_habit, hard_reset_habit, delete_habit,
-            local_register, check_user_availability, local_login, get_local_user, list_local_users, delete_account, change_account_password, change_username, change_vault_password, revert_vault_to_master, has_separate_vault_password,
-            list_notes, list_note_items, add_note, update_note, delete_note, create_note_folder, delete_note_folder, move_note_item, update_note_pinned, open_notes_folder, list_notification_sounds,
-            get_app_config, set_app_config, apply_internal_command, get_simulation_status, quit_app,
-            get_app_version, read_changelog,
-            estudos_add_session, estudos_update_session, estudos_delete_session, estudos_list_sessions, estudos_upsert_goal, estudos_list_goals, estudos_export_csv, estudos_import_csv,
-            sono_upsert_entry, sono_delete_entry, sono_list_entries, sono_upsert_goal, sono_get_goal, sono_export_csv, sono_import_csv,
-            calendar_add_event, calendar_update_event, calendar_delete_event, sync_br_holidays, calendar_list_events, calendar_list_upcoming_deadlines,
-            stats_get_cross_metrics, stats_get_performance_summary,
-            reading_list_books, reading_upsert_book, reading_delete_book, reading_upsert_session, reading_list_sessions, reading_delete_session, reading_upsert_goal, reading_list_goals, reading_export_json, reading_import_json, reading_search_books,
-            dictionary_search, dictionary_list, dictionary_add, dictionary_delete, dictionary_toggle_favorite, dictionary_suggestions,
-            movies_search, movies_list, movies_upsert, movies_delete, movies_toggle_favorite,
-            get_tmdb_api_key, set_tmdb_api_key,
-            reading_toggle_favorite,
-            tasks_list, tasks_upsert, tasks_toggle, tasks_delete,
-            notif_list, notif_unread_count, notif_mark_read, notif_mark_all_read, notif_delete, notif_clear_read, ensure_discord_invite,
-            get_app_version, get_log_path, read_app_logs, capture_screenshot,
-            save_avatar, get_avatar, delete_avatar, export_tasks_csv, export_habits_csv, import_tasks_csv, import_habits_csv,
-            movies_export_json, movies_import_json, dictionary_export_csv, dictionary_import_csv,
-            pre_update_backup, export_user_package, import_user_package, export_full_system_bundle, import_full_system_bundle, check_dnd_status,
-            check_github_update, open_app_data_folder
+            // Infra/Globais
+            global_test_notification, global_open_notification_settings, global_send_critical_notification, global_verify_master,
+            global_local_register, global_check_user_availability, global_local_login, global_get_local_user, global_list_local_users, 
+            global_delete_account, global_change_account_password, global_change_username, global_change_vault_password, 
+            global_revert_vault_to_master, global_has_separate_vault_password,
+            global_get_app_config, global_set_app_config, global_apply_internal_command, global_get_simulation_status, global_quit_app,
+            global_get_app_version, global_read_changelog, global_get_log_path, global_read_app_logs, global_capture_screenshot,
+            global_save_avatar, global_get_avatar, global_delete_avatar, global_check_dnd_status, global_check_github_update, 
+            global_open_app_data_folder, global_pre_update_backup, 
+            global_export_user_package, global_import_user_package, global_export_full_system_bundle, global_import_full_system_bundle,
+            global_export_raw_user_json, global_import_raw_user_json,
+            global_list_notification_sounds,
+            global_notif_list, global_notif_unread_count, global_notif_mark_read, global_notif_mark_all_read, global_notif_delete, global_notif_clear_read, global_ensure_discord_invite,
+
+            // Passwords
+            passwords::password_add_password, passwords::password_list_passwords, passwords::password_decrypt_entry, 
+            passwords::password_import_passwords, passwords::password_export_passwords, passwords::password_delete_password, 
+            passwords::password_update_password, passwords::password_check_vault, passwords::password_reset_vault, 
+            passwords::password_setup_local_vault,
+
+            // Pomodoro
+            pomodoro::pomodoro_get_pomodoro_state, pomodoro::pomodoro_save_pomodoro_state, 
+            pomodoro::pomodoro_record_pomodoro_session, pomodoro::pomodoro_get_pomodoro_history, 
+            pomodoro::pomodoro_clear_pomodoro_history,
+
+            // Alarms
+            alarms::alarm_list_alarms, alarms::alarm_add_alarm, alarms::alarm_update_alarm, 
+            alarms::alarm_delete_alarm, alarms::alarm_toggle_alarm,
+
+            // Habits
+            habits::habit_list_habits, habits::habit_add_habit, habits::habit_update_habit, 
+            habits::habit_mark_habit_done, habits::habit_use_habit_charge, habits::habit_reset_habit, 
+            habits::habit_hard_reset_habit, habits::habit_delete_habit, habits::habit_export_habits_csv, 
+            habits::habit_import_habits_csv,
+
+            // Notes
+            notes::note_list_notes, notes::note_list_note_items, notes::note_add_note, 
+            notes::note_update_note, notes::note_create_note_folder, notes::note_delete_note_folder, 
+            notes::note_move_note_item, notes::note_delete_note, notes::note_update_note_pinned, 
+            notes::note_open_notes_folder,
+
+            // Studies
+            studies::estudos_add_session, studies::estudos_update_session, studies::estudos_delete_session, 
+            studies::estudos_list_sessions, studies::estudos_upsert_goal, studies::estudos_list_goals, 
+            studies::estudos_export_csv, studies::estudos_import_csv,
+
+            // Sleep
+            sleep::sono_upsert_entry, sleep::sono_delete_entry, sleep::sono_list_entries, 
+            sleep::sono_upsert_goal, sleep::sono_get_goal, sleep::sono_export_csv, sleep::sono_import_csv,
+
+            // Calendar
+            calendar::calendar_add_event, calendar::calendar_update_event, calendar::sync_br_holidays, 
+            calendar::calendar_delete_event, calendar::calendar_list_events, calendar::calendar_list_upcoming_deadlines,
+
+            // Statistics
+            statistics::stats_get_cross_metrics, statistics::stats_get_performance_summary,
+
+            // Reading
+            reading::reading_list_books, reading::reading_upsert_book, reading::reading_delete_book, 
+            reading::reading_upsert_session, reading::reading_list_sessions, reading::reading_delete_session, 
+            reading::reading_upsert_goal, reading::reading_list_goals, reading::reading_export_json, 
+            reading::reading_import_json, reading::reading_search_books, reading::reading_toggle_favorite,
+
+            // Dictionary
+            dictionary::dictionary_search, dictionary::dictionary_list, dictionary::dictionary_add, 
+            dictionary::dictionary_delete, dictionary::dictionary_toggle_favorite, dictionary::dictionary_suggestions,
+            dictionary::dictionary_export_csv, dictionary::dictionary_import_csv,
+
+            // Movies
+            movies::movies_search, movies::movies_list, movies::movies_upsert, movies::movies_delete, 
+            movies::movies_toggle_favorite, movies::get_tmdb_api_key, movies::set_tmdb_api_key,
+            movies::movies_export_json, movies::movies_import_json,
+
+            // Tasks
+            tasks::tasks_list, tasks::tasks_upsert, tasks::tasks_toggle, tasks::tasks_delete, 
+            tasks::export_tasks_csv, tasks::import_tasks_csv,
+
+            // Flashcards
+            flashcards::flashcards_list_decks, flashcards::flashcards_add_deck, flashcards::flashcards_update_deck, 
+            flashcards::flashcards_delete_deck, flashcards::flashcards_list_cards, flashcards::flashcards_add_card, 
+            flashcards::flashcards_update_card, flashcards::flashcards_delete_card, flashcards::flashcards_record_review, 
+            flashcards::flashcards_export_json, flashcards::flashcards_import_json
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -78,6 +78,13 @@ const MODULE_DEFS: {
     color: "sky",
   },
   {
+    id: "flashcards",
+    label: "Flashcards",
+    description: "Crie baralhos de cartões e pratique repetição espaçada",
+    icon: BookOpen,
+    color: "blue",
+  },
+  {
     id: "movies",
     label: "Filmes",
     description: "Biblioteca de filmes assistidos e lista de desejos",

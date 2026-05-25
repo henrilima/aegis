@@ -93,7 +93,7 @@ export function HabitsReportCanvas({
 
       if (img) {
         ctx.save();
-        ctx.filter = "grayscale(100%) brightness(0.25)";
+        ctx.filter = "brightness(0.6)";
         const ca = canvas.width / canvas.height;
         const ia = img.width / img.height;
         let dW = canvas.width,
@@ -110,15 +110,19 @@ export function HabitsReportCanvas({
         ctx.drawImage(img, oX, oY, dW, dH);
         ctx.restore();
       } else {
-        ctx.fillStyle = "#050505";
+        ctx.fillStyle = "#1c1c1e";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
+      // Dark semi-transparent overlay to reduce background contrast
+      ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
       const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grad.addColorStop(0, "rgba(0,0,0,0.85)");
+      grad.addColorStop(0, "rgba(0,0,0,0.5)");
       grad.addColorStop(0.3, "transparent");
       grad.addColorStop(0.7, "transparent");
-      grad.addColorStop(1, "rgba(0,0,0,0.95)");
+      grad.addColorStop(1, "rgba(0,0,0,0.65)");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -134,7 +138,7 @@ export function HabitsReportCanvas({
       const dateStr = new Date()
         .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
         .toUpperCase();
-      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
       ctx.font = "600 32px Montserrat, sans-serif";
       ctx.fillText(dateStr, canvas.width / 2, 340);
 
@@ -158,8 +162,8 @@ export function HabitsReportCanvas({
       ctx.fillStyle = accent;
       ctx.fillText(perfLabel, canvas.width / 2, 730);
 
-      const cardColor = "rgba(15, 15, 15, 0.85)";
-      const borderColor = "rgba(255, 255, 255, 0.1)";
+      const cardColor = "rgba(36, 36, 40, 0.85)";
+      const borderColor = "rgba(255, 255, 255, 0.15)";
       const cx = canvas.width / 2;
 
       const drawIcon = (type: string, x: number, y: number) => {
@@ -224,7 +228,7 @@ export function HabitsReportCanvas({
         ctx.fillStyle = "#ffffff";
         ctx.font = "900 68px Montserrat, sans-serif";
         ctx.fillText(value, x + cw / 2, y + 190);
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.fillStyle = "rgba(255,255,255,0.5)";
         ctx.font = "700 27px Montserrat, sans-serif";
         ctx.fillText(label.toUpperCase(), x + cw / 2, y + 240);
         ctx.restore();

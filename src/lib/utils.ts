@@ -57,3 +57,58 @@ export function formatDateLocal(date?: Date): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Converte uma classe de cor (que pode ter variantes dark:) para a sua versão hover.
+ * Ex: "text-amber-600 dark:text-amber-500" -> "hover:text-amber-600 dark:hover:text-amber-500"
+ */
+export function toHoverClass(classStr: string): string {
+  if (!classStr) return "";
+  return classStr
+    .split(" ")
+    .map((cls) => {
+      if (cls.startsWith("dark:")) {
+        return `dark:hover:${cls.substring(5)}`;
+      }
+      return `hover:${cls}`;
+    })
+    .join(" ");
+}
+
+export function changeModule(route: string) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("aegis-navigate", { detail: route }));
+  }
+}
+
+export function closeAllModals() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("close-all-modals"));
+  }
+}
+
+export function openSettings() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("open-settings"));
+  }
+}
+
+export function closeSettings() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("close-settings"));
+  }
+}
+
+if (typeof window !== "undefined") {
+  // biome-ignore lint/suspicious/noExplicitAny: registrar funções no escopo global
+  const w = window as any;
+  w.changeModule = changeModule;
+  w.closeAllModals = closeAllModals;
+  w.openSettings = openSettings;
+  w.closeSettings = closeSettings;
+
+  w.mudarModulo = changeModule;
+  w.fecharTodosModais = closeAllModals;
+  w.abrirConfiguracoes = openSettings;
+  w.fecharConfiguracoes = closeSettings;
+}

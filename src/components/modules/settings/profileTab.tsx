@@ -92,7 +92,7 @@ export function ProfileTab({
 
     setIsSavingName(true);
     try {
-      await invoke("change_username", {
+      await invoke("global_change_username", {
         userId: user?.id,
         newUsername: newName,
       });

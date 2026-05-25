@@ -1,6 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { motion } from "framer-motion";
 import {
   Bookmark,
   BookmarkCheck,
@@ -18,6 +19,30 @@ import { getModuleColor } from "@/modules.config";
 import type { ReadingBook } from "../types";
 import { calculateProgress } from "../utils";
 import { BookDetailModal } from "./BookDetailModal";
+
+// Variantes de animação para entrada escalonada (staggered entrance)
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 260,
+      damping: 25,
+    },
+  },
+};
 
 interface LibraryTabProps {
   books: ReadingBook[];
@@ -312,7 +337,12 @@ function BookGrid({
   onToggleFavorite: (b: ReadingBook) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
       {books.map((book) => (
         <BookCard
           key={book.id}
@@ -323,7 +353,7 @@ function BookGrid({
           onToggleFavorite={onToggleFavorite}
         />
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -355,8 +385,18 @@ function BookCard({
   };
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: Card has nested action buttons
-    <div
+    // biome-ignore lint/a11y/useSemanticElements: O card possui botões de ação aninhados
+    <motion.div
+      variants={itemVariants}
+      whileHover={{
+        y: -4,
+        boxShadow: "0 12px 30px -10px rgba(0,0,0,0.15)",
+      }}
+      transition={{
+        type: "spring" as const,
+        stiffness: 300,
+        damping: 20,
+      }}
       className={cn(
         "group relative flex flex-row bg-card border border-border rounded-xl overflow-hidden transition-all cursor-pointer h-[150px]",
         theme.borderHover.replace("hover:", "hover:"),
@@ -498,6 +538,6 @@ function BookCard({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

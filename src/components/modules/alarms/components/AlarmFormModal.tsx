@@ -1,6 +1,7 @@
 "use client";
 
 import { AlarmClock, Clock, Timer, Volume2 } from "lucide-react";
+import { ColorPicker } from "@/components/global/ColorPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,7 +21,7 @@ import {
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { AlarmFormState } from "../hooks/useAlarmsLogic";
-import { ALARM_COLOR_KEYS, AVAILABLE_ICONS } from "../types";
+import { AVAILABLE_ICONS } from "../types";
 
 interface AlarmFormModalProps {
   open: boolean;
@@ -57,7 +58,9 @@ export function AlarmFormModal({
   setColor,
   playPreview,
 }: AlarmFormModalProps) {
-  const m = getColorTheme(getModuleColor("alarms"));
+  const defaultColor = getModuleColor("alarms");
+  const activeColor = form.color || defaultColor;
+  const m = getColorTheme(activeColor);
   const lc = "text-xs font-medium text-muted-foreground ml-0.5";
   const inputStyle = cn(
     "w-full bg-card border-border h-11 rounded-xl text-sm font-medium transition-all placeholder:text-neutral-700 focus:outline-none focus:ring-2",
@@ -188,25 +191,13 @@ export function AlarmFormModal({
                 <Label className={lc}>Identidade Visual</Label>
 
                 {/* Seletor de cor */}
-                <div className="flex flex-wrap gap-2 p-2 bg-background border border-border rounded-xl">
-                  {ALARM_COLOR_KEYS.map((c) => {
-                    const theme = getColorTheme(c);
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setColor(c)}
-                        className={cn(
-                          "w-6 h-6 rounded-full border-2 transition-all cursor-pointer",
-                          theme.solid,
-                          form.color === c
-                            ? "border-foreground scale-110"
-                            : "border-transparent opacity-60 hover:opacity-100",
-                        )}
-                      />
-                    );
-                  })}
-                </div>
+                <ColorPicker
+                  value={form.color || ""}
+                  onChange={(c) => setColor(c)}
+                  placeholder="Padrão"
+                  defaultColor={defaultColor}
+                  className="w-full"
+                />
 
                 {/* Seletor de ícone */}
                 <div className="grid grid-cols-4 gap-2 p-2 bg-background border border-border rounded-xl">

@@ -1,6 +1,5 @@
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
 import {
   Bell,
   Calendar,
@@ -24,6 +23,11 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/context/ThemeContext";
+import {
+  listNotificationSounds,
+  playNotificationSound,
+  resolveNotificationSound,
+} from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
 interface NotificationsTabProps {
@@ -158,17 +162,20 @@ export function NotificationsTab({
   const [availableSounds, setAvailableSounds] = useState<string[]>([]);
 
   useEffect(() => {
-    invoke<string[]>("list_notification_sounds").then((sounds) => {
+    listNotificationSounds().then((sounds) => {
       setAvailableSounds(sounds);
       if (sounds.length > 0 && !sounds.includes(notificationSound)) {
-        updateConfig("notificationSound", sounds[0]);
+        updateConfig(
+          "notificationSound",
+          resolveNotificationSound(notificationSound, sounds),
+        );
       }
     });
   }, [notificationSound, updateConfig]);
 
   const handleSoundChange = (val: string) => {
     updateConfig("notificationSound", val);
-    new Audio(`/sounds/${val}`).play().catch(console.error);
+    playNotificationSound(val).catch(console.error);
   };
 
   return (
@@ -227,7 +234,7 @@ export function NotificationsTab({
                   Prioridade Crítica
                 </span>
                 <p className="text-[11px] text-muted-foreground">
-                  Ignorar modo Foco do Windows.
+                  Ignorar modo Foco/Não Perturbe do sistema.
                 </p>
               </label>
             </div>
@@ -296,7 +303,9 @@ export function NotificationsTab({
               variant="outline"
               size="icon"
               className="h-10 w-10 border-border"
-              onClick={() => new Audio(`/sounds/${notificationSound}`).play()}
+              onClick={() =>
+                playNotificationSound(notificationSound).catch(console.error)
+              }
             >
               <Volume2 className="w-4 h-4" />
             </Button>

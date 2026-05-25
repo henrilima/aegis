@@ -1,10 +1,51 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import type { PomodoroHistory, PomodoroState } from "./types";
+
+/**
+ * Sintetiza um sinal sonoro agradável usando a Web Audio API.
+ * Reproduz um arpejo curto em Dó Maior (C5 → E5 → G5) com envelopes de ganho suaves.
+ */
+function playPomodoroChime() {
+  try {
+    const ctx = new AudioContext();
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0.35;
+    masterGain.connect(ctx.destination);
+
+    const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
+    const now = ctx.currentTime;
+
+    for (let i = 0; i < frequencies.length; i++) {
+      const osc = ctx.createOscillator();
+      const noteGain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.value = frequencies[i];
+
+      // Envelope suave de ataque → sustentação → decaimento
+      const noteStart = now + i * 0.15;
+      noteGain.gain.setValueAtTime(0, noteStart);
+      noteGain.gain.linearRampToValueAtTime(0.6, noteStart + 0.05);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.6);
+
+      osc.connect(noteGain);
+      noteGain.connect(masterGain);
+
+      osc.start(noteStart);
+      osc.stop(noteStart + 0.65);
+    }
+
+    // Limpa o contexto após a finalização de todas as notas
+    setTimeout(() => ctx.close(), 1500);
+  } catch {
+    // AudioContext pode não estar disponível em todos os ambientes
+  }
+}
 
 export function usePomodoroLogic() {
   const { user } = useAuth();
@@ -13,13 +54,17 @@ export function usePomodoroLogic() {
   const [history, setHistory] = useState<PomodoroHistory[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const prevCycleTypeRef = useRef<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await invoke<PomodoroHistory[]>("get_pomodoro_history", {
-        userId: String(user.id),
-      });
+      const res = await invoke<PomodoroHistory[]>(
+        "pomodoro_get_pomodoro_history",
+        {
+          userId: String(user.id),
+        },
+      );
       setHistory(res);
     } catch (err) {
       console.error(err);
@@ -50,9 +95,20 @@ export function usePomodoroLogic() {
   const fetchState = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await invoke<PomodoroState>("get_pomodoro_state", {
+      const res = await invoke<PomodoroState>("pomodoro_get_pomodoro_state", {
         userId: String(user.id),
       });
+
+      // Detecta a transição de ciclo e toca o sinal sonoro
+      if (
+        prevCycleTypeRef.current !== null &&
+        res.cycleType !== prevCycleTypeRef.current &&
+        res.isRunning
+      ) {
+        playPomodoroChime();
+      }
+      prevCycleTypeRef.current = res.cycleType;
+
       setState(res);
       updateDisplayTime(res);
       fetchHistory();
@@ -99,7 +155,7 @@ export function usePomodoroLogic() {
         isStarting && state.cyclesCompleted === 0 ? "Work" : state.cycleType,
     };
     try {
-      await invoke("save_pomodoro_state", {
+      await invoke("pomodoro_save_pomodoro_state", {
         userId: String(user.id),
         pomoState: newState,
       });
@@ -122,7 +178,9 @@ export function usePomodoroLogic() {
         endTime: simulatedNow.toISOString(),
       };
       try {
-        await invoke("record_pomodoro_session", { session: historyEntry });
+        await invoke("pomodoro_record_pomodoro_session", {
+          session: historyEntry,
+        });
         toast.success("Log salvo!");
       } catch (e) {
         console.error(e);
@@ -136,7 +194,7 @@ export function usePomodoroLogic() {
       accumulatedSeconds: 0,
       cycleType: "Work",
     };
-    await invoke("save_pomodoro_state", {
+    await invoke("pomodoro_save_pomodoro_state", {
       userId: String(user.id),
       pomoState: newState,
     });
@@ -148,7 +206,9 @@ export function usePomodoroLogic() {
   const clearHistory = useCallback(async () => {
     if (!user) return;
     try {
-      await invoke("clear_pomodoro_history", { userId: String(user.id) });
+      await invoke("pomodoro_clear_pomodoro_history", {
+        userId: String(user.id),
+      });
       setHistory([]);
       toast.info("Histórico limpo");
     } catch {
@@ -161,7 +221,7 @@ export function usePomodoroLogic() {
       if (!state || !user) return;
       const num = Math.max(1, parseInt(val, 10) || 1);
       const newState = { ...state, [key]: num };
-      await invoke("save_pomodoro_state", {
+      await invoke("pomodoro_save_pomodoro_state", {
         userId: String(user.id),
         pomoState: newState,
       });

@@ -14,6 +14,8 @@ interface ThemeContextType {
   accentColor: ThemeColorKey;
   setAccentColor: (color: ThemeColorKey) => void;
   themeStyles: ReturnType<typeof getThemeColor>;
+  appMode: "default" | "no_sidebar" | "portal";
+  setAppMode: (mode: "default" | "no_sidebar" | "portal") => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -21,6 +23,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ChromaticThemeId>(FALLBACK_THEME);
   const [accentColor, setAccentColorState] = useState<ThemeColorKey>("blue");
+  const [appMode, setAppModeState] = useState<
+    "default" | "no_sidebar" | "portal"
+  >("default");
 
   // Carrega o tema do localStorage ao montar o componente
   useEffect(() => {
@@ -54,7 +59,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       document.documentElement.classList.add("dark");
     }
+
+    const savedAppMode = localStorage.getItem("aegis-app-mode") as
+      | "default"
+      | "no_sidebar"
+      | "portal"
+      | null;
+    if (
+      savedAppMode &&
+      ["default", "no_sidebar", "portal"].includes(savedAppMode)
+    ) {
+      setAppModeState(savedAppMode);
+    }
   }, []);
+
+  const setAppMode = (mode: "default" | "no_sidebar" | "portal") => {
+    setAppModeState(mode);
+    localStorage.setItem("aegis-app-mode", mode);
+  };
 
   const setTheme = (newTheme: ChromaticThemeId) => {
     setThemeState(newTheme);
@@ -92,7 +114,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider
-      value={{ theme, setTheme, accentColor, setAccentColor, themeStyles }}
+      value={{
+        theme,
+        setTheme,
+        accentColor,
+        setAccentColor,
+        themeStyles,
+        appMode,
+        setAppMode,
+      }}
     >
       {children}
     </ThemeContext.Provider>

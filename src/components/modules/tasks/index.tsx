@@ -429,12 +429,9 @@ export default function TasksPage() {
           icon={ListTodo}
           title="Nenhuma tarefa ainda"
           description="Sua lista está vazia. Comece criando uma nova tarefa para se organizar."
-          actionLabel="Criar Tarefa"
-          onAction={() => setIsModalOpen(true)}
-          actionIcon={Plus}
         />
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pr-2">
           {rootTasks.map((task, i) => renderTask(task, i))}
         </div>
       )}

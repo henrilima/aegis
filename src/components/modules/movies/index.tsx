@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { MovieCanvasModal } from "./components/MovieCanvasModal";
 import { MovieDetailModal } from "./components/MovieDetailModal";
 import { MovieFormModal } from "./components/MovieFormModal";
 import { MovieSearchModal } from "./components/MovieSearchModal";
@@ -50,6 +51,8 @@ export default function MoviesPage() {
   const [movieToDelete, setMovieToDelete] = useState<number | null>(null);
   const [detailMovie, setDetailMovie] = useState<Movie | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [isCanvasModalOpen, setIsCanvasModalOpen] = useState(false);
+  const [canvasMovie, setCanvasMovie] = useState<Movie | null>(null);
 
   const uid = user ? String(user.id) : "";
 
@@ -397,6 +400,20 @@ export default function MoviesPage() {
           setIsFormModalOpen(true);
         }}
         onUpdateRating={handleUpdateRating}
+        onGenerateCanvas={(movie) => {
+          setDetailMovie(null);
+          setCanvasMovie(movie);
+          setIsCanvasModalOpen(true);
+        }}
+      />
+
+      <MovieCanvasModal
+        isOpen={isCanvasModalOpen}
+        onClose={() => {
+          setIsCanvasModalOpen(false);
+          setCanvasMovie(null);
+        }}
+        movie={canvasMovie}
       />
 
       <MoviesInfoModal show={showInfo} onClose={() => setShowInfo(false)} />

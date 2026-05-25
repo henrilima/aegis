@@ -155,8 +155,6 @@ export default function AlarmsPage() {
           icon={AlarmClock}
           title="Silêncio total por aqui"
           description="Você ainda não tem nenhum alarme configurado. Crie lembretes personalizados para não esquecer de nada importante."
-          actionLabel="Criar primeiro alarme"
-          onAction={openNew}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

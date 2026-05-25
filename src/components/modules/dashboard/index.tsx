@@ -1,14 +1,20 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AlarmFormState } from "@/components/modules/alarms/hooks/useAlarmsLogic";
 import { DashboardConfigModal } from "@/components/modules/dashboard/components/modals/DashboardConfigModal";
+import { NAV_GROUPS } from "@/components/sidebar/appSidebar";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { type ModuleId, useModules } from "@/context/ModuleContext";
+import { useNavigation } from "@/context/NavigationContext";
+import { useTheme } from "@/context/ThemeContext";
 import { useTime } from "@/context/TimeContext";
+import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor, PORTAL_DESCRIPTIONS } from "@/modules.config";
 import type { CalendarEvent } from "../calendar/types";
 import type { ReadingSession } from "../reading/types";
 import type { Task } from "../tasks/types";
@@ -18,10 +24,36 @@ import type { Habit, SleepEntry, StudySession } from "./types";
 import { useDashboardData, useWidgetLayout } from "./useDashboardData";
 import { WIDGET_REGISTRY } from "./widgets/registry";
 
+// Variantes de animação escalonada (staggered entrance)
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 260,
+      damping: 25,
+    },
+  },
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { now: time, isSimulated } = useTime();
   const { isModuleEnabled } = useModules();
+  const { appMode } = useTheme();
+  const { navigate } = useNavigation();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [taskToConfirm, setTaskToConfirm] = useState<{
     task: Task;
@@ -69,6 +101,83 @@ export default function Dashboard() {
     (h) => h.habitType === "Positive",
   ).length;
 
+  if (appMode === "portal") {
+    const portalModules = NAV_GROUPS.flatMap((g) => g.items).filter(
+      (item) =>
+        item.route !== "dashboard" && isModuleEnabled(item.route as ModuleId),
+    );
+
+    return (
+      <div className="flex flex-col items-center w-full min-h-screen bg-background p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
+        <div className="w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0">
+          <div className="flex-none px-4 sm:px-0 mt-4 sm:mt-0">
+            <DashboardHeader
+              time={time}
+              greeting="Olá"
+              user={user}
+              doneTodayCount={doneTodayCount}
+              positiveHabitsCount={positiveHabitsCount}
+              pendingTasksCount={pendingTasksCount}
+              onOpenConfig={() => setIsConfigOpen(true)}
+              isSimulated={isSimulated}
+            />
+          </div>
+
+          <div className="relative flex-1 px-4 sm:px-0 mb-20">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto"
+            >
+              {portalModules.map((item) => {
+                const Icon = item.icon;
+                const mColor = getModuleColor(item.route);
+                const mStyles = getColorTheme(mColor);
+                const desc =
+                  PORTAL_DESCRIPTIONS[item.route] || "Acesse o módulo.";
+
+                return (
+                  <motion.div
+                    key={item.route}
+                    variants={itemVariants}
+                    onClick={() => navigate(item.route)}
+                    className={cn(
+                      "p-6 bg-card border border-border rounded-3xl flex flex-col gap-4 transition-all duration-300 hover:border-border/80 group cursor-pointer relative overflow-hidden min-h-[140px]",
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "p-2.5 rounded-2xl border transition-all duration-300",
+                          mStyles.bg,
+                          mStyles.border,
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "w-5 h-5 transition-transform group-hover:scale-110",
+                            mStyles.text,
+                          )}
+                        />
+                      </div>
+                      <span className="text-base font-black text-foreground">
+                        {item.title}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                      {desc}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center w-full min-h-screen bg-background p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
       <div className="w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0">
@@ -86,7 +195,12 @@ export default function Dashboard() {
         </div>
 
         <div className="relative flex-1 px-4 sm:px-0 mb-20 whitespace-normal">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto"
+          >
             {activeWidgetIds
               .filter((id) => isModuleEnabled(id as ModuleId))
               .map((id) => {
@@ -133,7 +247,7 @@ export default function Dashboard() {
                           : data.pomodoro.cycleType,
                     };
                     try {
-                      await invoke("save_pomodoro_state", {
+                      await invoke("pomodoro_save_pomodoro_state", {
                         userId: String(user.id),
                         pomoState: newState,
                       });
@@ -154,7 +268,7 @@ export default function Dashboard() {
                         endTime: time.toISOString(),
                       };
                       try {
-                        await invoke("record_pomodoro_session", {
+                        await invoke("pomodoro_record_pomodoro_session", {
                           session: historyEntry,
                         });
                       } catch {}
@@ -167,7 +281,7 @@ export default function Dashboard() {
                       accumulatedSeconds: 0,
                       cycleType: "Work",
                     };
-                    await invoke("save_pomodoro_state", {
+                    await invoke("pomodoro_save_pomodoro_state", {
                       userId: String(user.id),
                       pomoState: newState,
                     });
@@ -256,7 +370,7 @@ export default function Dashboard() {
                         color: form.color || "red",
                         enabled: true,
                       };
-                      await invoke("add_alarm", { alarm: alarmData });
+                      await invoke("alarm_add_alarm", { alarm: alarmData });
                       fetchAll();
                       toast.success("Alarme adicionado!");
                     } catch {
@@ -424,18 +538,19 @@ export default function Dashboard() {
                 }
 
                 return (
-                  <div
+                  <motion.div
                     key={id}
-                    className="w-full h-full min-h-[320px] lg:min-h-[380px]"
+                    variants={itemVariants}
+                    className="w-full h-full min-h-[300px] lg:min-h-[340px]"
                   >
                     <WidgetComponent
                       {...widgetProps}
                       className="h-full w-full"
                     />
-                  </div>
+                  </motion.div>
                 );
               })}
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -500,7 +615,7 @@ export default function Dashboard() {
             setHabitToConfirm(null);
             if (hId === undefined) return;
             try {
-              await invoke("mark_habit_done", {
+              await invoke("habit_mark_habit_done", {
                 id: hId,
                 userId: String(user?.id),
               });

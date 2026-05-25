@@ -16,7 +16,8 @@ export type ModuleId =
   | "pomodoro"
   | "sleep"
   | "alarms"
-  | "statistics";
+  | "statistics"
+  | "flashcards";
 
 interface ModuleContextType {
   enabledModules: ModuleId[];
@@ -38,6 +39,7 @@ const DEFAULT_MODULES: ModuleId[] = [
   "sleep",
   "alarms",
   "statistics",
+  "flashcards",
 ];
 
 const ModuleContext = createContext<ModuleContextType | undefined>(undefined);
@@ -50,12 +52,23 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem("aegis_enabled_modules");
     if (saved) {
       try {
-        setEnabledModules(JSON.parse(saved));
+        const modules = JSON.parse(saved) as ModuleId[];
+        const migrated = localStorage.getItem(
+          "aegis_flashcards_enabled_default",
+        );
+        if (!migrated) {
+          if (!modules.includes("flashcards")) {
+            modules.push("flashcards");
+          }
+          localStorage.setItem("aegis_flashcards_enabled_default", "true");
+        }
+        setEnabledModules(modules);
       } catch {
         setEnabledModules(DEFAULT_MODULES);
       }
     } else {
       setEnabledModules(DEFAULT_MODULES);
+      localStorage.setItem("aegis_flashcards_enabled_default", "true");
     }
     setMounted(true);
   }, []);

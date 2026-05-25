@@ -1,7 +1,7 @@
 "use client";
 
-import { Film, Heart, Star } from "lucide-react";
-import { cn, getColorTheme } from "@/lib/utils";
+import { Film, Star } from "lucide-react";
+import { getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Movie } from "../../../movies/types";
 import { BaseWidget } from "../BaseWidget";
@@ -20,7 +20,7 @@ export function MoviesWidget({
   onToggleInteractive,
 }: MoviesWidgetProps) {
   const color = getModuleColor("movies");
-  const theme = getColorTheme(color);
+  const _theme = getColorTheme(color);
 
   const recentWatched = movies
     .filter((m) => m.status === "Watched")
@@ -41,7 +41,7 @@ export function MoviesWidget({
       onToggleInteractive={onToggleInteractive}
     >
       {!hasData ? (
-        <div className="flex flex-col items-center justify-center h-full py-6 text-center">
+        <div className="flex flex-col items-start justify-center h-full py-6">
           <Film className="w-8 h-8 text-muted-foreground/20 mb-2" />
           <p className="text-xs text-muted-foreground">
             Nenhum filme adicionado.
@@ -51,48 +51,56 @@ export function MoviesWidget({
         <div className="space-y-4">
           {recentWatched.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-muted-foreground">
+              <p className="text-[10px] font-bold text-muted-foreground px-1">
                 Vistos recentemente
               </p>
               <div className="space-y-1.5">
                 {recentWatched.map((movie) => (
                   <div
                     key={movie.id}
-                    className="flex items-center gap-2 group cursor-default"
+                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
                   >
-                    <div className="w-8 h-10 rounded-md overflow-hidden bg-muted shrink-0 border border-border/50">
-                      {movie.thumbnail ? (
-                        <img
-                          src={movie.thumbnail}
-                          alt={movie.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Film className="w-3 h-3 text-muted-foreground/30" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate leading-none">
-                        {movie.title}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star
-                          className={cn("w-2.5 h-2.5 fill-current", theme.text)}
-                        />
-                        <span
-                          className={cn("text-[10px] font-bold", theme.text)}
-                        >
-                          {movie.stars}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-10 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 shrink-0">
+                        {movie.thumbnail ? (
+                          <img
+                            src={movie.thumbnail}
+                            alt={movie.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-rose-500">
+                            <Film className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold text-foreground truncate">
+                          {movie.title}
+                        </span>
+                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                          Filme Assistido
                         </span>
                       </div>
                     </div>
-                    {movie.isFavorite && (
-                      <Heart
-                        className={cn("w-3 h-3 fill-current", theme.text)}
-                      />
-                    )}
+
+                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                      <div className="flex items-center gap-0.5">
+                        <Star className="w-3 h-3 text-rose-600 dark:text-rose-500 fill-rose-600 dark:fill-rose-500" />
+                        <span className="text-xs font-bold leading-none text-rose-600 dark:text-rose-450">
+                          {movie.stars}
+                        </span>
+                      </div>
+                      {movie.isFavorite ? (
+                        <span className="text-[9px] font-semibold text-rose-600 dark:text-rose-500 block mt-1">
+                          Favorito
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                          Avaliado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -120,7 +128,7 @@ export function MoviesWidget({
                         </div>
                       )}
                     </div>
-                    <p className="text-[8px] font-medium truncate text-center">
+                    <p className="text-[8px] font-medium truncate text-left">
                       {movie.title}
                     </p>
                   </div>

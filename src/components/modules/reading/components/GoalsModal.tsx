@@ -2,6 +2,7 @@
 
 import { Target, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { ReadingGoal } from "../types";
@@ -155,7 +156,7 @@ export function GoalsModal({
                     </span>
                   </div>
                   <div className="flex items-center gap-3 relative">
-                    <input
+                    <Input
                       type="number"
                       value={
                         goal.factor === 60

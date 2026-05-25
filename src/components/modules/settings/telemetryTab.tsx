@@ -165,7 +165,7 @@ export function TelemetryTab() {
   const loadLogs = useCallback(async () => {
     setIsLoading(true);
     try {
-      const raw = await invoke<string>("read_app_logs");
+      const raw = await invoke<string>("global_read_app_logs");
       const lines = raw.split("\n").filter(Boolean).map(parseLine);
       setLogContent(lines);
     } catch {
@@ -185,7 +185,7 @@ export function TelemetryTab() {
 
   const loadLogPath = useCallback(async () => {
     try {
-      const path = await invoke<string>("get_log_path");
+      const path = await invoke<string>("global_get_log_path");
       setLogPath(path);
     } catch {
       setLogPath("");

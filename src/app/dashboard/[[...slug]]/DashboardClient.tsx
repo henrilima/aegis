@@ -10,15 +10,14 @@ import Calendar from "@/components/modules/calendar";
 
 import Dashboard from "@/components/modules/dashboard";
 import Dictionary from "@/components/modules/dictionary";
+import Flashcards from "@/components/modules/flashcards";
 import Habits from "@/components/modules/habits";
 import Movies from "@/components/modules/movies";
 import Notes from "@/components/modules/notes";
 import Passwords from "@/components/modules/passwords";
 import Pomodoro from "@/components/modules/pomodoro";
 import Reading from "@/components/modules/reading";
-
 import Sleep from "@/components/modules/sleep";
-
 import Statistics from "@/components/modules/statistics";
 import Studies from "@/components/modules/studies";
 import Tasks from "@/components/modules/tasks";
@@ -41,7 +40,9 @@ export default function DashboardClient() {
   useEffect(() => {
     if (isAuthenticated && user?.id && !discordInviteCalled.current) {
       discordInviteCalled.current = true;
-      invoke("ensure_discord_invite", { userId: user.id }).catch(console.error);
+      invoke("global_ensure_discord_invite", { userId: user.id }).catch(
+        console.error,
+      );
     }
   }, [isAuthenticated, user?.id]);
 
@@ -55,6 +56,8 @@ export default function DashboardClient() {
         return <Dashboard />;
       case "dictionary":
         return <Dictionary />;
+      case "flashcards":
+        return <Flashcards />;
 
       case "passwords":
         return <Passwords />;

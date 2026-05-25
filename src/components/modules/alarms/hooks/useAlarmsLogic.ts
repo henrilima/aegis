@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { listNotificationSounds, playNotificationSound } from "@/lib/sounds";
 import type { AppAlarm } from "../types";
 
 export interface AlarmFormState {
@@ -25,7 +26,7 @@ const DEFAULT_FORM: AlarmFormState = {
   intervalMinutes: 30,
   soundFile: "Plin.mp3",
   iconName: "Bell",
-  color: "red",
+  color: "",
 };
 
 export function useAlarmsLogic() {
@@ -53,7 +54,9 @@ export function useAlarmsLogic() {
   const fetchAlarms = useCallback(async () => {
     if (!uid) return;
     try {
-      const res = await invoke<AppAlarm[]>("list_alarms", { userId: uid });
+      const res = await invoke<AppAlarm[]>("alarm_list_alarms", {
+        userId: uid,
+      });
       setAlarms(res);
     } catch (err) {
       console.error(err);
@@ -65,9 +68,7 @@ export function useAlarmsLogic() {
 
   useEffect(() => {
     fetchAlarms();
-    invoke<string[]>("list_notification_sounds")
-      .then(setAvailableSounds)
-      .catch(console.error);
+    listNotificationSounds().then(setAvailableSounds).catch(console.error);
   }, [fetchAlarms]);
 
   const handleSave = async () => {
@@ -107,10 +108,10 @@ export function useAlarmsLogic() {
       };
 
       if (form.editingId) {
-        await invoke("update_alarm", { alarm: alarmData });
+        await invoke("alarm_update_alarm", { alarm: alarmData });
         toast.success("Alarme atualizado!");
       } else {
-        await invoke("add_alarm", { alarm: alarmData });
+        await invoke("alarm_add_alarm", { alarm: alarmData });
         toast.success("Alarme programado!");
       }
 
@@ -131,7 +132,7 @@ export function useAlarmsLogic() {
 
   const handleDelete = async (id: number) => {
     try {
-      await invoke("delete_alarm", { id, userId: uid });
+      await invoke("alarm_delete_alarm", { id, userId: uid });
       fetchAlarms();
       toast.success("Alarme removido");
     } catch {
@@ -144,7 +145,7 @@ export function useAlarmsLogic() {
     try {
       // Delete in parallel or sequentially. We'll do sequentially for simplicity and safety.
       for (const id of ids) {
-        await invoke("delete_alarm", { id, userId: uid });
+        await invoke("alarm_delete_alarm", { id, userId: uid });
       }
       fetchAlarms();
       toast.success(`${ids.length} alarmes removidos`);
@@ -157,7 +158,7 @@ export function useAlarmsLogic() {
     // Atualização otimista: reflete na UI antes de confirmar no backend
     setAlarms((prev) => prev.map((a) => (a.id === id ? { ...a, enabled } : a)));
     try {
-      await invoke("toggle_alarm", { id, userId: uid });
+      await invoke("alarm_toggle_alarm", { id, userId: uid });
     } catch {
       fetchAlarms();
       toast.error("Erro ao alterar status");
@@ -173,7 +174,7 @@ export function useAlarmsLogic() {
       intervalMinutes: alarm.intervalMinutes || 30,
       soundFile: alarm.soundFile,
       iconName: alarm.icon,
-      color: alarm.color || "red",
+      color: alarm.color || "",
     });
     setIsModalOpen(true);
   };
@@ -184,10 +185,7 @@ export function useAlarmsLogic() {
   };
 
   const playPreview = (sound: string) => {
-    const audio = new Audio(`/sounds/${sound}`);
-    audio
-      .play()
-      .catch(() => new Audio(`sounds/${sound}`).play().catch(console.error));
+    playNotificationSound(sound).catch(console.error);
   };
 
   return {

@@ -53,27 +53,27 @@ export function SonoWidget({
         <div className="flex flex-col gap-[4cqw] @sm:gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-[6cqw] @sm:gap-6">
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl @sm:text-3xl font-black text-foreground tabular-nums">
+                  <span className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                     {avgSleepMin > 0 ? formatDurationMin(avgSleepMin) : "-"}
                   </span>
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Média
                 </p>
               </div>
               <div className="w-px h-8 bg-muted" />
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl @sm:text-3xl font-black text-foreground tabular-nums">
+                  <span className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
                     {avgQuality}
                   </span>
                   <span className="text-xs font-bold text-muted-foreground">
                     /5
                   </span>
                 </div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+                <p className="text-[10px] font-bold text-muted-foreground mt-1">
                   Qualidade
                 </p>
               </div>
@@ -113,15 +113,15 @@ export function SonoWidget({
                 </span>
                 <span className={theme.text}>{sleepPct}%</span>
               </div>
-              <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
                     sleepPct >= 90
                       ? "bg-emerald-500"
                       : sleepPct >= 70
-                        ? theme.text.replace("text-", "bg-")
-                        : "bg-red-500",
+                        ? theme.solid
+                        : "bg-rose-500 dark:bg-red-500",
                   )}
                   style={{ width: `${sleepPct}%` }}
                 />
@@ -133,47 +133,53 @@ export function SonoWidget({
             {recentSleep.slice(0, 3).map((e, i) => (
               <div
                 key={e.id ?? i}
-                className="flex items-center justify-between p-[2cqw] @sm:p-2 rounded-xl bg-neutral-800/30 border border-border/50"
+                className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
               >
-                <div className="flex items-center gap-[2cqw] @sm:gap-2 min-w-0">
-                  <div
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      theme.bgHover
-                        .replace("hover:bg", "bg")
-                        .replace("/20", "/60"),
-                    )}
-                  />
-                  <span className="text-[3cqw] @sm:text-xs font-medium text-muted-foreground truncate">
-                    {formatDateShort(e.date)}
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-cyan-500">
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-foreground truncate">
+                      Registro de Sono
+                    </span>
+                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                      {formatDateShort(e.date)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-[3cqw] @sm:gap-3">
-                  <span className="text-[2.5cqw] @sm:text-[10px] font-bold text-muted-foreground">
+
+                <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                  <span
+                    className={cn(
+                      "block text-xs font-bold leading-none",
+                      theme.text,
+                    )}
+                  >
                     {formatDurationMin(e.durationMinutes)}
                   </span>
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 mt-1">
                     <Star
                       className={cn(
-                        "w-[2.5cqw] h-[2.5cqw] @sm:w-2.5 @sm:h-2.5 fill-current",
+                        "w-2.5 h-2.5 fill-current",
                         e.quality >= 4
-                          ? "text-emerald-600 dark:text-emerald-400"
+                          ? "text-emerald-600 dark:text-emerald-500"
                           : e.quality >= 3
-                            ? theme.text
-                            : "text-rose-400",
+                            ? "text-amber-600 dark:text-amber-500"
+                            : "text-rose-500 dark:text-rose-450",
                       )}
                     />
                     <span
                       className={cn(
-                        "text-[2.5cqw] @sm:text-[10px] font-bold",
+                        "text-[9px] font-semibold",
                         e.quality >= 4
-                          ? "text-emerald-600 dark:text-emerald-400"
+                          ? "text-emerald-600 dark:text-emerald-500"
                           : e.quality >= 3
-                            ? theme.text
-                            : "text-rose-400",
+                            ? "text-amber-600 dark:text-amber-500"
+                            : "text-rose-500 dark:text-rose-450",
                       )}
                     >
-                      {e.quality}
+                      {e.quality}/5 Q.
                     </span>
                   </div>
                 </div>

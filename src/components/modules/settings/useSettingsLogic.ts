@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { type AppRoute, useNavigation } from "@/context/NavigationContext";
+import {
+  listNotificationSounds,
+  playNotificationSound,
+  resolveNotificationSound,
+} from "@/lib/sounds";
 
 export type Tab =
   | "profile"
@@ -36,6 +41,9 @@ export interface AppConfig {
   appZoom?: number;
   showSidebarTrigger: boolean;
   showFloatingTrigger: boolean;
+  dashboardClockStyle: string;
+  dashboardClockAnimated: boolean;
+  dashboardHeaderStyle?: string;
 }
 
 export function useSettingsLogic() {
@@ -64,6 +72,9 @@ export function useSettingsLogic() {
   const [appZoom, setAppZoom] = useState(100);
   const [showSidebarTrigger, setShowSidebarTrigger] = useState(true);
   const [showFloatingTrigger, setShowFloatingTrigger] = useState(true);
+  const [dashboardClockStyle, setDashboardClockStyle] = useState("default");
+  const [dashboardClockAnimated, setDashboardClockAnimated] = useState(true);
+  const [dashboardHeaderStyle, setDashboardHeaderStyle] = useState("default");
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const { navigate, setSettingsOpen } = useNavigation();
   const username = user?.username || "Usuário";
@@ -71,7 +82,10 @@ export function useSettingsLogic() {
 
   const loadConfig = useCallback(async () => {
     try {
-      const config = await invoke<AppConfig>("get_app_config");
+      const [config, sounds] = await Promise.all([
+        invoke<AppConfig>("global_get_app_config"),
+        listNotificationSounds().catch(() => [] as string[]),
+      ]);
       setMinimizeOnClose(config.minimizeOnClose);
 
       try {
@@ -99,7 +113,15 @@ export function useSettingsLogic() {
       setNotifEventUpcoming(config.notifEventUpcoming);
       setNotifEventUpcomingTime(config.notifEventUpcomingTime);
       setNotifSleepTargetHours(config.notifSleepTargetHours);
-      setNotificationSound(config.notificationSound);
+      let activeSound = config.notificationSound;
+      if (activeSound && sounds.length > 0 && !sounds.includes(activeSound)) {
+        activeSound = resolveNotificationSound(activeSound, sounds);
+        const updatedConfig = { ...config, notificationSound: activeSound };
+        invoke("global_set_app_config", { config: updatedConfig }).catch(
+          console.error,
+        );
+      }
+      setNotificationSound(activeSound);
       if (config.tmdbApiKey !== undefined) setTmdbApiKey(config.tmdbApiKey);
       if (config.weatherLocation !== undefined)
         setWeatherLocation(config.weatherLocation);
@@ -110,6 +132,12 @@ export function useSettingsLogic() {
         setShowSidebarTrigger(config.showSidebarTrigger);
       if (config.showFloatingTrigger !== undefined)
         setShowFloatingTrigger(config.showFloatingTrigger);
+      if (config.dashboardClockStyle !== undefined)
+        setDashboardClockStyle(config.dashboardClockStyle);
+      if (config.dashboardClockAnimated !== undefined)
+        setDashboardClockAnimated(config.dashboardClockAnimated);
+      if (config.dashboardHeaderStyle !== undefined)
+        setDashboardHeaderStyle(config.dashboardHeaderStyle);
       setIsConfigLoading(false);
     } catch (err) {
       console.error("Failed to load config:", err);
@@ -153,11 +181,14 @@ export function useSettingsLogic() {
       appZoom,
       showSidebarTrigger,
       showFloatingTrigger,
+      dashboardClockStyle,
+      dashboardClockAnimated,
+      dashboardHeaderStyle,
       [key]: value,
     };
 
     try {
-      await invoke("set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", { config: newConfig });
       window.dispatchEvent(new Event("aegis-config-changed"));
       if (key === "notifSleepBedtime") setNotifSleepBedtime(value as boolean);
       if (key === "notifSleepBedtimeTime")
@@ -184,6 +215,12 @@ export function useSettingsLogic() {
       if (key === "showSidebarTrigger") setShowSidebarTrigger(value as boolean);
       if (key === "showFloatingTrigger")
         setShowFloatingTrigger(value as boolean);
+      if (key === "dashboardClockStyle")
+        setDashboardClockStyle(value as string);
+      if (key === "dashboardClockAnimated")
+        setDashboardClockAnimated(value as boolean);
+      if (key === "dashboardHeaderStyle")
+        setDashboardHeaderStyle(value as string);
       toast.success("Configuração atualizada");
     } catch (err) {
       console.error("Failed to save config:", err);
@@ -219,10 +256,12 @@ export function useSettingsLogic() {
       appZoom,
       showSidebarTrigger,
       showFloatingTrigger,
+      dashboardClockStyle,
+      dashboardClockAnimated,
     };
 
     try {
-      await invoke("set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", { config: newConfig });
       window.dispatchEvent(new Event("aegis-config-changed"));
 
       if (key === "autostart") {
@@ -268,10 +307,12 @@ export function useSettingsLogic() {
       appZoom,
       showSidebarTrigger,
       showFloatingTrigger,
+      dashboardClockStyle,
+      dashboardClockAnimated,
     };
 
     try {
-      await invoke("set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", { config: newConfig });
       window.dispatchEvent(new Event("aegis-config-changed"));
       setWeekStartDay(value);
       toast.success("Início da semana atualizado");
@@ -306,10 +347,12 @@ export function useSettingsLogic() {
       appZoom,
       showSidebarTrigger,
       showFloatingTrigger,
+      dashboardClockStyle,
+      dashboardClockAnimated,
     };
 
     try {
-      await invoke("set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", { config: newConfig });
       setShowHolidays(value);
       toast.success(
         value
@@ -347,10 +390,12 @@ export function useSettingsLogic() {
       appZoom,
       showSidebarTrigger,
       showFloatingTrigger,
+      dashboardClockStyle,
+      dashboardClockAnimated,
     };
 
     try {
-      await invoke("set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", { config: newConfig });
       setAutoReadNotifications(value);
       toast.success(
         value
@@ -365,8 +410,8 @@ export function useSettingsLogic() {
 
   const handleTestNotification = async () => {
     try {
-      await invoke("test_notification");
-      toast.info("Comando de teste enviado ao Windows");
+      await invoke("global_test_notification");
+      toast.info("Comando de teste enviado ao sistema");
     } catch (e) {
       toast.error(`Erro ao testar: ${e}`);
     }
@@ -408,13 +453,13 @@ export function useSettingsLogic() {
 
       // 4. Teste de som global
       if (normalizedCmd === "sound test") {
-        new Audio(`/sounds/${notificationSound}`).play().catch(console.error);
+        playNotificationSound(notificationSound).catch(console.error);
         toast.success("Reproduzindo som de notificação atual.");
         return;
       }
 
       // Se não for um comando do Frontend, envia pro Backend (time skipto, db, sys info, etc)
-      const response = await invoke<string>("apply_internal_command", {
+      const response = await invoke<string>("global_apply_internal_command", {
         command: normalizedCmd,
       });
       toast.success(response);
@@ -444,6 +489,9 @@ export function useSettingsLogic() {
     appZoom,
     showSidebarTrigger,
     showFloatingTrigger,
+    dashboardClockStyle,
+    dashboardClockAnimated,
+    dashboardHeaderStyle,
     updateConfigField,
     showHolidays,
     username,
@@ -457,7 +505,7 @@ export function useSettingsLogic() {
     handleDeleteAccount: async (password: string) => {
       if (!user?.id) return;
       try {
-        await invoke("delete_account", { userId: user.id, password });
+        await invoke("global_delete_account", { userId: user.id, password });
         toast.success("Conta deletada permanentemente");
         logout();
       } catch (err) {

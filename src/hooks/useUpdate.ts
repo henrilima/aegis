@@ -12,7 +12,14 @@ export function useUpdate() {
         const update = await check();
         setUpdateAvailable(!!update);
       } catch (err) {
-        console.error("[useUpdate] Erro ao verificar atualizações:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes("None of the fallback platforms")) {
+          console.warn(
+            "[useUpdate] Nenhuma atualização configurada para esta plataforma neste release (apenas Windows suportado no momento).",
+          );
+        } else {
+          console.error("[useUpdate] Erro ao verificar atualizações:", err);
+        }
       }
     };
 

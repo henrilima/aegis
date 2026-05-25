@@ -103,6 +103,33 @@ export default function CalendarPage() {
     }
   };
 
+  const handleEventDrop = async (eventId: number, targetDate: string) => {
+    // Busca o compromisso correspondente ao ID arrastado na lista local de eventos
+    const event = events.find((e) => e.id === eventId);
+    if (!event) return;
+
+    // Se o compromisso já estiver agendado no dia de destino, não faz nada
+    if (event.date === targetDate) return;
+
+    try {
+      // Atualiza o compromisso com a nova data e persiste via comando Tauri no SQLite
+      const updatedEvent = { ...event, date: targetDate };
+      await invoke("calendar_update_event", { event: updatedEvent });
+
+      // Notifica o usuário de forma elegante com toast em português
+      toast.success(`"${event.title}" reagendado com sucesso!`);
+
+      // Recarrega todos os compromissos para atualizar o estado do calendário
+      loadEvents();
+    } catch (err) {
+      console.error(
+        "[Calendar] Erro ao salvar reagendamento via drag-and-drop:",
+        err,
+      );
+      toast.error("Não foi possível salvar o reagendamento do compromisso.");
+    }
+  };
+
   const updateShowHolidays = (val: boolean) => {
     setShowHolidays(val);
   };
@@ -226,6 +253,7 @@ export default function CalendarPage() {
               } as CalendarEvent);
               setShowForm(true);
             }}
+            onEventDrop={handleEventDrop}
           />
         </div>
 

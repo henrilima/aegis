@@ -80,21 +80,21 @@ export function PomodoroWidget({
             className="w-full h-full"
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl @sm:text-3xl font-black text-foreground leading-none">
+            <span className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
               {fmtTime(remainingSeconds)}
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+            <span className="text-[10px] font-bold text-muted-foreground mt-1">
               {pomodoro?.cycleType === "Work" ? "Foco" : "Pausa"}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-[7cqw] @sm:gap-6">
-          <div className="text-center">
-            <p className="text-xl @sm:text-2xl font-black text-foreground leading-none">
+          <div>
+            <p className="text-xl @sm:text-2xl font-bold text-foreground leading-none">
               {pomodoro?.cyclesCompleted ?? 0}
             </p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
+            <p className="text-[10px] font-bold text-muted-foreground mt-1">
               Ciclos hoje
             </p>
           </div>
@@ -146,7 +146,7 @@ export function PomodoroWidget({
                   <div
                     className={cn(
                       "w-1.5 h-1.5 rounded-full animate-pulse",
-                      theme.text.replace("text-", "bg-"),
+                      theme.solid,
                     )}
                   />
                   <span className={cn("text-[10px] font-bold", theme.text)}>

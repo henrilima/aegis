@@ -44,7 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const minLoadingTime = new Promise((resolve) => setTimeout(resolve, 1500));
 
     try {
-      const userData = await invoke<User>("get_local_user", { userId: userId });
+      const userData = await invoke<User>("global_get_local_user", {
+        userId: userId,
+      });
 
       if (userData) {
         const rawData = userData as unknown as Record<string, unknown>;
