@@ -402,7 +402,20 @@ export function NotificationsPanel({
 
   const handleUpdate = async () => {
     try {
-      const update = await check();
+      let update = null;
+      try {
+        update = await check();
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        log.warn(`Falha ao inicializar updater oficial (tentando fallback browser) | ${errMsg}`);
+        if (release) {
+          await open(release.html_url);
+          setShowUpdateDialog(false);
+          return;
+        }
+        throw err;
+      }
+
       if (!update) {
         // Se o updater falhar ou não achar, abre o browser como fallback
         if (release) open(release.html_url);

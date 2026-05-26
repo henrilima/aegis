@@ -1,4 +1,4 @@
-[version]:["3.0.0"]
+[version]:["3.0.1"]
 [updates]
 [1]:["Compatibilidade Linux: Suporte oficial nativo para distribuicoes Linux via Tauri v2, alem de Windows."]
 [2]:["Modulo de Flashcards: Memorizacao ativa com repeticao espacada, baralhos personalizaveis e revisao global."]

@@ -258,6 +258,7 @@ export function useSettingsLogic() {
       showFloatingTrigger,
       dashboardClockStyle,
       dashboardClockAnimated,
+      dashboardHeaderStyle,
     };
 
     try {
@@ -309,6 +310,7 @@ export function useSettingsLogic() {
       showFloatingTrigger,
       dashboardClockStyle,
       dashboardClockAnimated,
+      dashboardHeaderStyle,
     };
 
     try {
@@ -349,6 +351,7 @@ export function useSettingsLogic() {
       showFloatingTrigger,
       dashboardClockStyle,
       dashboardClockAnimated,
+      dashboardHeaderStyle,
     };
 
     try {
@@ -392,6 +395,7 @@ export function useSettingsLogic() {
       showFloatingTrigger,
       dashboardClockStyle,
       dashboardClockAnimated,
+      dashboardHeaderStyle,
     };
 
     try {

@@ -6,6 +6,7 @@ use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+#[serde(default)]
 pub struct AppConfig {
     pub minimize_on_close: bool,
     pub start_at_login: bool,
@@ -34,6 +35,40 @@ pub struct AppConfig {
     pub dashboard_clock_animated: bool,
     pub dashboard_header_style: String,
 }
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        AppConfig {
+            minimize_on_close: true,
+            start_at_login: false,
+            high_priority_notifications: false,
+            start_minimized: false,
+            week_start_day: 1,
+            show_holidays: true,
+            auto_read_notifications: true,
+            notif_sleep_bedtime: true,
+            notif_sleep_bedtime_time: "23:00".to_string(),
+            notif_sleep_morning: true,
+            notif_sleep_morning_time: "09:00".to_string(),
+            notif_habit_uncompleted: true,
+            notif_habit_time: "22:00".to_string(),
+            notif_event_upcoming: true,
+            notif_event_upcoming_time: "08:00".to_string(),
+            notif_sleep_target_hours: 8.0,
+            notification_sound: "Plin.mp3".to_string(),
+            tmdb_api_key: "".to_string(),
+            weather_location: "".to_string(),
+            show_weather_widget: true,
+            app_zoom: 100.0,
+            show_sidebar_trigger: true,
+            show_floating_trigger: true,
+            dashboard_clock_style: "default".to_string(),
+            dashboard_clock_animated: true,
+            dashboard_header_style: "default".to_string(),
+        }
+    }
+}
+
 
 pub struct ConfigManager {
     db_path: PathBuf,
