@@ -5,6 +5,7 @@ import type { CrossMetric } from "../types";
 
 interface CorrelationChartProps {
   metrics: CrossMetric[];
+  activeSources: string[];
 }
 
 const formatDatePT = (dateStr: string) => {
@@ -22,38 +23,53 @@ const formatDatePT = (dateStr: string) => {
   }
 };
 
-type LegendKey = "sleep" | "study" | "reading" | "hit";
+type LegendKey = "sleep" | "study" | "reading" | "hit" | "focus";
 
-const series = [
+const ALL_SERIES = [
   {
     key: "study" as const,
+    source: "estudos",
     label: "Estudo",
     color: "#8b5cf6",
     title:
-      "Horas de estudo registradas no dia, normalizadas pelo maior dia do periodo.",
+      "Horas de estudo registradas no dia, normalizadas pelo maior dia do período.",
   },
   {
     key: "sleep" as const,
+    source: "sono",
     label: "Sono",
     color: "#3b82f6",
     title:
-      "Horas de sono registradas no dia, normalizadas pelo maior dia do periodo.",
+      "Horas de sono registradas no dia, normalizadas pelo maior dia do período.",
   },
   {
     key: "hit" as const,
+    source: "estudos",
     label: "Acertos",
     color: "#22c55e",
-    title: "Taxa de acerto do dia. Esta linha ja usa escala percentual real.",
+    title: "Taxa de acerto do dia. Esta linha já usa escala percentual real.",
   },
   {
     key: "reading" as const,
+    source: "leitura",
     label: "Leitura",
     color: "#f97316",
-    title: "Paginas lidas no dia, normalizadas pelo maior dia do periodo.",
+    title: "Páginas lidas no dia, normalizadas pelo maior dia do período.",
+  },
+  {
+    key: "focus" as const,
+    source: "foco",
+    label: "Foco",
+    color: "#f43f5e",
+    title:
+      "Foco médio do dia na escala de 0 a 5, normalizado pelo máximo (5.0).",
   },
 ];
 
-export function CorrelationChart({ metrics }: CorrelationChartProps) {
+export function CorrelationChart({
+  metrics,
+  activeSources,
+}: CorrelationChartProps) {
   const [activeLegend, setActiveLegend] = useState<LegendKey | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const displayedMetrics = metrics.slice(-30);
@@ -61,10 +77,15 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
   if (displayedMetrics.length === 0) {
     return (
       <p className="text-neutral-600 text-center py-12 italic font-medium">
-        Dados insuficientes para gerar visualizacao temporal.
+        Dados insuficientes para gerar visualização temporal.
       </p>
     );
   }
+
+  // Filtrar as séries a serem renderizadas com base nas fontes ativas
+  const activeSeries = ALL_SERIES.filter((s) =>
+    activeSources.includes(s.source),
+  );
 
   const maxStudy = Math.max(...displayedMetrics.map((m) => m.studyHours), 1);
   const maxSleep = Math.max(...displayedMetrics.map((m) => m.sleepHours), 1);
@@ -72,6 +93,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
     ...displayedMetrics.map((m) => m.readingPages),
     1,
   );
+  const maxFocus = 5;
 
   const width = 1000;
   const height = 320;
@@ -98,7 +120,9 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
             ? m.sleepHours
             : type === "reading"
               ? m.readingPages
-              : m.studyHitRate;
+              : type === "focus"
+                ? (m.focusScore ?? 0)
+                : m.studyHitRate;
       const max =
         type === "study"
           ? maxStudy
@@ -106,7 +130,9 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
             ? maxSleep
             : type === "reading"
               ? maxReading
-              : 100;
+              : type === "focus"
+                ? maxFocus
+                : 100;
       return { x: getX(i), y: getY(value, max) };
     });
 
@@ -143,7 +169,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
   return (
     <div className="flex flex-col gap-5 w-full relative select-none">
       <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
-        {series.map((item) => (
+        {activeSeries.map((item) => (
           <button
             key={item.key}
             type="button"
@@ -173,7 +199,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredIndex(null)}
           role="img"
-          aria-label="Grafico temporal de metricas"
+          aria-label="Gráfico temporal de métricas"
         >
           {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
             const y = margin.top + plotHeight - tick * plotHeight;
@@ -199,7 +225,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
             );
           })}
 
-          {series.map((item) => (
+          {activeSeries.map((item) => (
             <path
               key={item.key}
               d={getPath(pointsFor(item.key))}
@@ -242,7 +268,7 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
                 strokeWidth={1.5}
                 vectorEffect="non-scaling-stroke"
               />
-              {series.map((item) => {
+              {activeSeries.map((item) => {
                 const point = pointsFor(item.key)[hoveredIndex];
                 return (
                   <circle
@@ -284,30 +310,52 @@ export function CorrelationChart({ metrics }: CorrelationChartProps) {
                 {formatDatePT(activeMetric.date)}
               </span>
             </div>
-            <TooltipRow
-              color="#8b5cf6"
-              label="Estudo"
-              value={`${activeMetric.studyHours.toFixed(1)}h`}
-              detail={`${((activeMetric.studyHours / maxStudy) * 100).toFixed(0)}% da escala`}
-            />
-            <TooltipRow
-              color="#3b82f6"
-              label="Sono"
-              value={`${activeMetric.sleepHours.toFixed(1)}h`}
-              detail={`${((activeMetric.sleepHours / maxSleep) * 100).toFixed(0)}% da escala`}
-            />
-            <TooltipRow
-              color="#22c55e"
-              label="Acertos"
-              value={`${activeMetric.studyHitRate}%`}
-              detail={`${activeMetric.questionsTotal} questoes`}
-            />
-            <TooltipRow
-              color="#f97316"
-              label="Leitura"
-              value={`${activeMetric.readingPages} pag.`}
-              detail={`${activeMetric.readingMinutes} min`}
-            />
+
+            {activeSources.includes("estudos") && (
+              <>
+                <TooltipRow
+                  color="#8b5cf6"
+                  label="Estudo"
+                  value={`${activeMetric.studyHours.toFixed(1)}h`}
+                  detail={`${((activeMetric.studyHours / maxStudy) * 100).toFixed(0)}% da escala`}
+                />
+                <TooltipRow
+                  color="#22c55e"
+                  label="Acertos"
+                  value={`${activeMetric.studyHitRate}%`}
+                  detail={`${activeMetric.questionsTotal} questões`}
+                />
+              </>
+            )}
+
+            {activeSources.includes("sono") && (
+              <TooltipRow
+                color="#3b82f6"
+                label="Sono"
+                value={`${activeMetric.sleepHours.toFixed(1)}h`}
+                detail={`${((activeMetric.sleepHours / maxSleep) * 100).toFixed(0)}% da escala`}
+              />
+            )}
+
+            {activeSources.includes("leitura") && (
+              <TooltipRow
+                color="#f97316"
+                label="Leitura"
+                value={`${activeMetric.readingPages} pág.`}
+                detail={`${activeMetric.readingMinutes} min`}
+              />
+            )}
+
+            {activeSources.includes("foco") &&
+              activeMetric.focusScore !== undefined &&
+              activeMetric.focusScore !== null && (
+                <TooltipRow
+                  color="#f43f5e"
+                  label="Foco"
+                  value={`${activeMetric.focusScore.toFixed(1)}`}
+                  detail={`${((activeMetric.focusScore / maxFocus) * 100).toFixed(0)}% da escala`}
+                />
+              )}
           </div>
         )}
       </div>

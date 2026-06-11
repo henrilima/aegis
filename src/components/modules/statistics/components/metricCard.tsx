@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { cn } from "@/lib/utils";
 
 interface MetricCardProps {
   icon: LucideIcon;
@@ -12,6 +13,8 @@ interface MetricCardProps {
   bgColor: string;
   borderColor: string;
   tooltip?: string;
+  inactive?: boolean;
+  inactiveMessage?: string;
 }
 
 /**
@@ -26,34 +29,55 @@ export function MetricCard({
   bgColor,
   borderColor,
   tooltip,
+  inactive,
+  inactiveMessage = "Ative a fonte para visualizar",
 }: MetricCardProps) {
   const content = (
     <div
-      className="bg-card border rounded-xl p-4 min-h-[128px] flex flex-col justify-between gap-3 transition-all hover:border-border/90 hover:bg-accent/20"
-      style={{ borderColor }}
+      className={cn(
+        "bg-card border rounded-xl p-4 min-h-[128px] flex flex-col justify-between gap-3 transition-all",
+        inactive
+          ? "opacity-50 border-dashed border-border"
+          : "hover:border-border/90 hover:bg-accent/20",
+      )}
+      style={inactive ? undefined : { borderColor }}
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold text-muted-foreground">
           {label}
         </span>
-        <div className="p-1.5 rounded-lg" style={{ backgroundColor: bgColor }}>
-          <Icon className="w-3.5 h-3.5" style={{ color }} />
+        <div
+          className="p-1.5 rounded-lg"
+          style={inactive ? undefined : { backgroundColor: bgColor }}
+        >
+          <Icon
+            className="w-3.5 h-3.5"
+            style={inactive ? undefined : { color }}
+          />
         </div>
       </div>
       <div>
-        <span className="text-3xl font-bold leading-none" style={{ color }}>
-          {value}
-        </span>
-        {sub && (
-          <span className="block text-[11px] text-muted-foreground font-medium mt-2">
-            {sub}
+        {inactive ? (
+          <span className="text-xs font-semibold text-muted-foreground leading-normal block py-1">
+            {inactiveMessage}
           </span>
+        ) : (
+          <>
+            <span className="text-3xl font-bold leading-none" style={{ color }}>
+              {value}
+            </span>
+            {sub && (
+              <span className="block text-[11px] text-muted-foreground font-medium mt-2">
+                {sub}
+              </span>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 
-  if (tooltip) {
+  if (tooltip && !inactive) {
     return <ToolTip content={tooltip}>{content}</ToolTip>;
   }
 

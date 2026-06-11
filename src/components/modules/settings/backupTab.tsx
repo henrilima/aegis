@@ -362,7 +362,7 @@ export function BackupTab() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Sistema Completo */}
-          <div className="p-4 bg-card/40 border border-border/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-border/100 transition-all duration-200">
+          <div className="p-4 bg-card/40 border border-border/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-border transition-all duration-200">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div
@@ -397,7 +397,7 @@ export function BackupTab() {
           </div>
 
           {/* Card 2: Perfil Criptografado */}
-          <div className="p-4 bg-card/40 border border-border/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-border/100 transition-all duration-200">
+          <div className="p-4 bg-card/40 border border-border/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-border transition-all duration-200">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div
@@ -432,7 +432,7 @@ export function BackupTab() {
           </div>
 
           {/* Card 3: Backup JSON */}
-          <div className="p-4 bg-card/40 border border-border/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-border/100 transition-all duration-200">
+          <div className="p-4 bg-card/40 border border-border/60 rounded-xl flex flex-col justify-between space-y-3 hover:border-border transition-all duration-200">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div
