@@ -134,9 +134,9 @@ export function DashboardConfigModal({
             {/* Conteúdo das Abas */}
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               {activeTab === "layout" ? (
-                <div className="flex flex-col gap-8 max-w-6xl mx-auto">
+                <div className="flex flex-col gap-10 w-full">
                   {/* Lado a lado: Relógio e Cabeçalho */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14">
                     {/* Seção Estilo do Relógio */}
                     <div className="space-y-4 text-left">
                       <div>
@@ -362,8 +362,8 @@ export function DashboardConfigModal({
                   </div>
                 </div>
               ) : (
-                // Aba Widgets (Listagem Simplificada)
-                <div className="max-w-3xl mx-auto flex flex-col gap-6">
+                // Aba Widgets (Listagem Integrada)
+                <div className="w-full flex flex-col gap-8">
                   {/* Botão de Modo de Edição Visual na Tela */}
                   <div className="flex justify-center mb-2">
                     <button
@@ -383,102 +383,169 @@ export function DashboardConfigModal({
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    {internalActiveIds.map((id) => {
-                      const w = WIDGET_METADATA.find((m) => m.id === id);
-                      if (!w) return null;
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10">
+                    {/* Lado Esquerdo: Widgets Ativos (3 das 5 colunas) */}
+                    <div className="lg:col-span-3 space-y-4 text-left">
+                      <div>
+                        <h4 className="text-base font-black text-foreground flex items-center gap-2">
+                          Widgets Ativos
+                        </h4>
+                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                          Estes widgets estão atualmente visíveis em sua
+                          Dashboard.
+                        </p>
+                      </div>
 
-                      const hasLimit = [
-                        "habits",
-                        "tasks",
-                        "alarms",
-                        "reading",
-                      ].includes(w.id);
-                      const wConfig = widgetConfigs[w.id] || {
-                        interactive: false,
-                        limit: undefined,
-                      };
+                      <div className="space-y-3">
+                        {internalActiveIds.map((id) => {
+                          const w = WIDGET_METADATA.find((m) => m.id === id);
+                          if (!w) return null;
 
-                      return (
-                        <div
-                          key={w.id}
-                          className="flex items-center justify-between p-4 rounded-2xl border-2 border-border bg-card transition-all"
-                        >
-                          <div className="flex items-center gap-4 text-left">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent/50 text-foreground">
-                              <Layout className="w-4 h-4 opacity-30" />
+                          const hasLimit = [
+                            "habits",
+                            "tasks",
+                            "alarms",
+                            "reading",
+                          ].includes(w.id);
+                          const wConfig = widgetConfigs[w.id] || {
+                            interactive: false,
+                            limit: undefined,
+                          };
+
+                          return (
+                            <div
+                              key={w.id}
+                              className="flex items-center justify-between p-4 rounded-2xl border-2 border-border bg-card transition-all"
+                            >
+                              <div className="flex items-center gap-4 text-left">
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent/50 text-foreground">
+                                  <Layout className="w-4 h-4 opacity-30" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-black text-foreground">
+                                    {w.name}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-muted-foreground lowercase opacity-50">
+                                    {w.description}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Controles de Limites e Remoção simplificados */}
+                              <div className="flex items-center gap-4">
+                                {hasLimit && (
+                                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/30 border border-border/40">
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                      Qtd:
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const defaultVal =
+                                          w.id === "reading" ? 2 : 3;
+                                        const currentVal =
+                                          wConfig.limit ?? defaultVal;
+                                        if (currentVal > 1) {
+                                          onUpdateConfig(w.id, {
+                                            limit: currentVal - 1,
+                                          });
+                                        }
+                                      }}
+                                      className="w-5 h-5 flex items-center justify-center rounded-lg bg-background border border-border text-xs hover:border-foreground transition-all cursor-pointer font-bold"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="text-xs font-black w-4 text-center font-sans">
+                                      {wConfig.limit ??
+                                        (w.id === "reading" ? 2 : 3)}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const defaultVal =
+                                          w.id === "reading" ? 2 : 3;
+                                        const currentVal =
+                                          wConfig.limit ?? defaultVal;
+                                        if (currentVal < 15) {
+                                          onUpdateConfig(w.id, {
+                                            limit: currentVal + 1,
+                                          });
+                                        }
+                                      }}
+                                      className="w-5 h-5 flex items-center justify-center rounded-lg bg-background border border-border text-xs hover:border-foreground transition-all cursor-pointer font-bold"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggle(w.id)}
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-black hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                  title="Desativar widget"
+                                >
+                                  <Check className="w-4 h-4" strokeWidth={3} />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-black text-foreground">
+                          );
+                        })}
+
+                        {internalActiveIds.length === 0 && (
+                          <div className="py-12 text-center border-2 border-dashed border-border rounded-2xl">
+                            <p className="text-xs font-bold text-muted-foreground lowercase">
+                              nenhum widget ativo
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Lado Direito: Biblioteca integrada (2 das 5 colunas) */}
+                    <div className="lg:col-span-2 space-y-4 text-left">
+                      <div>
+                        <h4 className="text-base font-black text-foreground flex items-center gap-2">
+                          Biblioteca (Inativos)
+                        </h4>
+                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                          Adicione estes widgets à sua Dashboard.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {inactiveWidgets.map((w) => (
+                          <button
+                            key={w.id}
+                            type="button"
+                            onClick={() => handleToggle(w.id)}
+                            className="flex flex-col p-4 rounded-2xl border-2 border-border bg-card/50 hover:border-foreground hover:bg-card transition-all text-left group cursor-pointer h-full min-h-[110px]"
+                          >
+                            <div className="flex items-center justify-between w-full mb-3">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-background border border-border text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-all shrink-0">
+                                <Plus className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[11px] font-black text-foreground line-clamp-1">
                                 {w.name}
                               </span>
-                              <span className="text-[10px] font-bold text-muted-foreground lowercase opacity-50">
+                              <span className="text-[9px] font-bold text-muted-foreground lowercase opacity-50 line-clamp-2 leading-tight">
                                 {w.description}
                               </span>
                             </div>
-                          </div>
+                          </button>
+                        ))}
 
-                          {/* Controles de Limites e Remoção simplificados */}
-                          <div className="flex items-center gap-4">
-                            {/* Controle de Limite inline para Listas */}
-                            {hasLimit && (
-                              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/30 border border-border/40">
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                                  Qtd:
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const defaultVal =
-                                      w.id === "reading" ? 2 : 3;
-                                    const currentVal =
-                                      wConfig.limit ?? defaultVal;
-                                    if (currentVal > 1) {
-                                      onUpdateConfig(w.id, {
-                                        limit: currentVal - 1,
-                                      });
-                                    }
-                                  }}
-                                  className="w-5 h-5 flex items-center justify-center rounded-lg bg-background border border-border text-xs hover:border-foreground transition-all cursor-pointer font-bold"
-                                >
-                                  -
-                                </button>
-                                <span className="text-xs font-black w-4 text-center font-sans">
-                                  {wConfig.limit ??
-                                    (w.id === "reading" ? 2 : 3)}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const defaultVal =
-                                      w.id === "reading" ? 2 : 3;
-                                    const currentVal =
-                                      wConfig.limit ?? defaultVal;
-                                    if (currentVal < 15) {
-                                      onUpdateConfig(w.id, {
-                                        limit: currentVal + 1,
-                                      });
-                                    }
-                                  }}
-                                  className="w-5 h-5 flex items-center justify-center rounded-lg bg-background border border-border text-xs hover:border-foreground transition-all cursor-pointer font-bold"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => handleToggle(w.id)}
-                              className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-black hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                              title="Desativar widget"
-                            >
-                              <Check className="w-4 h-4" strokeWidth={3} />
-                            </button>
+                        {inactiveWidgets.length === 0 && (
+                          <div className="col-span-2 py-12 text-center border-2 border-dashed border-border rounded-2xl">
+                            <p className="text-xs font-bold text-muted-foreground lowercase">
+                              todos os widgets ativos
+                            </p>
                           </div>
-                        </div>
-                      );
-                    })}
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -494,60 +561,6 @@ export function DashboardConfigModal({
               </button>
             </footer>
           </main>
-
-          {/* Lado Direito: Biblioteca (Apenas na aba de widgets) */}
-          {activeTab === "widgets" && (
-            <aside className="w-[360px] bg-accent/30 border-l border-border/40 flex flex-col p-8 gap-6 overflow-hidden animate-in slide-in-from-right duration-350">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center border border-border">
-                  <Plus className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div className="flex flex-col text-left">
-                  <h4 className="text-sm font-black text-foreground">
-                    Biblioteca
-                  </h4>
-                  <p className="text-[10px] font-bold text-muted-foreground lowercase opacity-50">
-                    adicione novos widgets
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                <div className="grid grid-cols-2 gap-3 pb-8">
-                  {inactiveWidgets.map((w) => (
-                    <button
-                      key={w.id}
-                      type="button"
-                      onClick={() => handleToggle(w.id)}
-                      className="flex flex-col p-4 rounded-2xl border-2 border-border bg-card/50 hover:border-foreground hover:bg-card transition-all text-left group cursor-pointer h-full min-h-[120px]"
-                    >
-                      <div className="flex items-center justify-between w-full mb-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-background border border-border text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-all shrink-0">
-                          <Plus className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[11px] font-black text-foreground line-clamp-1">
-                          {w.name}
-                        </span>
-                        <span className="text-[9px] font-bold text-muted-foreground lowercase opacity-50 line-clamp-2 leading-tight">
-                          {w.description}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-
-                  {inactiveWidgets.length === 0 && (
-                    <div className="col-span-2 py-12 text-center">
-                      <p className="text-xs font-bold text-muted-foreground lowercase">
-                        todos ativos
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </aside>
-          )}
         </div>
       </DialogContent>
 

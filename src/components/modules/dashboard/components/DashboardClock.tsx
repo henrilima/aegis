@@ -38,7 +38,7 @@ function TimeReel({ value, animated }: TimeReelProps) {
   }, [value, currentVal, animated]);
 
   return (
-    <div className="relative h-16 sm:h-20 w-16 sm:w-20 overflow-hidden">
+    <div className="relative h-[52px] sm:h-[60px] w-[40px] sm:w-[48px] overflow-hidden">
       <div
         className={cn(
           "absolute inset-x-0 top-0 h-[200%] flex flex-col",
@@ -47,12 +47,12 @@ function TimeReel({ value, animated }: TimeReelProps) {
             : "transition-none translate-y-0",
         )}
       >
-        {/* Slot 1: Current value */}
-        <div className="h-1/2 w-full flex items-center justify-center font-sans text-5xl sm:text-6xl font-black text-foreground/95 tabular-nums leading-none">
+        {/* Slot 1: Valor atual */}
+        <div className="h-1/2 w-full flex items-center justify-center font-sans text-4xl sm:text-5xl font-black text-foreground/95 tabular-nums leading-none">
           {currentVal}
         </div>
-        {/* Slot 2: Next value sliding up */}
-        <div className="h-1/2 w-full flex items-center justify-center font-sans text-5xl sm:text-6xl font-black text-foreground/95 tabular-nums leading-none">
+        {/* Slot 2: Próximo valor deslizando */}
+        <div className="h-1/2 w-full flex items-center justify-center font-sans text-4xl sm:text-5xl font-black text-foreground/95 tabular-nums leading-none">
           {nextVal}
         </div>
       </div>
@@ -255,16 +255,16 @@ export function DashboardClock({
     );
   }
 
-  // 2. STYLE: CHUNKY (Moderno Completo - HH:MM:SS unified bold sans. Respects "animated" toggle switch)
+  // 2. STYLE: CHUNKY (Moderno Completo - HH:MM:SS unificado em tamanho menor)
   if (style === "chunky") {
     if (animated) {
-      // If animated is true, render the smooth continuous vertical rolling carousel!
+      // Se animado for verdadeiro, renderiza o carrossel de rolagem vertical suave
       return (
         <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-500 select-none">
           <TimeReel value={hours} animated={animated} />
           <span
             className={cn(
-              "font-sans text-4xl sm:text-5xl font-black leading-none opacity-85 pb-1 sm:pb-2 animate-pulse mx-1.5",
+              "font-sans text-4xl sm:text-5xl font-black leading-none opacity-85 pb-0.5 animate-pulse mx-0.5",
               theme.text,
             )}
           >
@@ -273,7 +273,7 @@ export function DashboardClock({
           <TimeReel value={minutes} animated={animated} />
           <span
             className={cn(
-              "font-sans text-4xl sm:text-5xl font-black leading-none opacity-85 pb-1 sm:pb-2 animate-pulse mx-1.5",
+              "font-sans text-4xl sm:text-5xl font-black leading-none opacity-85 pb-0.5 animate-pulse mx-0.5",
               theme.text,
             )}
           >
@@ -284,15 +284,15 @@ export function DashboardClock({
       );
     }
 
-    // Otherwise, render the static unified layout
+    // Caso contrário, renderiza o layout estático unificado
     return (
-      <div className="flex items-center gap-1 sm:gap-2 animate-in fade-in zoom-in-95 duration-500 select-none">
+      <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-500 select-none">
         <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none">
           {hours}
         </span>
         <span
           className={cn(
-            "font-sans text-4xl sm:text-5xl font-black leading-none opacity-80 animate-pulse mx-1.5",
+            "font-sans text-4xl sm:text-5xl font-black leading-none opacity-80 animate-pulse mx-0.5",
             theme.text,
           )}
         >
@@ -303,7 +303,7 @@ export function DashboardClock({
         </span>
         <span
           className={cn(
-            "font-sans text-4xl sm:text-5xl font-black leading-none opacity-80 animate-pulse mx-1.5",
+            "font-sans text-4xl sm:text-5xl font-black leading-none opacity-80 animate-pulse mx-0.5",
             theme.text,
           )}
         >

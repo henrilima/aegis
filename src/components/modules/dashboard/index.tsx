@@ -1,5 +1,22 @@
 "use client";
 
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { motion } from "framer-motion";
 import { GripVertical, Move, Plus, Trash2 } from "lucide-react";
@@ -49,6 +66,147 @@ const itemVariants = {
   },
 };
 
+// ---- Componente de widget sortable (wrapper do @dnd-kit) ----
+interface SortableWidgetItemProps {
+  id: string;
+  isVisualEditMode: boolean;
+  activeDragId: string | null;
+  onRemove: (id: string) => void;
+  onUpdateConfig: (
+    id: string,
+    cfg: { interactive?: boolean; limit?: number },
+  ) => void;
+  widgetConfig: { interactive: boolean; limit?: number };
+  children: React.ReactNode;
+}
+
+function SortableWidgetItem({
+  id,
+  isVisualEditMode,
+  activeDragId,
+  onRemove,
+  onUpdateConfig,
+  widgetConfig,
+  children,
+}: SortableWidgetItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !isVisualEditMode });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  const hasLimit = ["habits", "tasks", "alarms", "reading"].includes(id);
+  const widgetName = WIDGET_METADATA.find((w) => w.id === id)?.name ?? id;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="w-full h-full min-h-[300px] lg:min-h-[340px]"
+    >
+      <div
+        className={cn(
+          "relative group/widget transition-all duration-300 w-full h-full rounded-2xl",
+          isVisualEditMode &&
+            "border-2 border-dashed border-emerald-500/40 p-1 bg-emerald-500/5",
+          isDragging && "scale-[0.98]",
+        )}
+      >
+        {isVisualEditMode && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-xs rounded-2xl z-40 flex flex-col items-center justify-between p-4 pointer-events-auto">
+            <div className="flex items-center justify-between w-full">
+              <div className="w-[30px]" />
+              <span className="text-xs font-black text-foreground bg-background/85 px-2.5 py-1 rounded-full border border-border select-none">
+                {widgetName}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(id);
+                }}
+                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                title="Remover widget"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Handle de arraste — listeners do dnd-kit aqui */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: drag handle para reordenação de widgets */}
+            <div
+              {...attributes}
+              {...listeners}
+              className="flex flex-col items-center justify-center gap-1.5 select-none cursor-grab active:cursor-grabbing hover:scale-105 transition-all opacity-80 hover:opacity-100 touch-none"
+            >
+              <GripVertical className="w-6 h-6 text-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-foreground">
+                arrastar para reordenar
+              </span>
+            </div>
+
+            <div className="w-full flex items-center justify-center gap-2">
+              {hasLimit && (
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/95 border border-border shadow-none">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                    Itens:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const defVal = id === "reading" ? 2 : 3;
+                      const curr = widgetConfig.limit ?? defVal;
+                      if (curr > 1) onUpdateConfig(id, { limit: curr - 1 });
+                    }}
+                    className="w-5 h-5 flex items-center justify-center rounded-lg bg-accent border border-border text-xs font-bold hover:border-foreground transition-all cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="text-xs font-black w-4 text-center">
+                    {widgetConfig.limit ?? (id === "reading" ? 2 : 3)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const defVal = id === "reading" ? 2 : 3;
+                      const curr = widgetConfig.limit ?? defVal;
+                      if (curr < 15) onUpdateConfig(id, { limit: curr + 1 });
+                    }}
+                    className="w-5 h-5 flex items-center justify-center rounded-lg bg-accent border border-border text-xs font-bold hover:border-foreground transition-all cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "h-full w-full",
+            isVisualEditMode && "pointer-events-none select-none opacity-40",
+          )}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { now: time, isSimulated } = useTime();
@@ -72,6 +230,28 @@ export default function Dashboard() {
   } = useWidgetLayout();
 
   const [isVisualEditMode, setIsVisualEditMode] = useState(false);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Sensors do @dnd-kit — requer 8px de movimento antes de iniciar o drag
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+    if (over && active.id !== over.id) {
+      const oldIndex = activeWidgetIds.indexOf(String(active.id));
+      const newIndex = activeWidgetIds.indexOf(String(over.id));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        handleReorderWidgets(arrayMove(activeWidgetIds, oldIndex, newIndex));
+      }
+    }
+  };
 
   const inactiveWidgets = WIDGET_METADATA.filter(
     (w) => isModuleEnabled(w.id as ModuleId) && !activeWidgetIds.includes(w.id),
@@ -260,511 +440,393 @@ export default function Dashboard() {
             </div>
           )}
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           >
-            {activeWidgetIds
-              .filter((id) => isModuleEnabled(id as ModuleId))
-              .map((id) => {
-                const WidgetComponent = WIDGET_REGISTRY[id];
-                if (!WidgetComponent) return null;
+            <SortableContext
+              items={activeWidgetIds.filter((id) =>
+                isModuleEnabled(id as ModuleId),
+              )}
+              strategy={rectSortingStrategy}
+            >
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto"
+              >
+                {activeWidgetIds
+                  .filter((id) => isModuleEnabled(id as ModuleId))
+                  .map((id) => {
+                    const WidgetComponent = WIDGET_REGISTRY[id];
+                    if (!WidgetComponent) return null;
 
-                const config = widgetConfigs[id] || { interactive: false };
-                const boundIsToday = (iso: string) => isToday(iso, time);
+                    const config = widgetConfigs[id] || { interactive: false };
+                    const boundIsToday = (iso: string) => isToday(iso, time);
 
-                const widgetProps: {
-                  isToday: (iso: string) => boolean;
-                  time: Date;
-                  limit?: number;
-                  [key: string]: unknown;
-                } = {
-                  isToday: boundIsToday,
-                  time,
-                  limit: config.limit,
-                };
-
-                if (id === "habits") {
-                  widgetProps.habits = data.habits;
-                }
-                if (id === "pomodoro") {
-                  widgetProps.pomodoro = data.pomodoro;
-                  widgetProps.onTogglePomo = async () => {
-                    if (!data.pomodoro || !user) return;
-                    const isStarting = !data.pomodoro.isRunning;
-                    const nowIso = time.toISOString();
-                    let newAccumulated = data.pomodoro.accumulatedSeconds;
-                    if (!isStarting && data.pomodoro.startTime) {
-                      const startTime = new Date(
-                        data.pomodoro.startTime,
-                      ).getTime();
-                      newAccumulated += Math.floor(
-                        (time.getTime() - startTime) / 1000,
-                      );
-                    }
-                    const newState = {
-                      ...data.pomodoro,
-                      isRunning: isStarting,
-                      startTime: isStarting ? nowIso : null,
-                      accumulatedSeconds: newAccumulated,
-                      cycleType:
-                        isStarting && data.pomodoro.cyclesCompleted === 0
-                          ? "Work"
-                          : data.pomodoro.cycleType,
+                    const widgetProps: {
+                      isToday: (iso: string) => boolean;
+                      time: Date;
+                      limit?: number;
+                      [key: string]: unknown;
+                    } = {
+                      isToday: boundIsToday,
+                      time,
+                      limit: config.limit,
                     };
-                    try {
-                      await invoke("pomodoro_save_pomodoro_state", {
-                        userId: String(user.id),
-                        pomoState: newState,
-                      });
-                      fetchAll();
-                    } catch {
-                      toast.error("Erro ao salvar Pomodoro");
+
+                    if (id === "habits") {
+                      widgetProps.habits = data.habits;
                     }
-                  };
-                  widgetProps.onStopPomo = async () => {
-                    if (!user || !data.pomodoro) return;
-                    if (data.pomodoro.cyclesCompleted > 0) {
-                      const historyEntry = {
-                        userId: String(user.id),
-                        workMinutes: data.pomodoro.workMinutes,
-                        breakMinutes: data.pomodoro.breakMinutes,
-                        cyclesDone: data.pomodoro.cyclesCompleted,
-                        startTime: time.toISOString(),
-                        endTime: time.toISOString(),
-                      };
-                      try {
-                        await invoke("pomodoro_record_pomodoro_session", {
-                          session: historyEntry,
-                        });
-                      } catch {}
-                    }
-                    const newState = {
-                      ...data.pomodoro,
-                      isRunning: false,
-                      startTime: null,
-                      cyclesCompleted: 0,
-                      accumulatedSeconds: 0,
-                      cycleType: "Work",
-                    };
-                    await invoke("pomodoro_save_pomodoro_state", {
-                      userId: String(user.id),
-                      pomoState: newState,
-                    });
-                    fetchAll();
-                  };
-                }
-                if (id === "notes") {
-                  widgetProps.notes = data.notes;
-                  widgetProps.onCreateNote = handleCreateNote;
-                }
-                if (id === "tasks") {
-                  widgetProps.tasks = data.tasks;
-                  widgetProps.onToggleTask = async (task: Task) => {
-                    const res = await handleToggleTask(task);
-                    if (
-                      res?.needsConfirmation &&
-                      res.pendingCount !== undefined
-                    ) {
-                      setTaskToConfirm({ task, count: res.pendingCount });
-                    }
-                  };
-                  widgetProps.onDeleteTask = (task: Task) => {
-                    setTaskToDelete(task);
-                  };
-                  widgetProps.onAddTask = async (
-                    title: string,
-                    priority?: number,
-                    category?: string,
-                    color?: string,
-                  ) => {
-                    try {
-                      await invoke("tasks_upsert", {
-                        task: {
-                          userId: String(user?.id),
-                          title,
-                          description: null,
-                          completed: false,
-                          dueDate: null,
-                          createdAt: time.toISOString(),
-                          priority,
-                          category,
-                          color,
-                        },
-                      });
-                      fetchAll();
-                      toast.success("Tarefa adicionada!");
-                    } catch (err) {
-                      toast.error(
-                        typeof err === "string"
-                          ? err
-                          : "Erro ao adicionar tarefa",
-                      );
-                    }
-                  };
-                }
-                if (id === "studies") {
-                  widgetProps.sessions = weekSessions;
-                  widgetProps.weekHours = weekHours;
-                  widgetProps.weekQuestions = weekQuestions;
-                  widgetProps.goalWeekHours = goalWeekHours;
-                  widgetProps.goalWeekQuestions = goalWeekQuestions;
-                }
-                if (id === "sleep") {
-                  widgetProps.recentSleep = recentSleep;
-                  widgetProps.avgSleepMin = avgSleepMin;
-                  widgetProps.avgQuality = avgQuality;
-                  widgetProps.goalSleepMin = goalSleepMin;
-                  widgetProps.sleepPct = sleepPct;
-                }
-                if (id === "alarms") {
-                  widgetProps.alarms = data.alarms;
-                  widgetProps.onAddAlarm = async (form: AlarmFormState) => {
-                    try {
-                      const alarmData = {
-                        userId: String(user?.id),
-                        title: form.title.trim(),
-                        alarmType: form.alarmType,
-                        time: form.time,
-                        intervalMinutes:
-                          form.alarmType === "interval"
-                            ? Number(form.intervalMinutes)
-                            : null,
-                        lastTriggered: null,
-                        soundFile: form.soundFile,
-                        icon: form.iconName || "Bell",
-                        color: form.color || "red",
-                        enabled: true,
-                      };
-                      await invoke("alarm_add_alarm", { alarm: alarmData });
-                      fetchAll();
-                      toast.success("Alarme adicionado!");
-                    } catch {
-                      toast.error("Erro ao adicionar alarme");
-                    }
-                  };
-                }
-
-                if (id === "calendar") {
-                  widgetProps.showHolidays = data.showHolidays;
-                  widgetProps.onAddEvent = async (event: CalendarEvent) => {
-                    try {
-                      await invoke("calendar_add_event", {
-                        event: { ...event, userId: String(user?.id) },
-                      });
-                      fetchAll();
-                      toast.success("Evento agendado!");
-                    } catch {
-                      toast.error("Erro ao agendar evento");
-                    }
-                  };
-                }
-
-                if (id === "reading") {
-                  widgetProps.books = data.readingBooks;
-                  widgetProps.recentSessions = data.readingSessions.slice(0, 5);
-                  widgetProps.weekPages = weekPages;
-                  widgetProps.goalWeekPages = goalWeekPages;
-                  widgetProps.onLogSession = async (
-                    session: ReadingSession,
-                  ) => {
-                    try {
-                      const sessionData = {
-                        id: session.id || undefined,
-                        userId: String(user?.id),
-                        bookId: session.bookId
-                          ? Number(session.bookId)
-                          : undefined,
-                        pagesRead: Number(session.pagesRead || 0),
-                        durationMinutes: Number(session.durationMinutes || 0),
-                        date:
-                          session.date ||
-                          new Date().toISOString().split("T")[0],
-                        note: session.note || "",
-                        focus: Number(session.focus || 5), // Valor padrão se estiver faltando
-                      };
-                      await invoke("reading_upsert_session", {
-                        session: sessionData,
-                      });
-
-                      // Atualiza progresso do livro
-                      const book = data.readingBooks.find(
-                        (b) => b.id === sessionData.bookId,
-                      );
-                      if (book) {
-                        const newPage =
-                          Number(book.currentPage) +
-                          Number(sessionData.pagesRead);
-                        await invoke("reading_upsert_book", {
-                          book: {
-                            ...book,
-                            currentPage: newPage,
-                          },
-                        });
-                      }
-                      fetchAll();
-                      toast.success("Leitura registrada!");
-                    } catch (err) {
-                      console.error("Erro ao salvar leitura:", err);
-                      toast.error("Erro ao salvar sessão");
-                    }
-                  };
-                }
-
-                if (id === "sleep") {
-                  widgetProps.recentSleep = recentSleep;
-                  widgetProps.avgSleepMin = avgSleepMin;
-                  widgetProps.avgQuality = avgQuality;
-                  widgetProps.goalSleepMin = goalSleepMin;
-                  widgetProps.sleepPct = sleepPct;
-                  widgetProps.onAddSleep = async (entry: SleepEntry) => {
-                    try {
-                      const entryData = {
-                        id: entry.id || undefined,
-                        userId: String(user?.id),
-                        date: entry.date,
-                        bedtime: entry.bedtime,
-                        wakeTime: entry.wakeTime,
-                        durationMinutes: Number(entry.durationMinutes || 0),
-                        nap_minutes: Number(entry.nap_minutes || 0),
-                        quality: Number(entry.quality || 5),
-                        note: entry.note || "",
-                      };
-                      await invoke("sono_upsert_entry", {
-                        entry: entryData,
-                      });
-                      fetchAll();
-                      toast.success("Sono registrado!");
-                    } catch (err) {
-                      console.error("Erro ao salvar sono:", err);
-                      toast.error("Erro ao salvar sono");
-                    }
-                  };
-                }
-
-                if (id === "studies") {
-                  const allSubjects = Array.from(
-                    new Set(
-                      (data.studySessions || []).map(
-                        (s: StudySession) => s.subject,
-                      ),
-                    ),
-                  ).sort();
-                  widgetProps.sessions = weekSessions;
-                  widgetProps.allSubjects = allSubjects;
-                  widgetProps.weekHours = weekHours;
-                  widgetProps.weekQuestions = weekQuestions;
-                  widgetProps.goalWeekHours = goalWeekHours;
-                  widgetProps.goalWeekQuestions = goalWeekQuestions;
-                  widgetProps.onAddSession = async (session: StudySession) => {
-                    try {
-                      await invoke("estudos_add_session", {
-                        session: { ...session, userId: String(user?.id) },
-                      });
-                      fetchAll();
-                      toast.success("Estudo registrado!");
-                    } catch {
-                      toast.error("Erro ao salvar sessão");
-                    }
-                  };
-                }
-
-                if (id === "statistics")
-                  widgetProps.summary = data.statsSummary;
-                if (id === "movies") {
-                  widgetProps.movies = data.movies;
-                }
-                if (id === "dictionary") {
-                  widgetProps.words = data.dictionaryWords;
-                }
-
-                const isNonInteractive = [
-                  "movies",
-                  "statistics",
-                  "dictionary",
-                ].includes(id);
-                const isInteractive = isNonInteractive
-                  ? false
-                  : config.interactive;
-
-                widgetProps.isInteractive = isInteractive;
-                widgetProps.onToggleInteractive = !isNonInteractive
-                  ? () =>
-                      handleUpdateWidgetConfig(id, {
-                        interactive: !config.interactive,
-                      })
-                  : undefined;
-
-                if (id === "habits") {
-                  widgetProps.onToggleHabit = (habitId: number) => {
-                    const habit = data.habits.find((h) => h.id === habitId);
-                    if (habit) setHabitToConfirm(habit);
-                  };
-                }
-
-                return (
-                  <motion.div
-                    key={id}
-                    variants={itemVariants}
-                    className="w-full h-full min-h-[300px] lg:min-h-[340px]"
-                  >
-                    {/* biome-ignore lint/a11y/noStaticElementInteractions: contêiner de drag-and-drop na dashboard que aceita o drop de outros widgets */}
-                    <div
-                      onDragOver={(e: React.DragEvent) => {
-                        if (!isVisualEditMode) return;
-                        e.preventDefault();
-                      }}
-                      onDrop={(e: React.DragEvent) => {
-                        if (!isVisualEditMode) return;
-                        e.preventDefault();
-                        const draggedId = e.dataTransfer.getData("text/plain");
-                        if (draggedId && draggedId !== id) {
-                          const fromIdx = activeWidgetIds.indexOf(draggedId);
-                          const toIdx = activeWidgetIds.indexOf(id);
-                          if (fromIdx !== -1 && toIdx !== -1) {
-                            const newOrder = [...activeWidgetIds];
-                            newOrder.splice(fromIdx, 1);
-                            newOrder.splice(toIdx, 0, draggedId);
-                            handleReorderWidgets(newOrder);
-                          }
+                    if (id === "pomodoro") {
+                      widgetProps.pomodoro = data.pomodoro;
+                      widgetProps.onTogglePomo = async () => {
+                        if (!data.pomodoro || !user) return;
+                        const isStarting = !data.pomodoro.isRunning;
+                        const nowIso = time.toISOString();
+                        let newAccumulated = data.pomodoro.accumulatedSeconds;
+                        if (!isStarting && data.pomodoro.startTime) {
+                          const startTime = new Date(
+                            data.pomodoro.startTime,
+                          ).getTime();
+                          newAccumulated += Math.floor(
+                            (time.getTime() - startTime) / 1000,
+                          );
                         }
-                      }}
-                      className={cn(
-                        "relative group/widget transition-all duration-300 w-full h-full rounded-2xl",
-                        isVisualEditMode &&
-                          "border-2 border-dashed border-emerald-500/40 p-1 bg-emerald-500/5",
-                      )}
-                    >
-                      {isVisualEditMode && (
-                        // biome-ignore lint/a11y/noStaticElementInteractions: overlay interativo de drag-and-drop
-                        <div
-                          onDragOver={(e: React.DragEvent) => {
-                            if (!isVisualEditMode) return;
-                            e.preventDefault();
-                          }}
-                          onDrop={(e: React.DragEvent) => {
-                            if (!isVisualEditMode) return;
-                            e.preventDefault();
-                            const draggedId =
-                              e.dataTransfer.getData("text/plain");
-                            if (draggedId && draggedId !== id) {
-                              const fromIdx =
-                                activeWidgetIds.indexOf(draggedId);
-                              const toIdx = activeWidgetIds.indexOf(id);
-                              if (fromIdx !== -1 && toIdx !== -1) {
-                                const newOrder = [...activeWidgetIds];
-                                newOrder.splice(fromIdx, 1);
-                                newOrder.splice(toIdx, 0, draggedId);
-                                handleReorderWidgets(newOrder);
-                              }
-                            }
-                          }}
-                          className="absolute inset-0 bg-background/80 backdrop-blur-xs rounded-2xl z-40 flex flex-col items-center justify-between p-4 pointer-events-auto"
+                        const newState = {
+                          ...data.pomodoro,
+                          isRunning: isStarting,
+                          startTime: isStarting ? nowIso : null,
+                          accumulatedSeconds: newAccumulated,
+                          cycleType:
+                            isStarting && data.pomodoro.cyclesCompleted === 0
+                              ? "Work"
+                              : data.pomodoro.cycleType,
+                        };
+                        try {
+                          await invoke("pomodoro_save_pomodoro_state", {
+                            userId: String(user.id),
+                            pomoState: newState,
+                          });
+                          fetchAll();
+                        } catch {
+                          toast.error("Erro ao salvar Pomodoro");
+                        }
+                      };
+                      widgetProps.onStopPomo = async () => {
+                        if (!user || !data.pomodoro) return;
+                        if (data.pomodoro.cyclesCompleted > 0) {
+                          const historyEntry = {
+                            userId: String(user.id),
+                            workMinutes: data.pomodoro.workMinutes,
+                            breakMinutes: data.pomodoro.breakMinutes,
+                            cyclesDone: data.pomodoro.cyclesCompleted,
+                            startTime: time.toISOString(),
+                            endTime: time.toISOString(),
+                          };
+                          try {
+                            await invoke("pomodoro_record_pomodoro_session", {
+                              session: historyEntry,
+                            });
+                          } catch {}
+                        }
+                        const newState = {
+                          ...data.pomodoro,
+                          isRunning: false,
+                          startTime: null,
+                          cyclesCompleted: 0,
+                          accumulatedSeconds: 0,
+                          cycleType: "Work",
+                        };
+                        await invoke("pomodoro_save_pomodoro_state", {
+                          userId: String(user.id),
+                          pomoState: newState,
+                        });
+                        fetchAll();
+                      };
+                    }
+                    if (id === "notes") {
+                      widgetProps.notes = data.notes;
+                      widgetProps.onCreateNote = handleCreateNote;
+                    }
+                    if (id === "tasks") {
+                      widgetProps.tasks = data.tasks;
+                      widgetProps.onToggleTask = async (task: Task) => {
+                        const res = await handleToggleTask(task);
+                        if (
+                          res?.needsConfirmation &&
+                          res.pendingCount !== undefined
+                        ) {
+                          setTaskToConfirm({
+                            task,
+                            count: res.pendingCount,
+                          });
+                        }
+                      };
+                      widgetProps.onDeleteTask = (task: Task) => {
+                        setTaskToDelete(task);
+                      };
+                      widgetProps.onAddTask = async (
+                        title: string,
+                        priority?: number,
+                        category?: string,
+                        color?: string,
+                      ) => {
+                        try {
+                          await invoke("tasks_upsert", {
+                            task: {
+                              userId: String(user?.id),
+                              title,
+                              description: null,
+                              completed: false,
+                              dueDate: null,
+                              createdAt: time.toISOString(),
+                              priority,
+                              category,
+                              color,
+                            },
+                          });
+                          fetchAll();
+                          toast.success("Tarefa adicionada!");
+                        } catch (err) {
+                          toast.error(
+                            typeof err === "string"
+                              ? err
+                              : "Erro ao adicionar tarefa",
+                          );
+                        }
+                      };
+                    }
+                    if (id === "studies") {
+                      const allSubjects = Array.from(
+                        new Set(
+                          (data.studySessions || []).map(
+                            (s: StudySession) => s.subject,
+                          ),
+                        ),
+                      ).sort();
+                      widgetProps.sessions = weekSessions;
+                      widgetProps.allSubjects = allSubjects;
+                      widgetProps.weekHours = weekHours;
+                      widgetProps.weekQuestions = weekQuestions;
+                      widgetProps.goalWeekHours = goalWeekHours;
+                      widgetProps.goalWeekQuestions = goalWeekQuestions;
+                      widgetProps.onAddSession = async (
+                        session: StudySession,
+                      ) => {
+                        try {
+                          await invoke("estudos_add_session", {
+                            session: { ...session, userId: String(user?.id) },
+                          });
+                          fetchAll();
+                          toast.success("Estudo registrado!");
+                        } catch {
+                          toast.error("Erro ao salvar sessão");
+                        }
+                      };
+                    }
+                    if (id === "sleep") {
+                      widgetProps.recentSleep = recentSleep;
+                      widgetProps.avgSleepMin = avgSleepMin;
+                      widgetProps.avgQuality = avgQuality;
+                      widgetProps.goalSleepMin = goalSleepMin;
+                      widgetProps.sleepPct = sleepPct;
+                      widgetProps.onAddSleep = async (entry: SleepEntry) => {
+                        try {
+                          const entryData = {
+                            id: entry.id || undefined,
+                            userId: String(user?.id),
+                            date: entry.date,
+                            bedtime: entry.bedtime,
+                            wakeTime: entry.wakeTime,
+                            durationMinutes: Number(entry.durationMinutes || 0),
+                            nap_minutes: Number(entry.nap_minutes || 0),
+                            quality: Number(entry.quality || 5),
+                            note: entry.note || "",
+                          };
+                          await invoke("sono_upsert_entry", {
+                            entry: entryData,
+                          });
+                          fetchAll();
+                          toast.success("Sono registrado!");
+                        } catch (err) {
+                          console.error("Erro ao salvar sono:", err);
+                          toast.error("Erro ao salvar sono");
+                        }
+                      };
+                    }
+                    if (id === "alarms") {
+                      widgetProps.alarms = data.alarms;
+                      widgetProps.onAddAlarm = async (form: AlarmFormState) => {
+                        try {
+                          const alarmData = {
+                            userId: String(user?.id),
+                            title: form.title.trim(),
+                            alarmType: form.alarmType,
+                            time: form.time,
+                            intervalMinutes:
+                              form.alarmType === "interval"
+                                ? Number(form.intervalMinutes)
+                                : null,
+                            lastTriggered: null,
+                            soundFile: form.soundFile,
+                            icon: form.iconName || "Bell",
+                            color: form.color || "red",
+                            enabled: true,
+                          };
+                          await invoke("alarm_add_alarm", { alarm: alarmData });
+                          fetchAll();
+                          toast.success("Alarme adicionado!");
+                        } catch {
+                          toast.error("Erro ao adicionar alarme");
+                        }
+                      };
+                    }
+
+                    if (id === "calendar") {
+                      widgetProps.showHolidays = data.showHolidays;
+                      widgetProps.onAddEvent = async (event: CalendarEvent) => {
+                        try {
+                          await invoke("calendar_add_event", {
+                            event: { ...event, userId: String(user?.id) },
+                          });
+                          fetchAll();
+                          toast.success("Evento agendado!");
+                        } catch {
+                          toast.error("Erro ao agendar evento");
+                        }
+                      };
+                    }
+
+                    if (id === "reading") {
+                      widgetProps.books = data.readingBooks;
+                      widgetProps.recentSessions = data.readingSessions.slice(
+                        0,
+                        5,
+                      );
+                      widgetProps.weekPages = weekPages;
+                      widgetProps.goalWeekPages = goalWeekPages;
+                      widgetProps.onLogSession = async (
+                        session: ReadingSession,
+                      ) => {
+                        try {
+                          const sessionData = {
+                            id: session.id || undefined,
+                            userId: String(user?.id),
+                            bookId: session.bookId
+                              ? Number(session.bookId)
+                              : undefined,
+                            pagesRead: Number(session.pagesRead || 0),
+                            durationMinutes: Number(
+                              session.durationMinutes || 0,
+                            ),
+                            date:
+                              session.date ||
+                              new Date().toISOString().split("T")[0],
+                            note: session.note || "",
+                            focus: Number(session.focus || 5),
+                          };
+                          await invoke("reading_upsert_session", {
+                            session: sessionData,
+                          });
+
+                          // Atualiza progresso do livro
+                          const book = data.readingBooks.find(
+                            (b) => b.id === sessionData.bookId,
+                          );
+                          if (book) {
+                            const newPage =
+                              Number(book.currentPage) +
+                              Number(sessionData.pagesRead);
+                            await invoke("reading_upsert_book", {
+                              book: {
+                                ...book,
+                                currentPage: newPage,
+                              },
+                            });
+                          }
+                          fetchAll();
+                          toast.success("Leitura registrada!");
+                        } catch (err) {
+                          console.error("Erro ao salvar leitura:", err);
+                          toast.error("Erro ao salvar sessão");
+                        }
+                      };
+                    }
+
+                    if (id === "statistics")
+                      widgetProps.summary = data.statsSummary;
+                    if (id === "movies") {
+                      widgetProps.movies = data.movies;
+                    }
+                    if (id === "dictionary") {
+                      widgetProps.words = data.dictionaryWords;
+                    }
+
+                    const isNonInteractive = [
+                      "movies",
+                      "statistics",
+                      "dictionary",
+                    ].includes(id);
+                    const isInteractive = isNonInteractive
+                      ? false
+                      : config.interactive;
+
+                    widgetProps.isInteractive = isInteractive;
+                    widgetProps.onToggleInteractive = !isNonInteractive
+                      ? () =>
+                          handleUpdateWidgetConfig(id, {
+                            interactive: !config.interactive,
+                          })
+                      : undefined;
+
+                    if (id === "habits") {
+                      widgetProps.onToggleHabit = (habitId: number) => {
+                        const habit = data.habits.find(
+                          (h) => h.id === habitId,
+                        );
+                        if (habit) setHabitToConfirm(habit);
+                      };
+                    }
+
+                    return (
+                      <motion.div key={id} variants={itemVariants}>
+                        <SortableWidgetItem
+                          id={id}
+                          isVisualEditMode={isVisualEditMode}
+                          activeDragId={activeDragId}
+                          onRemove={handleToggleWidget}
+                          onUpdateConfig={handleUpdateWidgetConfig}
+                          widgetConfig={config}
                         >
-                          <div className="flex items-center justify-between w-full">
-                            {/* Espaçador para manter o título centralizado */}
-                            <div className="w-[30px]" />
+                          <WidgetComponent
+                            {...widgetProps}
+                            className="h-full w-full"
+                          />
+                        </SortableWidgetItem>
+                      </motion.div>
+                    );
+                  })}
+              </motion.div>
+            </SortableContext>
 
-                            <span className="text-xs font-black text-foreground bg-background/85 px-2.5 py-1 rounded-full border border-border select-none">
-                              {WIDGET_METADATA.find((w) => w.id === id)?.name}
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleWidget(id);
-                              }}
-                              className="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
-                              title="Remover widget"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* biome-ignore lint/a11y/noStaticElementInteractions: puxador dedicado para arrastar e soltar (drag handle) com cursor de arrastar */}
-                          <div
-                            draggable={true}
-                            onDragStart={(e: React.DragEvent) => {
-                              e.dataTransfer.setData("text/plain", id);
-                              e.dataTransfer.effectAllowed = "move";
-                            }}
-                            className="flex flex-col items-center justify-center gap-1.5 select-none cursor-grab active:cursor-grabbing hover:scale-105 transition-all opacity-80 hover:opacity-100"
-                          >
-                            <GripVertical className="w-6 h-6 text-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-foreground">
-                              arrastar para reordenar
-                            </span>
-                          </div>
-
-                          <div className="w-full flex items-center justify-center gap-2">
-                            {["habits", "tasks", "alarms", "reading"].includes(
-                              id,
-                            ) && (
-                              <div className="flex items-center gap-2 p-2 rounded-xl bg-background/95 border border-border shadow-none">
-                                <span className="text-[9px] font-bold text-muted-foreground uppercase">
-                                  Itens:
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const defVal = id === "reading" ? 2 : 3;
-                                    const curr = config.limit ?? defVal;
-                                    if (curr > 1) {
-                                      handleUpdateWidgetConfig(id, {
-                                        limit: curr - 1,
-                                      });
-                                    }
-                                  }}
-                                  className="w-5 h-5 flex items-center justify-center rounded-lg bg-accent border border-border text-xs font-bold hover:border-foreground transition-all cursor-pointer font-bold"
-                                >
-                                  -
-                                </button>
-                                <span className="text-xs font-black w-4 text-center">
-                                  {config.limit ?? (id === "reading" ? 2 : 3)}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const defVal = id === "reading" ? 2 : 3;
-                                    const curr = config.limit ?? defVal;
-                                    if (curr < 15) {
-                                      handleUpdateWidgetConfig(id, {
-                                        limit: curr + 1,
-                                      });
-                                    }
-                                  }}
-                                  className="w-5 h-5 flex items-center justify-center rounded-lg bg-accent border border-border text-xs font-bold hover:border-foreground transition-all cursor-pointer font-bold"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div
-                        className={cn(
-                          "h-full w-full",
-                          isVisualEditMode &&
-                            "pointer-events-none select-none opacity-40",
-                        )}
-                      >
-                        <WidgetComponent
-                          {...widgetProps}
-                          className="h-full w-full"
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-          </motion.div>
+            {/* Overlay visual durante o drag */}
+            <DragOverlay>
+              {activeDragId ? (
+                <div className="w-full min-h-[300px] rounded-2xl border-2 border-dashed border-emerald-500/60 bg-emerald-500/10 backdrop-blur-sm flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2 text-emerald-500">
+                    <GripVertical className="w-8 h-8 animate-pulse" />
+                    <span className="text-xs font-black">
+                      {WIDGET_METADATA.find((w) => w.id === activeDragId)?.name}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
       </div>
 
