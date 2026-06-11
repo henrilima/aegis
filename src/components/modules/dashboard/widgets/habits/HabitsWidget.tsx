@@ -12,6 +12,7 @@ interface HabitsWidgetProps {
   habits: Habit[];
   isToday: (iso: string) => boolean;
   time: Date;
+  limit?: number;
   isEditMode?: boolean;
   isInteractive?: boolean;
   onToggleInteractive?: () => void;
@@ -22,6 +23,7 @@ export function HabitsWidget({
   habits,
   isToday,
   time,
+  limit,
   isEditMode,
   isInteractive,
   onToggleInteractive,
@@ -105,7 +107,7 @@ export function HabitsWidget({
       </div>
 
       <div className="w-full space-y-2">
-        {positiveHabits.slice(0, 3).map((h) => {
+        {positiveHabits.slice(0, limit ?? 3).map((h) => {
           const done = h.lastDone && isToday(h.lastDone);
           const streak = getHabitStreak(h, time);
           return (

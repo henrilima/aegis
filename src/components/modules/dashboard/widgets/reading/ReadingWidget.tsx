@@ -18,6 +18,7 @@ interface ReadingWidgetProps {
   weekPages: number;
   goalWeekPages: number | null;
   onLogSession?: (session: ReadingSession) => void;
+  limit?: number;
   isEditMode?: boolean;
   isInteractive?: boolean;
   onToggleInteractive?: () => void;
@@ -32,6 +33,7 @@ export function ReadingWidget({
   isInteractive,
   onToggleInteractive,
   onLogSession,
+  limit,
 }: ReadingWidgetProps) {
   const color = getModuleColor("reading");
   const theme = getColorTheme(color);
@@ -127,10 +129,10 @@ export function ReadingWidget({
             </div>
           )}
 
-          {/* Livros atuais em leitura (máximo 2) */}
+          {/* Livros atuais em leitura */}
           {readingBooks.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {readingBooks.slice(0, 2).map((book) => {
+              {readingBooks.slice(0, limit ?? 2).map((book) => {
                 const progress =
                   book.totalPages > 0
                     ? Math.min(
@@ -193,40 +195,42 @@ export function ReadingWidget({
           ) : (
             /* Sessões recentes caso não haja livro atual */
             <div className="space-y-[1.5cqw] @sm:space-y-1.5">
-              {recentSessions.slice(0, 3).map((s, i) => (
-                <div
-                  key={s.id ?? i}
-                  className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-indigo-500">
-                      <BookOpen className="w-4 h-4" />
+              {recentSessions
+                .slice(0, limit !== undefined ? limit + 1 : 3)
+                .map((s, i) => (
+                  <div
+                    key={s.id ?? i}
+                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-indigo-500">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold text-foreground truncate">
+                          Sessão de Leitura
+                        </span>
+                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                          {s.date}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold text-foreground truncate">
-                        Sessão de Leitura
-                      </span>
-                      <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                        {s.date}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
-                    <span
-                      className={cn(
-                        "block text-xs font-bold leading-none",
-                        theme.text,
-                      )}
-                    >
-                      {s.pagesRead}
-                    </span>
-                    <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
-                      Páginas
-                    </span>
+                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
+                      <span
+                        className={cn(
+                          "block text-xs font-bold leading-none",
+                          theme.text,
+                        )}
+                      >
+                        {s.pagesRead}
+                      </span>
+                      <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                        Páginas
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
               {recentSessions.length === 0 && (
                 <p className="text-xs text-neutral-600 italic">
                   Nenhuma sessão registrada

@@ -338,7 +338,7 @@ export function DashboardHeader({
       <div className="flex flex-col gap-10 mb-12 w-full animate-in fade-in slide-in-from-top-2 duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8">
           {/* Esquerda: Identidade e Clima */}
           <div className="space-y-6">
             <div className="space-y-1">
@@ -422,7 +422,7 @@ export function DashboardHeader({
           </div>
 
           {/* Direita: Horário Personalizável */}
-          <div className="flex flex-col items-end justify-center md:self-center animate-in fade-in duration-700">
+          <div className="flex flex-col items-end justify-center lg:self-center animate-in fade-in duration-700">
             <DashboardClock
               time={time}
               style={dashboardClockStyle}
@@ -589,7 +589,7 @@ export function DashboardHeader({
       <div className="flex flex-col gap-6 mb-10 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1">
             {showHeaderDate && (
               <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-75">
@@ -638,7 +638,7 @@ export function DashboardHeader({
         {simulatedBanner}
 
         {/* Gorgeous Unified Glassmorphic Hero Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 p-6 sm:p-8 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-8 group">
+        <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 p-6 sm:p-8 backdrop-blur-md flex flex-col lg:flex-row items-center justify-between gap-8 group">
           {/* Subtle Dynamic Ambient Aura */}
           <div
             className={cn(

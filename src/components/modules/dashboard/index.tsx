@@ -2,6 +2,14 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { motion } from "framer-motion";
+import {
+  ChevronDown,
+  ChevronUp,
+  GripVertical,
+  Move,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AlarmFormState } from "@/components/modules/alarms/hooks/useAlarmsLogic";
@@ -22,7 +30,7 @@ import { DashboardHeader } from "./dashboardHeader";
 import { isToday } from "./helpers";
 import type { Habit, SleepEntry, StudySession } from "./types";
 import { useDashboardData, useWidgetLayout } from "./useDashboardData";
-import { WIDGET_REGISTRY } from "./widgets/registry";
+import { WIDGET_METADATA, WIDGET_REGISTRY } from "./widgets/registry";
 
 // Variantes de animação escalonada (staggered entrance)
 const containerVariants = {
@@ -69,6 +77,12 @@ export default function Dashboard() {
     widgetConfigs,
     handleUpdateWidgetConfig,
   } = useWidgetLayout();
+
+  const [isVisualEditMode, setIsVisualEditMode] = useState(false);
+
+  const inactiveWidgets = WIDGET_METADATA.filter(
+    (w) => isModuleEnabled(w.id as ModuleId) && !activeWidgetIds.includes(w.id),
+  );
   const {
     data,
     fetchAll,
@@ -195,6 +209,64 @@ export default function Dashboard() {
         </div>
 
         <div className="relative flex-1 px-4 sm:px-0 mb-20 whitespace-normal">
+          {/* Banner do Modo de Edição Visual */}
+          {isVisualEditMode && (
+            <div className="w-full bg-emerald-500/10 border-2 border-dashed border-emerald-500/20 text-emerald-500 rounded-3xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Move className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-black text-foreground">
+                    Modo de Edição Ativo
+                  </span>
+                  <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                    Arraste os widgets para mudar suas posições na tela ou
+                    configure-os usando os painéis rápidos.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVisualEditMode(false)}
+                className="px-6 py-2 rounded-xl bg-emerald-500 text-black font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                Concluir Edição
+              </button>
+            </div>
+          )}
+
+          {/* Biblioteca de Widgets Inativos (Scroll Lateral) */}
+          {isVisualEditMode && inactiveWidgets.length > 0 && (
+            <div className="w-full flex flex-col gap-3 mb-8 text-left animate-in slide-in-from-top-2 duration-300">
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider pl-1">
+                Biblioteca de Widgets (Inativos)
+              </span>
+              <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar snap-x snap-mandatory">
+                {inactiveWidgets.map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => handleToggleWidget(w.id)}
+                    className="flex items-center gap-4 p-4 rounded-2xl border-2 border-border bg-card/60 hover:bg-card hover:border-foreground/30 transition-all shrink-0 snap-start w-72 group text-left cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shrink-0 border border-border group-hover:bg-foreground group-hover:text-background transition-all">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-black text-foreground truncate">
+                        {w.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5 leading-tight">
+                        {w.description}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -207,15 +279,18 @@ export default function Dashboard() {
                 const WidgetComponent = WIDGET_REGISTRY[id];
                 if (!WidgetComponent) return null;
 
+                const config = widgetConfigs[id] || { interactive: false };
                 const boundIsToday = (iso: string) => isToday(iso, time);
 
                 const widgetProps: {
                   isToday: (iso: string) => boolean;
                   time: Date;
+                  limit?: number;
                   [key: string]: unknown;
                 } = {
                   isToday: boundIsToday,
                   time,
+                  limit: config.limit,
                 };
 
                 if (id === "habits") {
@@ -512,7 +587,6 @@ export default function Dashboard() {
                   widgetProps.words = data.dictionaryWords;
                 }
 
-                const config = widgetConfigs[id] || { interactive: false };
                 const isNonInteractive = [
                   "movies",
                   "statistics",
@@ -537,16 +611,169 @@ export default function Dashboard() {
                   };
                 }
 
+                const idx = activeWidgetIds.indexOf(id);
+
                 return (
                   <motion.div
                     key={id}
                     variants={itemVariants}
                     className="w-full h-full min-h-[300px] lg:min-h-[340px]"
                   >
-                    <WidgetComponent
-                      {...widgetProps}
-                      className="h-full w-full"
-                    />
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: container de drag-and-drop na dashboard */}
+                    <div
+                      draggable={isVisualEditMode}
+                      onDragStart={(e: React.DragEvent) => {
+                        if (!isVisualEditMode) return;
+                        e.dataTransfer.setData("text/plain", id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e: React.DragEvent) => {
+                        if (!isVisualEditMode) return;
+                        e.preventDefault();
+                      }}
+                      onDrop={(e: React.DragEvent) => {
+                        if (!isVisualEditMode) return;
+                        e.preventDefault();
+                        const draggedId = e.dataTransfer.getData("text/plain");
+                        if (draggedId && draggedId !== id) {
+                          const fromIdx = activeWidgetIds.indexOf(draggedId);
+                          const toIdx = activeWidgetIds.indexOf(id);
+                          if (fromIdx !== -1 && toIdx !== -1) {
+                            const newOrder = [...activeWidgetIds];
+                            newOrder.splice(fromIdx, 1);
+                            newOrder.splice(toIdx, 0, draggedId);
+                            handleReorderWidgets(newOrder);
+                          }
+                        }
+                      }}
+                      className={cn(
+                        "relative group/widget transition-all duration-300 w-full h-full rounded-2xl",
+                        isVisualEditMode &&
+                          "border-2 border-dashed border-emerald-500/40 p-1 bg-emerald-500/5 cursor-move",
+                      )}
+                    >
+                      {isVisualEditMode && (
+                        <div className="absolute inset-0 bg-background/80 backdrop-blur-xs rounded-2xl z-40 flex flex-col items-center justify-between p-4 pointer-events-auto">
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newOrder = [...activeWidgetIds];
+                                  const [moved] = newOrder.splice(idx, 1);
+                                  newOrder.splice(idx - 1, 0, moved);
+                                  handleReorderWidgets(newOrder);
+                                }}
+                                className="p-1.5 rounded-lg bg-background/90 border border-border text-foreground hover:border-foreground disabled:opacity-20 transition-all cursor-pointer"
+                                title="Mover para cima"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === activeWidgetIds.length - 1}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newOrder = [...activeWidgetIds];
+                                  const [moved] = newOrder.splice(idx, 1);
+                                  newOrder.splice(idx + 1, 0, moved);
+                                  handleReorderWidgets(newOrder);
+                                }}
+                                className="p-1.5 rounded-lg bg-background/90 border border-border text-foreground hover:border-foreground disabled:opacity-20 transition-all cursor-pointer"
+                                title="Mover para baixo"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <span className="text-xs font-black text-foreground bg-background/85 px-2.5 py-1 rounded-full border border-border select-none">
+                              {WIDGET_METADATA.find((w) => w.id === id)?.name}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleWidget(id);
+                              }}
+                              className="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                              title="Remover widget"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex flex-col items-center justify-center gap-1.5 select-none pointer-events-none opacity-80">
+                            <GripVertical className="w-6 h-6 text-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-bold text-foreground">
+                              arrastar para reordenar
+                            </span>
+                          </div>
+
+                          <div className="w-full flex items-center justify-center gap-2">
+                            {["habits", "tasks", "alarms", "reading"].includes(
+                              id,
+                            ) && (
+                              <div className="flex items-center gap-2 p-2 rounded-xl bg-background/95 border border-border shadow-none">
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                                  Itens:
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const defVal = id === "reading" ? 2 : 3;
+                                    const curr = config.limit ?? defVal;
+                                    if (curr > 1) {
+                                      handleUpdateWidgetConfig(id, {
+                                        limit: curr - 1,
+                                      });
+                                    }
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center rounded-lg bg-accent border border-border text-xs font-bold hover:border-foreground transition-all cursor-pointer font-bold"
+                                >
+                                  -
+                                </button>
+                                <span className="text-xs font-black w-4 text-center">
+                                  {config.limit ?? (id === "reading" ? 2 : 3)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const defVal = id === "reading" ? 2 : 3;
+                                    const curr = config.limit ?? defVal;
+                                    if (curr < 15) {
+                                      handleUpdateWidgetConfig(id, {
+                                        limit: curr + 1,
+                                      });
+                                    }
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center rounded-lg bg-accent border border-border text-xs font-bold hover:border-foreground transition-all cursor-pointer font-bold"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div
+                        className={cn(
+                          "h-full w-full",
+                          isVisualEditMode &&
+                            "pointer-events-none select-none opacity-40",
+                        )}
+                      >
+                        <WidgetComponent
+                          {...widgetProps}
+                          className="h-full w-full"
+                        />
+                      </div>
+                    </div>
                   </motion.div>
                 );
               })}
@@ -559,7 +786,10 @@ export default function Dashboard() {
           activeWidgetIds={activeWidgetIds}
           onToggle={handleToggleWidget}
           onReorder={handleReorderWidgets}
+          widgetConfigs={widgetConfigs}
+          onUpdateConfig={handleUpdateWidgetConfig}
           onClose={() => setIsConfigOpen(false)}
+          onStartVisualEdit={() => setIsVisualEditMode(true)}
         />
       )}
 

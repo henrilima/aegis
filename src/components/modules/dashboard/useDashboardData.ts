@@ -97,7 +97,7 @@ const INITIAL_DATA: DashboardData = {
 export function useWidgetLayout() {
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>([]);
   const [widgetConfigs, setWidgetConfigs] = useState<
-    Record<string, { interactive: boolean }>
+    Record<string, { interactive: boolean; limit?: number }>
   >({});
 
   useEffect(() => {
@@ -109,7 +109,9 @@ export function useWidgetLayout() {
         });
         const savedIds = await store.get<string[]>(STORE_KEY);
         const savedConfigs =
-          await store.get<Record<string, { interactive: boolean }>>(CONFIG_KEY);
+          await store.get<
+            Record<string, { interactive: boolean; limit?: number }>
+          >(CONFIG_KEY);
 
         if (Array.isArray(savedIds)) {
           setActiveWidgetIds(savedIds);
@@ -159,9 +161,15 @@ export function useWidgetLayout() {
 
   const handleUpdateWidgetConfig = async (
     id: string,
-    config: { interactive: boolean },
+    config: Partial<{ interactive: boolean; limit: number }>,
   ) => {
-    const next = { ...widgetConfigs, [id]: config };
+    const next = {
+      ...widgetConfigs,
+      [id]: {
+        ...(widgetConfigs[id] || { interactive: false }),
+        ...config,
+      },
+    };
     setWidgetConfigs(next);
     try {
       const store = await load("aegis-dashboard.json", {

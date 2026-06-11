@@ -20,6 +20,7 @@ interface TasksWidgetProps {
     color?: string,
   ) => void;
   onDeleteTask?: (task: Task) => void;
+  limit?: number;
   isEditMode?: boolean;
   isInteractive?: boolean;
   onToggleInteractive?: () => void;
@@ -30,6 +31,7 @@ export function TasksWidget({
   onToggleTask,
   onAddTask,
   onDeleteTask,
+  limit,
   isEditMode,
   isInteractive,
   onToggleInteractive,
@@ -89,7 +91,7 @@ export function TasksWidget({
           <div className="space-y-2">
             {pendingTasks
               .sort((a, b) => (b.priority || 0) - (a.priority || 0))
-              .slice(0, 3)
+              .slice(0, limit ?? 3)
               .map((task) => {
                 const styles = resolveTaskStyles(task.color, task.completed);
 

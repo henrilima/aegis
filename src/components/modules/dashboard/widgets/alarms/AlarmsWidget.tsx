@@ -20,6 +20,7 @@ import { BaseWidget } from "../BaseWidget";
 interface AlarmsWidgetProps {
   alarms: AppAlarm[];
   onAddAlarm?: (alarm: AlarmFormState) => void;
+  limit?: number;
   isEditMode?: boolean;
   isInteractive?: boolean;
   onToggleInteractive?: () => void;
@@ -28,6 +29,7 @@ interface AlarmsWidgetProps {
 export function AlarmsWidget({
   alarms: _propsAlarms, // Usamos os alarmes vindos do hook para consistência
   onAddAlarm,
+  limit,
   isEditMode,
   isInteractive,
   onToggleInteractive,
@@ -154,7 +156,7 @@ export function AlarmsWidget({
             <div className="mt-2 space-y-1.5">
               {alarms
                 .filter((a) => a.id !== nextAlarm?.id)
-                .slice(0, 2)
+                .slice(0, limit ?? 2)
                 .map((a) => (
                   <div
                     key={`a-key${a.id}`}

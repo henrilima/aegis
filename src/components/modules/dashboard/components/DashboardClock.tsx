@@ -227,24 +227,24 @@ export function DashboardClock({
       <div className="flex flex-col items-end gap-1 animate-in fade-in zoom-in-95 duration-500">
         <div className="flex items-baseline gap-2">
           <div className="flex items-center gap-0.5">
-            <span className="font-sans text-6xl font-black text-foreground tabular-nums leading-none">
+            <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none">
               {hours}
             </span>
             <span
               className={cn(
-                "font-sans text-5xl font-black leading-none opacity-70 mx-1.5",
+                "font-sans text-4xl sm:text-5xl font-black leading-none opacity-70 mx-1.5",
                 theme.text,
               )}
             >
               :
             </span>
-            <span className="font-sans text-6xl font-black text-foreground tabular-nums leading-none">
+            <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none">
               {minutes}
             </span>
           </div>
           <span
             className={cn(
-              "font-sans text-lg font-black tabular-nums select-none",
+              "font-sans text-base sm:text-lg font-black tabular-nums select-none",
               theme.text,
             )}
           >
