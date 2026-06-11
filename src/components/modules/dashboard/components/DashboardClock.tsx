@@ -310,20 +310,20 @@ export function DashboardClock({
           <TimeReel value={hours} animated={animated} />
           <span
             className={cn(
-              "font-sans font-black leading-none opacity-85 pb-1 animate-pulse mx-0.5",
+              "font-sans font-bold leading-none opacity-85 pb-1 animate-pulse",
               theme.text,
             )}
-            style={{ fontSize: 42 }}
+            style={{ fontSize: 32, marginLeft: "-5px", marginRight: "-5px" }}
           >
             :
           </span>
           <TimeReel value={minutes} animated={animated} />
           <span
             className={cn(
-              "font-sans font-black leading-none opacity-85 pb-1 animate-pulse mx-0.5",
+              "font-sans font-bold leading-none opacity-85 pb-1 animate-pulse",
               theme.text,
             )}
-            style={{ fontSize: 42 }}
+            style={{ fontSize: 32, marginLeft: "-5px", marginRight: "-5px" }}
           >
             :
           </span>

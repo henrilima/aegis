@@ -731,7 +731,7 @@ export function DashboardHeader({
           </div>
 
           {/* Right Block: Floating Glass Clock with Micro-glow */}
-          <div className="shrink-0 relative z-10 scale-90 sm:scale-95 transition-transform duration-500 group-hover:scale-[1.02]">
+          <div className="shrink-0 relative z-10 scale-90 sm:scale-95">
             <div className="p-5 rounded-2xl bg-card/25 border border-border/20 backdrop-blur-md">
               <DashboardClock
                 time={time}
