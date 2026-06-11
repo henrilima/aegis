@@ -566,7 +566,7 @@ export function DashboardConfigModal({
           open={true}
           onOpenChange={(open) => !open && setShowPreview(false)}
         >
-          <DialogContent className="max-w-[1400px] w-[95vw] p-8 sm:p-12 border-2 border-border backdrop-blur-md bg-background/95 rounded-3xl flex flex-col gap-8 text-left">
+          <DialogContent className="max-w-6xl w-[95vw] sm:max-w-6xl p-8 sm:p-12 border-2 border-border backdrop-blur-md bg-background/95 rounded-3xl flex flex-col gap-8 text-left">
             <DialogTitle className="text-lg font-black text-foreground">
               Pré-visualização do Layout
             </DialogTitle>
@@ -676,7 +676,7 @@ export function DashboardConfigModal({
               <button
                 type="button"
                 onClick={() => setShowPreview(false)}
-                className="px-6 py-2 rounded-xl text-xs font-bold bg-foreground text-background cursor-pointer hover:opacity-90 transition-all font-sans"
+                className="px-6 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer font-sans"
               >
                 Fechar
               </button>
