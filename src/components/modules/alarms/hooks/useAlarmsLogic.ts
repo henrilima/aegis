@@ -143,7 +143,6 @@ export function useAlarmsLogic() {
   const handleBulkDelete = async (ids: number[]) => {
     if (!ids.length) return;
     try {
-      // Delete in parallel or sequentially. We'll do sequentially for simplicity and safety.
       for (const id of ids) {
         await invoke("alarm_delete_alarm", { id, userId: uid });
       }

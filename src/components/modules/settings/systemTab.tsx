@@ -104,7 +104,7 @@ export function SystemTab() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+        <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
           <HardDrive className="w-4 h-4" />
           Comportamento do Sistema
         </h3>
@@ -146,7 +146,7 @@ export function SystemTab() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+        <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
           <Maximize className="w-4 h-4" />
           Interface e Navegação
         </h3>
@@ -221,7 +221,7 @@ export function SystemTab() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+        <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
           <Cloud className="w-4 h-4" />
           Clima na Dashboard
         </h3>
@@ -244,8 +244,8 @@ export function SystemTab() {
               className="text-sm font-bold text-foreground lowercase flex justify-between items-center"
             >
               Localização (Cidade, País)
-              <span className="text-[10px] text-muted-foreground uppercase">
-                OPCIONAL
+              <span className="text-[10px] text-muted-foreground">
+                opcional
               </span>
             </label>
             <p className="text-xs text-muted-foreground lowercase mb-2">

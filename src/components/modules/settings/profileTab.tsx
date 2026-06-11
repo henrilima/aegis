@@ -208,8 +208,8 @@ export function ProfileTab({
           <p className="text-muted-foreground font-medium">{email}</p>
 
           <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
-            <span className="px-3 py-1 bg-accent border border-border rounded-lg text-[10px] font-bold uppercase">
-              Sessão Local Ativa
+            <span className="px-3 py-1 bg-accent border border-border rounded-lg text-[10px] font-bold">
+              Sessão local ativa
             </span>
           </div>
         </div>
@@ -263,9 +263,7 @@ function InfoCard({
   return (
     <div className="p-5 bg-card border border-border rounded-2xl group transition-colors hover:border-primary/20">
       <Icon className="w-5 h-5 text-muted-foreground mb-3" />
-      <p className="text-[10px] font-bold text-muted-foreground uppercase">
-        {label}
-      </p>
+      <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
       <p className="text-sm font-bold text-foreground mt-1 truncate">{value}</p>
     </div>
   );

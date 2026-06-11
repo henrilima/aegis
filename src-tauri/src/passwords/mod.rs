@@ -12,7 +12,7 @@ use aes_gcm::{
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use csv::{ReaderBuilder, WriterBuilder};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,9 +58,7 @@ pub struct PasswordManager {
 
 impl PasswordManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("Failed to get app data dir");
-        std::fs::create_dir_all(&app_dir).ok();
-        let db_path = app_dir.join("passwords.db");
+        let db_path = crate::config::get_database_path(app_handle);
         let conn = Connection::open(&db_path).expect("Failed to open database");
         
         let _ = conn.execute("PRAGMA journal_mode=WAL", []);

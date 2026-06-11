@@ -4,6 +4,7 @@ import {
   Bell,
   Code2,
   Database,
+  HardDriveDownload,
   HeartPulse,
   Info,
   LayoutGrid,
@@ -31,6 +32,7 @@ import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 import { AboutTab } from "../modules/settings/aboutTab";
+import { BackupTab } from "../modules/settings/backupTab";
 import { DangerTab } from "../modules/settings/dangerTab";
 import { DataTab } from "../modules/settings/dataTab";
 import { DeveloperTab } from "../modules/settings/developerTab";
@@ -57,7 +59,8 @@ const GROUPS: { label: string; items: SettingsItem[] }[] = [
       { id: "profile", label: "Perfil", icon: User },
       { id: "notifications", label: "Notificações", icon: Bell },
       { id: "security", label: "Segurança", icon: ShieldCheck },
-      { id: "data", label: "Dados e Backup", icon: Database },
+      { id: "data", label: "Dados", icon: Database },
+      { id: "backup", label: "Backup", icon: HardDriveDownload },
     ],
   },
   {
@@ -153,6 +156,8 @@ export function SettingsModal() {
         return <SecurityTab />;
       case "data":
         return <DataTab />;
+      case "backup":
+        return <BackupTab />;
       case "themes":
         return <ThemesTab />;
       case "system":
@@ -225,7 +230,7 @@ export function SettingsModal() {
             <nav className="flex flex-col gap-8 overflow-y-auto no-scrollbar pr-2">
               {GROUPS.map((group) => (
                 <div key={group.label} className="flex flex-col gap-1.5">
-                  <span className="px-2.5 text-[10px] font-bold text-muted-foreground/50 uppercase mb-1">
+                  <span className="px-2.5 text-xs font-semibold text-muted-foreground/50 mb-1">
                     {group.label}
                   </span>
                   {group.items.map((item) => (
@@ -287,7 +292,7 @@ export function SettingsModal() {
                 <nav className="flex flex-col gap-8 overflow-y-auto custom-scrollbar pr-2">
                   {GROUPS.map((group) => (
                     <div key={group.label} className="flex flex-col gap-1.5">
-                      <span className="px-2.5 text-[10px] font-bold text-muted-foreground/50 uppercase mb-1">
+                      <span className="px-2.5 text-xs font-semibold text-muted-foreground/50 mb-1">
                         {group.label}
                       </span>
                       {group.items.map((item) => (

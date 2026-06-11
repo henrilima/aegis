@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,8 +34,7 @@ pub struct PomodoroManager {
 
 impl PomodoroManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("Failed to get app data dir");
-        let db_path = app_dir.join("passwords.db"); 
+        let db_path = crate::config::get_database_path(app_handle); 
         
         let conn = Connection::open(&db_path).expect("Failed to open database");
         let _ = conn.execute("PRAGMA journal_mode=WAL", []);

@@ -486,6 +486,83 @@ async fn global_quit_app(app_handle: tauri::AppHandle) {
     app_handle.exit(0);
 }
 
+fn copy_dir_all(src: impl AsRef<std::path::Path>, dst: impl AsRef<std::path::Path>) -> std::io::Result<()> {
+    std::fs::create_dir_all(&dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn global_set_custom_data_dir(app_handle: tauri::AppHandle, new_path: Option<String>) -> Result<(), String> {
+    
+    let current_db_path = crate::config::get_database_path(&app_handle);
+    let current_notes_dir = crate::config::get_notes_path(&app_handle);
+    
+    let default_app_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    
+    let target_dir = match &new_path {
+        Some(path_str) => {
+            let path_str = path_str.trim();
+            if path_str.is_empty() {
+                default_app_dir.clone()
+            } else {
+                std::path::PathBuf::from(path_str)
+            }
+        }
+        None => default_app_dir.clone(),
+    };
+    
+    if target_dir != default_app_dir {
+        std::fs::create_dir_all(&target_dir).map_err(|e| format!("Falha ao criar diretório: {}", e))?;
+    }
+    
+    let target_db_path = target_dir.join("profile.db");
+    let target_notes_dir = target_dir.join("notes");
+    
+    // Copy profile.db if it exists in current path and doesn't exist in target
+    if current_db_path.exists() && !target_db_path.exists() {
+        std::fs::copy(&current_db_path, &target_db_path)
+            .map_err(|e| format!("Falha ao copiar banco de dados: {}", e))?;
+    }
+    
+    // Check if target notes directory is empty
+    let is_target_notes_empty = if target_notes_dir.exists() {
+        if let Ok(mut entries) = std::fs::read_dir(&target_notes_dir) {
+            entries.next().is_none()
+        } else {
+            true
+        }
+    } else {
+        true
+    };
+
+    // Copy notes if they exist in current path and target is empty or missing
+    if current_notes_dir.exists() && is_target_notes_empty {
+        std::fs::create_dir_all(&target_notes_dir).map_err(|e| e.to_string())?;
+        copy_dir_all(&current_notes_dir, &target_notes_dir)
+            .map_err(|e| format!("Falha ao copiar notas: {}", e))?;
+    }
+    
+    // Save to local configuration db
+    let config_manager = crate::config::ConfigManager::new(&app_handle);
+    let path_val = match &new_path {
+        Some(p) => p.trim().to_string(),
+        None => "".to_string(),
+    };
+    config_manager.update_config("custom_data_dir", serde_json::json!(path_val))?;
+    
+    // Relaunch app
+    app_handle.restart()
+}
+
 
 
 
@@ -521,23 +598,31 @@ async fn global_notif_unread_count(state: State<'_, AppState>, user_id: String) 
 }
 
 #[tauri::command]
-async fn global_notif_mark_read(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.notif.mark_read(id, &user_id)
+async fn global_notif_mark_read(app_handle: tauri::AppHandle, state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.notif.mark_read(id, &user_id)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
+    Ok(())
 }
 
 #[tauri::command]
-async fn global_notif_mark_all_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
-    state.notif.mark_all_read(&user_id)
+async fn global_notif_mark_all_read(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    state.notif.mark_all_read(&user_id)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
+    Ok(())
 }
 
 #[tauri::command]
-async fn global_notif_delete(state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.notif.delete(id, &user_id)
+async fn global_notif_delete(app_handle: tauri::AppHandle, state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.notif.delete(id, &user_id)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
+    Ok(())
 }
 
 #[tauri::command]
-async fn global_notif_clear_read(state: State<'_, AppState>, user_id: String) -> Result<(), String> {
-    state.notif.clear_read(&user_id)
+async fn global_notif_clear_read(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
+    state.notif.clear_read(&user_id)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
+    Ok(())
 }
 
 #[tauri::command]
@@ -575,7 +660,8 @@ async fn global_pre_update_backup(app_handle: tauri::AppHandle) -> Result<(), St
     let backup_dir = data_dir.join("backups");
     if !backup_dir.exists() { std::fs::create_dir(&backup_dir).map_err(|e| e.to_string())?; }
     let now = Local::now().format("%Y%m%d_%H%M%S").to_string();
-    std::fs::copy(data_dir.join("passwords.db"), backup_dir.join(format!("backup_{}.db", now))).map_err(|e| e.to_string())?;
+    let db_path = crate::config::get_database_path(&app_handle);
+    std::fs::copy(db_path, backup_dir.join(format!("backup_{}.db", now))).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -944,7 +1030,11 @@ pub fn run() {
                 let config_report = ConfigManager::new(app.handle());
                 let now_report = config_report.get_now();
 
+                let db_path = crate::config::get_database_path(app.handle());
+                let notes_path = crate::config::get_notes_path(app.handle());
                 crate::log_status!("Aegis iniciado — Resumo de Dados");
+                crate::log_status!("  [Debug] Banco de dados: {:?}", db_path);
+                crate::log_status!("  [Debug] Notas: {:?}", notes_path);
 
                 if let Ok(users) = pm_report.list_users() {
                     crate::log_status!("Usuários registrados: {}", users.len());
@@ -993,7 +1083,7 @@ pub fn run() {
             global_local_register, global_check_user_availability, global_local_login, global_get_local_user, global_list_local_users, 
             global_delete_account, global_change_account_password, global_change_username, global_change_vault_password, 
             global_revert_vault_to_master, global_has_separate_vault_password,
-            global_get_app_config, global_set_app_config, global_apply_internal_command, global_get_simulation_status, global_quit_app,
+            global_get_app_config, global_set_app_config, global_apply_internal_command, global_get_simulation_status, global_quit_app, global_set_custom_data_dir,
             global_get_app_version, global_read_changelog, global_get_log_path, global_read_app_logs, global_capture_screenshot,
             global_save_avatar, global_get_avatar, global_delete_avatar, global_check_dnd_status, global_check_github_update, 
             global_open_app_data_folder, global_pre_update_backup, 

@@ -45,9 +45,7 @@ export function GlobalScheduler() {
   }, [navigate]);
 
   // Restaura e foca a janela do Aegis quando o backend emite o evento 'focus-window'.
-  // Esta abordagem substitui o onAction do plugin de notificação, evitando o erro de IPC
-  // 'notification.registerListener not allowed' que ocorre quando o manifest ACL não
-  // contém o comando IPC interno do plugin.
+
   useEffect(() => {
     const initFocusListener = async () => {
       const unsub = await listen("focus-window", async () => {

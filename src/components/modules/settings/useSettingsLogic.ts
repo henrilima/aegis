@@ -44,6 +44,7 @@ export interface AppConfig {
   dashboardClockStyle: string;
   dashboardClockAnimated: boolean;
   dashboardHeaderStyle?: string;
+  customDataDir: string;
 }
 
 export function useSettingsLogic() {
@@ -75,6 +76,7 @@ export function useSettingsLogic() {
   const [dashboardClockStyle, setDashboardClockStyle] = useState("default");
   const [dashboardClockAnimated, setDashboardClockAnimated] = useState(true);
   const [dashboardHeaderStyle, setDashboardHeaderStyle] = useState("default");
+  const [customDataDir, setCustomDataDir] = useState("");
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const { navigate, setSettingsOpen } = useNavigation();
   const username = user?.username || "Usuário";
@@ -138,6 +140,8 @@ export function useSettingsLogic() {
         setDashboardClockAnimated(config.dashboardClockAnimated);
       if (config.dashboardHeaderStyle !== undefined)
         setDashboardHeaderStyle(config.dashboardHeaderStyle);
+      if (config.customDataDir !== undefined)
+        setCustomDataDir(config.customDataDir);
       setIsConfigLoading(false);
     } catch (err) {
       console.error("Failed to load config:", err);
@@ -184,6 +188,7 @@ export function useSettingsLogic() {
       dashboardClockStyle,
       dashboardClockAnimated,
       dashboardHeaderStyle,
+      customDataDir,
       [key]: value,
     };
 
@@ -259,6 +264,7 @@ export function useSettingsLogic() {
       dashboardClockStyle,
       dashboardClockAnimated,
       dashboardHeaderStyle,
+      customDataDir,
     };
 
     try {
@@ -311,6 +317,7 @@ export function useSettingsLogic() {
       dashboardClockStyle,
       dashboardClockAnimated,
       dashboardHeaderStyle,
+      customDataDir,
     };
 
     try {
@@ -352,6 +359,7 @@ export function useSettingsLogic() {
       dashboardClockStyle,
       dashboardClockAnimated,
       dashboardHeaderStyle,
+      customDataDir,
     };
 
     try {
@@ -396,6 +404,7 @@ export function useSettingsLogic() {
       dashboardClockStyle,
       dashboardClockAnimated,
       dashboardHeaderStyle,
+      customDataDir,
     };
 
     try {
@@ -496,6 +505,7 @@ export function useSettingsLogic() {
     dashboardClockStyle,
     dashboardClockAnimated,
     dashboardHeaderStyle,
+    customDataDir,
     updateConfigField,
     showHolidays,
     username,

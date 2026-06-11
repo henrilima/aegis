@@ -245,7 +245,7 @@ export function IntegrationsTab() {
                     </button>
                   </div>
                   {isDirty && (
-                    <p className="text-[10px] text-amber-500 font-bold uppercase">
+                    <p className="text-[10px] text-amber-500 font-bold">
                       Pendência de salvamento
                     </p>
                   )}

@@ -242,5 +242,6 @@ commands.allow = [
     "global_get_simulation_status",
     "global_export_raw_user_json",
     "global_import_raw_user_json",
-    "global_open_app_data_folder"
+    "global_open_app_data_folder",
+    "global_set_custom_data_dir"
 ]

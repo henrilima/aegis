@@ -33,14 +33,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "nsis",
-      "msi",
-      "deb",
-      "rpm",
-      "dmg",
-      "app"
-    ],
+    "targets": ["nsis", "msi", "deb", "rpm", "dmg", "app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -48,15 +41,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "../aegis.changelog",
-      "../public/sounds/*"
-    ],
+    "resources": ["../aegis.changelog", "../public/sounds/*"],
     "windows": {
       "nsis": {
-        "languages": [
-          "PortugueseBR"
-        ]
+        "languages": ["PortugueseBR"]
       },
       "wix": {
         "language": "pt-BR"

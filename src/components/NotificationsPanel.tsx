@@ -407,7 +407,9 @@ export function NotificationsPanel({
         update = await check();
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        log.warn(`Falha ao inicializar updater oficial (tentando fallback browser) | ${errMsg}`);
+        log.warn(
+          `Falha ao inicializar updater oficial (tentando fallback browser) | ${errMsg}`,
+        );
         if (release) {
           await open(release.html_url);
           setShowUpdateDialog(false);
@@ -603,7 +605,7 @@ export function NotificationsPanel({
     setTimeout(() => {
       onClose();
       setIsClosing(false);
-      setShowUpdateDialog(false); // Reset update dialog on close
+      setShowUpdateDialog(false);
     }, 280);
   }, [onClose]);
 
@@ -614,7 +616,6 @@ export function NotificationsPanel({
       setExitingIds(new Set());
       panelRef.current?.focus();
 
-      // Auto-read logic
       if (unreadCount > 0) {
         invoke<{ autoReadNotifications: boolean }>("global_get_app_config")
           .then((config) => {
@@ -662,7 +663,7 @@ export function NotificationsPanel({
     };
   }, [isOpen, handleClose]);
 
-  // Focus trap: impede que Tab vaze para o conteúdo por trás do painel
+  // impede que Tab vaze para o conteúdo por trás do painel
   const handlePanelKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       handleClose();

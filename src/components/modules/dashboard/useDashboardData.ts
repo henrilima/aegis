@@ -93,7 +93,7 @@ const INITIAL_DATA: DashboardData = {
   showHolidays: true,
 };
 
-// Hook: Layout de Widgets (persistido no Store do Tauri)
+// Layout de Widgets (persistido no Store do Tauri)
 export function useWidgetLayout() {
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>([]);
   const [widgetConfigs, setWidgetConfigs] = useState<

@@ -1,5 +1,4 @@
 "use client";
-// Build trigger: Weather integration direct in header
 
 import {
   Bell,
@@ -231,10 +230,8 @@ export function DashboardHeader({
         const rawCondition =
           current.lang_pt?.[0]?.value || current.weatherDesc?.[0]?.value || "";
 
-        // Robust translation logic
         let condition = rawCondition.toLowerCase();
 
-        // Try exact match or partial match from the dictionary
         const translationKey = Object.keys(CONDITION_TRANSLATIONS).find(
           (key: string) => condition.includes(key) || key.includes(condition),
         );
@@ -242,7 +239,6 @@ export function DashboardHeader({
         if (translationKey) {
           condition = CONDITION_TRANSLATIONS[translationKey];
         } else {
-          // Final word-by-word fallback
           const words = condition.split(" ");
           const translatedWords = words.map((w: string) => {
             const lowerW = w.toLowerCase();
@@ -258,7 +254,6 @@ export function DashboardHeader({
           }
         }
 
-        // Get Icon using either translated or raw description
         const Icon =
           WEATHER_ICONS[condition] ||
           WEATHER_ICONS[rawCondition] ||
@@ -294,7 +289,6 @@ export function DashboardHeader({
     greetingText = "Boa noite";
   }
 
-  // Formatting helpers for capitalization rules (First letter capitalized, rest lowercase)
   const rawDate = time.toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "2-digit",
@@ -311,7 +305,6 @@ export function DashboardHeader({
 
   const weatherLocationStr = weather ? weather.location.split(",")[0] : "";
 
-  // Hide the header date when using clocks that already display the date
   const showHeaderDate =
     dashboardClockStyle !== "datetime" && dashboardClockStyle !== "semanal";
 

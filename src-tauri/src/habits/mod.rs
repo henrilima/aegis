@@ -3,7 +3,6 @@ use rusqlite::{params, Connection};
 use chrono::{DateTime, Utc, Timelike};
 use std::path::PathBuf;
 use tauri::AppHandle;
-use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -33,8 +32,7 @@ pub struct HabitManager {
 
 impl HabitManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("Falha ao obter diretório de dados do app");
-        let db_path = app_dir.join("passwords.db");
+        let db_path = crate::config::get_database_path(app_handle);
         
         let conn = Connection::open(&db_path).expect("Falha ao abrir banco de dados");
         conn.execute(

@@ -40,14 +40,12 @@ export function GlobalShortcuts() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on route change
   useEffect(() => {
     if (route) {
       setIsDropdownOpen(false);
     }
   }, [route]);
 
-  // Close dropdown on click outside
   useEffect(() => {
     if (!isDropdownOpen) return;
 

@@ -34,6 +34,7 @@ pub struct AppConfig {
     pub dashboard_clock_style: String,
     pub dashboard_clock_animated: bool,
     pub dashboard_header_style: String,
+    pub custom_data_dir: String,
 }
 
 impl Default for AppConfig {
@@ -65,6 +66,7 @@ impl Default for AppConfig {
             dashboard_clock_style: "default".to_string(),
             dashboard_clock_animated: true,
             dashboard_header_style: "default".to_string(),
+            custom_data_dir: "".to_string(),
         }
     }
 }
@@ -118,6 +120,7 @@ impl ConfigManager {
             ("dashboard_clock_style", "default"),
             ("dashboard_clock_animated", "true"),
             ("dashboard_header_style", "default"),
+            ("custom_data_dir", ""),
         ];
 
         for (key, val) in defaults {
@@ -345,6 +348,12 @@ impl ConfigManager {
             |row| row.get(0)
         ).unwrap_or("default".to_string());
 
+        let custom_data_dir: String = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'custom_data_dir'",
+            [],
+            |row| row.get(0)
+        ).unwrap_or_default();
+
         AppConfig {
             minimize_on_close,
             start_at_login,
@@ -372,6 +381,7 @@ impl ConfigManager {
             dashboard_clock_style,
             dashboard_clock_animated,
             dashboard_header_style,
+            custom_data_dir,
         }
     }
 
@@ -505,6 +515,11 @@ impl ConfigManager {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_header_style', ?1)",
             params![config.dashboard_header_style],
+        ).map_err(|e| e.to_string())?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('custom_data_dir', ?1)",
+            params![config.custom_data_dir],
         ).map_err(|e| e.to_string())?;
 
         Ok(())
@@ -643,4 +658,83 @@ impl ConfigManager {
 
         Err("Comando interno não reconhecido pelo núcleo (Backend).".to_string())
     }
+}
+
+pub fn get_database_path(app_handle: &AppHandle) -> PathBuf {
+    let app_dir = app_handle.path().app_data_dir().expect("Failed to get app data dir");
+    let config_db_path = app_dir.join("config.db");
+    let mut db_dir = app_dir.clone();
+    
+    if let Ok(conn) = Connection::open(&config_db_path) {
+        let custom_dir: Option<String> = conn.query_row(
+            "SELECT value FROM settings WHERE key = 'custom_data_dir'",
+            [],
+            |row| row.get(0),
+        ).ok();
+        
+        if let Some(path_str) = custom_dir {
+            let path_str = path_str.trim();
+            if !path_str.is_empty() {
+                let path = std::path::PathBuf::from(path_str);
+                if std::fs::create_dir_all(&path).is_ok() {
+                    db_dir = path;
+                }
+            }
+        }
+    }
+    
+    std::fs::create_dir_all(&db_dir).ok();
+    let profile_db = db_dir.join("profile.db");
+    let old_db = db_dir.join("passwords.db");
+    if !profile_db.exists() && old_db.exists() {
+        let _ = std::fs::rename(&old_db, &profile_db);
+    }
+    profile_db
+}
+
+fn copy_notes_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let dest_path = dst.join(entry.file_name());
+        if ty.is_dir() {
+            copy_notes_recursive(&entry.path(), &dest_path)?;
+        } else {
+            if !dest_path.exists() {
+                std::fs::copy(entry.path(), &dest_path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn get_notes_path(app_handle: &AppHandle) -> PathBuf {
+    let db_path = get_database_path(app_handle);
+    let db_dir = db_path.parent().expect("Failed to get db parent dir");
+    let target_notes_dir = db_dir.join("notes");
+
+    // Auto-migration: if we are using a custom data dir, and the target notes directory
+    // is empty or does not exist, but the default notes directory has notes, copy them.
+    if let Ok(default_dir) = app_handle.path().app_data_dir() {
+        let default_notes_dir = default_dir.join("notes");
+        if default_notes_dir.exists() && default_notes_dir != target_notes_dir {
+            let is_target_empty = if target_notes_dir.exists() {
+                if let Ok(mut entries) = std::fs::read_dir(&target_notes_dir) {
+                    entries.next().is_none()
+                } else {
+                    true
+                }
+            } else {
+                true
+            };
+
+            if is_target_empty {
+                let _ = std::fs::create_dir_all(&target_notes_dir);
+                let _ = copy_notes_recursive(&default_notes_dir, &target_notes_dir);
+            }
+        }
+    }
+
+    target_notes_dir
 }

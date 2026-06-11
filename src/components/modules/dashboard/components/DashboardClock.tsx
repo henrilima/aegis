@@ -15,7 +15,6 @@ interface TimeReelProps {
   animated: boolean;
 }
 
-// 1. TimeReel: handles continuous vertical reel animation
 function TimeReel({ value, animated }: TimeReelProps) {
   const [currentVal, setCurrentVal] = useState(value);
   const [nextVal, setNextVal] = useState(value);
@@ -29,7 +28,7 @@ function TimeReel({ value, animated }: TimeReelProps) {
         const timer = setTimeout(() => {
           setCurrentVal(value);
           setIsAnimating(false);
-        }, 350); // Slide transition duration
+        }, 350);
         return () => clearTimeout(timer);
       } else {
         setCurrentVal(value);
@@ -61,7 +60,6 @@ function TimeReel({ value, animated }: TimeReelProps) {
   );
 }
 
-// 2. Portuguese number to words converter for "Texto Literário"
 function timeToWords(
   h: number,
   m: number,
@@ -155,7 +153,6 @@ function timeToWords(
           : `${numbers[h]} horas`;
   const minStr = m === 0 ? "em ponto" : minutesWords(m);
 
-  // Format seconds simply
   let secStr = "segundos";
   if (s === 1) secStr = "um segundo";
   else if (s > 1) {

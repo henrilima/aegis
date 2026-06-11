@@ -626,7 +626,7 @@ pub async fn global_export_full_system_bundle(
         .map_err(|e| e.to_string())?;
 
     // 1. Bancos de dados
-    let passwords_db = std::fs::read(app_dir.join("passwords.db")).unwrap_or_default();
+    let passwords_db = std::fs::read(crate::config::get_database_path(&app_handle)).unwrap_or_default();
     let config_db = std::fs::read(app_dir.join("config.db")).unwrap_or_default();
 
     // 2. Config do dashboard
@@ -637,9 +637,7 @@ pub async fn global_export_full_system_bundle(
     // ele usa o diretório do executável/notes.
     // Vamos tentar localizar.
     let mut notes_files = HashMap::new();
-    let current_exe = std::env::current_exe().unwrap_or_default();
-    let base_dir = current_exe.parent().unwrap_or(&app_dir).to_path_buf();
-    let notes_dir = base_dir.join("notes");
+    let notes_dir = crate::config::get_notes_path(&app_handle);
 
     if notes_dir.exists() {
         collect_notes_recursive(&notes_dir, &notes_dir, &mut notes_files);
@@ -674,14 +672,15 @@ pub async fn global_import_full_system_bundle(
         .map_err(|e| e.to_string())?;
 
     // Backup preventivo
+    let db_path = crate::config::get_database_path(&app_handle);
     let _ = std::fs::copy(
-        app_dir.join("passwords.db"),
-        app_dir.join("passwords_backup_pre_bundle.db"),
+        &db_path,
+        db_path.with_file_name("profile_backup_pre_bundle.db"),
     );
 
     // 1. Restaurar bancos
     if !bundle.passwords_db.is_empty() {
-        std::fs::write(app_dir.join("passwords.db"), &bundle.passwords_db)
+        std::fs::write(&db_path, &bundle.passwords_db)
             .map_err(|e| e.to_string())?;
     }
     if !bundle.config_db.is_empty() {
@@ -694,9 +693,7 @@ pub async fn global_import_full_system_bundle(
     }
 
     // 3. Notas
-    let current_exe = std::env::current_exe().unwrap_or_default();
-    let base_dir = current_exe.parent().unwrap_or(&app_dir).to_path_buf();
-    let notes_dir = base_dir.join("notes");
+    let notes_dir = crate::config::get_notes_path(&app_handle);
 
     for (rel_path, content) in bundle.notes_files {
         let normalized_path = rel_path.replace('\\', "/");

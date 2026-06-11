@@ -192,7 +192,7 @@ export function SystemHealthTab() {
               type="button"
               size="sm"
               onClick={handleTestNotification}
-              className={cn("h-8 text-xs gap-2 text-white", themeStyles.solid)}
+              className={cn("h-8 text-xs gap-2 text-white", themeStyles.solid, themeStyles.bgHover)}
             >
               <BellRing className="w-3.5 h-3.5" />
               Testar entrega

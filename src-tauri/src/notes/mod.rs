@@ -43,22 +43,8 @@ pub struct NoteManager {
 }
 
 impl NoteManager {
-    pub fn new(_app_handle: &AppHandle) -> Self {
-        let current_exe = std::env::current_exe().unwrap_or_default();
-        let current_dir = std::env::current_dir().unwrap_or_default();
-
-        let path_str = current_exe.to_string_lossy();
-        let base_dir = if path_str.contains("target/debug")
-            || path_str.contains("target/release")
-            || path_str.contains("target\\debug")
-            || path_str.contains("target\\release")
-        {
-            current_dir
-        } else {
-            current_exe.parent().unwrap_or(&current_dir).to_path_buf()
-        };
-
-        let notes_dir = base_dir.join("notes");
+    pub fn new(app_handle: &AppHandle) -> Self {
+        let notes_dir = crate::config::get_notes_path(app_handle);
         let _ = fs::create_dir_all(&notes_dir);
 
         NoteManager { notes_dir }

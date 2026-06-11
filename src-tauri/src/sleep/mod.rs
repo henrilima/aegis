@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -34,11 +34,7 @@ pub struct SleepManager {
 
 impl SleepManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle
-            .path()
-            .app_data_dir()
-            .expect("Falha ao obter diretório de dados");
-        let db_path = app_dir.join("passwords.db");
+        let db_path = crate::config::get_database_path(app_handle);
 
         let conn = Connection::open(&db_path).expect("Falha ao abrir banco");
 

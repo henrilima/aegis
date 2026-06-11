@@ -123,9 +123,7 @@ function AboutCard({
 }) {
   return (
     <div className="p-6 bg-card border border-border rounded-2xl space-y-2">
-      <p className="text-[10px] font-bold text-muted-foreground uppercase">
-        {label}
-      </p>
+      <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
       <p className="text-xl font-black text-foreground">{value}</p>
       <p className="text-xs text-muted-foreground">{subtext}</p>
     </div>
@@ -159,9 +157,7 @@ function SupportLink({
           <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
         </div>
         <div>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">
-            {label}
-          </p>
+          <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
           <p className="text-sm font-bold text-foreground">{value}</p>
         </div>
       </div>

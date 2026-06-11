@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 
 // Estruturas de Dados
@@ -67,8 +67,7 @@ pub struct StatisticsManager {
 
 impl StatisticsManager {
     pub fn new(app_handle: &AppHandle) -> Self {
-        let app_dir = app_handle.path().app_data_dir().expect("Diretório de dados não encontrado");
-        let db_path = app_dir.join("passwords.db");
+        let db_path = crate::config::get_database_path(app_handle);
         Self { db_path }
     }
 
