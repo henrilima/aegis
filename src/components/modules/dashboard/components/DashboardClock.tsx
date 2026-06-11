@@ -37,22 +37,68 @@ function TimeReel({ value, animated }: TimeReelProps) {
     }
   }, [value, currentVal, animated]);
 
+  // Dimensões em pixels fixos: fonte de 48px, slot com 64px de altura
+  const FONT_PX = 48;
+  const SLOT_H = 64;
+
   return (
-    <div className="relative h-10 sm:h-14 w-[72px] sm:w-[88px] overflow-hidden">
+    <div
+      style={{
+        position: "relative",
+        width: FONT_PX * 2,   // ~96px para 2 dígitos
+        height: SLOT_H,
+        overflow: "hidden",
+      }}
+    >
       <div
-        className={cn(
-          "absolute inset-x-0 top-0 h-[200%] flex flex-col",
-          animated && isAnimating
-            ? "transition-all duration-350 ease-out -translate-y-1/2"
-            : "transition-none translate-y-0",
-        )}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 0,
+          height: SLOT_H * 2,
+          display: "flex",
+          flexDirection: "column",
+          transform:
+            animated && isAnimating
+              ? `translateY(-${SLOT_H}px)`
+              : "translateY(0)",
+          transition:
+            animated && isAnimating
+              ? "transform 350ms ease-out"
+              : "none",
+        }}
       >
-        {/* Slot 1: Valor atual */}
-        <div className="h-1/2 w-full flex items-center justify-center font-sans text-4xl sm:text-5xl font-black text-foreground/95 tabular-nums leading-none">
+        {/* Slot 1: valor atual */}
+        <div
+          style={{
+            height: SLOT_H,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: FONT_PX,
+            fontWeight: 900,
+            fontFamily: "inherit",
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1,
+          }}
+        >
           {currentVal}
         </div>
-        {/* Slot 2: Próximo valor deslizando */}
-        <div className="h-1/2 w-full flex items-center justify-center font-sans text-4xl sm:text-5xl font-black text-foreground/95 tabular-nums leading-none">
+        {/* Slot 2: próximo valor */}
+        <div
+          style={{
+            height: SLOT_H,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: FONT_PX,
+            fontWeight: 900,
+            fontFamily: "inherit",
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1,
+          }}
+        >
           {nextVal}
         </div>
       </div>
@@ -264,7 +310,7 @@ export function DashboardClock({
           <TimeReel value={hours} animated={animated} />
           <span
             className={cn(
-              "font-sans text-4xl sm:text-5xl font-black leading-none opacity-85 pb-0.5 animate-pulse mx-0.5",
+              "font-sans text-[40px] lg:text-[46px] font-black leading-none opacity-85 pb-1 animate-pulse mx-0.5",
               theme.text,
             )}
           >
@@ -273,7 +319,7 @@ export function DashboardClock({
           <TimeReel value={minutes} animated={animated} />
           <span
             className={cn(
-              "font-sans text-4xl sm:text-5xl font-black leading-none opacity-85 pb-0.5 animate-pulse mx-0.5",
+              "font-sans text-[40px] lg:text-[46px] font-black leading-none opacity-85 pb-1 animate-pulse mx-0.5",
               theme.text,
             )}
           >

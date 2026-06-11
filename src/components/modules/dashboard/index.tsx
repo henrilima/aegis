@@ -306,6 +306,7 @@ export default function Dashboard() {
               positiveHabitsCount={positiveHabitsCount}
               pendingTasksCount={pendingTasksCount}
               onOpenConfig={() => setIsConfigOpen(true)}
+              onStartVisualEdit={() => setIsVisualEditMode(true)}
               isSimulated={isSimulated}
             />
           </div>
@@ -377,6 +378,7 @@ export default function Dashboard() {
             positiveHabitsCount={positiveHabitsCount}
             pendingTasksCount={pendingTasksCount}
             onOpenConfig={() => setIsConfigOpen(true)}
+            onStartVisualEdit={() => setIsVisualEditMode(true)}
             isSimulated={isSimulated}
           />
         </div>

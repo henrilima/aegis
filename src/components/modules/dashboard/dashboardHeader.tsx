@@ -12,6 +12,7 @@ import {
   Layout,
   type LucideIcon,
   MessageSquare,
+  Move,
   Settings,
   Sun,
 } from "lucide-react";
@@ -132,6 +133,7 @@ interface DashboardHeaderProps {
   positiveHabitsCount: number;
   pendingTasksCount: number;
   onOpenConfig: () => void;
+  onStartVisualEdit?: () => void;
   isSimulated?: boolean;
 }
 
@@ -142,6 +144,7 @@ export function DashboardHeader({
   positiveHabitsCount,
   pendingTasksCount,
   onOpenConfig,
+  onStartVisualEdit,
   isSimulated = false,
 }: DashboardHeaderProps) {
   const { themeStyles: theme, accentColor, appMode } = useTheme();
@@ -710,7 +713,7 @@ export function DashboardHeader({
             </div>
 
             {showCustomizeButton && (
-              <div className="pt-2">
+              <div className="pt-2 flex items-center gap-3">
                 <button
                   type="button"
                   onClick={onOpenConfig}

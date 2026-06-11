@@ -101,6 +101,24 @@ export function DashboardConfigModal({
                   </button>
                 )}
 
+                {activeTab === "widgets" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onStartVisualEdit();
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-black text-white transition-all cursor-pointer",
+                      theme.solid,
+                      theme.solidHover,
+                    )}
+                  >
+                    <Move className="w-3.5 h-3.5" />
+                    Organizar
+                  </button>
+                )}
+
                 {/* Seletor de Abas */}
                 <div className="flex gap-1.5 p-1 bg-accent/20 rounded-xl border border-border/10">
                   <button
@@ -364,25 +382,6 @@ export function DashboardConfigModal({
               ) : (
                 // Aba Widgets — Layout Vertical Empilhado
                 <div className="w-full flex flex-col gap-8">
-                  {/* Botão de Modo de Edição Visual na Tela */}
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onStartVisualEdit();
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 px-8 py-3 rounded-2xl text-white font-black text-sm transition-all active:scale-95 cursor-pointer",
-                        theme.solid,
-                        theme.solidHover,
-                      )}
-                    >
-                      <Move className="w-4 h-4" />
-                      Organizar Widgets na Tela (Drag & Drop)
-                    </button>
-                  </div>
-
                   {/* Seção: Widgets Ativos */}
                   <div className="flex flex-col gap-4 text-left">
                     <div>
