@@ -388,7 +388,9 @@ export function NotificationsPanel({
         lastCheckTime = Date.now();
         setErrorMsg(null);
       } catch (err) {
-        log.error("Erro no updater visual", err);
+        log.warn(
+          `Erro no updater visual (possível limite de requisição ou offline) | ${err instanceof Error ? err.message : String(err)}`,
+        );
         setVState("error");
         setErrorMsg(
           typeof err === "string"
@@ -398,7 +400,7 @@ export function NotificationsPanel({
       }
     };
     checkUpdate();
-  }, [log.error, log.warn, isOpen, vState]);
+  }, [log.warn, isOpen, vState]);
 
   const handleUpdate = async () => {
     try {

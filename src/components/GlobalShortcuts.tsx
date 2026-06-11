@@ -137,12 +137,19 @@ export function GlobalShortcuts() {
   }, [navigate, route, isPaletteOpen, isGuideOpen, setSettingsOpen]);
 
   useEffect(() => {
+    const handleOpenPalette = () => {
+      setIsPaletteOpen(true);
+    };
     const handleCloseAll = () => {
       setIsPaletteOpen(false);
       setIsGuideOpen(false);
     };
+    window.addEventListener("open-command-palette", handleOpenPalette);
     window.addEventListener("close-all-modals", handleCloseAll);
-    return () => window.removeEventListener("close-all-modals", handleCloseAll);
+    return () => {
+      window.removeEventListener("open-command-palette", handleOpenPalette);
+      window.removeEventListener("close-all-modals", handleCloseAll);
+    };
   }, []);
 
   return (

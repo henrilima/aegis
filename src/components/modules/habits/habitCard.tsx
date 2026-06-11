@@ -280,7 +280,7 @@ function StatBadge({
       className={`flex flex-col items-center gap-1 py-3.5 rounded-xl border transition-all ${active ? "bg-background/40 border-border" : "bg-transparent border-transparent opacity-30"}`}
     >
       {icon}
-      <span className="text-lg font-black font-mono leading-none text-foreground">
+      <span className="text-lg font-bold font-sans leading-none text-foreground">
         {value}
       </span>
       <span className="text-[9px] text-muted-foreground/60 font-semibold leading-none">

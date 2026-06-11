@@ -422,9 +422,7 @@ export function DashboardConfigModal({
                                   theme.bg,
                                 )}
                               >
-                                <Layout
-                                  className={cn("w-4 h-4", theme.text)}
-                                />
+                                <Layout className={cn("w-4 h-4", theme.text)} />
                               </div>
                               <div className="flex flex-col min-w-0">
                                 <span className="text-sm font-black text-foreground truncate">

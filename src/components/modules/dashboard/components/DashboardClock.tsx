@@ -45,7 +45,7 @@ function TimeReel({ value, animated }: TimeReelProps) {
     <div
       style={{
         position: "relative",
-        width: FONT_PX * 2,   // ~96px para 2 dígitos
+        width: FONT_PX * 2, // ~96px para 2 dígitos
         height: SLOT_H,
         overflow: "hidden",
       }}
@@ -64,9 +64,7 @@ function TimeReel({ value, animated }: TimeReelProps) {
               ? `translateY(-${SLOT_H}px)`
               : "translateY(0)",
           transition:
-            animated && isAnimating
-              ? "transform 350ms ease-out"
-              : "none",
+            animated && isAnimating ? "transform 350ms ease-out" : "none",
         }}
       >
         {/* Slot 1: valor atual */}
@@ -273,24 +271,24 @@ export function DashboardClock({
       <div className="flex flex-col items-end gap-1 animate-in fade-in zoom-in-95 duration-500">
         <div className="flex items-baseline gap-2">
           <div className="flex items-center gap-0.5">
-            <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none">
+            <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none">
               {hours}
             </span>
             <span
               className={cn(
-                "font-sans text-4xl sm:text-5xl font-black leading-none opacity-70 mx-1.5",
+                "font-sans text-3xl sm:text-4xl font-black leading-none opacity-70 mx-1.5",
                 theme.text,
               )}
             >
               :
             </span>
-            <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none">
+            <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none">
               {minutes}
             </span>
           </div>
           <span
             className={cn(
-              "font-sans text-base sm:text-lg font-black tabular-nums select-none",
+              "font-sans text-xs sm:text-sm font-black tabular-nums select-none",
               theme.text,
             )}
           >
@@ -310,7 +308,7 @@ export function DashboardClock({
           <TimeReel value={hours} animated={animated} />
           <span
             className={cn(
-              "font-sans font-bold leading-none opacity-85 pb-1 animate-pulse",
+              "font-sans font-black leading-none opacity-85 pb-1 animate-pulse",
               theme.text,
             )}
             style={{ fontSize: 32, marginLeft: "-5px", marginRight: "-5px" }}
@@ -320,7 +318,7 @@ export function DashboardClock({
           <TimeReel value={minutes} animated={animated} />
           <span
             className={cn(
-              "font-sans font-bold leading-none opacity-85 pb-1 animate-pulse",
+              "font-sans font-black leading-none opacity-85 pb-1 animate-pulse",
               theme.text,
             )}
             style={{ fontSize: 32, marginLeft: "-5px", marginRight: "-5px" }}
@@ -371,16 +369,21 @@ export function DashboardClock({
     return (
       <div className="flex flex-col items-end text-right gap-3 animate-in fade-in duration-500 select-none">
         <div className="flex items-baseline gap-1.5">
-          <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
+          <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
             <span>{hours}</span>
-            <span className={cn("opacity-80 animate-pulse mx-1.5", theme.text)}>
+            <span
+              className={cn(
+                "text-3xl sm:text-4xl opacity-80 animate-pulse mx-1.5",
+                theme.text,
+              )}
+            >
               :
             </span>
             <span>{minutes}</span>
           </span>
           <span
             className={cn(
-              "font-sans text-sm sm:text-base font-black tabular-nums",
+              "font-sans text-xs sm:text-sm font-black tabular-nums",
               theme.text,
             )}
           >
@@ -405,7 +408,7 @@ export function DashboardClock({
                   "w-6 h-6 flex items-center justify-center rounded-lg text-[10px] font-black tracking-tighter transition-all duration-300",
                   isToday
                     ? `${theme.solid} text-white font-black scale-105`
-                    : "text-muted-foreground/45 font-semibold",
+                    : "text-muted-foreground/45 font-black",
                 )}
               >
                 {day.initial}
@@ -426,14 +429,14 @@ export function DashboardClock({
     const secondaryClean = words.secondary.toLowerCase();
 
     return (
-      <div className="flex flex-col items-end text-right gap-1.5 animate-in fade-in duration-500 select-none max-w-md">
-        <span className="font-sans text-3xl sm:text-4xl md:text-5xl font-black text-foreground leading-tight tracking-tight">
+      <div className="flex flex-col items-end text-right gap-1.5 animate-in fade-in duration-500 select-none max-w-xs">
+        <span className="font-sans text-2xl sm:text-3xl md:text-4xl font-black text-foreground leading-tight tracking-tight">
           {primaryClean}
         </span>
         {secondaryClean && (
           <span
             className={cn(
-              "font-sans text-sm sm:text-base md:text-lg font-bold opacity-80 leading-none",
+              "font-sans text-xs sm:text-sm md:text-base font-black opacity-80 leading-none",
               theme.text,
             )}
           >
@@ -452,16 +455,21 @@ export function DashboardClock({
     return (
       <div className="flex flex-col items-end gap-3.5 animate-in fade-in duration-500 select-none min-w-[240px]">
         <div className="flex items-baseline gap-2">
-          <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
+          <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
             <span>{hours}</span>
-            <span className={cn("opacity-80 animate-pulse mx-1.5", theme.text)}>
+            <span
+              className={cn(
+                "text-3xl sm:text-4xl opacity-80 animate-pulse mx-1.5",
+                theme.text,
+              )}
+            >
               :
             </span>
             <span>{minutes}</span>
           </span>
           <span
             className={cn(
-              "font-sans text-base sm:text-lg font-black tabular-nums",
+              "font-sans text-xs sm:text-sm font-black tabular-nums",
               theme.text,
             )}
           >
@@ -507,23 +515,28 @@ export function DashboardClock({
     return (
       <div className="flex flex-col items-end text-right gap-1 animate-in fade-in duration-500 select-none min-w-[200px]">
         <div className="flex items-baseline gap-1.5">
-          <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
+          <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
             <span>{hours}</span>
-            <span className={cn("opacity-80 animate-pulse mx-1.5", theme.text)}>
+            <span
+              className={cn(
+                "text-3xl sm:text-4xl opacity-80 animate-pulse mx-1.5",
+                theme.text,
+              )}
+            >
               :
             </span>
             <span>{minutes}</span>
           </span>
           <span
             className={cn(
-              "font-sans text-sm sm:text-base font-black tabular-nums",
+              "font-sans text-xs sm:text-sm font-black tabular-nums",
               theme.text,
             )}
           >
             {seconds}s
           </span>
         </div>
-        <span className="font-sans text-xs sm:text-sm font-bold text-muted-foreground/80 mt-1 leading-none">
+        <span className="font-sans text-xs sm:text-sm font-black text-muted-foreground/80 mt-1 leading-none">
           {dateStr}
         </span>
       </div>

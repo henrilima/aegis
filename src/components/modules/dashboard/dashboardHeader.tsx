@@ -12,7 +12,7 @@ import {
   Layout,
   type LucideIcon,
   MessageSquare,
-  Move,
+  Search,
   Settings,
   Sun,
 } from "lucide-react";
@@ -144,7 +144,6 @@ export function DashboardHeader({
   positiveHabitsCount,
   pendingTasksCount,
   onOpenConfig,
-  onStartVisualEdit,
   isSimulated = false,
 }: DashboardHeaderProps) {
   const { themeStyles: theme, accentColor, appMode } = useTheme();
@@ -341,7 +340,7 @@ export function DashboardHeader({
       <div className="flex flex-col gap-10 mb-12 w-full animate-in fade-in slide-in-from-top-2 duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           {/* Esquerda: Identidade e Clima */}
           <div className="space-y-6">
             <div className="space-y-1">
@@ -397,6 +396,21 @@ export function DashboardHeader({
                 </button>
               )}
 
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(new Event("open-command-palette"))
+                }
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-xs font-black"
+                title="Buscar módulos (Ctrl + K)"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Módulos</span>
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
+                  Ctrl K
+                </kbd>
+              </button>
+
               <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border-2 border-border">
                 <span
                   className={cn(
@@ -425,7 +439,7 @@ export function DashboardHeader({
           </div>
 
           {/* Direita: Horário Personalizável */}
-          <div className="flex flex-col items-start lg:items-end justify-center lg:self-center animate-in fade-in duration-700">
+          <div className="flex flex-col items-end justify-center lg:self-center animate-in fade-in duration-700">
             <DashboardClock
               time={time}
               style={dashboardClockStyle}
@@ -491,6 +505,21 @@ export function DashboardHeader({
                 </button>
               )}
 
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(new Event("open-command-palette"))
+                }
+                className="flex items-center gap-2 p-2 px-3 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-card/45 backdrop-blur-sm text-xs font-bold"
+                title="Buscar módulos (Ctrl + K)"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:inline">Módulos</span>
+                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
+                  Ctrl K
+                </kbd>
+              </button>
+
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border-2 border-border text-[11px] font-black">
                 <span
                   className={
@@ -524,7 +553,7 @@ export function DashboardHeader({
         {renderGlobalActions()}
         {simulatedBanner}
 
-        {/* Clock Centered on Top - Scaled Down elegantly to scale-75 sm:scale-80 */}
+        {/* Relógio Centralizado no Topo - Reduzido elegantemente para scale-75 sm:scale-80 */}
         <div className="mb-4 scale-75 sm:scale-80 origin-center animate-in fade-in duration-700 select-none">
           <DashboardClock
             time={time}
@@ -576,6 +605,21 @@ export function DashboardHeader({
             </button>
           )}
 
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(new Event("open-command-palette"))
+            }
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-xs font-black"
+            title="Buscar módulos (Ctrl + K)"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Módulos</span>
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
+              Ctrl K
+            </kbd>
+          </button>
+
           <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border-2 border-border text-xs font-black">
             <span>{habitsLabel}</span>
             <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
@@ -620,7 +664,22 @@ export function DashboardHeader({
               </button>
             )}
 
-            <div className="shrink-0 animate-in fade-in duration-700 self-start lg:self-auto">
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(new Event("open-command-palette"))
+              }
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-card/45 backdrop-blur-sm text-xs font-black"
+              title="Buscar módulos (Ctrl + K)"
+            >
+              <Search className="w-4 h-4" />
+              <span>Módulos</span>
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
+                Ctrl K
+              </kbd>
+            </button>
+
+            <div className="shrink-0 animate-in fade-in duration-700">
               <DashboardClock
                 time={time}
                 style={dashboardClockStyle}
@@ -633,16 +692,16 @@ export function DashboardHeader({
     );
   }
 
-  // LAYOUT 5: WELCOMING (Acolhedor) - Redesigned to be stunningly beautiful and glassmorphic
+  // LAYOUT 5: ACOLHEDOR (Welcoming) - Redesenhado para ser incrivelmente bonito e glassmórfico
   if (dashboardHeaderStyle === "welcoming") {
     return (
       <div className="flex flex-col gap-6 mb-12 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
 
-        {/* Gorgeous Unified Glassmorphic Hero Card */}
+        {/* Card Hero Glassmórfico Unificado e Elegante */}
         <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 p-6 sm:p-8 backdrop-blur-md flex flex-col lg:flex-row items-center justify-between gap-8 group">
-          {/* Subtle Dynamic Ambient Aura */}
+          {/* Aura de Ambiente Dinâmica e Sutil */}
           <div
             className={cn(
               "absolute -right-20 -bottom-20 w-80 h-80 rounded-full blur-[100px] opacity-10 dark:opacity-15 transition-all duration-700 pointer-events-none",
@@ -660,7 +719,7 @@ export function DashboardHeader({
             )}
           />
 
-          {/* Left Block: Modern Micro-Headline, Title, and Clean Inline Status Indicators */}
+          {/* Bloco Esquerdo: Micro-título Moderno, Título e Indicadores Clean de Status Inline */}
           <div className="space-y-5 flex-1 w-full relative z-10 text-left">
             <div>
               <span
@@ -680,18 +739,18 @@ export function DashboardHeader({
               </h1>
             </div>
 
-            {/* Seamless Horizontal Status & Climate Bar */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5 text-xs font-bold text-muted-foreground/90 border-t border-border/20 pt-4">
-              {showHeaderDate && (
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 opacity-60" />
-                  <span>{dateStr}</span>
-                </div>
+            {/* Barra de Clima e Status Horizontal Contínua */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-muted-foreground/90 border-t border-border/20 pt-4">
+              {showHeaderDate && <span>{dateStr}</span>}
+
+              {showHeaderDate && showWeatherWidget && weather && (
+                <span className="text-muted-foreground/20 text-[10px] select-none mx-2">
+                  |
+                </span>
               )}
 
               {showWeatherWidget && weather && (
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 opacity-60" />
                   <weather.icon
                     className={cn("w-3.5 h-3.5", theme.text)}
                     strokeWidth={2.5}
@@ -703,22 +762,27 @@ export function DashboardHeader({
                 </div>
               )}
 
+              {(showHeaderDate || (showWeatherWidget && weather)) && (
+                <span className="text-muted-foreground/20 text-[10px] select-none mx-2">
+                  |
+                </span>
+              )}
+
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 opacity-60" />
                 <Layout className={cn("w-3.5 h-3.5", theme.text)} />
                 <span>
-                  {habitsLabel} • {tasksLabel}
+                  {habitsLabel.toLowerCase()} e {tasksLabel.toLowerCase()}
                 </span>
               </div>
             </div>
 
-            {showCustomizeButton && (
-              <div className="pt-2 flex items-center gap-3">
+            <div className="pt-2 flex items-center gap-3">
+              {showCustomizeButton && (
                 <button
                   type="button"
                   onClick={onOpenConfig}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-xs font-black",
+                    "flex items-center gap-2 px-4 py-2 rounded-xl text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-xs font-bold",
                     theme.solid,
                     theme.solidHover,
                   )}
@@ -726,12 +790,27 @@ export function DashboardHeader({
                   <Layout className="w-3.5 h-3.5" />
                   Personalizar Dashboard
                 </button>
-              </div>
-            )}
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(new Event("open-command-palette"))
+                }
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card/40 border border-border/40 hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-xs font-bold"
+                title="Buscar módulos (Ctrl + K)"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Módulos</span>
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent/40 border border-border/20 text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
+                  Ctrl K
+                </kbd>
+              </button>
+            </div>
           </div>
 
-          {/* Right Block: Floating Glass Clock with Micro-glow */}
-          <div className="shrink-0 relative z-10 scale-90 sm:scale-95 transition-transform duration-500 group-hover:scale-[1.02]">
+          {/* Bloco Direito: Relógio de Vidro Flutuante com Micro-brilho */}
+          <div className="shrink-0 relative z-10 scale-90 sm:scale-95">
             <div className="p-5 rounded-2xl bg-card/25 border border-border/20 backdrop-blur-md">
               <DashboardClock
                 time={time}
@@ -745,6 +824,6 @@ export function DashboardHeader({
     );
   }
 
-  // FALLBACK (In case dashboardHeaderStyle isn't set, default is returned)
+  // RETORNO DE SEGURANÇA (Caso o estilo do cabeçalho do dashboard não esteja definido, o padrão é retornado)
   return null;
 }

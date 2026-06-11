@@ -1,6 +1,5 @@
-import { BotMessageSquare, Brain } from "lucide-react";
+import { BotMessageSquare } from "lucide-react";
 import type React from "react";
-import { changeModule } from "./lib/utils";
 
 export interface NotificationButton {
   label: string;

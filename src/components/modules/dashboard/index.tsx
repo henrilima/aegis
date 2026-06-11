@@ -1,19 +1,19 @@
 "use client";
 
 import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
   closestCenter,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  PointerSensor,
   useSensor,
   useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
   arrayMove,
   rectSortingStrategy,
+  SortableContext,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -83,7 +83,6 @@ interface SortableWidgetItemProps {
 function SortableWidgetItem({
   id,
   isVisualEditMode,
-  activeDragId,
   onRemove,
   onUpdateConfig,
   widgetConfig,
@@ -143,7 +142,6 @@ function SortableWidgetItem({
             </div>
 
             {/* Handle de arraste — listeners do dnd-kit aqui */}
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: drag handle para reordenação de widgets */}
             <div
               {...attributes}
               {...listeners}
@@ -787,9 +785,7 @@ export default function Dashboard() {
 
                     if (id === "habits") {
                       widgetProps.onToggleHabit = (habitId: number) => {
-                        const habit = data.habits.find(
-                          (h) => h.id === habitId,
-                        );
+                        const habit = data.habits.find((h) => h.id === habitId);
                         if (habit) setHabitToConfirm(habit);
                       };
                     }
