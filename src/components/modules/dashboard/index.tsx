@@ -2,14 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { motion } from "framer-motion";
-import {
-  ChevronDown,
-  ChevronUp,
-  GripVertical,
-  Move,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { GripVertical, Move, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AlarmFormState } from "@/components/modules/alarms/hooks/useAlarmsLogic";
@@ -611,22 +604,14 @@ export default function Dashboard() {
                   };
                 }
 
-                const idx = activeWidgetIds.indexOf(id);
-
                 return (
                   <motion.div
                     key={id}
                     variants={itemVariants}
                     className="w-full h-full min-h-[300px] lg:min-h-[340px]"
                   >
-                    {/* biome-ignore lint/a11y/noStaticElementInteractions: container de drag-and-drop na dashboard */}
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: contêiner de drag-and-drop na dashboard que aceita o drop de outros widgets */}
                     <div
-                      draggable={isVisualEditMode}
-                      onDragStart={(e: React.DragEvent) => {
-                        if (!isVisualEditMode) return;
-                        e.dataTransfer.setData("text/plain", id);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
                       onDragOver={(e: React.DragEvent) => {
                         if (!isVisualEditMode) return;
                         e.preventDefault();
@@ -649,44 +634,38 @@ export default function Dashboard() {
                       className={cn(
                         "relative group/widget transition-all duration-300 w-full h-full rounded-2xl",
                         isVisualEditMode &&
-                          "border-2 border-dashed border-emerald-500/40 p-1 bg-emerald-500/5 cursor-move",
+                          "border-2 border-dashed border-emerald-500/40 p-1 bg-emerald-500/5",
                       )}
                     >
                       {isVisualEditMode && (
-                        <div className="absolute inset-0 bg-background/80 backdrop-blur-xs rounded-2xl z-40 flex flex-col items-center justify-between p-4 pointer-events-auto">
+                        // biome-ignore lint/a11y/noStaticElementInteractions: overlay interativo de drag-and-drop
+                        <div
+                          onDragOver={(e: React.DragEvent) => {
+                            if (!isVisualEditMode) return;
+                            e.preventDefault();
+                          }}
+                          onDrop={(e: React.DragEvent) => {
+                            if (!isVisualEditMode) return;
+                            e.preventDefault();
+                            const draggedId =
+                              e.dataTransfer.getData("text/plain");
+                            if (draggedId && draggedId !== id) {
+                              const fromIdx =
+                                activeWidgetIds.indexOf(draggedId);
+                              const toIdx = activeWidgetIds.indexOf(id);
+                              if (fromIdx !== -1 && toIdx !== -1) {
+                                const newOrder = [...activeWidgetIds];
+                                newOrder.splice(fromIdx, 1);
+                                newOrder.splice(toIdx, 0, draggedId);
+                                handleReorderWidgets(newOrder);
+                              }
+                            }
+                          }}
+                          className="absolute inset-0 bg-background/80 backdrop-blur-xs rounded-2xl z-40 flex flex-col items-center justify-between p-4 pointer-events-auto"
+                        >
                           <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                disabled={idx === 0}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const newOrder = [...activeWidgetIds];
-                                  const [moved] = newOrder.splice(idx, 1);
-                                  newOrder.splice(idx - 1, 0, moved);
-                                  handleReorderWidgets(newOrder);
-                                }}
-                                className="p-1.5 rounded-lg bg-background/90 border border-border text-foreground hover:border-foreground disabled:opacity-20 transition-all cursor-pointer"
-                                title="Mover para cima"
-                              >
-                                <ChevronUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={idx === activeWidgetIds.length - 1}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const newOrder = [...activeWidgetIds];
-                                  const [moved] = newOrder.splice(idx, 1);
-                                  newOrder.splice(idx + 1, 0, moved);
-                                  handleReorderWidgets(newOrder);
-                                }}
-                                className="p-1.5 rounded-lg bg-background/90 border border-border text-foreground hover:border-foreground disabled:opacity-20 transition-all cursor-pointer"
-                                title="Mover para baixo"
-                              >
-                                <ChevronDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            {/* Espaçador para manter o título centralizado */}
+                            <div className="w-[30px]" />
 
                             <span className="text-xs font-black text-foreground bg-background/85 px-2.5 py-1 rounded-full border border-border select-none">
                               {WIDGET_METADATA.find((w) => w.id === id)?.name}
@@ -705,7 +684,15 @@ export default function Dashboard() {
                             </button>
                           </div>
 
-                          <div className="flex flex-col items-center justify-center gap-1.5 select-none pointer-events-none opacity-80">
+                          {/* biome-ignore lint/a11y/noStaticElementInteractions: puxador dedicado para arrastar e soltar (drag handle) com cursor de arrastar */}
+                          <div
+                            draggable={true}
+                            onDragStart={(e: React.DragEvent) => {
+                              e.dataTransfer.setData("text/plain", id);
+                              e.dataTransfer.effectAllowed = "move";
+                            }}
+                            className="flex flex-col items-center justify-center gap-1.5 select-none cursor-grab active:cursor-grabbing hover:scale-105 transition-all opacity-80 hover:opacity-100"
+                          >
                             <GripVertical className="w-6 h-6 text-emerald-500 animate-pulse" />
                             <span className="text-[10px] font-bold text-foreground">
                               arrastar para reordenar
