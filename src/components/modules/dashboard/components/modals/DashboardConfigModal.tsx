@@ -362,10 +362,10 @@ export function DashboardConfigModal({
                   </div>
                 </div>
               ) : (
-                // Aba Widgets (Listagem Integrada)
+                // Aba Widgets — Layout Vertical Empilhado
                 <div className="w-full flex flex-col gap-8">
                   {/* Botão de Modo de Edição Visual na Tela */}
-                  <div className="flex justify-center mb-2">
+                  <div className="flex justify-center">
                     <button
                       type="button"
                       onClick={() => {
@@ -383,75 +383,70 @@ export function DashboardConfigModal({
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10">
-                    {/* Lado Esquerdo: Widgets Ativos (3 das 5 colunas) */}
-                    <div className="lg:col-span-3 space-y-4 text-left">
-                      <div>
-                        <h4 className="text-base font-black text-foreground flex items-center gap-2">
-                          Widgets Ativos
-                        </h4>
-                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                          Estes widgets estão atualmente visíveis em sua
-                          Dashboard.
-                        </p>
-                      </div>
+                  {/* Seção: Widgets Ativos */}
+                  <div className="flex flex-col gap-4 text-left">
+                    <div>
+                      <h4 className="text-base font-black text-foreground">
+                        Widgets Ativos
+                      </h4>
+                      <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                        Estes widgets estão visíveis na sua Dashboard. Clique no
+                        ✓ para desativar.
+                      </p>
+                    </div>
 
-                      <div className="space-y-3">
-                        {internalActiveIds.map((id) => {
-                          const w = WIDGET_METADATA.find((m) => m.id === id);
-                          if (!w) return null;
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {internalActiveIds.map((id) => {
+                        const w = WIDGET_METADATA.find((m) => m.id === id);
+                        if (!w) return null;
 
-                          const hasLimit = [
-                            "habits",
-                            "tasks",
-                            "alarms",
-                            "reading",
-                          ].includes(w.id);
-                          const wConfig = widgetConfigs[w.id] || {
-                            interactive: false,
-                            limit: undefined,
-                          };
+                        const hasLimit = [
+                          "habits",
+                          "tasks",
+                          "alarms",
+                          "reading",
+                        ].includes(w.id);
+                        const wConfig = widgetConfigs[w.id] || {
+                          interactive: false,
+                          limit: undefined,
+                        };
 
-                          return (
-                            <div
-                              key={w.id}
-                              className="flex items-center justify-between p-4 rounded-2xl border-2 border-border bg-card transition-all"
-                            >
-                              <div className="flex items-center gap-4 text-left">
-                                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent/50 text-foreground">
-                                  <Layout className="w-4 h-4 opacity-30" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-black text-foreground">
-                                    {w.name}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-muted-foreground lowercase opacity-50">
-                                    {w.description}
-                                  </span>
-                                </div>
+                        return (
+                          <div
+                            key={w.id}
+                            className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-border bg-card hover:border-border/60 transition-all gap-3"
+                          >
+                            <div className="flex items-center gap-3 text-left min-w-0">
+                              <div
+                                className={cn(
+                                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                                  theme.bg,
+                                )}
+                              >
+                                <Layout
+                                  className={cn("w-4 h-4", theme.text)}
+                                />
                               </div>
-
-                              {/* Controles de Limites e Remoção simplificados */}
-                              <div className="flex items-center gap-4">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-black text-foreground truncate">
+                                  {w.name}
+                                </span>
                                 {hasLimit && (
-                                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/30 border border-border/40">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <span className="text-[9px] font-bold text-muted-foreground uppercase">
                                       Qtd:
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const defaultVal =
-                                          w.id === "reading" ? 2 : 3;
-                                        const currentVal =
-                                          wConfig.limit ?? defaultVal;
-                                        if (currentVal > 1) {
+                                        const dv = w.id === "reading" ? 2 : 3;
+                                        const cv = wConfig.limit ?? dv;
+                                        if (cv > 1)
                                           onUpdateConfig(w.id, {
-                                            limit: currentVal - 1,
+                                            limit: cv - 1,
                                           });
-                                        }
                                       }}
-                                      className="w-5 h-5 flex items-center justify-center rounded-lg bg-background border border-border text-xs hover:border-foreground transition-all cursor-pointer font-bold"
+                                      className="w-4 h-4 flex items-center justify-center rounded bg-background border border-border text-[10px] hover:border-foreground transition-all cursor-pointer font-bold"
                                     >
                                       -
                                     </button>
@@ -462,90 +457,93 @@ export function DashboardConfigModal({
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const defaultVal =
-                                          w.id === "reading" ? 2 : 3;
-                                        const currentVal =
-                                          wConfig.limit ?? defaultVal;
-                                        if (currentVal < 15) {
+                                        const dv = w.id === "reading" ? 2 : 3;
+                                        const cv = wConfig.limit ?? dv;
+                                        if (cv < 15)
                                           onUpdateConfig(w.id, {
-                                            limit: currentVal + 1,
+                                            limit: cv + 1,
                                           });
-                                        }
                                       }}
-                                      className="w-5 h-5 flex items-center justify-center rounded-lg bg-background border border-border text-xs hover:border-foreground transition-all cursor-pointer font-bold"
+                                      className="w-4 h-4 flex items-center justify-center rounded bg-background border border-border text-[10px] hover:border-foreground transition-all cursor-pointer font-bold"
                                     >
                                       +
                                     </button>
                                   </div>
                                 )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggle(w.id)}
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-black hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                                  title="Desativar widget"
-                                >
-                                  <Check className="w-4 h-4" strokeWidth={3} />
-                                </button>
                               </div>
                             </div>
-                          );
-                        })}
 
-                        {internalActiveIds.length === 0 && (
-                          <div className="py-12 text-center border-2 border-dashed border-border rounded-2xl">
-                            <p className="text-xs font-bold text-muted-foreground lowercase">
-                              nenhum widget ativo
-                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleToggle(w.id)}
+                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-emerald-500 text-black hover:scale-110 active:scale-95 transition-all cursor-pointer shrink-0"
+                              title="Desativar widget"
+                            >
+                              <Check className="w-4 h-4" strokeWidth={3} />
+                            </button>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
+
+                      {internalActiveIds.length === 0 && (
+                        <div className="col-span-full py-12 text-center border-2 border-dashed border-border rounded-2xl">
+                          <p className="text-xs font-bold text-muted-foreground lowercase">
+                            nenhum widget ativo
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Separador */}
+                  <div className="h-px bg-border/30" />
+
+                  {/* Seção: Biblioteca de Widgets Inativos */}
+                  <div className="flex flex-col gap-4 text-left">
+                    <div>
+                      <h4 className="text-base font-black text-foreground">
+                        Biblioteca de Widgets
+                      </h4>
+                      <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                        Clique para adicionar um widget à sua Dashboard.
+                      </p>
                     </div>
 
-                    {/* Lado Direito: Biblioteca integrada (2 das 5 colunas) */}
-                    <div className="lg:col-span-2 space-y-4 text-left">
-                      <div>
-                        <h4 className="text-base font-black text-foreground flex items-center gap-2">
-                          Biblioteca (Inativos)
-                        </h4>
-                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                          Adicione estes widgets à sua Dashboard.
+                    {inactiveWidgets.length === 0 ? (
+                      <div className="py-10 text-center border-2 border-dashed border-border rounded-2xl">
+                        <p className="text-xs font-bold text-muted-foreground lowercase">
+                          todos os widgets já estão ativos
                         </p>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                         {inactiveWidgets.map((w) => (
                           <button
                             key={w.id}
                             type="button"
                             onClick={() => handleToggle(w.id)}
-                            className="flex flex-col p-4 rounded-2xl border-2 border-border bg-card/50 hover:border-foreground hover:bg-card transition-all text-left group cursor-pointer h-full min-h-[110px]"
+                            className="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-border bg-card/50 hover:border-foreground hover:bg-card transition-all text-left group cursor-pointer"
                           >
-                            <div className="flex items-center justify-between w-full mb-3">
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-background border border-border text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-all shrink-0">
-                                <Plus className="w-4 h-4" />
-                              </div>
+                            <div
+                              className={cn(
+                                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-border group-hover:border-foreground/40 transition-all",
+                                theme.bg,
+                              )}
+                            >
+                              <Plus className={cn("w-4 h-4", theme.text)} />
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[11px] font-black text-foreground line-clamp-1">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-black text-foreground line-clamp-1">
                                 {w.name}
                               </span>
-                              <span className="text-[9px] font-bold text-muted-foreground lowercase opacity-50 line-clamp-2 leading-tight">
+                              <span className="text-[9px] font-bold text-muted-foreground lowercase opacity-60 line-clamp-1 mt-0.5">
                                 {w.description}
                               </span>
                             </div>
                           </button>
                         ))}
-
-                        {inactiveWidgets.length === 0 && (
-                          <div className="col-span-2 py-12 text-center border-2 border-dashed border-border rounded-2xl">
-                            <p className="text-xs font-bold text-muted-foreground lowercase">
-                              todos os widgets ativos
-                            </p>
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}

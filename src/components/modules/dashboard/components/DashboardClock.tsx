@@ -38,7 +38,7 @@ function TimeReel({ value, animated }: TimeReelProps) {
   }, [value, currentVal, animated]);
 
   return (
-    <div className="relative h-[52px] sm:h-[60px] w-[40px] sm:w-[48px] overflow-hidden">
+    <div className="relative h-10 sm:h-14 w-[72px] sm:w-[88px] overflow-hidden">
       <div
         className={cn(
           "absolute inset-x-0 top-0 h-[200%] flex flex-col",
