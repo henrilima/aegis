@@ -45,24 +45,4 @@ export const PERSISTENT_NOTIFICATIONS: PersistentNotification[] = [
       },
     ],
   },
-  {
-    id: -2,
-    title: "Novo módulo: Flashcards",
-    body: "O novo módulo de Flashcards chegou! Teste seus conhecimentos e aprenda de forma mais eficiente.",
-    category: "fixas",
-    isRead: false,
-    createdAt: "2026-05-25T12:00:00Z",
-    tag: "flashcards",
-    persistent: true,
-    color: "cyan",
-    icon: Brain,
-    buttons: [
-      {
-        label: "Ver Flashcards",
-        action: () => changeModule("flashcards"),
-        className: "bg-cyan-800 hover:bg-cyan-900 text-white",
-        icon: Brain,
-      },
-    ],
-  },
 ];

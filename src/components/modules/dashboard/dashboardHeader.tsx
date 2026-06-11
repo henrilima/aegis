@@ -341,7 +341,7 @@ export function DashboardHeader({
       <div className="flex flex-col gap-10 mb-12 w-full animate-in fade-in slide-in-from-top-2 duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8">
+        <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-8">
           {/* Esquerda: Identidade e Clima */}
           <div className="space-y-6">
             <div className="space-y-1">
@@ -425,7 +425,7 @@ export function DashboardHeader({
           </div>
 
           {/* Direita: Horário Personalizável */}
-          <div className="flex flex-col items-end justify-center lg:self-center animate-in fade-in duration-700">
+          <div className="flex flex-col items-end justify-center xl:self-center animate-in fade-in duration-700">
             <DashboardClock
               time={time}
               style={dashboardClockStyle}
@@ -443,7 +443,7 @@ export function DashboardHeader({
       <div className="flex flex-col gap-4 mb-8 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-3xl bg-card/45 border border-border/40 backdrop-blur-sm">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 p-5 rounded-3xl bg-card/45 border border-border/40 backdrop-blur-sm">
           {/* Esquerda: Identidade & Clima Compactados */}
           <div className="flex flex-wrap items-center gap-4 min-w-0">
             <h1 className="text-2xl font-black text-foreground tracking-tight whitespace-nowrap">
@@ -474,7 +474,7 @@ export function DashboardHeader({
           </div>
 
           {/* Direita: Controles e Relógio Compacto */}
-          <div className="flex items-center justify-between lg:justify-end gap-4 shrink-0">
+          <div className="flex items-center justify-between xl:justify-end gap-4 shrink-0">
             <div className="flex items-center gap-2">
               {showCustomizeButton && (
                 <button
@@ -592,7 +592,7 @@ export function DashboardHeader({
       <div className="flex flex-col gap-6 mb-10 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="space-y-1">
             {showHeaderDate && (
               <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-75">
@@ -641,7 +641,7 @@ export function DashboardHeader({
         {simulatedBanner}
 
         {/* Gorgeous Unified Glassmorphic Hero Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 p-6 sm:p-8 backdrop-blur-md flex flex-col lg:flex-row items-center justify-between gap-8 group">
+        <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 p-6 sm:p-8 backdrop-blur-md flex flex-col xl:flex-row items-center justify-between gap-8 group">
           {/* Subtle Dynamic Ambient Aura */}
           <div
             className={cn(
