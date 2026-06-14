@@ -76,6 +76,7 @@ const CATEGORY_ICON: Record<string, string> = {
   sleep: "Moon",
   system: "Bell",
   habit: "Bell",
+  habits: "Bell",
   hydration: "Droplet",
   alarms: "Bell",
 };
@@ -84,6 +85,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   sleep: "bg-cyan-500/10 border-cyan-500/20 text-cyan-500",
   system: "bg-muted border-border/40 text-muted-foreground",
   habit: "bg-teal-500/10 border-teal-500/20 text-teal-500",
+  habits: "bg-teal-500/10 border-teal-500/20 text-teal-500",
   hydration: "bg-sky-500/10 border-sky-500/20 text-sky-500",
   alarms: "bg-red-500/10 border-red-500/20 text-red-500",
 };
@@ -765,6 +767,7 @@ export function NotificationsPanel({
     system: "Sistema",
     sleep: "Sono",
     habit: "Hábitos",
+    habits: "Hábitos",
     alarms: "Alarmes",
     alarmes: "Alarmes",
     fixas: "Fixas",

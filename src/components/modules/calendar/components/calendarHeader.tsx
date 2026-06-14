@@ -72,7 +72,6 @@ export function CalendarHeader({
           },
           {
             id: "info",
-            label: "Guia",
             icon: HelpCircle,
             onClick: onShowInfo,
           },

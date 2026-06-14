@@ -1,6 +1,7 @@
 "use client";
 
 import { BedDouble, Target } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -27,6 +28,27 @@ export function SleepInfoModal({ show, onClose }: SleepInfoModalProps) {
       subtitle="Guia para otimizar seu descanso"
       closeLabel="Entendido, bons sonhos!"
     >
+      <SleepGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function SleepGuidePanel() {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("sleep")}
+      icon={BedDouble}
+      title="Monitoramento de Sono"
+      subtitle="Guia para otimizar seu descanso"
+    >
+      <SleepGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function SleepGuideContent() {
+  return (
+    <>
       <InfoSection icon={BedDouble} title="Registrando seus Ciclos">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Clique no botão <Highlight>"Registrar Sono"</Highlight> sempre que
@@ -72,6 +94,6 @@ export function SleepInfoModal({ show, onClose }: SleepInfoModalProps) {
         semana não elimina os efeitos biológicos da privação; a constância
         diária é a chave para o alto desempenho cognitivo.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

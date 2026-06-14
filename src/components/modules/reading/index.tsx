@@ -1,18 +1,15 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   BarChart3,
   BookOpen,
-  DownloadCloud,
   HelpCircle,
   HistoryIcon,
   LayoutDashboard,
   Library,
   Plus,
   Target,
-  UploadCloud,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -29,7 +26,7 @@ import { GoalsModal } from "./components/GoalsModal";
 import { HistoryTab } from "./components/HistoryTab";
 import { LibraryTab } from "./components/LibraryTab";
 import { OverviewTab } from "./components/OverviewTab";
-import { ReadingInfoModal } from "./components/ReadingInfoModal";
+import { ReadingGuidePanel } from "./components/ReadingInfoModal";
 import { ReportsTab } from "./components/ReportsTab";
 import { SessionModal } from "./components/SessionModal";
 import type { ReadingBook, ReadingGoal, ReadingSession, TabId } from "./types";
@@ -44,7 +41,6 @@ export default function ReadingPage() {
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedBook, setSelectedBook] = useState<ReadingBook | undefined>();
   const [selectedSession, setSelectedSession] = useState<
@@ -195,44 +191,6 @@ export default function ReadingPage() {
     }
   };
 
-  const handleExportJSON = async () => {
-    try {
-      const path = await save({
-        filters: [{ name: "JSON", extensions: ["json"] }],
-        defaultPath: "aegis_leitura_backup.json",
-      });
-      if (path) {
-        await invoke("reading_export_json", { userId: uid, destPath: path });
-        toast.success("Biblioteca e histórico exportados com sucesso!");
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("Export error:", e);
-      toast.error(`Erro ao exportar: ${msg}`);
-    }
-  };
-
-  const handleImportJSON = async () => {
-    try {
-      const path = await openDialog({
-        multiple: false,
-        filters: [{ name: "JSON", extensions: ["json"] }],
-      });
-      if (path && typeof path === "string") {
-        const count = await invoke<number>("reading_import_json", {
-          userId: uid,
-          filePath: path,
-        });
-        toast.success(`Biblioteca e ${count} novas sessões importadas!`);
-        await fetchData();
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("Import error:", e);
-      toast.error(`Erro ao importar: ${msg}`);
-    }
-  };
-
   const stats = useMemo(() => {
     const totalPages = sessions.reduce((acc, s) => acc + s.pagesRead, 0);
     const totalMinutes = sessions.reduce(
@@ -282,6 +240,7 @@ export default function ReadingPage() {
     { id: "history", label: "Histórico", icon: HistoryIcon },
     { id: "library", label: "Biblioteca", icon: Library },
     { id: "reports", label: "Relatórios", icon: BarChart3 },
+    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   return (
@@ -294,28 +253,8 @@ export default function ReadingPage() {
         tabs={READING_TABS}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as TabId)}
+        integrations={["dictionary"]}
         actions={[
-          {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar Dados (JSON)",
-            onClick: handleImportJSON,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar Dados (JSON)",
-            onClick: handleExportJSON,
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setIsInfoModalOpen(true),
-          },
           {
             id: "goals",
             label: "Metas",
@@ -378,6 +317,7 @@ export default function ReadingPage() {
         {activeTab === "reports" && (
           <ReportsTab sessions={sessions} books={books} goals={goals} />
         )}
+        {activeTab === "guia" && <ReadingGuidePanel />}
       </div>
 
       <BookModal
@@ -418,11 +358,6 @@ export default function ReadingPage() {
           onCancel={() => setConfirmState(null)}
         />
       )}
-
-      <ReadingInfoModal
-        show={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
-      />
     </div>
   );
 }

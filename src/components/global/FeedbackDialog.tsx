@@ -20,6 +20,7 @@ import { APP_CONFIG } from "@/app.config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAvatar } from "@/hooks/useAvatar";
@@ -243,9 +244,13 @@ export function FeedbackDialog({
     const dialogContainer = document.getElementById(
       "feedback-dialog-container",
     );
-    if (dialogContainer) {
-      dialogContainer.style.visibility = "hidden";
-      dialogContainer.style.opacity = "0";
+    const modalWrapper = dialogContainer?.closest(
+      '[role="dialog"]',
+    ) as HTMLElement | null;
+
+    if (modalWrapper) {
+      modalWrapper.style.visibility = "hidden";
+      modalWrapper.style.opacity = "0";
     }
 
     try {
@@ -259,38 +264,25 @@ export function FeedbackDialog({
       log.error("Falha ao capturar tela", err);
       toast.error("Não foi possível capturar a tela.");
     } finally {
-      if (dialogContainer) {
-        dialogContainer.style.visibility = "visible";
-        dialogContainer.style.opacity = "1";
+      if (modalWrapper) {
+        modalWrapper.style.visibility = "visible";
+        modalWrapper.style.opacity = "1";
       }
       setIsCapturing(false);
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isOpen && e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      id="feedback-dialog-container"
-      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      className="max-w-[850px]!"
     >
-      {/* Backdrop sibling for click-outside */}
-      <button
-        type="button"
-        className="absolute inset-0 w-full h-full cursor-default border-none appearance-none bg-transparent"
-        onClick={onClose}
-        aria-label="Fechar diálogo"
-      />
-
-      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
+      <div
+        id="feedback-dialog-container"
+        className="flex flex-col flex-1 max-h-full overflow-hidden"
+      >
         {/* Header Fixo */}
         <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-muted/10 shrink-0">
           <div className="flex items-center gap-3">
@@ -721,6 +713,6 @@ export function FeedbackDialog({
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

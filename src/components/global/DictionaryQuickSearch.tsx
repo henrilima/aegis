@@ -10,6 +10,7 @@ import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { DictionaryResultModal } from "../modules/dictionary/components/DictionaryResultModal";
 import type { DictionaryEntry } from "../modules/dictionary/types";
+import { Kbd } from "../ui/kbd";
 
 export function DictionaryQuickSearch() {
   const theme = getColorTheme(getModuleColor("dictionary"));
@@ -184,9 +185,7 @@ export function DictionaryQuickSearch() {
                   </button>
                 </div>
               ) : (
-                <kbd className="hidden sm:inline-flex px-2 py-0.5 rounded bg-accent border border-border text-[10px] font-medium text-muted-foreground ml-2">
-                  Esc
-                </kbd>
+                <Kbd>Esc</Kbd>
               )}
             </form>
 

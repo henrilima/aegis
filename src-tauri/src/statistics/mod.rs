@@ -197,7 +197,10 @@ impl StatisticsManager {
             .map(|m| m.date.clone());
 
         // Novas métricas
-        let consistency_score = (metrics.len() as f64 / days as f64) * 100.0;
+        let active_days = metrics.iter().filter(|m| {
+            m.sleep_hours > 0.0 || m.study_hours > 0.0 || m.reading_pages > 0
+        }).count();
+        let consistency_score = (active_days as f64 / days as f64) * 100.0;
         let study_efficiency = if total_study > 0.0 { total_questions as f64 / total_study } else { 0.0 };
 
         let (rested_sum, rested_count) = metrics.iter()

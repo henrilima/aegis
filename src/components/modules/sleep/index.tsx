@@ -1,22 +1,19 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   BarChart3,
   Calendar,
-  DownloadCloud,
   HelpCircle,
   Moon,
   Plus,
   Settings,
-  UploadCloud,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
-import { SleepInfoModal } from "@/components/modules/sleep/components/modals/SleepInfoModal";
+import { SleepGuidePanel } from "@/components/modules/sleep/components/modals/SleepInfoModal";
 import { SleepEntryModal } from "@/components/modules/sleep/components/modals/sleepModals";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
@@ -31,7 +28,7 @@ import { SleepStatsBanner } from "./components/sleepStatsBanner";
 import { isoDate, rollingRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
-type TabId = "semana" | "historico";
+type TabId = "semana" | "historico" | "guia";
 
 /**
  * Módulo de Sono: Monitoramento de ciclos de descanso, qualidade e metas de repouso
@@ -57,7 +54,6 @@ export default function SleepPage() {
   const [goalBedtime, setGoalBedtime] = useState("23:00");
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
 
   // Busca registros, metas e configuração de notificação
   const loadData = useCallback(async () => {
@@ -163,40 +159,6 @@ export default function SleepPage() {
     }
   };
 
-  const handleExportCSV = async () => {
-    try {
-      const path = await save({
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "aegis_sono_backup.csv",
-      });
-      if (path) {
-        await invoke("sono_export_csv", { userId: uid, destPath: path });
-        toast.success("CSV exportado com sucesso!");
-      }
-    } catch {
-      toast.error("Erro ao exportar dados do sono.");
-    }
-  };
-
-  const handleImportCSV = async () => {
-    try {
-      const path = await openDialog({
-        multiple: false,
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-      });
-      if (path && typeof path === "string") {
-        const count = await invoke<number>("sono_import_csv", {
-          userId: uid,
-          filePath: path,
-        });
-        toast.success(`${count} ciclos de sono importados!`);
-        await loadData();
-      }
-    } catch {
-      toast.error("Erro ao importar CSV.");
-    }
-  };
-
   // Processamento de métricas
   const { now: simulatedNow } = useTime();
   const { start: weekStart, end: weekEnd } = rollingRange(simulatedNow);
@@ -250,6 +212,7 @@ export default function SleepPage() {
   const SLEEP_TABS = [
     { id: "semana", label: "Visão Semanal", icon: BarChart3 },
     { id: "historico", label: "Relatórios", icon: Calendar },
+    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   if (loading)
@@ -273,27 +236,6 @@ export default function SleepPage() {
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
         actions={[
-          {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar Dados (CSV)",
-            onClick: handleImportCSV,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar Dados (CSV)",
-            onClick: handleExportCSV,
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
-          },
           {
             id: "settings",
             label: "Metas",
@@ -326,8 +268,6 @@ export default function SleepPage() {
           setEditEntry(undefined);
         }}
       />
-
-      <SleepInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {deleteConfirm !== null && (
         <ConfirmModal
@@ -375,6 +315,8 @@ export default function SleepPage() {
           />
         </div>
       )}
+
+      {tab === "guia" && <SleepGuidePanel />}
 
       {/* Configurações e Metas */}
       {showSettings && (

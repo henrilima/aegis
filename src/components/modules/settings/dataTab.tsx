@@ -1,19 +1,134 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
-import { Cpu, Database, HardDrive, Info } from "lucide-react";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
+import {
+  Activity,
+  Book,
+  BookOpen,
+  Brain,
+  Cpu,
+  Database,
+  DownloadCloud,
+  Film,
+  HardDrive,
+  Info,
+  ListTodo,
+  type LucideIcon,
+  Moon,
+  UploadCloud,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { type ModuleId, useModules } from "@/context/ModuleContext";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 
 import type { AppConfig } from "./useSettingsLogic";
 
+interface ModuleDataConfig {
+  id: ModuleId;
+  label: string;
+  icon: LucideIcon;
+  format: "CSV" | "JSON";
+  importCmd: string;
+  exportCmd: string;
+  importFileParam: string;
+  exportFileParam: string;
+}
+
+const MODULE_DATA_LIST: ModuleDataConfig[] = [
+  {
+    id: "tasks",
+    label: "Tarefas",
+    icon: ListTodo,
+    format: "CSV",
+    importCmd: "import_tasks_csv",
+    exportCmd: "export_tasks_csv",
+    importFileParam: "path",
+    exportFileParam: "path",
+  },
+  {
+    id: "studies",
+    label: "Estudos",
+    icon: BookOpen,
+    format: "CSV",
+    importCmd: "estudos_import_csv",
+    exportCmd: "estudos_export_csv",
+    importFileParam: "filePath",
+    exportFileParam: "destPath",
+  },
+  {
+    id: "sleep",
+    label: "Sono",
+    icon: Moon,
+    format: "CSV",
+    importCmd: "sono_import_csv",
+    exportCmd: "sono_export_csv",
+    importFileParam: "filePath",
+    exportFileParam: "destPath",
+  },
+  {
+    id: "reading",
+    label: "Leitura",
+    icon: Book,
+    format: "JSON",
+    importCmd: "reading_import_json",
+    exportCmd: "reading_export_json",
+    importFileParam: "filePath",
+    exportFileParam: "destPath",
+  },
+  {
+    id: "movies",
+    label: "Filmes",
+    icon: Film,
+    format: "JSON",
+    importCmd: "movies_import_json",
+    exportCmd: "movies_export_json",
+    importFileParam: "path",
+    exportFileParam: "path",
+  },
+  {
+    id: "habits",
+    label: "Hábitos",
+    icon: Activity,
+    format: "CSV",
+    importCmd: "habit_import_habits_csv",
+    exportCmd: "habit_export_habits_csv",
+    importFileParam: "path",
+    exportFileParam: "path",
+  },
+  {
+    id: "flashcards",
+    label: "Flashcards",
+    icon: Brain,
+    format: "JSON",
+    importCmd: "flashcards_import_json",
+    exportCmd: "flashcards_export_json",
+    importFileParam: "path",
+    exportFileParam: "path",
+  },
+  {
+    id: "dictionary",
+    label: "Dicionário",
+    icon: Book,
+    format: "CSV",
+    importCmd: "dictionary_import_csv",
+    exportCmd: "dictionary_export_csv",
+    importFileParam: "path",
+    exportFileParam: "path",
+  },
+];
+
 export function DataTab() {
   const { themeStyles } = useTheme();
+  const { user } = useAuth();
+  const { isModuleEnabled } = useModules();
   const [customDataDir, setCustomDataDir] = useState("");
   const [isOptimizing, setIsOptimizing] = useState(false);
+
+  const uid = user ? String(user.id) : "";
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -29,7 +144,7 @@ export function DataTab() {
 
   const handleChangeDataDirectory = async () => {
     try {
-      const selected = await open({
+      const selected = await openDialog({
         directory: true,
         multiple: false,
         title: "Selecione a pasta para os dados do Aegis",
@@ -74,6 +189,59 @@ export function DataTab() {
       setIsOptimizing(false);
     }
   };
+
+  const handleExport = async (mod: ModuleDataConfig) => {
+    if (!uid) {
+      toast.error("Usuário não autenticado");
+      return;
+    }
+    try {
+      const filePath = await save({
+        filters: [{ name: mod.format, extensions: [mod.format.toLowerCase()] }],
+        defaultPath: `aegis_${mod.id}_backup.${mod.format.toLowerCase()}`,
+      });
+
+      if (!filePath) return;
+
+      await invoke(mod.exportCmd, {
+        userId: uid,
+        [mod.exportFileParam]: filePath,
+      });
+      toast.success(`Exportação de ${mod.label} concluída!`);
+    } catch (e) {
+      toast.error(
+        `Falha ao exportar: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
+  const handleImport = async (mod: ModuleDataConfig) => {
+    if (!uid) {
+      toast.error("Usuário não autenticado");
+      return;
+    }
+    try {
+      const filePath = await openDialog({
+        multiple: false,
+        filters: [{ name: mod.format, extensions: [mod.format.toLowerCase()] }],
+      });
+      if (filePath && typeof filePath === "string") {
+        const count = await invoke<number>(mod.importCmd, {
+          userId: uid,
+          [mod.importFileParam]: filePath,
+        });
+        toast.success(`${count} registros de ${mod.label} importados!`);
+      }
+    } catch (e) {
+      toast.error(
+        `Erro ao importar: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
+  const enabledModules = MODULE_DATA_LIST.filter((mod) =>
+    isModuleEnabled(mod.id),
+  );
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-300">
@@ -160,6 +328,66 @@ export function DataTab() {
           </div>
         </div>
       </section>
+
+      {/* Exportação e Importação de Módulos */}
+      {enabledModules.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-xs font-semibold text-muted-foreground px-1">
+            Exportação e importação por módulo
+          </h3>
+          <div className="p-5 bg-card/30 border border-border/60 rounded-xl space-y-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Exporte e importe os dados específicos de seus módulos habilitados
+              nos formatos CSV ou JSON.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {enabledModules.map((mod) => (
+                <div
+                  key={mod.id}
+                  className="flex items-center justify-between p-4 bg-background/50 border border-border/40 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "p-2 rounded-lg bg-muted",
+                        themeStyles.text,
+                      )}
+                    >
+                      <mod.icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">
+                        {mod.label}
+                      </p>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        {mod.format}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleImport(mod)}
+                      className="px-3 h-8 rounded-lg bg-accent hover:bg-accent/80 text-foreground font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <UploadCloud className="w-3 h-3" />
+                      Importar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExport(mod)}
+                      className="px-3 h-8 rounded-lg bg-accent hover:bg-accent/80 text-foreground font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <DownloadCloud className="w-3 h-3" />
+                      Exportar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Otimização de Banco de Dados */}
       <section className="space-y-3">

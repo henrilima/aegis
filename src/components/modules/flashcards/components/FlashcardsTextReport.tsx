@@ -21,18 +21,32 @@ function generateFlashcardReport({
   periodTitle: string;
   periodRange: string;
 }) {
+  const mode = periodTitle.toLowerCase().includes("diário")
+    ? "Diário"
+    : periodTitle.toLowerCase().includes("semanal")
+      ? "Semanal"
+      : "Mensal";
+  const cleanTitle = `Aegis — Relatório ${mode} de Flashcards`;
+
+  const cleanRange = periodRange
+    .toLowerCase()
+    .replace(/^[a-z]|\s[a-z]|- [a-z]/g, (letter) => letter.toUpperCase())
+    .replace("Feira", "feira");
+
   const lines = [
-    `🧠 ${periodTitle}`,
-    `📅 ${periodRange}`,
+    `🧠 ${cleanTitle}`,
+    `📅 ${cleanRange}`,
     ``,
     `📂 Baralhos ativos: ${periodStats.decksCount}`,
     `🃏 Cartões cadastrados: ${periodStats.totalCards}`,
     `🔄 Revisões realizadas: ${periodStats.reviewsCount}`,
     `✅ Respostas corretas: ${periodStats.successCount}`,
-    `📈 Taxa de acerto global: ${periodStats.reviewsCount > 0 ? `${periodStats.accuracy}%` : "0%"}`,
+    `📈 Taxa de acerto global: ${
+      periodStats.reviewsCount > 0 ? `${periodStats.accuracy}%` : "0%"
+    }`,
     ``,
     `- Gerado pelo Aegis`,
-  ].filter(Boolean);
+  ];
   return lines.join("\n");
 }
 

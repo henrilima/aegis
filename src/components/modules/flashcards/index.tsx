@@ -1,13 +1,11 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
 import {
   BarChart3,
   BookOpen,
   Brain,
-  DownloadCloud,
   Edit2,
   HelpCircle,
   MoreVertical,
@@ -15,10 +13,8 @@ import {
   Plus,
   Settings,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -26,7 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { CardListModal } from "./CardListModal";
-import { FlashcardsInfoModal } from "./components/FlashcardsInfoModal";
+import { FlashcardsGuidePanel } from "./components/FlashcardsInfoModal";
 import { ReportsTab } from "./components/ReportsTab";
 import { DeckFormModal } from "./DeckFormModal";
 import { StudyModal } from "./StudyModal";
@@ -92,6 +88,7 @@ const itemVariants = {
 const FLASHCARD_TABS = [
   { id: "baralhos", label: "Baralhos", icon: BookOpen },
   { id: "reports", label: "Relatórios", icon: BarChart3 },
+  { id: "guia", label: "Guia", icon: HelpCircle },
 ];
 
 // Helper para determinar se um cartão está devido com base no algoritmo de repetição espaçada
@@ -119,7 +116,7 @@ export default function FlashcardsPage() {
   const [decks, setDecks] = useState<RichFlashcardDeck[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
-  const [activeTab, setActiveTab] = useState<"baralhos" | "reports">(
+  const [activeTab, setActiveTab] = useState<"baralhos" | "reports" | "guia">(
     "baralhos",
   );
 
@@ -142,7 +139,6 @@ export default function FlashcardsPage() {
   const [deckToDelete, setDeckToDelete] = useState<RichFlashcardDeck | null>(
     null,
   );
-  const [showInfo, setShowInfo] = useState(false);
 
   // Estados para hashtags e estudos personalizados da revisão diária global
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -183,48 +179,6 @@ export default function FlashcardsPage() {
 
   // Active dropdown state for deck actions
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
-
-  const handleExportJSON = async () => {
-    if (!user?.id) return;
-    try {
-      const filePath = await save({
-        filters: [{ name: "JSON", extensions: ["json"] }],
-        defaultPath: "aegis_flashcards_backup.json",
-      });
-      if (!filePath) return;
-      await invoke("flashcards_export_json", {
-        userId: user.id,
-        path: filePath,
-      });
-      toast.success("Exportação de flashcards concluída!");
-    } catch (e) {
-      toast.error(
-        `Falha ao exportar flashcards: ${e instanceof Error ? e.message : String(e)}`,
-      );
-    }
-  };
-
-  const handleImportJSON = async () => {
-    if (!user?.id) return;
-    try {
-      const filePath = await openDialog({
-        multiple: false,
-        filters: [{ name: "JSON", extensions: ["json"] }],
-      });
-      if (filePath && typeof filePath === "string") {
-        const count = await invoke<number>("flashcards_import_json", {
-          userId: user.id,
-          path: filePath,
-        });
-        toast.success(`${count} cartões de flashcards importados com sucesso!`);
-        fetchDecks();
-      }
-    } catch (e) {
-      toast.error(
-        `Erro na importação de flashcards: ${e instanceof Error ? e.message : String(e)}`,
-      );
-    }
-  };
 
   const fetchDecks = useCallback(async () => {
     if (!user?.id) return;
@@ -339,27 +293,6 @@ export default function FlashcardsPage() {
         onTabChange={(id) => setActiveTab(id as "baralhos" | "reports")}
         actions={[
           {
-            id: "import-flashcards",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar baralhos de JSON",
-            onClick: handleImportJSON,
-          },
-          {
-            id: "export-flashcards",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar baralhos para JSON",
-            onClick: handleExportJSON,
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
-          },
-          {
             id: "add-deck",
             label: "Novo baralho",
             icon: Plus,
@@ -372,9 +305,11 @@ export default function FlashcardsPage() {
         ]}
       />
 
-      {activeTab === "baralhos" ? (
+      {activeTab === "guia" ? (
+        <FlashcardsGuidePanel />
+      ) : activeTab === "baralhos" ? (
         loading ? (
-          <div className="flex-grow flex items-center justify-center text-xs text-muted-foreground py-20">
+          <div className="grow flex items-center justify-center text-xs text-muted-foreground py-20">
             Carregando seus baralhos...
           </div>
         ) : (
@@ -740,8 +675,6 @@ export default function FlashcardsPage() {
           onCancel={() => setDeckToDelete(null)}
         />
       )}
-
-      <FlashcardsInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
     </div>
   );
 }

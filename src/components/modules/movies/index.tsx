@@ -1,11 +1,9 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   Bookmark,
   BookmarkCheck,
-  DownloadCloud,
   Film,
   Heart,
   HelpCircle,
@@ -16,7 +14,6 @@ import {
   Star,
   StarHalf,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -31,7 +28,7 @@ import { MovieCanvasModal } from "./components/MovieCanvasModal";
 import { MovieDetailModal } from "./components/MovieDetailModal";
 import { MovieFormModal } from "./components/MovieFormModal";
 import { MovieSearchModal } from "./components/MovieSearchModal";
-import { MoviesInfoModal } from "./components/MoviesInfoModal";
+import { MoviesGuidePanel } from "./components/MoviesInfoModal";
 import type { Movie, MovieTabId } from "./types";
 
 export default function MoviesPage() {
@@ -50,7 +47,7 @@ export default function MoviesPage() {
   >();
   const [movieToDelete, setMovieToDelete] = useState<number | null>(null);
   const [detailMovie, setDetailMovie] = useState<Movie | null>(null);
-  const [showInfo, setShowInfo] = useState(false);
+
   const [isCanvasModalOpen, setIsCanvasModalOpen] = useState(false);
   const [canvasMovie, setCanvasMovie] = useState<Movie | null>(null);
 
@@ -135,39 +132,6 @@ export default function MoviesPage() {
     }
   };
 
-  const handleExportJSON = async () => {
-    try {
-      const filePath = await save({
-        filters: [{ name: "JSON", extensions: ["json"] }],
-        defaultPath: "aegis_filmes_backup.json",
-      });
-      if (!filePath) return;
-      await invoke("movies_export_json", { userId: uid, path: filePath });
-      toast.success("Catálogo exportado com sucesso!");
-    } catch (e) {
-      toast.error(`Falha ao exportar: ${e}`);
-    }
-  };
-
-  const handleImportJSON = async () => {
-    try {
-      const filePath = await openDialog({
-        multiple: false,
-        filters: [{ name: "JSON", extensions: ["json"] }],
-      });
-      if (filePath && typeof filePath === "string") {
-        const count = await invoke<number>("movies_import_json", {
-          userId: uid,
-          path: filePath,
-        });
-        toast.success(`${count} filmes importados!`);
-        fetchMovies();
-      }
-    } catch (e) {
-      toast.error(`Erro na importação: ${e}`);
-    }
-  };
-
   const filteredMovies = useMemo(() => {
     const q = search.toLowerCase();
 
@@ -224,6 +188,11 @@ export default function MoviesPage() {
       count: counts.favorites,
       icon: Heart,
     },
+    {
+      id: "guia" as MovieTabId,
+      label: "Guia",
+      icon: HelpCircle,
+    },
   ];
 
   if (loading) {
@@ -249,27 +218,6 @@ export default function MoviesPage() {
         searchPlaceholder="Buscar por título, diretor, gênero ou ano..."
         actions={[
           {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar de JSON",
-            onClick: handleImportJSON,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar para JSON",
-            onClick: handleExportJSON,
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
-          },
-          {
             id: "add",
             label: "Adicionar",
             icon: Plus,
@@ -291,7 +239,9 @@ export default function MoviesPage() {
       />
 
       {/* Content */}
-      {filteredMovies.length === 0 ? (
+      {activeTab === "guia" ? (
+        <MoviesGuidePanel />
+      ) : filteredMovies.length === 0 ? (
         <div className="py-20 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-center px-10 grayscale">
           <div className="w-16 h-16 rounded-xl bg-card border border-border flex items-center justify-center mb-4">
             <Film className="w-7 h-7 text-muted-foreground/30" />
@@ -415,8 +365,6 @@ export default function MoviesPage() {
         }}
         movie={canvasMovie}
       />
-
-      <MoviesInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {movieToDelete !== null && (
         <ConfirmModal

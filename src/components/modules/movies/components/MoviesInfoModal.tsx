@@ -1,6 +1,7 @@
 "use client";
 
 import { Film, Heart, Search } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -8,7 +9,6 @@ import {
   ProTip,
   StatRow,
 } from "@/components/global/ModuleInfoParts";
-import { getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface MoviesInfoModalProps {
@@ -17,8 +17,6 @@ interface MoviesInfoModalProps {
 }
 
 export function MoviesInfoModal({ show, onClose }: MoviesInfoModalProps) {
-  const _theme = getColorTheme(getModuleColor("movies"));
-
   return (
     <ModuleInfoModal
       show={show}
@@ -28,10 +26,31 @@ export function MoviesInfoModal({ show, onClose }: MoviesInfoModalProps) {
       subtitle="Organize sua jornada cinematográfica e watchlist"
       closeLabel="Entendido, luz, câmera, ação!"
     >
+      <MoviesGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function MoviesGuidePanel() {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("movies")}
+      icon={Film}
+      title="Catálogo de Filmes"
+      subtitle="Organize sua jornada cinematográfica e watchlist"
+    >
+      <MoviesGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function MoviesGuideContent() {
+  return (
+    <>
       <InfoSection icon={Search} title="Busca Inteligente (TMDb)">
         <p className="text-sm text-muted-foreground leading-relaxed">
           O Aegis integra-se ao TMDb para buscar informações oficiais de filmes
-          ao redor do mundo:
+          al redor do mundo:
         </p>
         <FeatureGrid
           items={[
@@ -79,6 +98,6 @@ export function MoviesInfoModal({ show, onClose }: MoviesInfoModalProps) {
         Para usar a busca online, você deve configurar sua própria chave da API
         do TMDb nas configurações de Integrações do app.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

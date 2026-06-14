@@ -15,4 +15,4 @@ export interface Movie {
   isFavorite?: boolean;
 }
 
-export type MovieTabId = "all" | "wishlist" | "library" | "favorites";
+export type MovieTabId = "all" | "wishlist" | "library" | "favorites" | "guia";

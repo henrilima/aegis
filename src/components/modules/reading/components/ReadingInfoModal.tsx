@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, History } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -26,6 +27,27 @@ export function ReadingInfoModal({ show, onClose }: ReadingInfoModalProps) {
       subtitle="Guia para gestão literária e metas de leitura"
       closeLabel="Entendido, boa leitura!"
     >
+      <ReadingGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function ReadingGuidePanel() {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("reading")}
+      icon={BookOpen}
+      title="Biblioteca & Progresso"
+      subtitle="Guia para gestão literária e metas de leitura"
+    >
+      <ReadingGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function ReadingGuideContent() {
+  return (
+    <>
       <InfoSection icon={BookOpen} title="Gestão de Biblioteca">
         <p className="text-sm text-muted-foreground leading-relaxed">
           O Aegis transforma sua leitura em dados acionáveis. Organize sua
@@ -76,6 +98,6 @@ export function ReadingInfoModal({ show, onClose }: ReadingInfoModalProps) {
         módulo. O Aegis monitora seu progresso e ajuda você a manter o hábito de
         leitura ativo todos os dias.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

@@ -563,9 +563,169 @@ async fn global_set_custom_data_dir(app_handle: tauri::AppHandle, new_path: Opti
     app_handle.restart()
 }
 
+#[tauri::command]
+async fn global_set_custom_icon(app_handle: tauri::AppHandle, source_path: Option<String>) -> Result<(), String> {
+    // Obter o diretório de dados do aplicativo
+    let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    
+    // Garantir que o diretório exista
+    std::fs::create_dir_all(&app_data_dir).map_err(|e| format!("Falha ao criar diretório: {}", e))?;
+    
+    let custom_icon_path = app_data_dir.join("custom_icon.png");
+    let custom_ico_path = app_data_dir.join("custom_icon.ico");
+    
+    match source_path {
+        Some(path_str) => {
+            let src = std::path::Path::new(&path_str);
+            if !src.exists() {
+                return Err("O arquivo de origem selecionado não existe.".to_string());
+            }
+            
+            // Abrir e decodificar a imagem de origem (pode ser PNG, JPEG, JPG, etc.)
+            let img = image::open(src).map_err(|e| format!("Falha ao abrir imagem de origem: {}", e))?;
+            
+            // Salvar a imagem decodificada como PNG no caminho custom_icon_path
+            img.save_with_format(&custom_icon_path, image::ImageFormat::Png)
+                .map_err(|e| format!("Falha ao salvar imagem do ícone como PNG: {}", e))?;
+            
+            // Converter para ICO multi-resolução (16, 32, 48, 256px) — necessário para
+            // o Windows exibir o ícone corretamente na área de trabalho e barra de tarefas.
+            let mut icon_dir = ico::IconDir::new(ico::ResourceType::Icon);
+            for &size in &[16u32, 32, 48, 256] {
+                let resized = img.resize_exact(size, size, image::imageops::FilterType::Lanczos3);
+                let rgba = resized.into_rgba8();
+                let (w, h) = rgba.dimensions();
+                let icon_img = ico::IconImage::from_rgba_data(w, h, rgba.into_raw());
+                if let Ok(entry) = ico::IconDirEntry::encode(&icon_img) {
+                    icon_dir.add_entry(entry);
+                }
+            }
+            if let Ok(mut ico_file) = std::fs::File::create(&custom_ico_path) {
+                let _ = icon_dir.write(&mut ico_file);
+            }
+            
+            // Carregar e aplicar o ícone na janela em tempo real
+            let icon = tauri::image::Image::from_path(&custom_icon_path)
+                .map_err(|e| format!("Falha ao ler o ícone PNG: {}", e))?;
+            
+            if let Some(window) = app_handle.get_webview_window("main") {
+                window.set_icon(icon).map_err(|e| format!("Falha ao definir ícone da janela: {}", e))?;
+            }
+        }
+        None => {
+            // Remover os arquivos do ícone personalizado para restaurar o padrão
+            if custom_icon_path.exists() {
+                std::fs::remove_file(&custom_icon_path).map_err(|e| format!("Falha ao remover ícone PNG personalizado: {}", e))?;
+            }
+            if custom_ico_path.exists() {
+                std::fs::remove_file(&custom_ico_path).map_err(|e| format!("Falha ao remover ícone ICO personalizado: {}", e))?;
+            }
+            
+            // Restaurar o ícone original do app na janela
+            if let Some(default_icon) = app_handle.default_window_icon() {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    window.set_icon(default_icon.clone()).map_err(|e| format!("Falha ao restaurar ícone original: {}", e))?;
+                }
+            }
+        }
+    }
+    
+    Ok(())
+}
 
+#[tauri::command]
+fn global_has_custom_icon(app_handle: tauri::AppHandle) -> bool {
+    // Verificar se o arquivo do ícone personalizado existe na pasta do app
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        app_data_dir.join("custom_icon.png").exists()
+    } else {
+        false
+    }
+}
 
+#[tauri::command]
+fn global_get_custom_icon_path(app_handle: tauri::AppHandle) -> Option<String> {
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        let path = app_data_dir.join("custom_icon.png");
+        if path.exists() {
+            return Some(path.to_string_lossy().to_string());
+        }
+    }
+    None
+}
 
+fn update_shortcut_icon_helper(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    // Atualiza o ícone dos atalhos da Área de Trabalho e Menu Iniciar após reinicialização
+    // Só funciona no Windows — usa PowerShell com COM WScript.Shell
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        
+        let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+        let custom_ico_path = app_data_dir.join("custom_icon.ico");
+        
+        // Determinar o caminho do executável atual
+        let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+        let exe_str = exe_path.to_string_lossy();
+        
+        // Determinar a origem do ícone: personalizado ou padrão (dentro do exe)
+        let icon_location = if custom_ico_path.exists() {
+            format!("{},0", custom_ico_path.to_string_lossy())
+        } else {
+            // Restaurar para o ícone embutido no executável (índice 0)
+            format!("{},0", exe_str)
+        };
+        
+        // Script PowerShell robusto: GetFolderPath resolve o Desktop corretamente mesmo no OneDrive
+        // -ilike para comparação case-insensitive (Aegis.exe vs aegis.exe)
+        let script = format!(
+            "$sh = New-Object -ComObject WScript.Shell; \
+             $paths = @( \
+                 [System.Environment]::GetFolderPath('Desktop'), \
+                 [System.Environment]::GetFolderPath('CommonDesktopDirectory'), \
+                 [System.Environment]::GetFolderPath('Programs'), \
+                 [System.Environment]::GetFolderPath('CommonPrograms'), \
+                 \"$env:APPDATA\\Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar\" \
+             ); \
+             foreach ($dir in $paths) {{ \
+                 if (Test-Path $dir) {{ \
+                     Get-ChildItem -Path $dir -Filter '*.lnk' -Recurse -ErrorAction SilentlyContinue | \
+                     ForEach-Object {{ \
+                         try {{ \
+                             $s = $sh.CreateShortcut($_.FullName); \
+                             if ($s.TargetPath -ilike '*aegis*' -or $_.Name -ilike '*aegis*') {{ \
+                                 $s.IconLocation = '{icon}'; \
+                                 $s.Save() \
+                             }} \
+                         }} catch {{}} \
+                     }} \
+                 }} \
+             }}; \
+             $code = '[System.Runtime.InteropServices.DllImport(\"shell32.dll\")] public static extern void SHChangeNotify(int wEventId, int uFlags, System.IntPtr dwItem1, System.IntPtr dwItem2);'; \
+             $type = Add-Type -MemberDefinition $code -Name \"Shell32\" -Namespace \"Win32\" -PassThru -ErrorAction SilentlyContinue; \
+             if ($type) {{ $type::SHChangeNotify(0x08000000, 0, [System.IntPtr]::Zero, [System.IntPtr]::Zero) }}",
+            icon = icon_location.replace("'", "''")
+        );
+        
+        std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .spawn()
+            .map_err(|e| format!("Falha ao executar PowerShell para atualizar atalho: {}", e))?;
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = app_handle;
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+async fn global_update_shortcut_icon(app_handle: tauri::AppHandle) -> Result<(), String> {
+    update_shortcut_icon_helper(&app_handle)
+}
 
 #[tauri::command]
 async fn global_check_github_update() -> Result<serde_json::Value, String> {
@@ -756,6 +916,18 @@ pub fn run() {
             let is_minimized_arg = args.contains(&"--minimized".to_string());
 
             if let Some(window) = app.get_webview_window("main") {
+                // Carrega o ícone personalizado se existir no startup
+                let app_data_dir = app.path().app_data_dir().unwrap_or_default();
+                let custom_icon_path = app_data_dir.join("custom_icon.png");
+                if custom_icon_path.exists() {
+                    if let Ok(icon) = tauri::image::Image::from_path(&custom_icon_path) {
+                        let _ = window.set_icon(icon);
+                    }
+                }
+
+                // Atualizar o ícone do atalho no startup (especialmente após reiniciar o app)
+                let _ = update_shortcut_icon_helper(app.handle());
+
                 if is_minimized_arg && initial_config.start_minimized {
                     let _ = window.hide();
                 } else {
@@ -1084,6 +1256,7 @@ pub fn run() {
             global_delete_account, global_change_account_password, global_change_username, global_change_vault_password, 
             global_revert_vault_to_master, global_has_separate_vault_password,
             global_get_app_config, global_set_app_config, global_apply_internal_command, global_get_simulation_status, global_quit_app, global_set_custom_data_dir,
+            global_set_custom_icon, global_has_custom_icon, global_get_custom_icon_path, global_update_shortcut_icon,
             global_get_app_version, global_read_changelog, global_get_log_path, global_read_app_logs, global_capture_screenshot,
             global_save_avatar, global_get_avatar, global_delete_avatar, global_check_dnd_status, global_check_github_update, 
             global_open_app_data_folder, global_pre_update_backup, 

@@ -30,7 +30,6 @@ export function PomoHeader({
           ? [
               {
                 id: "info",
-                label: "Guia",
                 icon: HelpCircle,
                 tooltip: "Guia do Módulo",
                 onClick: onInfoOpen,

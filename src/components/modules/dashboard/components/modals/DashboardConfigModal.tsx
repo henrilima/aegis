@@ -2,6 +2,7 @@
 
 import { Check, Clock, Layout, Move, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { resolveColor } from "@/colors.config";
 import { DashboardClock } from "@/components/modules/dashboard/components/DashboardClock";
 import { WIDGET_METADATA } from "@/components/modules/dashboard/widgets/registry";
 import { useSettingsLogic } from "@/components/modules/settings/useSettingsLogic";
@@ -232,22 +233,25 @@ export function DashboardConfigModal({
                                 }
                               }}
                               className={cn(
-                                "p-4 rounded-xl border-2 transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-[110px]",
+                                "p-4 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-[110px]",
                                 isSelected
-                                  ? `bg-card border-foreground`
+                                  ? "bg-card"
                                   : "bg-card border-border hover:border-foreground/30 hover:bg-accent/10",
                               )}
+                              style={
+                                isSelected
+                                  ? { borderColor: resolveColor(theme.name) }
+                                  : undefined
+                              }
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-black text-foreground">
                                   {styleOption.label}
                                 </span>
                                 {isSelected && (
-                                  <div
-                                    className={cn(
-                                      "w-2 h-2 rounded-full",
-                                      theme.solid,
-                                    )}
+                                  <Check
+                                    className={cn("w-3.5 h-3.5", theme.text)}
+                                    strokeWidth={3}
                                   />
                                 )}
                               </div>
@@ -350,22 +354,25 @@ export function DashboardConfigModal({
                                 }
                               }}
                               className={cn(
-                                "p-4 rounded-xl border-2 transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-[110px]",
+                                "p-4 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-[110px]",
                                 isSelected
-                                  ? `bg-card border-foreground`
+                                  ? "bg-card"
                                   : "bg-card border-border hover:border-foreground/30 hover:bg-accent/10",
                               )}
+                              style={
+                                isSelected
+                                  ? { borderColor: resolveColor(theme.name) }
+                                  : undefined
+                              }
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-black text-foreground">
                                   {headerOption.label}
                                 </span>
                                 {isSelected && (
-                                  <div
-                                    className={cn(
-                                      "w-2 h-2 rounded-full",
-                                      theme.solid,
-                                    )}
+                                  <Check
+                                    className={cn("w-3.5 h-3.5", theme.text)}
+                                    strokeWidth={3}
                                   />
                                 )}
                               </div>

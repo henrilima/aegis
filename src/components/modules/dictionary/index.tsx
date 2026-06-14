@@ -1,17 +1,14 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   AlertTriangle,
   Book,
-  DownloadCloud,
   HelpCircle,
   LayoutGrid,
   Plus,
   Star,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,12 +20,12 @@ import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { DictionaryInfoModal } from "./components/DictionaryInfoModal";
+import { DictionaryGuidePanel } from "./components/DictionaryInfoModal";
 import { DictionaryResultModal } from "./components/DictionaryResultModal";
 import { DictionaryTranslationModal } from "./components/DictionaryTranslationModal";
 import type { DictionaryEntry, GlossaryWord } from "./types";
 
-type TabId = "all" | "favorites";
+type TabId = "all" | "favorites" | "guia";
 
 export default function DictionaryPage() {
   const { user } = useAuth();
@@ -43,7 +40,6 @@ export default function DictionaryPage() {
     null,
   );
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [showTranslationInfo, setShowTranslationInfo] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -160,39 +156,6 @@ export default function DictionaryPage() {
     window.dispatchEvent(new CustomEvent("toggle-dictionary-search"));
   };
 
-  const handleExportCSV = async () => {
-    try {
-      const filePath = await save({
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "aegis_glossario_backup.csv",
-      });
-      if (!filePath) return;
-      await invoke("dictionary_export_csv", { userId: uid, path: filePath });
-      toast.success("Exportação concluída!");
-    } catch (e) {
-      toast.error(`Falha ao exportar: ${e}`);
-    }
-  };
-
-  const handleImportCSV = async () => {
-    try {
-      const filePath = await openDialog({
-        multiple: false,
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-      });
-      if (filePath && typeof filePath === "string") {
-        const count = await invoke<number>("dictionary_import_csv", {
-          userId: uid,
-          path: filePath,
-        });
-        toast.success(`${count} palavras importadas!`);
-        fetchGlossary();
-      }
-    } catch (e) {
-      toast.error(`Erro na importação: ${e}`);
-    }
-  };
-
   if (loading) {
     return (
       <div className="w-full flex flex-col gap-6">
@@ -211,6 +174,7 @@ export default function DictionaryPage() {
         tabs={[
           { id: "all", label: "Todos", icon: LayoutGrid },
           { id: "favorites", label: "Favoritos", icon: Star },
+          { id: "guia", label: "Guia", icon: HelpCircle },
         ]}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
@@ -219,32 +183,12 @@ export default function DictionaryPage() {
         searchPlaceholder="Filtrar glossário..."
         actions={[
           {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar de CSV",
-            onClick: handleImportCSV,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar para CSV",
-            onClick: handleExportCSV,
-          },
-          {
             id: "translation",
             label: "Tradução",
             icon: AlertTriangle,
             tooltip: "Aviso de Tradução",
             onClick: () => setShowTranslationInfo(true),
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
+            warning: true,
           },
           {
             id: "new",
@@ -257,131 +201,135 @@ export default function DictionaryPage() {
         ]}
       />
 
+      {/* GUIA */}
+      {tab === "guia" && <DictionaryGuidePanel />}
+
       {/* LISTA DE CARDS COMPACTOS */}
-      <div className="flex flex-col gap-4">
-        {filteredGlossary.length === 0 ? (
-          <EmptyState
-            icon={Book}
-            title={
-              glossarySearch
-                ? "Nenhuma palavra encontrada"
-                : "Seu glossário está vazio"
-            }
-            description={
-              glossarySearch
-                ? "Tente mudar os termos da busca."
-                : "Adicione palavras para memorizar."
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredGlossary.map((word, i) => (
-              <div
-                key={word.id}
-                className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
-                style={{ animationDelay: `${i * 40}ms` }}
-              >
-                {/* biome-ignore lint/a11y/useSemanticElements: Card has nested action buttons */}
+      {tab !== "guia" && (
+        <div className="flex flex-col gap-4">
+          {filteredGlossary.length === 0 ? (
+            <EmptyState
+              icon={Book}
+              title={
+                glossarySearch
+                  ? "Nenhuma palavra encontrada"
+                  : "Seu glossário está vazio"
+              }
+              description={
+                glossarySearch
+                  ? "Tente mudar os termos da busca."
+                  : "Adicione palavras para memorizar."
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredGlossary.map((word, i) => (
                 <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleWordClick(word)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleWordClick(word);
-                    }
-                  }}
-                  className={cn(
-                    "group relative w-full text-left bg-card border border-border rounded-2xl p-5 transition-all flex flex-col gap-3 outline-none cursor-pointer",
-                    theme.borderHover.replace("hover:", "focus:"),
-                    word.isFavorite && cn(theme.border, theme.bg),
-                  )}
+                  key={word.id}
+                  className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  <div className="flex items-start justify-between gap-3 w-full">
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <h3
-                        className={cn(
-                          "text-lg font-bold text-foreground transition-colors truncate",
-                          theme.textDarkHover,
-                        )}
-                      >
-                        {word.word}
-                      </h3>
-                      {word.phonetic && (
-                        <span className="text-[10px] font-mono text-muted-foreground/60">
-                          {word.phonetic}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <ToolTip
-                        content={
-                          word.isFavorite
-                            ? "Remover dos Favoritos"
-                            : "Marcar como Favorito"
-                        }
-                      >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(word);
-                          }}
+                  {/* biome-ignore lint/a11y/useSemanticElements: Card has nested action buttons */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleWordClick(word)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleWordClick(word);
+                      }
+                    }}
+                    className={cn(
+                      "group relative w-full text-left bg-card border border-border rounded-2xl p-5 transition-all flex flex-col gap-3 outline-none cursor-pointer",
+                      theme.borderHover.replace("hover:", "focus:"),
+                      word.isFavorite && cn(theme.border, theme.bg),
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3 w-full">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <h3
                           className={cn(
-                            "p-1.5 rounded-lg transition-all",
-                            word.isFavorite
-                              ? cn(theme.text, theme.bg)
-                              : cn(
-                                  "text-muted-foreground",
-                                  theme.textSub,
-                                  theme.bgHover,
-                                ),
+                            "text-lg font-bold text-foreground transition-colors truncate",
+                            theme.textDarkHover,
                           )}
                         >
-                          <Star
-                            className={cn(
-                              "w-3.5 h-3.5",
-                              word.isFavorite && "fill-current",
-                            )}
-                          />
-                        </button>
-                      </ToolTip>
-                      <ToolTip content="Remover do Glossário">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingId(word.id ?? null);
-                          }}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all"
+                          {word.word}
+                        </h3>
+                        {word.phonetic && (
+                          <span className="text-[10px] font-mono text-muted-foreground/60">
+                            {word.phonetic}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <ToolTip
+                          content={
+                            word.isFavorite
+                              ? "Remover dos Favoritos"
+                              : "Marcar como Favorito"
+                          }
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </ToolTip>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(word);
+                            }}
+                            className={cn(
+                              "p-1.5 rounded-lg transition-all",
+                              word.isFavorite
+                                ? cn(theme.text, theme.bg)
+                                : cn(
+                                    "text-muted-foreground",
+                                    theme.textSub,
+                                    theme.bgHover,
+                                  ),
+                            )}
+                          >
+                            <Star
+                              className={cn(
+                                "w-3.5 h-3.5",
+                                word.isFavorite && "fill-current",
+                              )}
+                            />
+                          </button>
+                        </ToolTip>
+                        <ToolTip content="Remover do Glossário">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingId(word.id ?? null);
+                            }}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </ToolTip>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 italic opacity-80">
+                      "{word.definition}"
+                    </p>
+
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50 w-full">
+                      <span className="text-[10px] font-bold text-muted-foreground/40 uppercase">
+                        Léxico
+                      </span>
+                      <span className="text-[10px] font-medium text-muted-foreground/30">
+                        {new Date(word.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-
-                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 italic opacity-80">
-                    "{word.definition}"
-                  </p>
-
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50 w-full">
-                    <span className="text-[10px] font-bold text-muted-foreground/40 uppercase">
-                      Léxico
-                    </span>
-                    <span className="text-[10px] font-medium text-muted-foreground/30">
-                      {new Date(word.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      <DictionaryInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
       <DictionaryTranslationModal
         isOpen={showTranslationInfo}
         onClose={() => setShowTranslationInfo(false)}

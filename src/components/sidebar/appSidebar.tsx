@@ -20,7 +20,6 @@ import {
   Moon,
   Settings,
   Shield,
-  Timer,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
@@ -87,11 +86,6 @@ export const NAV_GROUPS = [
         icon: Book,
       },
       {
-        title: "Dicionário",
-        route: "dictionary" as AppRoute,
-        icon: Book,
-      },
-      {
         title: "Flashcards",
         route: "flashcards" as AppRoute,
         icon: BookOpen,
@@ -104,7 +98,7 @@ export const NAV_GROUPS = [
     ],
   },
   {
-    label: "Performance",
+    label: "Rotina & Bem-estar",
     compact: false,
     items: [
       {
@@ -112,17 +106,6 @@ export const NAV_GROUPS = [
         route: "habits" as AppRoute,
         icon: Activity,
       },
-      {
-        title: "Pomodoro",
-        route: "pomodoro" as AppRoute,
-        icon: Timer,
-      },
-    ],
-  },
-  {
-    label: "Bem-estar",
-    compact: false,
-    items: [
       { title: "Sono", route: "sleep" as AppRoute, icon: Moon },
       {
         title: "Alarmes",

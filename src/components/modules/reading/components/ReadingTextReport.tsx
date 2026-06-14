@@ -28,20 +28,43 @@ function generateReadingReport({
   goalMinutes: number;
   books: ReadingBook[];
 }) {
+  const mode = periodTitle.includes("DIÁRIO")
+    ? "Diário"
+    : periodTitle.includes("SEMANAL")
+      ? "Semanal"
+      : "Mensal";
+  const cleanTitle = `Aegis — Relatório ${mode} de Leitura`;
+
+  const cleanRange = periodRange
+    .toLowerCase()
+    .replace(/^[a-z]|\s[a-z]|- [a-z]/g, (letter) => letter.toUpperCase())
+    .replace("Feira", "feira");
+
   const lines = [
-    `\u{1F4DA} ${periodTitle}`,
-    `\u{1F4C5} ${periodRange}`,
+    `📚 ${cleanTitle}`,
+    `📅 ${cleanRange}`,
     ``,
-    `\u{1F4C4} Paginas lidas: ${periodStats.pages}${goalPages > 0 ? ` / ${goalPages} (${Math.round((periodStats.pages / goalPages) * 100)}%)` : ""}`,
-    `\u{23F1} Tempo: ${formatMinutes(periodStats.minutes)}${goalMinutes > 0 ? ` / ${formatMinutes(goalMinutes)} (${Math.round((periodStats.minutes / goalMinutes) * 100)}%)` : ""}`,
-    `\u{1F4CD} Sessoes: ${periodStats.sessions}`,
-    `\u{2705} Livros concluidos: ${periodStats.booksFinished}`,
+    `📖 Páginas lidas: ${periodStats.pages}${
+      goalPages > 0
+        ? ` / ${goalPages} (${Math.round((periodStats.pages / goalPages) * 100)}%)`
+        : ""
+    }`,
+    `⏱ Tempo de leitura: ${formatMinutes(periodStats.minutes)}${
+      goalMinutes > 0
+        ? ` / ${formatMinutes(goalMinutes)} (${Math.round((periodStats.minutes / goalMinutes) * 100)}%)`
+        : ""
+    }`,
+    `📍 Sessões realizadas: ${periodStats.sessions}`,
+    `✅ Livros concluídos: ${periodStats.booksFinished}`,
     periodStats.sessions > 0
-      ? `\u{1F4C8} Media por sessao: ${Math.round(periodStats.pages / periodStats.sessions)} pag.`
-      : "",
-    `\n- Gerado pelo Aegis`,
-  ].filter(Boolean);
-  return lines.join("\n");
+      ? `📈 Média por sessão: ${Math.round(
+          periodStats.pages / periodStats.sessions,
+        )} pág.`
+      : undefined,
+    ``,
+    `- Gerado pelo Aegis`,
+  ];
+  return lines.filter((l) => l !== undefined).join("\n");
 }
 
 interface ReadingTextReportProps {

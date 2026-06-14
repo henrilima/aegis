@@ -17,7 +17,7 @@ interface ReportTextSectionProps {
 
 export function ReportTextSection({
   periodStats,
-  periodTitle,
+  periodTitle: _,
   periodRange,
   reportMode,
   goalValue,
@@ -39,16 +39,43 @@ export function ReportTextSection({
     const goalQ = goalValue(typeQuestions);
     const goalP = goalValue(typePages);
 
+    const cleanTitle = `Aegis — Relatório ${
+      reportMode === "daily"
+        ? "Diário"
+        : reportMode === "weekly"
+          ? "Semanal"
+          : "Mensal"
+    } de Estudos`;
+
+    const cleanRange = periodRange
+      .toLowerCase()
+      .replace(/^[a-z]|\s[a-z]|- [a-z]/g, (letter) => letter.toUpperCase())
+      .replace("Feira", "feira");
+
     const lines = [
-      `📊 ${periodTitle}`,
-      `📅 ${periodRange}`,
+      `📊 ${cleanTitle}`,
+      `📅 ${cleanRange}`,
       ``,
-      `  ⏱ Tempo: ${formatHours(periodStats.hours)}${reportMode !== "daily" ? ` / ${goalHours ? formatHours(goalHours) : "-"}` : ""}`,
-      `  📝 Questões: ${periodStats.questions}${reportMode !== "daily" ? ` / ${goalQ || "-"}` : ""}`,
-      `  📖 Páginas: ${periodStats.pages}${reportMode !== "daily" ? ` / ${goalP || "-"}` : ""}`,
-      `  ✅ Acerto Inéditas: ${hitRate(periodStats.correctNew, periodStats.questionsNew)}%`,
-      `  🔄 Acerto Refeitas: ${hitRate(periodStats.correctReview, periodStats.questionsReview)}%`,
-      `  🎓 Sessões Realizadas: ${periodStats.sessionsCount}`,
+      `⏱ Tempo total: ${formatHours(periodStats.hours)}${
+        reportMode !== "daily"
+          ? ` / ${goalHours ? formatHours(goalHours) : "-"}`
+          : ""
+      }`,
+      `📝 Questões: ${periodStats.questions}${
+        reportMode !== "daily" ? ` / ${goalQ || "-"}` : ""
+      }`,
+      `📖 Páginas: ${periodStats.pages}${
+        reportMode !== "daily" ? ` / ${goalP || "-"}` : ""
+      }`,
+      `✅ Acerto em inéditas: ${hitRate(
+        periodStats.correctNew,
+        periodStats.questionsNew,
+      )}%`,
+      `🔄 Acerto em refeitas: ${hitRate(
+        periodStats.correctReview,
+        periodStats.questionsReview,
+      )}%`,
+      `🎓 Sessões realizadas: ${periodStats.sessionsCount}`,
       ``,
       `- Gerado pelo Aegis`,
     ];

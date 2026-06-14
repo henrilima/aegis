@@ -62,17 +62,23 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
   }, [habits, focusRate]);
 
   const reportText = useMemo(() => {
+    const rawDateStr = new Date().toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+    const cleanRange = rawDateStr.charAt(0).toUpperCase() + rawDateStr.slice(1);
+
     const lines = [
-      `⚡ AEGIS - RELATÓRIO DE HÁBITOS`,
-      `📅 ${new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).toUpperCase()}`,
-      ``,
-      `🔥 Ofensiva Acumulada: ${totalCurrentStreak} dias`,
-      `🏆 Recorde Global: ${maxGlobalStreak} dias`,
-      `📊 Performance Global: ${focusRate}%`,
-      `✅ Hábitos em Foco: ${positive.length}`,
-      `🛡️ Controle de Vícios: ${negative.length}`,
-      ``,
-      `- Gerado pelo Aegis`,
+      "⚡ Aegis — Relatório Mensal de Hábitos",
+      `📅 ${cleanRange}`,
+      "",
+      `🔥 Ofensiva acumulada: ${totalCurrentStreak} dias`,
+      `🏆 Recorde global: ${maxGlobalStreak} dias`,
+      `📊 Performance global: ${focusRate}%`,
+      `✅ Hábitos em foco: ${positive.length}`,
+      `🛡️ Controle de vícios: ${negative.length}`,
+      "",
+      "- Gerado pelo Aegis",
     ];
     return lines.join("\n");
   }, [

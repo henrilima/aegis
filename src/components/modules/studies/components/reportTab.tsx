@@ -26,7 +26,7 @@ import { PerformanceGlobal } from "./performanceGlobal";
 import { PerformanceKpi } from "./performanceKpi";
 import { PerformanceRanking } from "./performanceRanking";
 import { ReportCanvas } from "./reportCanvas";
-import { ReportTextSection } from "./reportTextSection";
+import { ReportTextSection } from "./StudiesTextReport";
 
 interface ReportTabProps {
   sessions: StudySession[];

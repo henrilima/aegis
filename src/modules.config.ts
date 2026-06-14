@@ -38,7 +38,7 @@ export const MODULE_CONFIGS = {
   pomodoro: {
     route: "pomodoro",
     label: "Pomodoro",
-    color: "orange",
+    color: "red",
   },
   habits: {
     route: "habits",
@@ -50,7 +50,7 @@ export const MODULE_CONFIGS = {
   notes: {
     route: "notes",
     label: "Anotações",
-    color: "amber",
+    color: "orange",
   },
   studies: {
     route: "studies",
@@ -65,7 +65,7 @@ export const MODULE_CONFIGS = {
   dictionary: {
     route: "dictionary",
     label: "Dicionário",
-    color: "lime",
+    color: "blue",
   },
   flashcards: {
     route: "flashcards",

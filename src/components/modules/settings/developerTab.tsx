@@ -2,6 +2,7 @@
 
 import { Cpu, ShieldAlert, Terminal } from "lucide-react";
 import * as React from "react";
+import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { TelemetryTab } from "./telemetryTab";
 
@@ -58,9 +59,7 @@ export function DeveloperTab({ handleInternalCommand }: DeveloperTabProps) {
                 placeholder="Comando de sistema..."
                 className="w-full bg-background border border-border rounded-xl px-4 py-3 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 transition-all"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground opacity-0 group-focus-within:opacity-100 transition-opacity">
-                ENTER
-              </kbd>
+              <Kbd>ENTER</Kbd>
             </div>
           </div>
         </section>

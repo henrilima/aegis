@@ -1,24 +1,21 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   BookOpen,
   Calendar,
   Copy,
-  DownloadCloud,
   Flame,
   HelpCircle,
   LayoutDashboard,
   Plus,
   Settings,
-  UploadCloud,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
-import { StudyInfoModal } from "@/components/modules/studies/components/modals/StudyInfoModal";
+import { StudyGuidePanel } from "@/components/modules/studies/components/modals/StudyInfoModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
@@ -58,7 +55,6 @@ export default function StudiesPage() {
   const [filterMonth, setFilterMonth] = useState("all");
   const [isSaving, setIsSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState(1);
 
   const uid = user ? String(user.id) : "";
@@ -139,40 +135,6 @@ export default function StudiesPage() {
       await load();
     } catch {
       toast.error("Erro ao remover");
-    }
-  };
-
-  const handleExportCSV = async () => {
-    try {
-      const path = await save({
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "aegis_estudos_backup.csv",
-      });
-      if (path) {
-        await invoke("estudos_export_csv", { userId: uid, destPath: path });
-        toast.success("CSV exportado!");
-      }
-    } catch {
-      toast.error("Erro ao exportar");
-    }
-  };
-
-  const handleImportCSV = async () => {
-    try {
-      const path = await openDialog({
-        multiple: false,
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-      });
-      if (path && typeof path === "string") {
-        const count = await invoke<number>("estudos_import_csv", {
-          userId: uid,
-          filePath: path,
-        });
-        toast.success(`${count} sessões importadas!`);
-        await load();
-      }
-    } catch {
-      toast.error("Erro ao importar CSV");
     }
   };
 
@@ -257,6 +219,7 @@ export default function StudiesPage() {
     { id: "historico", label: "Histórico", icon: Calendar },
     { id: "heatmap", label: "Constância", icon: Flame },
     { id: "relatorio", label: "Relatório", icon: Copy },
+    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   return (
@@ -269,28 +232,8 @@ export default function StudiesPage() {
         tabs={STUDIES_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
+        integrations={["dictionary", "pomodoro"]}
         actions={[
-          {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar Dados (CSV)",
-            onClick: handleImportCSV,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar Dados (CSV)",
-            onClick: handleExportCSV,
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
-          },
           {
             id: "settings",
             label: "Metas",
@@ -324,8 +267,6 @@ export default function StudiesPage() {
         }}
         isSaving={isSaving}
       />
-
-      <StudyInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {deleteConfirm !== null && (
         <ConfirmModal
@@ -373,6 +314,8 @@ export default function StudiesPage() {
           weekStartDay={weekStartDay}
         />
       )}
+
+      {tab === "guia" && <StudyGuidePanel />}
 
       {/* Configurações e Metas */}
       {showSettings && (

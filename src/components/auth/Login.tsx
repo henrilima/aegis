@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Eye,
   EyeOff,
+  FolderOpen,
   HardDriveDownload,
   Plus,
   Shield,
@@ -74,6 +75,10 @@ export default function LoginComponent() {
   const [restoreFilePath, setRestoreFilePath] = useState("");
   const [restoring, setRestoring] = useState(false);
 
+  // Estados para escolha de pasta de dados na tela de login
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [customDataDir, setCustomDataDir] = useState("");
+
   const handleSelectRestoreFile = async () => {
     try {
       const selected = await open({
@@ -122,6 +127,18 @@ export default function LoginComponent() {
     }
   };
 
+  // Carrega configurações de diretório de dados
+  const loadConfig = useCallback(async () => {
+    try {
+      const config = await invoke<{ customDataDir: string }>(
+        "global_get_app_config",
+      );
+      setCustomDataDir(config.customDataDir || "");
+    } catch (err) {
+      console.error("Failed to fetch app config:", err);
+    }
+  }, []);
+
   // Carrega usuários locais
   const loadUsers = useCallback(async () => {
     setFetchingUsers(true);
@@ -135,9 +152,42 @@ export default function LoginComponent() {
     }
   }, []);
 
+  const handleChangeDataDirectory = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Selecione a pasta para os dados do Aegis",
+      });
+      if (selected) {
+        const path = selected as string;
+        toast.info(
+          "Configurando diretório e migrando dados. O Aegis irá reiniciar...",
+        );
+        await invoke("global_set_custom_data_dir", { newPath: path });
+      }
+    } catch (e) {
+      toast.error(
+        `Erro ao alterar diretório: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
+  const handleResetDataDirectory = async () => {
+    try {
+      toast.info("Restaurando local padrão. O Aegis irá reiniciar...");
+      await invoke("global_set_custom_data_dir", { newPath: null });
+    } catch (e) {
+      toast.error(
+        `Erro ao restaurar diretório padrão: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+    loadConfig();
+  }, [loadUsers, loadConfig]);
 
   const handleDeleteAccount = (e: React.MouseEvent, user: LocalUser) => {
     e.stopPropagation();
@@ -344,6 +394,76 @@ export default function LoginComponent() {
         </div>
       )}
 
+      {showFolderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-md bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 ${theme.bg} rounded-xl border ${theme.border}`}
+                >
+                  <FolderOpen className={`w-5 h-5 ${theme.textSub}`} />
+                </div>
+                <h2 className="text-base font-bold text-foreground">
+                  Localização dos Dados
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFolderModal(false)}
+                className="p-2 hover:bg-accent/50 rounded-xl transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-left">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Escolha a pasta do disco de onde o Aegis deve ler e salvar suas
+                identidades, anotações, tarefas e histórico de estudos.
+              </p>
+
+              <div className="space-y-1 bg-card/40 border border-border p-4 rounded-xl">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                  Pasta Atual:
+                </span>
+                <p className="text-xs font-semibold text-foreground break-all">
+                  {customDataDir || "Local padrão do sistema (AppData)"}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={handleChangeDataDirectory}
+                  className={`w-full py-3 rounded-xl ${theme.solid} ${theme.solidHover} border ${theme.border} text-white text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2`}
+                >
+                  Selecionar Nova Pasta
+                </button>
+
+                {customDataDir && (
+                  <button
+                    type="button"
+                    onClick={handleResetDataDirectory}
+                    className="w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    Restaurar Pasta Padrão
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowFolderModal(false)}
+                  className="w-full text-muted-foreground hover:text-foreground py-2 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showTerms && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-lg bg-background border border-border rounded-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
@@ -502,6 +622,30 @@ export default function LoginComponent() {
                     </span>
                     <p className="text-[10px] font-bold text-neutral-600 uppercase mt-0.5">
                       Recuperar base de dados (.aegissystem)
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowFolderModal(true)}
+                  className={`flex items-center gap-4 p-4 rounded-xl border border-dashed border-border hover:${theme.border.split(" ")[0]} ${theme.bgHover} transition-all text-left group cursor-pointer`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl bg-background/60 border border-dashed border-border flex items-center justify-center text-muted-foreground group-hover:${theme.text} group-hover:${theme.border.split(" ")[0]} transition-all`}
+                  >
+                    <FolderOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span
+                      className={`font-bold text-muted-foreground group-hover:${theme.text} transition-colors`}
+                    >
+                      Alterar Local dos Dados
+                    </span>
+                    <p className="text-[10px] font-bold text-neutral-600 uppercase mt-0.5">
+                      {customDataDir
+                        ? `Pasta: ${customDataDir.split(/[/\\]/).pop()}`
+                        : "Local padrão do sistema"}
                     </p>
                   </div>
                 </button>

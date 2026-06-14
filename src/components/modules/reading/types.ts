@@ -35,7 +35,13 @@ export interface ReadingGoal {
   targetValue: number;
 }
 
-export type TabId = "overview" | "library" | "history" | "goals" | "reports";
+export type TabId =
+  | "overview"
+  | "library"
+  | "history"
+  | "goals"
+  | "reports"
+  | "guia";
 
 export interface ReadingStats {
   totalPages: number;

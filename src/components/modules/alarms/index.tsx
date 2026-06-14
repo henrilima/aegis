@@ -106,7 +106,6 @@ export default function AlarmsPage() {
             : [
                 {
                   id: "info",
-                  label: "Guia",
                   icon: HelpCircle,
                   tooltip: "Guia do Módulo",
                   onClick: () => setIsInfoOpen(true),

@@ -1,6 +1,7 @@
 "use client";
 
 import { ShieldOff, TrendingUp } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -27,6 +28,27 @@ export function HabitsInfoModal({ show, onClose }: HabitsInfoModalProps) {
       subtitle="Guia para construção de rotina e autocontrole"
       closeLabel="Entendido, foco total!"
     >
+      <HabitsGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function HabitsGuidePanel() {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("habits")}
+      icon={TrendingUp}
+      title="Hábitos & Disciplina"
+      subtitle="Guia para construção de rotina e autocontrole"
+    >
+      <HabitsGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function HabitsGuideContent() {
+  return (
+    <>
       <InfoSection icon={TrendingUp} title="Hábitos Positivos">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Fortaleça seus comportamentos produtivos acompanhando sua frequência e
@@ -43,7 +65,7 @@ export function HabitsInfoModal({ show, onClose }: HabitsInfoModalProps) {
               o ritmo.
             </p>
             <p className="text-[13px] leading-relaxed border-t border-border/50 pt-2">
-              <strong>Nos hábitos negativos:</strong> São uma "permissão para
+              <strong>Nos hábitos negativos:</strong> Are a "permissão para
               falhar". Ajudam a controlar vícios gradualmente, permitindo um
               limite de deslizes para evitar a abstinência súbita sem zerar seu
               progresso total.
@@ -83,6 +105,6 @@ export function HabitsInfoModal({ show, onClose }: HabitsInfoModalProps) {
         configurações. O Aegis avisará no final do dia caso você tenha esquecido
         de marcar uma tarefa importante.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

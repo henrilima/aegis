@@ -17,6 +17,8 @@ import {
   Sun,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Kbd } from "@/components/ui/kbd";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import type { User } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -157,46 +159,73 @@ export function DashboardHeader({
     return (
       <div className="flex items-center justify-end gap-1.5 w-full">
         <div className="flex items-center gap-1.5 bg-card/60 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-border/40">
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event("open-feedback"))}
-            className="p-2 rounded-xl hover:bg-accent/50 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Feedback / Reportar bug"
-          >
-            <MessageSquare className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              window.dispatchEvent(new Event("toggle-notifications-panel"))
-            }
-            className="relative p-2 rounded-xl hover:bg-accent/50 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
-            title={
-              unreadCount > 0 ? `${unreadCount} notificações` : "Notificações"
+          <ToolTip
+            content={
+              <div className="flex items-center gap-2">
+                <span>Feedback / Reportar bug</span>
+                <Kbd>Alt+F</Kbd>
+              </div>
             }
           >
-            <Bell className="w-4 h-4" />
-            {unreadCount > 0 && (
-              <span
-                className={cn(
-                  "absolute -top-1 -right-1 w-4 h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background",
-                  theme.solid,
-                )}
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("open-feedback"))}
+              className="p-2 rounded-xl hover:bg-accent/50 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+              aria-label="Feedback / Reportar bug"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+          </ToolTip>
 
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="p-2 rounded-xl hover:bg-accent/50 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
-            title="Configurações"
+          <ToolTip
+            content={
+              <div className="flex items-center gap-2">
+                <span>Notificações</span>
+                <Kbd>Alt+N</Kbd>
+              </div>
+            }
           >
-            <Settings className="w-4 h-4" />
-          </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(new Event("toggle-notifications-panel"))
+              }
+              className="relative p-2 rounded-xl hover:bg-accent/50 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+              aria-label={
+                unreadCount > 0 ? `${unreadCount} notificações` : "Notificações"
+              }
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span
+                  className={cn(
+                    "absolute -top-1 -right-1 w-4 h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background",
+                    theme.solid,
+                  )}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </ToolTip>
+
+          <ToolTip
+            content={
+              <div className="flex items-center gap-2">
+                <span>Configurações</span>
+                <Kbd>Ctrl+Shift+C</Kbd>
+              </div>
+            }
+          >
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 rounded-xl hover:bg-accent/50 transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+              aria-label="Configurações"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </ToolTip>
         </div>
       </div>
     );
@@ -406,9 +435,7 @@ export function DashboardHeader({
               >
                 <Search className="w-3.5 h-3.5" />
                 <span>Módulos</span>
-                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
-                  Ctrl K
-                </kbd>
+                <Kbd>Ctrl K</Kbd>
               </button>
 
               <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border-2 border-border">
@@ -515,9 +542,7 @@ export function DashboardHeader({
               >
                 <Search className="w-4 h-4" />
                 <span className="hidden sm:inline">Módulos</span>
-                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
-                  Ctrl K
-                </kbd>
+                <Kbd>Ctrl K</Kbd>
               </button>
 
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border-2 border-border text-[11px] font-black">
@@ -615,9 +640,7 @@ export function DashboardHeader({
           >
             <Search className="w-3.5 h-3.5" />
             <span>Módulos</span>
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
-              Ctrl K
-            </kbd>
+            <Kbd>Ctrl K</Kbd>
           </button>
 
           <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border-2 border-border text-xs font-black">
@@ -674,9 +697,7 @@ export function DashboardHeader({
             >
               <Search className="w-4 h-4" />
               <span>Módulos</span>
-              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent border border-border text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
-                Ctrl K
-              </kbd>
+              <Kbd>Ctrl K</Kbd>
             </button>
 
             <div className="shrink-0 animate-in fade-in duration-700">
@@ -802,9 +823,7 @@ export function DashboardHeader({
               >
                 <Search className="w-3.5 h-3.5" />
                 <span>Módulos</span>
-                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-accent/40 border border-border/20 text-[9px] font-bold text-muted-foreground select-none ml-1 uppercase">
-                  Ctrl K
-                </kbd>
+                <Kbd>Ctrl K</Kbd>
               </button>
             </div>
           </div>

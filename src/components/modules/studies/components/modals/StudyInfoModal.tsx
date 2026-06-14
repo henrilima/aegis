@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, GraduationCap, Target } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -23,8 +24,29 @@ export function StudyInfoModal({ show, onClose }: StudyInfoModalProps) {
       color="violet"
       title="Guia do Módulo de Estudos"
       subtitle="Como gerenciar seu desempenho acadêmico"
-      closeLabel="Entendi, vamos lá!"
+      closeLabel="Entendido, vamos lá!"
     >
+      <StudyGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function StudyGuidePanel() {
+  return (
+    <ModuleGuideContainer
+      color="violet"
+      icon={GraduationCap}
+      title="Guia do Módulo de Estudos"
+      subtitle="Como gerenciar seu desempenho acadêmico"
+    >
+      <StudyGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function StudyGuideContent() {
+  return (
+    <>
       <InfoSection icon={GraduationCap} title="Registrando Sessões">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Clique no botão <Highlight>"Nova Sessão"</Highlight> para registrar
@@ -58,6 +80,6 @@ export function StudyInfoModal({ show, onClose }: StudyInfoModalProps) {
         visualizar sua constância. Dias mais escuros representam maior volume de
         estudo, ajudando a identificar padrões de produtividade.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

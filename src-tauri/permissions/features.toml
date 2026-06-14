@@ -243,5 +243,9 @@ commands.allow = [
     "global_export_raw_user_json",
     "global_import_raw_user_json",
     "global_open_app_data_folder",
-    "global_set_custom_data_dir"
+    "global_set_custom_data_dir",
+    "global_set_custom_icon",
+    "global_has_custom_icon",
+    "global_get_custom_icon_path",
+    "global_update_shortcut_icon"
 ]

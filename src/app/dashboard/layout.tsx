@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const { appMode } = useTheme();
   const { user } = useAuth();
   const {
@@ -33,6 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleToggle = () => setIsSidebarOpen((prev) => !prev);
     window.addEventListener("toggle-sidebar", handleToggle);
     return () => window.removeEventListener("toggle-sidebar", handleToggle);
@@ -67,7 +69,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const isSidebarVisible = appMode === "default";
+  const isSidebarVisible = mounted && appMode === "default";
 
   return (
     <NavigationProvider>

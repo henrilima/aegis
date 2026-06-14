@@ -1,14 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, type LucideIcon, Search } from "lucide-react";
+import { ArrowLeft, Book, type LucideIcon, Search, Timer } from "lucide-react";
+import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
-import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
+import { changeModule, cn, getColorTheme, toHoverClass } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
+import { Kbd } from "../ui/kbd";
 
 // Tipos
-
 export interface ModuleTab {
   id: string;
   label: string;
@@ -18,13 +20,17 @@ export interface ModuleTab {
 
 export interface ModuleAction {
   id: string;
-  label: string;
+  label?: string;
   icon: LucideIcon;
   tooltip?: string;
   onClick: () => void;
   /** Se true, renderiza como botão primário (sólido com a cor do módulo) */
   primary?: boolean;
+  warning?: boolean;
 }
+
+// Atalhos de módulos complementares
+const _modulesIntegrations = ["dictionary"];
 
 export interface ModuleHeaderProps {
   /** Cor identitária do módulo (ex: "blue", "orange", "violet", "teal", "amber") */
@@ -41,10 +47,37 @@ export interface ModuleHeaderProps {
   searchValue?: string;
   onSearchChange?: (v: string) => void;
   searchPlaceholder?: string;
+  integrations?: string[];
 }
 
-// Componente
+interface Integration {
+  tooltip: string;
+  label: string;
+  color: string;
+  icon: LucideIcon;
+  action: () => void;
+  kbd?: string;
+}
 
+const integrationsData: Record<string, Integration> = {
+  dictionary: {
+    tooltip: "Acesse o Módulo de Dicionário",
+    label: "Dicionário",
+    kbd: "alt+shift+D",
+    color: getModuleColor("dictionary"),
+    icon: Book,
+    action: () => changeModule("dictionary"),
+  },
+  pomodoro: {
+    tooltip: "Acesse o Módulo Pomodoro",
+    label: "Pomodoro",
+    color: getModuleColor("pomodoro"),
+    icon: Timer,
+    action: () => changeModule("pomodoro"),
+  },
+};
+
+// Componente
 export function ModuleHeader({
   color,
   title,
@@ -57,6 +90,7 @@ export function ModuleHeader({
   searchValue,
   onSearchChange,
   searchPlaceholder = "Pesquisar...",
+  integrations,
 }: ModuleHeaderProps) {
   const m = getColorTheme(color as string);
   const { appMode } = useTheme();
@@ -88,7 +122,7 @@ export function ModuleHeader({
             <Icon className={cn("w-5 h-5", m.text)} />
           </div>
           <div>
-            <h1 className="text-xl font-bold leading-none">{title}</h1>
+            <h1 className="text-xl font-semibold leading-none">{title}</h1>
             {subtitle && (
               <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
             )}
@@ -97,6 +131,44 @@ export function ModuleHeader({
 
         {/* Ações */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Integrações */}
+          {integrations && (
+            <div className="flex gap-2 flex-wrap">
+              {integrations.map((integrationId) => {
+                const integration = integrationsData[integrationId];
+                if (!integration) return null;
+
+                const moduleTheme =
+                  THEME_COLORS_CONFIG[
+                    integration.color as keyof typeof THEME_COLORS_CONFIG
+                  ];
+                if (!moduleTheme) return null;
+
+                return (
+                  <ToolTip
+                    key={integration.tooltip}
+                    content={integration.tooltip}
+                  >
+                    <button
+                      type="button"
+                      onClick={integration.action}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all cursor-pointer text-xs font-semibold",
+                        moduleTheme.bg,
+                        moduleTheme.bgHover,
+                        moduleTheme.border,
+                        moduleTheme.text,
+                      )}
+                    >
+                      <integration.icon className="w-4 h-4" />
+                      {integration.label}
+                      {integration.kbd && <Kbd>{integration.kbd}</Kbd>}
+                    </button>
+                  </ToolTip>
+                );
+              })}
+            </div>
+          )}
           {filteredActions.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {filteredActions.map((action) =>
@@ -109,9 +181,27 @@ export function ModuleHeader({
                       type="button"
                       onClick={action.onClick}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer active:scale-95",
+                        "flex items-center rounded-xl text-white font-semibold text-xs transition-all cursor-pointer active:scale-95",
+                        action.label ? "px-4 py-2 gap-2" : "p-2",
                         m.solid,
                         m.solidHover,
+                      )}
+                    >
+                      <action.icon className="w-4 h-4" />
+                      {action.label}
+                    </button>
+                  </ToolTip>
+                ) : action.warning ? (
+                  <ToolTip
+                    key={action.id}
+                    content={action.tooltip ?? action.label}
+                  >
+                    <button
+                      type="button"
+                      onClick={action.onClick}
+                      className={cn(
+                        "flex items-center rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-all cursor-pointer text-xs font-semibold border border-amber-500/20 text-amber-600 dark:text-amber-500",
+                        action.label ? "px-3 py-2 gap-2" : "p-2",
                       )}
                     >
                       <action.icon className="w-4 h-4" />
@@ -127,7 +217,8 @@ export function ModuleHeader({
                       type="button"
                       onClick={action.onClick}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-bold border border-border text-muted-foreground",
+                        "flex items-center rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-semibold border border-border text-muted-foreground",
+                        action.label ? "px-3 py-2 gap-2" : "p-2",
                         toHoverClass(m.text),
                       )}
                     >
@@ -155,7 +246,7 @@ export function ModuleHeader({
                     type="button"
                     onClick={() => onTabChange(t.id)}
                     className={cn(
-                      "relative flex items-center justify-center gap-2 px-4 h-full rounded-lg text-xs font-bold transition-colors cursor-pointer border select-none focus:outline-none z-10",
+                      "relative flex items-center justify-center gap-2 px-4 h-full rounded-lg text-xs font-semibold transition-colors cursor-pointer border select-none focus:outline-none z-10",
                       activeTab === t.id
                         ? cn(m.text)
                         : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50",
@@ -181,7 +272,7 @@ export function ModuleHeader({
                     {t.count !== undefined && (
                       <span
                         className={cn(
-                          "ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold min-w-[20px] text-center flex items-center justify-center transition-all",
+                          "ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold min-w-[20px] text-center flex items-center justify-center transition-all",
                           activeTab === t.id
                             ? cn(m.text, m.bg, m.border)
                             : "bg-muted text-muted-foreground border border-border/50",

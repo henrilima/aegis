@@ -1,16 +1,13 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   Activity,
-  DownloadCloud,
   HelpCircle,
   Image as ImageIcon,
   LayoutGrid,
   Plus,
   ShieldOff,
-  UploadCloud,
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -25,11 +22,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { getModuleColor } from "@/modules.config";
-import { HabitsInfoModal } from "./components/HabitsInfoModal";
+import { HabitsGuidePanel } from "./components/HabitsInfoModal";
 import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
 
-type TabId = "all" | "positive" | "negative" | "report";
+type TabId = "all" | "positive" | "negative" | "report" | "guia";
 
 /**
  * Módulo de Hábitos: Monitoramento de comportamentos positivos e controle de vícios
@@ -46,7 +43,6 @@ export default function HabitsPage() {
   const [resetId, setResetId] = useState<number | null>(null);
   const [hardResetId, setHardResetId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [showInfo, setShowInfo] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
   const uid = user ? String(user.id) : "";
@@ -175,45 +171,6 @@ export default function HabitsPage() {
     (h) => h.habitType === "Negative" || h.habitType === "Bad",
   );
 
-  const handleExportCSV = async () => {
-    try {
-      const filePath = await save({
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "aegis_habitos_backup.csv",
-      });
-
-      if (!filePath) return;
-
-      await invoke("habit_export_habits_csv", { userId: uid, path: filePath });
-      toast.success("Exportação de hábitos concluída!");
-    } catch (e) {
-      toast.error(
-        `Falha ao exportar: ${e instanceof Error ? e.message : String(e)}`,
-      );
-    }
-  };
-
-  const handleImportCSV = async () => {
-    try {
-      const filePath = await openDialog({
-        multiple: false,
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-      });
-      if (filePath && typeof filePath === "string") {
-        const count = await invoke<number>("habit_import_habits_csv", {
-          userId: uid,
-          path: filePath,
-        });
-        toast.success(`${count} hábitos importados!`);
-        await fetchHabits();
-      }
-    } catch (e) {
-      toast.error(
-        `Erro ao importar CSV: ${e instanceof Error ? e.message : String(e)}`,
-      );
-    }
-  };
-
   if (loading)
     return (
       <div className="w-full flex flex-col gap-6 px-1">
@@ -238,6 +195,7 @@ export default function HabitsPage() {
     { id: "positive", label: "Foco", icon: Zap },
     { id: "negative", label: "Controle", icon: ShieldOff },
     { id: "report", label: "Relatório", icon: ImageIcon },
+    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   return (
@@ -252,27 +210,6 @@ export default function HabitsPage() {
         onTabChange={(id) => setTab(id as TabId)}
         actions={[
           {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar Hábitos (CSV)",
-            onClick: handleImportCSV,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar Hábitos (CSV)",
-            onClick: handleExportCSV,
-          },
-          {
-            id: "info",
-            label: "Guia",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
-          },
-          {
             id: "add",
             label: "Novo Hábito",
             icon: Plus,
@@ -284,7 +221,9 @@ export default function HabitsPage() {
       />
 
       {/* Listagem / Relatório */}
-      {tab === "report" ? (
+      {tab === "guia" ? (
+        <HabitsGuidePanel />
+      ) : tab === "report" ? (
         <HabitsReportsTab habits={habits} />
       ) : currentList.length === 0 ? (
         <EmptyState
@@ -312,8 +251,6 @@ export default function HabitsPage() {
           ))}
         </div>
       )}
-
-      <HabitsInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {/* Modais */}
       {createOpen && (

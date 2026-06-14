@@ -1,17 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function Loading() {
   const { themeStyles } = useTheme();
 
   return (
-    <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-background overflow-hidden">
+    <div className="fixed inset-0 z-99999 flex flex-col items-center justify-center bg-background overflow-hidden">
       <div className="relative flex flex-col items-center gap-8">
         <motion.div
-          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          initial={{ opacity: 0, scale: 0.85, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{
             duration: 0.8,
@@ -19,28 +18,25 @@ export default function Loading() {
           }}
           className="relative"
         >
-          {/* Anel pulsante ao redor do escudo */}
+          {/* Logo centralizada com pulso suave e minimalista */}
           <motion.div
             animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.1, 0.3],
+              scale: [0.96, 1.04, 0.96],
+              opacity: [0.8, 1, 0.8],
             }}
             transition={{
-              duration: 3,
+              duration: 2.5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className={`absolute inset-0 -m-4 rounded-2xl border-2 ${themeStyles.border} opacity-20`}
-          />
-
-          <div
-            className={`p-6 rounded-3xl bg-card border ${themeStyles.border} relative overflow-hidden`}
+            className="w-24 h-24 flex items-center justify-center"
           >
-            <Shield
-              className={`size-16 ${themeStyles.text} relative z-10`}
-              strokeWidth={1.5}
+            <img
+              src="/logo.webp"
+              alt="Aegis Logo"
+              className="w-full h-full object-contain"
             />
-          </div>
+          </motion.div>
         </motion.div>
 
         <div className="flex flex-col items-center gap-4">
@@ -61,8 +57,8 @@ export default function Loading() {
             </p>
           </motion.div>
 
-          {/* Barra de progresso minimalista */}
-          <div className="w-48 h-1 bg-muted rounded-full overflow-hidden relative border border-white/5">
+          {/* Barra de progresso minimalista e sem borda */}
+          <div className="w-48 h-1 bg-muted/20 rounded-full overflow-hidden relative">
             <motion.div
               initial={{ left: "-100%" }}
               animate={{ left: "100%" }}

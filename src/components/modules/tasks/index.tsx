@@ -1,11 +1,9 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   CheckCircle2,
   Circle,
-  DownloadCloud,
   Flag,
   Hash,
   HelpCircle,
@@ -14,7 +12,6 @@ import {
   Plus,
   Subtitles,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -162,45 +159,6 @@ export default function TasksPage() {
       setTaskToDelete(null);
     } catch (err) {
       toast.error(typeof err === "string" ? err : "Erro ao remover tarefa");
-    }
-  };
-
-  const handleExportCSV = async () => {
-    try {
-      const filePath = await save({
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-        defaultPath: "aegis_tarefas_backup.csv",
-      });
-
-      if (!filePath) return;
-
-      await invoke("export_tasks_csv", { userId: uid, path: filePath });
-      toast.success("Exportação de tarefas concluída!");
-    } catch (e) {
-      toast.error(
-        `Falha ao exportar: ${e instanceof Error ? e.message : String(e)}`,
-      );
-    }
-  };
-
-  const handleImportCSV = async () => {
-    try {
-      const filePath = await openDialog({
-        multiple: false,
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-      });
-      if (filePath && typeof filePath === "string") {
-        const count = await invoke<number>("import_tasks_csv", {
-          userId: uid,
-          path: filePath,
-        });
-        toast.success(`${count} tarefas importadas!`);
-        await fetchTasks();
-      }
-    } catch (e) {
-      toast.error(
-        `Erro ao importar CSV: ${e instanceof Error ? e.message : String(e)}`,
-      );
     }
   };
 
@@ -389,22 +347,7 @@ export default function TasksPage() {
         icon={ListTodo}
         actions={[
           {
-            id: "import",
-            label: "Importar",
-            icon: UploadCloud,
-            tooltip: "Importar Tarefas (CSV)",
-            onClick: handleImportCSV,
-          },
-          {
-            id: "export",
-            label: "Exportar",
-            icon: DownloadCloud,
-            tooltip: "Exportar Tarefas (CSV)",
-            onClick: handleExportCSV,
-          },
-          {
             id: "info",
-            label: "Guia",
             icon: HelpCircle,
             tooltip: "Guia do Módulo",
             onClick: () => setShowInfo(true),

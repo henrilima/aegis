@@ -52,6 +52,8 @@ export function OverviewTab({
       ? Math.min(100, Math.round((hPct + qPct + pPct) / activeTargetsCount))
       : 0;
 
+  const hasRecords = monthStats.sessionsCount > 0;
+
   const statCards = [
     {
       label: "Tempo no Mês",
@@ -142,18 +144,22 @@ export function OverviewTab({
               <span
                 className={cn(
                   "text-sm font-bold",
-                  monthlyFocus >= 80
-                    ? "text-emerald-500"
-                    : monthlyFocus >= 50
-                      ? theme.text
-                      : "text-amber-500",
+                  !hasRecords
+                    ? "text-muted-foreground"
+                    : monthlyFocus >= 80
+                      ? "text-emerald-500"
+                      : monthlyFocus >= 50
+                        ? theme.text
+                        : "text-amber-500",
                 )}
               >
-                {monthlyFocus >= 80
-                  ? "Excelente"
-                  : monthlyFocus >= 50
-                    ? "Produtivo"
-                    : "Em recuperação"}
+                {!hasRecords
+                  ? "Sem registros"
+                  : monthlyFocus >= 80
+                    ? "Excelente"
+                    : monthlyFocus >= 50
+                      ? "Produtivo"
+                      : "Em recuperação"}
               </span>
             </div>
             <div className="w-px h-8 bg-border" />

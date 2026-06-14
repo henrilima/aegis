@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
+  Book,
   Keyboard,
   MessageSquare,
   Plus,
@@ -22,6 +23,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { type ShortcutDetails, shortcuts } from "@/lib/shortcuts";
 import { cn, getColorTheme, type ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { Kbd } from "./ui/kbd";
 
 interface PaletteItem {
   title: string;
@@ -186,7 +188,15 @@ export function GlobalShortcuts() {
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
                 className="flex flex-col gap-2.5 items-end mb-1"
               >
-                <ToolTip content="Configurações">
+                {" "}
+                <ToolTip
+                  content={
+                    <div className="flex items-center gap-2">
+                      <span>Configurações</span>
+                      <Kbd>Ctrl+Shift+C</Kbd>
+                    </div>
+                  }
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -199,12 +209,16 @@ export function GlobalShortcuts() {
                     <Settings className="w-5 h-5" />
                   </button>
                 </ToolTip>
-
                 <ToolTip
                   content={
-                    unreadCount > 0
-                      ? `${unreadCount} notificações não lidas`
-                      : "Notificações"
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {unreadCount > 0
+                          ? `${unreadCount} notificações não lidas`
+                          : "Notificações"}
+                      </span>
+                      <Kbd>Alt+N</Kbd>
+                    </div>
                   }
                 >
                   <button
@@ -231,8 +245,34 @@ export function GlobalShortcuts() {
                     )}
                   </button>
                 </ToolTip>
-
-                <ToolTip content="Feedback / Reportar bug">
+                <ToolTip
+                  content={
+                    <div className="flex items-center gap-2">
+                      <span>Dicionário</span>
+                      <Kbd>Alt+Shift+D</Kbd>
+                    </div>
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("dictionary");
+                      setIsDropdownOpen(false);
+                    }}
+                    className="p-3 bg-card border border-border rounded-full hover:scale-110 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer border-none shadow-none"
+                    aria-label="Dicionário"
+                  >
+                    <Book className="w-5 h-5" />
+                  </button>
+                </ToolTip>
+                <ToolTip
+                  content={
+                    <div className="flex items-center gap-2">
+                      <span>Feedback / Reportar bug</span>
+                      <Kbd>Alt+F</Kbd>
+                    </div>
+                  }
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -245,8 +285,14 @@ export function GlobalShortcuts() {
                     <MessageSquare className="w-5 h-5" />
                   </button>
                 </ToolTip>
-
-                <ToolTip content="Guia de Atalhos">
+                <ToolTip
+                  content={
+                    <div className="flex items-center gap-2">
+                      <span>Guia de Atalhos</span>
+                      <Kbd>Shift+?</Kbd>
+                    </div>
+                  }
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -420,9 +466,7 @@ function CommandPalette({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <kbd className="hidden sm:inline-flex px-2 py-0.5 rounded-lg bg-accent border border-border text-[10px] font-medium text-muted-foreground ml-3 uppercase">
-            ESC
-          </kbd>
+          <Kbd>ESC</Kbd>
         </div>
 
         <div className="max-h-[350px] overflow-y-auto p-2 custom-scrollbar">
@@ -475,10 +519,7 @@ function CommandPalette({
                   </span>
                   {isSelected && (
                     <span className="ml-auto text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-                      Pressione{" "}
-                      <kbd className="font-sans px-1.5 py-0.5 rounded bg-background border border-border">
-                        Enter
-                      </kbd>
+                      Pressione <Kbd>Enter</Kbd>
                     </span>
                   )}
                 </button>
@@ -488,26 +529,11 @@ function CommandPalette({
         </div>
         <div className="bg-muted/40 border-t border-border/60 px-4 py-2.5 flex items-center justify-between text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            Navegue com{" "}
-            <kbd className="font-sans px-1.5 py-0.5 rounded-md bg-card border border-border">
-              ↑
-            </kbd>{" "}
-            e{" "}
-            <kbd className="font-sans px-1.5 py-0.5 rounded-md bg-card border border-border">
-              ↓
-            </kbd>
+            Navegue com <Kbd>↑</Kbd> e <Kbd>↓</Kbd>
           </span>
         </div>
       </div>
     </div>
-  );
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="px-2 py-1 rounded-lg bg-accent border border-border/80 text-[10px] font-bold font-sans text-foreground whitespace-nowrap min-w-[20px] inline-flex items-center justify-center uppercase">
-      {children}
-    </kbd>
   );
 }
 

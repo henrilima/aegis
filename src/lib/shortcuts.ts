@@ -54,12 +54,6 @@ export const shortcuts: ShortcutConfig = {
       action: ({ setSettingsOpen }) => setSettingsOpen(true),
       description: "Abrir configurações",
     },
-    "ctrl+shift+d": {
-      action: () => {
-        window.dispatchEvent(new CustomEvent("open-whats-new"));
-      },
-      description: "Ver novidades da versão",
-    },
     "ctrl+shift+l": {
       action: ({ setSettingsOpen }) => {
         setSettingsOpen(true);
@@ -68,6 +62,16 @@ export const shortcuts: ShortcutConfig = {
         }, 100);
       },
       description: "Abrir telemetria",
+    },
+    "alt+f": {
+      action: () => {
+        window.dispatchEvent(new Event("open-feedback"));
+      },
+      description: "Reportar bug / Sugestões (Feedback)",
+    },
+    "alt+shift+d": {
+      action: ({ navigate }) => navigate("dictionary"),
+      description: "Abrir módulo Dicionário",
     },
   },
 };

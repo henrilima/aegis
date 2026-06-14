@@ -1,6 +1,7 @@
 "use client";
 
 import { Brain, Layers, Settings } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -25,10 +26,31 @@ export function FlashcardsInfoModal({
       onClose={onClose}
       color={getModuleColor("flashcards")}
       title="Guia do Módulo de Flashcards"
-      subtitle="Memorização ativa e repetição espaçada para impulsionar seus estudos"
+      subtitle="Memorização activa e repetição espaçada para impulsionar seus estudos"
       closeLabel="Entendido, bons estudos!"
       icon={Brain}
     >
+      <FlashcardsGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function FlashcardsGuidePanel() {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("flashcards")}
+      icon={Brain}
+      title="Guia do Módulo de Flashcards"
+      subtitle="Memorização activa e repetição espaçada para impulsionar seus estudos"
+    >
+      <FlashcardsGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function FlashcardsGuideContent() {
+  return (
+    <>
       <InfoSection icon={Layers} title="Organização em Baralhos">
         <p className="text-xs text-muted-foreground leading-relaxed">
           Crie baralhos para separar seus tópicos de estudo. Personalize a cor
@@ -76,6 +98,6 @@ export function FlashcardsInfoModal({
         os cartões com menor taxa de acerto para ajudá-lo a fixar o conteúdo na
         memória de longo prazo.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }
