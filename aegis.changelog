@@ -6,8 +6,6 @@
 [4]:["Seleção de diretório de dados no login: Escolha do diretório de leitura/gravação diretamente da tela de login para fácil compartilhamento entre sistemas."]
 [5]:["Módulos integrados em headers: Atalhos de Dicionário e Pomodoro integrados nos cabeçalhos e remoção da barra lateral."]
 [6]:["Guias como abas: Os guias dos módulos com abas (Estudos, Sono, Leitura, Filmes, Hábitos, Flashcards e Dicionário) foram migrados do formato modal para uma aba dedicada."]
-[7]:["Importação/Exportação centralizada: Centralização da importação e exportação de todos os módulos na aba dados de configurações."]
-[8]:["Ícone do aplicativo: Agora é possível definir um ícone personalizado para o Aegis nas configurações de aparência."]
 
 [fixes]
 [1]:["Animações de Acordeões Aninhados: Correção de clipping e travamentos de animações do Framer Motion ao expandir accordions dentro de outros accordions na aba de Notas."]
@@ -16,5 +14,3 @@
 [4]:["Padronização dos Botões de Voltar: Remoção de botões redundantes e fixação do botão de retorno no canto superior esquerdo para consistência de design."]
 [5]:["Consistência nas estatísticas: Correção no cálculo de consistência — agora considera apenas dias com registros efetivos, eliminando exibição de 100% sem dados."]
 [6]:["Preview de ícone nas configurações: Correção de CSP para carregar o preview do ícone via asset protocol."]
-[7]:["Modais Padronizados: Conversão de modais avulsos para o componente global ModalShell."]
-[8]:["Captura de Tela de Feedback: Correção de bug em que a captura de tela capturava o modal de feedback vazio na frente."]
