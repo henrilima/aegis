@@ -2,27 +2,26 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowLeft,
-  BarChart2,
-  BookOpen,
-  Clock,
-  Plus,
-  X,
-} from "lucide-react";
+import { BarChart2, BookOpen, Clock, Plus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
-import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import type { GradesTabId, StudyGrade, SubjectFormula, SubjectGroup, SubjectMeta } from "./types";
+import { SubjectEditModal } from "../studies/components/SubjectEditModal";
 import { GradeForm } from "./components/gradeForm";
 import { GradesHistory } from "./components/gradesHistory";
 import { GradesOverview } from "./components/gradesOverview";
-import { SubjectEditModal } from "../studies/components/SubjectEditModal";
+import type {
+  GradesTabId,
+  StudyGrade,
+  SubjectFormula,
+  SubjectGroup,
+  SubjectMeta,
+} from "./types";
 
 interface GradesModalProps {
   /** Matérias existentes do módulo de estudos */
@@ -30,7 +29,11 @@ interface GradesModalProps {
   onClose: () => void;
 }
 
-const GRADES_TABS: { id: GradesTabId; label: string; icon: typeof BarChart2 }[] = [
+const GRADES_TABS: {
+  id: GradesTabId;
+  label: string;
+  icon: typeof BarChart2;
+}[] = [
   { id: "visao-geral", label: "Visão Geral", icon: BarChart2 },
   { id: "historico", label: "Histórico", icon: Clock },
 ];
@@ -39,7 +42,10 @@ const GRADES_TABS: { id: GradesTabId; label: string; icon: typeof BarChart2 }[] 
  * Modal principal do módulo Simulados & Notas.
  * Renderizado como overlay sobre o módulo de Estudos.
  */
-export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps) {
+export function GradesModal({
+  existingSubjects = [],
+  onClose,
+}: GradesModalProps) {
   const { user } = useAuth();
   const color = getModuleColor("grades");
   const theme = getColorTheme(color);
@@ -89,7 +95,9 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
   const allSubjects = useMemo(() => {
     const fromGrades = grades.map((g) => g.subject);
     const fromMetas = subjectMetas.map((m) => m.name);
-    const merged = Array.from(new Set([...existingSubjects, ...fromGrades, ...fromMetas])).sort();
+    const merged = Array.from(
+      new Set([...existingSubjects, ...fromGrades, ...fromMetas]),
+    ).sort();
     return merged;
   }, [grades, existingSubjects, subjectMetas]);
 
@@ -127,7 +135,7 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
   };
 
   // Salvar fórmula
-  const handleSaveFormula = async (f: SubjectFormula) => {
+  const _handleSaveFormula = async (f: SubjectFormula) => {
     try {
       await invoke("subject_formulas_upsert", { formula: f });
       toast.success("Fórmula salva!");
@@ -138,7 +146,7 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
     }
   };
 
-  const formulaForSubject = formulaSubject
+  const _formulaForSubject = formulaSubject
     ? formulas.find((f) => f.subject === formulaSubject)
     : undefined;
 
@@ -172,7 +180,12 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
       <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className={cn("flex items-center gap-2 animate-pulse", theme.text)}>
+            <div
+              className={cn(
+                "flex items-center gap-2 animate-pulse",
+                theme.text,
+              )}
+            >
               <BookOpen className="w-4 h-4" />
               <span className="font-bold text-sm">Carregando notas...</span>
             </div>
@@ -193,7 +206,6 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
                   groups={groups}
                   allSubjects={allSubjects}
                   onConfigFormula={(s) => setFormulaSubject(s)}
-                  onAddGrade={() => setShowForm(true)}
                   onEditGrade={(g) => {
                     setEditGrade(g);
                     setShowForm(true);
@@ -219,10 +231,20 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
 
       {/* Modal de formulário de grade */}
       {showForm && (
-        <ModalShell isOpen onClose={() => { setShowForm(false); setEditGrade(undefined); }} size="xl" zIndex="z-[60]">
+        <ModalShell
+          isOpen
+          onClose={() => {
+            setShowForm(false);
+            setEditGrade(undefined);
+          }}
+          size="xl"
+          zIndex="z-[60]"
+        >
           <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
             <div className="flex items-center gap-4">
-              <div className={cn("p-2 rounded-xl border", theme.bg, theme.border)}>
+              <div
+                className={cn("p-2 rounded-xl border", theme.bg, theme.border)}
+              >
                 <BarChart2 className={cn("w-5 h-5", theme.text)} />
               </div>
               <div>
@@ -236,7 +258,10 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
             </div>
             <button
               type="button"
-              onClick={() => { setShowForm(false); setEditGrade(undefined); }}
+              onClick={() => {
+                setShowForm(false);
+                setEditGrade(undefined);
+              }}
               className="p-2.5 rounded-xl hover:bg-card text-muted-foreground hover:text-foreground transition-all cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -249,14 +274,20 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
               initial={editGrade}
               existingSubjects={allSubjects}
               onSave={handleSave}
-              onCancel={() => { setShowForm(false); setEditGrade(undefined); }}
+              onCancel={() => {
+                setShowForm(false);
+                setEditGrade(undefined);
+              }}
             />
           </div>
 
           <div className="p-6 border-t border-border shrink-0 bg-background/50 flex gap-3">
             <button
               type="button"
-              onClick={() => { setShowForm(false); setEditGrade(undefined); }}
+              onClick={() => {
+                setShowForm(false);
+                setEditGrade(undefined);
+              }}
               className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
             >
               Cancelar
@@ -266,7 +297,7 @@ export function GradesModal({ existingSubjects = [], onClose }: GradesModalProps
               form="grades-form"
               disabled={isSaving}
               className={cn(
-                "flex-[2] px-4 py-3 rounded-xl text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                "flex-2 px-4 py-3 rounded-xl text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 theme.solid,
                 theme.solidHover,
               )}

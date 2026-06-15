@@ -1,43 +1,37 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  Check,
+  ChevronDown,
   FolderOpen,
   FolderPlus,
   Layers,
   Pencil,
-  Plus,
+  Search,
   Trash2,
   X,
-  Search,
-  Check,
-  BarChart2,
-  BookOpen,
-  ChevronDown
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { resolveColor, SELECTABLE_COLORS } from "@/colors.config";
+import type {
+  SubjectFormula,
+  SubjectGroup,
+  SubjectMeta,
+} from "@/components/modules/grades/types";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/buttonGroup";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { SELECTABLE_COLORS, resolveColor } from "@/colors.config";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ModalShell } from "@/components/ui/ModalShell";
+import { Switch } from "@/components/ui/switch";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { ModalShell } from "@/components/ui/ModalShell";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/buttonGroup";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { motion, AnimatePresence } from "framer-motion";
-import type { SubjectGroup, SubjectMeta, SubjectFormula } from "@/components/modules/grades/types";
 import { SubjectEditModal } from "./SubjectEditModal";
 
 interface MateriasTabProps {
@@ -46,11 +40,27 @@ interface MateriasTabProps {
   userId: string;
 }
 
-const FORMULA_OPTIONS = [
-  { id: "simples", label: "Média Simples", desc: "Soma das notas dividida pela quantidade." },
-  { id: "ponderada", label: "Ponderada", desc: "Média com pesos configuráveis por avaliação." },
-  { id: "meta", label: "Meta", desc: "Nota mínima pendente necessária para aprovação." },
-  { id: "custom", label: "Personalizada", desc: "Expressão matemática customizada (ex: N1*0.4 + N2*0.6)." },
+const _FORMULA_OPTIONS = [
+  {
+    id: "simples",
+    label: "Média Simples",
+    desc: "Soma das notas dividida pela quantidade.",
+  },
+  {
+    id: "ponderada",
+    label: "Ponderada",
+    desc: "Média com pesos configuráveis por avaliação.",
+  },
+  {
+    id: "meta",
+    label: "Meta",
+    desc: "Nota mínima pendente necessária para aprovação.",
+  },
+  {
+    id: "custom",
+    label: "Personalizada",
+    desc: "Expressão matemática customizada (ex: N1*0.4 + N2*0.6).",
+  },
 ];
 
 export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
@@ -68,13 +78,16 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   // Estado de grupos
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [editingGroup, setEditingGroup] = useState<SubjectGroup | null>(null);
-  const [deleteConfirmGroup, setDeleteConfirmGroup] = useState<SubjectGroup | null>(null);
+  const [deleteConfirmGroup, setDeleteConfirmGroup] =
+    useState<SubjectGroup | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<number[]>([]);
   const [deleteSubjects, setDeleteSubjects] = useState(false);
 
   const toggleGroupExpanded = (groupId: number) => {
     setExpandedGroups((prev) =>
-      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId],
     );
   };
 
@@ -122,8 +135,10 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
 
   // Filtra matérias com base na busca (apenas não agrupadas)
   const filteredSubjects = useMemo(() => {
-    return allSubjects.filter((s) =>
-      !groupedSubjectsSet.has(s) && s.toLowerCase().includes(searchQuery.toLowerCase())
+    return allSubjects.filter(
+      (s) =>
+        !groupedSubjectsSet.has(s) &&
+        s.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [allSubjects, groupedSubjectsSet, searchQuery]);
 
@@ -148,9 +163,11 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   // Filtra os grupos conforme a busca (mostra se o grupo bate com a busca ou se contém matérias filtradas)
   const filteredGroups = useMemo(() => {
     return groups.filter((g) => {
-      const matchGroupName = g.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchGroupName = g.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
       const hasMatchingSubjects = g.subjects.some((s) =>
-        s.toLowerCase().includes(searchQuery.toLowerCase())
+        s.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       return matchGroupName || hasMatchingSubjects;
     });
@@ -162,7 +179,11 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   };
 
   // Salvar criação do grupo
-  const handleGroupCreateSave = async (name: string, selectedSubjects: string[], color?: string) => {
+  const handleGroupCreateSave = async (
+    name: string,
+    selectedSubjects: string[],
+    color?: string,
+  ) => {
     try {
       await invoke("subject_groups_upsert", {
         group: { userId, name, subjects: selectedSubjects, color },
@@ -170,10 +191,12 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
 
       // Remove as matérias selecionadas de outros grupos
       for (const otherGroup of groups) {
-        const remain = otherGroup.subjects.filter((s) => !selectedSubjects.includes(s));
+        const remain = otherGroup.subjects.filter(
+          (s) => !selectedSubjects.includes(s),
+        );
         if (remain.length !== otherGroup.subjects.length) {
           await invoke("subject_groups_upsert", {
-            group: { ...otherGroup, subjects: remain }
+            group: { ...otherGroup, subjects: remain },
           });
         }
       }
@@ -186,22 +209,29 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   };
 
   // Salvar edição do grupo
-  const handleGroupEditSave = async (id: number, name: string, selectedSubjects: string[], color?: string) => {
+  const handleGroupEditSave = async (
+    id: number,
+    name: string,
+    selectedSubjects: string[],
+    color?: string,
+  ) => {
     try {
       // Remove as matérias selecionadas de outros grupos
       for (const otherGroup of groups) {
         if (otherGroup.id !== id) {
-          const remain = otherGroup.subjects.filter((s) => !selectedSubjects.includes(s));
+          const remain = otherGroup.subjects.filter(
+            (s) => !selectedSubjects.includes(s),
+          );
           if (remain.length !== otherGroup.subjects.length) {
             await invoke("subject_groups_upsert", {
-              group: { ...otherGroup, subjects: remain }
+              group: { ...otherGroup, subjects: remain },
             });
           }
         }
       }
 
       await invoke("subject_groups_upsert", {
-        group: { id, userId, name, subjects: selectedSubjects, color }
+        group: { id, userId, name, subjects: selectedSubjects, color },
       });
 
       toast.success("Grupo atualizado!");
@@ -220,7 +250,10 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
           await invoke("subjects_delete", { userId, name: s });
         }
       }
-      await invoke("subject_groups_delete", { id: deleteConfirmGroup.id, userId });
+      await invoke("subject_groups_delete", {
+        id: deleteConfirmGroup.id,
+        userId,
+      });
       toast.success("Grupo removido!");
       await load();
     } catch (err) {
@@ -238,10 +271,15 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
       newSubjects = [...group.subjects, subject];
       // Remove de outros grupos para manter relacionamento 1:N
       for (const otherGroup of groups) {
-        if (otherGroup.id !== group.id && otherGroup.subjects.includes(subject)) {
-          const cleanSubjects = otherGroup.subjects.filter((s) => s !== subject);
+        if (
+          otherGroup.id !== group.id &&
+          otherGroup.subjects.includes(subject)
+        ) {
+          const cleanSubjects = otherGroup.subjects.filter(
+            (s) => s !== subject,
+          );
           await invoke("subject_groups_upsert", {
-            group: { ...otherGroup, subjects: cleanSubjects }
+            group: { ...otherGroup, subjects: cleanSubjects },
           });
         }
       }
@@ -260,7 +298,9 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className={cn("flex items-center gap-2 animate-pulse", theme.text)}>
+        <div
+          className={cn("flex items-center gap-2 animate-pulse", theme.text)}
+        >
           <Layers className="w-4 h-4" />
           <span className="font-bold text-sm">Carregando matérias...</span>
         </div>
@@ -280,7 +320,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
           placeholder="Buscar matérias ou grupos..."
           className={cn(
             "w-full h-full pl-10 pr-4 text-sm font-medium bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 transition-colors outline-none",
-            theme.borderHover.replace("hover:", "focus:")
+            theme.borderHover.replace("hover:", "focus:"),
           )}
         />
         {searchQuery && (
@@ -309,7 +349,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
               theme.bg,
               theme.border,
               theme.text,
-              theme.bgHover
+              theme.bgHover,
             )}
           >
             <FolderPlus className="w-3.5 h-3.5" />
@@ -319,12 +359,15 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
 
         {filteredGroups.length === 0 ? (
           <div className="text-center py-6 text-xs text-neutral-600 border border-dashed border-border rounded-xl bg-card/10">
-            {searchQuery ? "Nenhum grupo corresponde à busca." : "Nenhum grupo criado."}
+            {searchQuery
+              ? "Nenhum grupo corresponde à busca."
+              : "Nenhum grupo criado."}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {filteredGroups.map((group) => {
-              const isExpanded = group.id !== undefined && expandedGroups.includes(group.id);
+              const isExpanded =
+                group.id !== undefined && expandedGroups.includes(group.id);
               const groupHex = resolveColor(group.color || "emerald");
               return (
                 <div
@@ -336,21 +379,27 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-card/30">
                     <button
                       type="button"
-                      onClick={() => group.id !== undefined && toggleGroupExpanded(group.id)}
+                      onClick={() =>
+                        group.id !== undefined && toggleGroupExpanded(group.id)
+                      }
                       className="flex-1 flex items-center gap-2 cursor-pointer text-left min-w-0"
                     >
                       <ChevronDown
                         className={cn(
                           "w-4 h-4 text-neutral-500 transition-transform duration-200 shrink-0",
-                          isExpanded && "rotate-180"
+                          isExpanded && "rotate-180",
                         )}
                       />
-                      <FolderOpen className="w-4 h-4 shrink-0" style={{ color: groupHex }} />
+                      <FolderOpen
+                        className="w-4 h-4 shrink-0"
+                        style={{ color: groupHex }}
+                      />
                       <span className="text-sm font-bold text-foreground truncate">
                         {group.name}
                       </span>
                       <span className="text-[10px] text-neutral-500 font-bold px-2 py-0.5 rounded-full bg-muted border border-border/40 shrink-0">
-                        {group.subjects.length} matéria{group.subjects.length !== 1 ? "s" : ""}
+                        {group.subjects.length} matéria
+                        {group.subjects.length !== 1 ? "s" : ""}
                       </span>
                     </button>
 
@@ -418,12 +467,16 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                                       </span>
                                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                                         <span className="text-[10px] text-neutral-500 bg-muted px-2 py-0.5 rounded-full border border-border/40 font-semibold flex items-center gap-1">
-                                          <FolderOpen className="w-2.5 h-2.5" style={{ color: groupHex }} />
+                                          <FolderOpen
+                                            className="w-2.5 h-2.5"
+                                            style={{ color: groupHex }}
+                                          />
                                           {group.name}
                                         </span>
                                         {subjectFormula && (
                                           <span className="text-[10px] text-emerald-400/90 bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10 font-bold">
-                                            Média: {subjectFormula.formulaType} (min {subjectFormula.passingGrade})
+                                            Média: {subjectFormula.formulaType}{" "}
+                                            (min {subjectFormula.passingGrade})
                                           </span>
                                         )}
                                       </div>
@@ -433,10 +486,12 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                                   <div className="flex items-center gap-2 shrink-0">
                                     <button
                                       type="button"
-                                      onClick={() => handleOpenEditSubject(subject)}
+                                      onClick={() =>
+                                        handleOpenEditSubject(subject)
+                                      }
                                       className={cn(
                                         "flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-accent/40 active:scale-95 cursor-pointer text-muted-foreground",
-                                        theme.borderHover
+                                        theme.borderHover,
                                       )}
                                     >
                                       <Pencil className="w-3.5 h-3.5" />
@@ -444,7 +499,9 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => toggleSubjectInGroup(group, subject)}
+                                      onClick={() =>
+                                        toggleSubjectInGroup(group, subject)
+                                      }
                                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-rose-500/10 hover:text-rose-500 active:scale-95 cursor-pointer text-muted-foreground border-border"
                                       title="Desvincular matéria"
                                     >
@@ -472,14 +529,20 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
           <Layers className={cn("w-4 h-4", theme.text)} />
           Matérias
-          <span className="text-neutral-500 font-medium text-xs">({filteredSubjects.length})</span>
+          <span className="text-neutral-500 font-medium text-xs">
+            ({filteredSubjects.length})
+          </span>
         </h3>
 
         {filteredSubjects.length === 0 ? (
           <EmptyState
             icon={Layers}
             title="Nenhuma matéria encontrada"
-            description={searchQuery ? "Ajuste os termos de busca." : "Registre sessões de estudo para que as matérias apareçam aqui."}
+            description={
+              searchQuery
+                ? "Ajuste os termos de busca."
+                : "Registre sessões de estudo para que as matérias apareçam aqui."
+            }
             className="py-12 border border-dashed border-border bg-card/10 rounded-xl"
           />
         ) : (
@@ -487,7 +550,9 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
             {filteredSubjects.map((subject) => {
               const subjectColor = colorMap[subject] ?? "slate";
               const hex = resolveColor(subjectColor);
-              const subjectGroup = groups.find((g) => g.subjects.includes(subject));
+              const subjectGroup = groups.find((g) =>
+                g.subjects.includes(subject),
+              );
               const subjectFormula = formulaMap[subject];
 
               return (
@@ -517,7 +582,8 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                         )}
                         {subjectFormula && (
                           <span className="text-[10px] text-emerald-400/90 bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10 font-bold">
-                            Média: {subjectFormula.formulaType} (min {subjectFormula.passingGrade})
+                            Média: {subjectFormula.formulaType} (min{" "}
+                            {subjectFormula.passingGrade})
                           </span>
                         )}
                       </div>
@@ -530,7 +596,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                       onClick={() => handleOpenEditSubject(subject)}
                       className={cn(
                         "flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-accent/40 active:scale-95 cursor-pointer text-muted-foreground",
-                        theme.borderHover
+                        theme.borderHover,
                       )}
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -598,9 +664,12 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
         >
           <div className="flex items-center justify-between p-4 bg-muted/40 border border-border/50 rounded-xl gap-3 text-left">
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-foreground">Apagar matérias do grupo?</span>
+              <span className="text-xs font-bold text-foreground">
+                Apagar matérias do grupo?
+              </span>
               <span className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                Se ativado, todas as matérias deste grupo serão permanentemente excluídas. Se desativado, elas serão mantidas e desvinculadas.
+                Se ativado, todas as matérias deste grupo serão permanentemente
+                excluídas. Se desativado, elas serão mantidas e desvinculadas.
               </span>
             </div>
             <Switch
@@ -619,10 +688,20 @@ interface GroupCreateModalProps {
   allSubjects: string[];
   colorMap: Record<string, string>;
   onClose: () => void;
-  onSave: (name: string, selectedSubjects: string[], color?: string) => Promise<void>;
+  onSave: (
+    name: string,
+    selectedSubjects: string[],
+    color?: string,
+  ) => Promise<void>;
 }
 
-function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: GroupCreateModalProps) {
+function GroupCreateModal({
+  isOpen,
+  allSubjects,
+  colorMap,
+  onClose,
+  onSave,
+}: GroupCreateModalProps) {
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupColor, setGroupColor] = useState("emerald");
@@ -630,7 +709,9 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
 
   const handleToggleSubject = (subject: string) => {
     setSelected((prev) =>
-      prev.includes(subject) ? prev.filter((s) => s !== subject) : [...prev, subject]
+      prev.includes(subject)
+        ? prev.filter((s) => s !== subject)
+        : [...prev, subject],
     );
   };
 
@@ -652,8 +733,12 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
     <ModalShell isOpen={isOpen} onClose={onClose} size="md" zIndex="z-[60]">
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
         <div>
-          <h2 className="text-base font-bold text-foreground">Novo Grupo de Matérias</h2>
-          <p className="text-[11px] text-muted-foreground font-semibold">Agrupe suas disciplinas para cálculo e filtros</p>
+          <h2 className="text-base font-bold text-foreground">
+            Novo Grupo de Matérias
+          </h2>
+          <p className="text-[11px] text-muted-foreground font-semibold">
+            Agrupe suas disciplinas para cálculo e filtros
+          </p>
         </div>
         <button
           type="button"
@@ -666,7 +751,9 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
 
       <div className="p-6 overflow-y-auto max-h-[50vh] flex flex-col gap-4 custom-scrollbar">
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">Nome do Grupo</Label>
+          <Label className="text-xs font-bold text-muted-foreground">
+            Nome do Grupo
+          </Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -678,7 +765,9 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
 
         {/* Seletor de Cores do Grupo */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">Cor do Grupo</Label>
+          <Label className="text-xs font-bold text-muted-foreground">
+            Cor do Grupo
+          </Label>
           <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
             {SELECTABLE_COLORS.map((c) => (
               <button
@@ -687,19 +776,25 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
                 onClick={() => setGroupColor(c.key)}
                 className={cn(
                   "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
-                  groupColor === c.key ? "border-foreground scale-110" : "border-transparent"
+                  groupColor === c.key
+                    ? "border-foreground scale-110"
+                    : "border-transparent",
                 )}
                 style={{ backgroundColor: c.hex }}
                 title={c.label}
               >
-                {groupColor === c.key && <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />}
+                {groupColor === c.key && (
+                  <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
+                )}
               </button>
             ))}
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">Vincular Matérias (Opcional)</Label>
+          <Label className="text-xs font-bold text-muted-foreground">
+            Vincular Matérias (Opcional)
+          </Label>
           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {allSubjects.map((subject) => {
               const isChecked = selected.includes(subject);
@@ -711,17 +806,24 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
                   onClick={() => handleToggleSubject(subject)}
                   className={cn(
                     "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left",
-                    isChecked ? "bg-emerald-500/10 border-emerald-500/30 text-foreground" : "bg-card border-border hover:bg-accent/45 text-muted-foreground"
+                    isChecked
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-foreground"
+                      : "bg-card border-border hover:bg-accent/45 text-muted-foreground",
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: hex }} />
+                    <div
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: hex }}
+                    />
                     <span className="text-xs font-bold">{subject}</span>
                   </div>
                   <div
                     className={cn(
                       "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all",
-                      isChecked ? "bg-emerald-600 border-emerald-500" : "border-border"
+                      isChecked
+                        ? "bg-emerald-600 border-emerald-500"
+                        : "border-border",
                     )}
                   >
                     {isChecked && <Check className="w-3 h-3 text-white" />}
@@ -730,7 +832,9 @@ function GroupCreateModal({ isOpen, allSubjects, colorMap, onClose, onSave }: Gr
               );
             })}
             {allSubjects.length === 0 && (
-              <p className="text-xs text-muted-foreground italic text-center py-4">Nenhuma matéria criada ainda.</p>
+              <p className="text-xs text-muted-foreground italic text-center py-4">
+                Nenhuma matéria criada ainda.
+              </p>
             )}
           </div>
         </div>
@@ -763,10 +867,22 @@ interface GroupEditModalProps {
   allSubjects: string[];
   colorMap: Record<string, string>;
   onClose: () => void;
-  onSave: (id: number, name: string, selectedSubjects: string[], color?: string) => Promise<void>;
+  onSave: (
+    id: number,
+    name: string,
+    selectedSubjects: string[],
+    color?: string,
+  ) => Promise<void>;
 }
 
-function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave }: GroupEditModalProps) {
+function GroupEditModal({
+  isOpen,
+  group,
+  allSubjects,
+  colorMap,
+  onClose,
+  onSave,
+}: GroupEditModalProps) {
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupColor, setGroupColor] = useState("emerald");
@@ -782,7 +898,9 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
 
   const handleToggleSubject = (subject: string) => {
     setSelected((prev) =>
-      prev.includes(subject) ? prev.filter((s) => s !== subject) : [...prev, subject]
+      prev.includes(subject)
+        ? prev.filter((s) => s !== subject)
+        : [...prev, subject],
     );
   };
 
@@ -806,7 +924,9 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
         <div>
           <h2 className="text-base font-bold text-foreground">Editar Grupo</h2>
-          <p className="text-[11px] text-muted-foreground font-semibold">Altere as informações do grupo e suas matérias vinculadas</p>
+          <p className="text-[11px] text-muted-foreground font-semibold">
+            Altere as informações do grupo e suas matérias vinculadas
+          </p>
         </div>
         <button
           type="button"
@@ -819,7 +939,9 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
 
       <div className="p-6 overflow-y-auto max-h-[50vh] flex flex-col gap-4 custom-scrollbar">
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">Nome do Grupo</Label>
+          <Label className="text-xs font-bold text-muted-foreground">
+            Nome do Grupo
+          </Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -830,7 +952,9 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
 
         {/* Seletor de Cores do Grupo */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">Cor do Grupo</Label>
+          <Label className="text-xs font-bold text-muted-foreground">
+            Cor do Grupo
+          </Label>
           <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
             {SELECTABLE_COLORS.map((c) => (
               <button
@@ -839,19 +963,25 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
                 onClick={() => setGroupColor(c.key)}
                 className={cn(
                   "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
-                  groupColor === c.key ? "border-foreground scale-110" : "border-transparent"
+                  groupColor === c.key
+                    ? "border-foreground scale-110"
+                    : "border-transparent",
                 )}
                 style={{ backgroundColor: c.hex }}
                 title={c.label}
               >
-                {groupColor === c.key && <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />}
+                {groupColor === c.key && (
+                  <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
+                )}
               </button>
             ))}
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">Gerenciar Matérias Vinculadas</Label>
+          <Label className="text-xs font-bold text-muted-foreground">
+            Gerenciar Matérias Vinculadas
+          </Label>
           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {allSubjects.map((subject) => {
               const isChecked = selected.includes(subject);
@@ -863,17 +993,24 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
                   onClick={() => handleToggleSubject(subject)}
                   className={cn(
                     "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left",
-                    isChecked ? "bg-emerald-500/10 border-emerald-500/30 text-foreground" : "bg-card border-border hover:bg-accent/45 text-muted-foreground"
+                    isChecked
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-foreground"
+                      : "bg-card border-border hover:bg-accent/45 text-muted-foreground",
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: hex }} />
+                    <div
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: hex }}
+                    />
                     <span className="text-xs font-bold">{subject}</span>
                   </div>
                   <div
                     className={cn(
                       "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all",
-                      isChecked ? "bg-emerald-600 border-emerald-500" : "border-border"
+                      isChecked
+                        ? "bg-emerald-600 border-emerald-500"
+                        : "border-border",
                     )}
                   >
                     {isChecked && <Check className="w-3.5 h-3.5 text-white" />}
@@ -882,7 +1019,9 @@ function GroupEditModal({ isOpen, group, allSubjects, colorMap, onClose, onSave 
               );
             })}
             {allSubjects.length === 0 && (
-              <p className="text-xs text-muted-foreground italic text-center py-4">Nenhuma matéria disponível.</p>
+              <p className="text-xs text-muted-foreground italic text-center py-4">
+                Nenhuma matéria disponível.
+              </p>
             )}
           </div>
         </div>

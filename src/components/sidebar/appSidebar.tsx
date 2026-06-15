@@ -306,7 +306,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                           window.dispatchEvent(
                             new CustomEvent("sidebar-navigate", {
                               detail: item.route,
-                            })
+                            }),
                           );
                         }
                       }}
@@ -366,7 +366,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                         window.dispatchEvent(
                           new CustomEvent("sidebar-navigate", {
                             detail: item.route,
-                          })
+                          }),
                         );
                       }
                     }}

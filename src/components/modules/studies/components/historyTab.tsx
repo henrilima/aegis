@@ -1,21 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  BookOpen,
-  ChevronDown,
-  Clock,
-  Pencil,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { BookOpen, Clock, Pencil, Search, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
-import { getModuleColor } from "@/modules.config";
-import type { StudySession } from "../types";
-import { formatHours, hitRate, parseDate } from "../utils";
-import { StudyStars } from "./studyStars";
 import {
   Select,
   SelectContent,
@@ -23,6 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
+import type { StudySession } from "../types";
+import { formatHours, hitRate, parseDate } from "../utils";
+import { StudyStars } from "./studyStars";
 
 // Variantes de animação para entrada escalonada (staggered entrance)
 const containerVariants = {
@@ -92,7 +85,9 @@ export function HistoryTab({
               <SelectValue placeholder="Todos os meses" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-xs">Todos os meses</SelectItem>
+              <SelectItem value="all" className="text-xs">
+                Todos os meses
+              </SelectItem>
               {months.map((m) => (
                 <SelectItem key={m} value={m} className="text-xs">
                   {parseDate(`${m}-01`).toLocaleDateString("pt-BR", {

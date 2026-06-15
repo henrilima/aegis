@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveColor } from "@/colors.config";
+import type {
+  SubjectGroup,
+  SubjectMeta,
+} from "@/components/modules/grades/types";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import type { SubjectGroup, SubjectMeta } from "@/components/modules/grades/types";
 
 interface SubjectInputProps {
   value: string;
@@ -154,7 +157,7 @@ export function SubjectInput({
                 className={cn(
                   "w-full text-left px-3 py-2 text-[11px] font-bold rounded-lg transition-all border-t border-border/20 mt-1 cursor-pointer",
                   theme.text,
-                  theme.bgHover
+                  theme.bgHover,
                 )}
               >
                 + Criar "{query.trim()}"

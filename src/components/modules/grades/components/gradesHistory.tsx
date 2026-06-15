@@ -1,13 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BarChart2, ChevronDown, Pencil, Search, Trash2 } from "lucide-react";
+import { BarChart2, Pencil, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme } from "@/lib/utils";
-import { getModuleColor } from "@/modules.config";
-import { parseDate } from "../utils";
 import {
   Select,
   SelectContent,
@@ -15,8 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GRADE_TYPE_LABELS, type StudyGrade, type SubjectGroup } from "../types";
-import { GRADE_TYPE_COLORS, fmtGrade, hitRate } from "../utils";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
+import {
+  GRADE_TYPE_LABELS,
+  type StudyGrade,
+  type SubjectGroup,
+} from "../types";
+import { fmtGrade, GRADE_TYPE_COLORS, hitRate, parseDate } from "../utils";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -39,7 +42,12 @@ interface GradesHistoryProps {
   onDelete: (id: number) => void;
 }
 
-export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesHistoryProps) {
+export function GradesHistory({
+  grades,
+  groups = [],
+  onEdit,
+  onDelete,
+}: GradesHistoryProps) {
   const color = getModuleColor("grades");
   const theme = getColorTheme(color);
 
@@ -60,13 +68,16 @@ export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesH
         g.subject.toLowerCase().includes(search.toLowerCase()) ||
         (g.title ?? "").toLowerCase().includes(search.toLowerCase()) ||
         g.date.includes(search);
-      const matchSubject = filterSubject === "all" || g.subject === filterSubject;
+      const matchSubject =
+        filterSubject === "all" || g.subject === filterSubject;
       const matchGroup = (() => {
         if (filterGroup === "all") return true;
         if (filterGroup === "none") {
           return !groups.some((grp) => grp.subjects.includes(g.subject));
         }
-        const targetGroup = groups.find((grp) => String(grp.id) === filterGroup);
+        const targetGroup = groups.find(
+          (grp) => String(grp.id) === filterGroup,
+        );
         return targetGroup ? targetGroup.subjects.includes(g.subject) : false;
       })();
       const matchType = filterType === "all" || g.gradeType === filterType;
@@ -110,7 +121,9 @@ export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesH
               <SelectValue placeholder="Todas as matérias" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-xs">Todas as matérias</SelectItem>
+              <SelectItem value="all" className="text-xs">
+                Todas as matérias
+              </SelectItem>
               {subjects.map((s) => (
                 <SelectItem key={s} value={s} className="text-xs">
                   {s}
@@ -127,8 +140,12 @@ export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesH
               <SelectValue placeholder="Todos os grupos" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-xs">Todos os grupos</SelectItem>
-              <SelectItem value="none" className="text-xs">Sem grupo</SelectItem>
+              <SelectItem value="all" className="text-xs">
+                Todos os grupos
+              </SelectItem>
+              <SelectItem value="none" className="text-xs">
+                Sem grupo
+              </SelectItem>
               {groups.map((g) => (
                 <SelectItem key={g.id} value={String(g.id)} className="text-xs">
                   {g.name}
@@ -145,8 +162,12 @@ export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesH
               <SelectValue placeholder="Todos os tipos" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-xs">Todos os tipos</SelectItem>
-              {(["prova", "simulado", "atividade", "trabalho", "quiz"] as const).map((t) => (
+              <SelectItem value="all" className="text-xs">
+                Todos os tipos
+              </SelectItem>
+              {(
+                ["prova", "simulado", "atividade", "trabalho", "quiz"] as const
+              ).map((t) => (
                 <SelectItem key={t} value={t} className="text-xs">
                   {GRADE_TYPE_LABELS[t]}
                 </SelectItem>
@@ -172,9 +193,7 @@ export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesH
         >
           {filtered.map((g) => {
             const pct =
-              g.maxGrade > 0
-                ? Math.round((g.grade / g.maxGrade) * 100)
-                : 0;
+              g.maxGrade > 0 ? Math.round((g.grade / g.maxGrade) * 100) : 0;
             const hr = hitRate(g.questionsCorrect, g.questionsTotal);
             const typeClass =
               GRADE_TYPE_COLORS[g.gradeType] ??
@@ -184,8 +203,15 @@ export function GradesHistory({ grades, groups = [], onEdit, onDelete }: GradesH
               <motion.div
                 key={g.id}
                 variants={itemVariants}
-                whileHover={{ y: -3, boxShadow: "0 10px 25px -10px rgba(0,0,0,0.12)" }}
-                transition={{ type: "spring" as const, stiffness: 300, damping: 20 }}
+                whileHover={{
+                  y: -3,
+                  boxShadow: "0 10px 25px -10px rgba(0,0,0,0.12)",
+                }}
+                transition={{
+                  type: "spring" as const,
+                  stiffness: 300,
+                  damping: 20,
+                }}
                 className={cn(
                   "group bg-card/50 border border-border rounded-xl p-5 transition-all duration-300",
                   theme.borderHover,

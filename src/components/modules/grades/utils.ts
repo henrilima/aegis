@@ -95,7 +95,6 @@ export function avgCustom(grades: StudyGrade[], formula: string): number {
       vars += `const N${i} = ${val}; `;
     }
     // Usa Function em vez de eval para ser um escopo isolado
-    // biome-ignore lint/security/noGlobalEval: fórmula personalizada do usuário em escopo controlado
     const result = new Function(`${vars} return (${formula});`)();
     if (typeof result !== "number" || Number.isNaN(result)) return 0;
     return Math.round(result * 100) / 100;

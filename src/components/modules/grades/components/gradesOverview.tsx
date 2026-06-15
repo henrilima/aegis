@@ -1,30 +1,26 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertCircle,
   Award,
   BarChart2,
   BookOpen,
   CheckCircle2,
   ChevronDown,
+  FolderOpen,
+  Pencil,
+  Search,
   Settings2,
+  Star,
   Target,
+  ThumbsUp,
   TrendingUp,
   XCircle,
-  Star,
-  Search,
-  FolderOpen,
-  AlertCircle,
-  ThumbsUp,
-  Pencil,
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme } from "@/lib/utils";
-import { getModuleColor } from "@/modules.config";
+import { useEffect, useMemo, useState } from "react";
 import { resolveColor } from "@/colors.config";
-import type { StudyGrade, SubjectFormula, SubjectStatus, SubjectGroup } from "../types";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   Select,
   SelectContent,
@@ -32,10 +28,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
+import type {
+  StudyGrade,
+  SubjectFormula,
+  SubjectGroup,
+  SubjectStatus,
+} from "../types";
 import {
-  GRADE_TYPE_COLORS,
-  calcAverage,
   fmtGrade,
+  GRADE_TYPE_COLORS,
   getSubjectStatus,
   hitRate,
 } from "../utils";
@@ -46,7 +50,6 @@ interface GradesOverviewProps {
   groups: SubjectGroup[];
   allSubjects: string[];
   onConfigFormula: (subject: string) => void;
-  onAddGrade: () => void;
   onEditGrade?: (grade: StudyGrade) => void;
   userId: string;
 }
@@ -128,11 +131,14 @@ function GroupAccordion({
         onClick={() => group.id !== undefined && toggleGroupExpanded(group.id)}
         className={cn(
           "w-full flex items-center justify-between px-4 py-3 bg-card/45 hover:bg-accent/10 transition-colors text-left cursor-pointer",
-          isExpanded && "border-b border-border/10"
+          isExpanded && "border-b border-border/10",
         )}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <FolderOpen className="w-4 h-4 shrink-0" style={{ color: groupHex }} />
+          <FolderOpen
+            className="w-4 h-4 shrink-0"
+            style={{ color: groupHex }}
+          />
           <span className="text-xs font-bold text-foreground uppercase tracking-wider truncate">
             {group.name}
           </span>
@@ -143,7 +149,7 @@ function GroupAccordion({
         <ChevronDown
           className={cn(
             "w-4 h-4 text-neutral-500 transition-transform duration-200 shrink-0",
-            isExpanded && "rotate-180"
+            isExpanded && "rotate-180",
           )}
         />
       </button>
@@ -180,7 +186,6 @@ export function GradesOverview({
   groups = [],
   allSubjects,
   onConfigFormula,
-  onAddGrade,
   onEditGrade,
   userId,
 }: GradesOverviewProps) {
@@ -191,12 +196,14 @@ export function GradesOverview({
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<number[]>(() =>
-    groups.map((g) => g.id).filter((id): id is number => id !== undefined)
+    groups.map((g) => g.id).filter((id): id is number => id !== undefined),
   );
 
   const toggleGroupExpanded = (groupId: number) => {
     setExpandedGroups((prev) =>
-      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId],
     );
   };
 
@@ -224,7 +231,10 @@ export function GradesOverview({
       : [...activeSubjects, subject];
     setActiveSubjects(newVal);
     if (typeof window !== "undefined") {
-      localStorage.setItem(`aegis-active-subjects-${userId}`, JSON.stringify(newVal));
+      localStorage.setItem(
+        `aegis-active-subjects-${userId}`,
+        JSON.stringify(newVal),
+      );
       localStorage.removeItem(`aegis-active-subject-${userId}`);
     }
   };
@@ -349,7 +359,9 @@ export function GradesOverview({
         }, 0);
         const currentWeight = subjectGrades.reduce((a, g) => a + g.weight, 0);
         const nextWeight = 1.0; // Assume peso padrão 1.0
-        const needed = (passing * (currentWeight + nextWeight) - currentSumWeighted) / nextWeight;
+        const needed =
+          (passing * (currentWeight + nextWeight) - currentSumWeighted) /
+          nextWeight;
         return {
           subject: sub,
           formulaType,
@@ -376,7 +388,9 @@ export function GradesOverview({
   // Filtra as matérias baseado na busca e no grupo
   const filteredStatuses = useMemo(() => {
     return statuses.filter((s) => {
-      const matchSearch = s.subject.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSearch = s.subject
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
       if (!matchSearch) return false;
 
       if (filterGroup === "all") return true;
@@ -432,7 +446,10 @@ export function GradesOverview({
             {/* Barra de progresso vertical */}
             <div className="w-1 self-stretch rounded-full bg-border overflow-hidden shrink-0 min-h-[40px]">
               <div
-                className={cn("w-full rounded-full transition-all duration-700", cfg.bar)}
+                className={cn(
+                  "w-full rounded-full transition-all duration-700",
+                  cfg.bar,
+                )}
                 style={{ height: `${pct}%` }}
               />
             </div>
@@ -462,7 +479,11 @@ export function GradesOverview({
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground capitalize">
-                  {s.formulaType === "simples" ? "média simples" : s.formulaType === "ponderada" ? "ponderada" : s.formulaType}
+                  {s.formulaType === "simples"
+                    ? "média simples"
+                    : s.formulaType === "ponderada"
+                      ? "ponderada"
+                      : s.formulaType}
                 </span>
               </div>
             </div>
@@ -491,7 +512,13 @@ export function GradesOverview({
 
           {/* Botões de Ação na Direita */}
           <div className="flex items-center gap-1.5 shrink-0 ml-2">
-            <ToolTip content={isStarred ? "Remover matéria ativa" : "Marcar como matéria ativa para relatório"}>
+            <ToolTip
+              content={
+                isStarred
+                  ? "Remover matéria ativa"
+                  : "Marcar como matéria ativa para relatório"
+              }
+            >
               <button
                 type="button"
                 onClick={(e) => {
@@ -502,13 +529,16 @@ export function GradesOverview({
                   "p-2 rounded-lg border transition-colors cursor-pointer",
                   isStarred
                     ? cn(theme.bg, theme.border, theme.text, theme.bgHover)
-                    : "border-border text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+                    : "border-border text-muted-foreground hover:bg-accent/40 hover:text-foreground",
                 )}
               >
-                <Star className="w-3.5 h-3.5" fill={isStarred ? "currentColor" : "none"} />
+                <Star
+                  className="w-3.5 h-3.5"
+                  fill={isStarred ? "currentColor" : "none"}
+                />
               </button>
             </ToolTip>
-            
+
             <ToolTip content="Configurar fórmula de média">
               <button
                 type="button"
@@ -552,9 +582,7 @@ export function GradesOverview({
             <div className="p-4 flex flex-col gap-2">
               {subjectGrades.map((g) => {
                 const pctGrade =
-                  g.maxGrade > 0
-                    ? Math.round((g.grade / g.maxGrade) * 100)
-                    : 0;
+                  g.maxGrade > 0 ? Math.round((g.grade / g.maxGrade) * 100) : 0;
                 const typeClass =
                   GRADE_TYPE_COLORS[g.gradeType] ??
                   "bg-neutral-500/10 text-neutral-400 border-neutral-500/20";
@@ -675,7 +703,9 @@ export function GradesOverview({
         <div className="lg:col-span-2 bg-card/40 border border-border rounded-2xl p-6 flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <Star className={cn("w-5 h-5", theme.text)} fill="currentColor" />
-            <h3 className="text-sm font-bold text-foreground">Metas das Matérias Ativas</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Metas das Matérias Ativas
+            </h3>
           </div>
 
           {activeReports.length > 0 ? (
@@ -687,9 +717,17 @@ export function GradesOverview({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-xs font-bold text-foreground truncate">{report.subject}</span>
+                      <span className="text-xs font-bold text-foreground truncate">
+                        {report.subject}
+                      </span>
                       <span className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider scale-95 origin-left shrink-0">
-                        {report.formulaType === "simples" ? "Simples" : report.formulaType === "ponderada" ? "Ponderada" : report.formulaType === "meta" ? "Meta" : "Personalizada"}
+                        {report.formulaType === "simples"
+                          ? "Simples"
+                          : report.formulaType === "ponderada"
+                            ? "Ponderada"
+                            : report.formulaType === "meta"
+                              ? "Meta"
+                              : "Personalizada"}
                       </span>
                     </div>
                     <span
@@ -697,7 +735,7 @@ export function GradesOverview({
                         "text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0",
                         report.isApproved
                           ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20",
                       )}
                     >
                       {report.isApproved ? "Aprovado" : "Pendente"}
@@ -706,11 +744,18 @@ export function GradesOverview({
 
                   <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
                     <div>
-                      {report.formulaType === "meta" ? "Nota acumulada:" : "Média atual:"} <span className="font-bold text-foreground">{fmtGrade(report.currentAvg)}</span> / {fmtGrade(report.passing)}
+                      {report.formulaType === "meta"
+                        ? "Nota acumulada:"
+                        : "Média atual:"}{" "}
+                      <span className="font-bold text-foreground">
+                        {fmtGrade(report.currentAvg)}
+                      </span>{" "}
+                      / {fmtGrade(report.passing)}
                     </div>
                     {!report.isApproved && report.neededAvg !== undefined && (
                       <span className="text-rose-400/90 font-bold shrink-0">
-                        Falta: {fmtGrade(report.neededAvg)} {report.formulaType === "meta" ? "pontos" : "na média"}
+                        Falta: {fmtGrade(report.neededAvg)}{" "}
+                        {report.formulaType === "meta" ? "pontos" : "na média"}
                       </span>
                     )}
                   </div>
@@ -723,7 +768,10 @@ export function GradesOverview({
                         </span>
                       ) : (
                         <span>
-                          Nota necessária na próxima prova: <span className="font-bold text-foreground">{fmtGrade(report.needed)}</span>
+                          Nota necessária na próxima prova:{" "}
+                          <span className="font-bold text-foreground">
+                            {fmtGrade(report.needed)}
+                          </span>
                         </span>
                       )}
                     </div>
@@ -735,7 +783,9 @@ export function GradesOverview({
             <div className="flex-1 flex flex-col items-center justify-center text-center py-6 gap-2">
               <Star className="w-7 h-7 text-neutral-600/70" />
               <p className="text-xs text-neutral-500 font-semibold max-w-sm">
-                Selecione matérias ativas clicando no ícone de estrela (★) ao lado da matéria na lista abaixo para gerar o relatório de metas acadêmicas.
+                Selecione matérias ativas clicando no ícone de estrela (★) ao
+                lado da matéria na lista abaixo para gerar o relatório de metas
+                acadêmicas.
               </p>
             </div>
           )}
@@ -745,21 +795,26 @@ export function GradesOverview({
         <div className="bg-card/40 border border-border rounded-2xl p-6 flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-rose-500" />
-            <h3 className="text-sm font-bold text-foreground">Precisa de Atenção</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Precisa de Atenção
+            </h3>
           </div>
 
           <div className="flex-1 overflow-y-auto max-h-[160px] custom-scrollbar flex flex-col gap-2">
             {attentionSubjects.length > 0 ? (
               attentionSubjects.map((s) => {
                 const isCriticalHit = s.hitRate > 0 && s.hitRate < 60;
-                const isLowAvg = s.gradesCount > 0 && s.average < s.passingGrade;
+                const isLowAvg =
+                  s.gradesCount > 0 && s.average < s.passingGrade;
                 return (
                   <div
                     key={s.subject}
                     className="flex flex-col gap-1.5 p-3 rounded-xl bg-rose-500/5 border border-rose-500/10"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-foreground truncate">{s.subject}</span>
+                      <span className="text-xs font-bold text-foreground truncate">
+                        {s.subject}
+                      </span>
                       <span className="text-xs font-black text-rose-500 tabular-nums shrink-0">
                         {s.gradesCount > 0 ? fmtGrade(s.average) : "—"}
                       </span>
@@ -815,8 +870,12 @@ export function GradesOverview({
               <SelectValue placeholder="Todos os grupos" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-xs">Todos os grupos</SelectItem>
-              <SelectItem value="none" className="text-xs">Sem grupo (Matérias avulsas)</SelectItem>
+              <SelectItem value="all" className="text-xs">
+                Todos os grupos
+              </SelectItem>
+              <SelectItem value="none" className="text-xs">
+                Sem grupo (Matérias avulsas)
+              </SelectItem>
               {groups.map((g) => (
                 <SelectItem key={g.id} value={String(g.id)} className="text-xs">
                   {g.name}
@@ -850,7 +909,8 @@ export function GradesOverview({
               );
               if (groupStatuses.length === 0) return null;
 
-              const isExpanded = group.id !== undefined && expandedGroups.includes(group.id);
+              const isExpanded =
+                group.id !== undefined && expandedGroups.includes(group.id);
               return (
                 <GroupAccordion
                   key={group.id}

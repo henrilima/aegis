@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { isoDate } from "@/components/modules/studies/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { isoDate } from "@/components/modules/studies/utils";
 import type { StudyGrade } from "../types";
 import { GRADE_TYPE_LABELS } from "../types";
-import { Switch } from "@/components/ui/switch";
 
 interface GradeFormProps {
   userId: string;
@@ -39,7 +39,9 @@ export function GradeForm({
   const theme = getColorTheme(color);
   const { now: simulatedNow } = useTime();
 
-  const [form, setForm] = useState<Omit<StudyGrade, "id" | "userId" | "createdAt">>({
+  const [form, setForm] = useState<
+    Omit<StudyGrade, "id" | "userId" | "createdAt">
+  >({
     subject: initial?.subject ?? "",
     gradeType: initial?.gradeType ?? "prova",
     title: initial?.title ?? "",
@@ -66,7 +68,9 @@ export function GradeForm({
 
   const isNewSubject =
     subjectQuery.trim() !== "" &&
-    !existingSubjects.some((s) => s.toLowerCase() === subjectQuery.toLowerCase());
+    !existingSubjects.some(
+      (s) => s.toLowerCase() === subjectQuery.toLowerCase(),
+    );
 
   function setField<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -96,9 +100,7 @@ export function GradeForm({
   }
 
   const percentual =
-    form.maxGrade > 0
-      ? Math.round((form.grade / form.maxGrade) * 100)
-      : 0;
+    form.maxGrade > 0 ? Math.round((form.grade / form.maxGrade) * 100) : 0;
 
   const percentualColor =
     percentual >= 70
@@ -130,45 +132,48 @@ export function GradeForm({
                 setShowSubjectDropdown(true);
               }}
               onFocus={() => setShowSubjectDropdown(true)}
-              onBlur={() => setTimeout(() => setShowSubjectDropdown(false), 150)}
+              onBlur={() =>
+                setTimeout(() => setShowSubjectDropdown(false), 150)
+              }
               required
             />
-            {showSubjectDropdown && (filteredSubjects.length > 0 || isNewSubject) && (
-              <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="p-1 flex flex-col gap-0.5 max-h-40 overflow-y-auto custom-scrollbar">
-                  {filteredSubjects.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onMouseDown={() => {
-                        setSubjectQuery(s);
-                        setField("subject", s);
-                        setShowSubjectDropdown(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-[11px] text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-lg transition-all cursor-pointer font-bold"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                  {isNewSubject && (
-                    <button
-                      type="button"
-                      onMouseDown={() => {
-                        setField("subject", subjectQuery.trim());
-                        setShowSubjectDropdown(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-2 text-[11px] font-bold rounded-lg transition-all border-t border-border/20 mt-1 cursor-pointer",
-                        theme.text,
-                        theme.bgHover,
-                      )}
-                    >
-                      + Criar &quot;{subjectQuery.trim()}&quot;
-                    </button>
-                  )}
+            {showSubjectDropdown &&
+              (filteredSubjects.length > 0 || isNewSubject) && (
+                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="p-1 flex flex-col gap-0.5 max-h-40 overflow-y-auto custom-scrollbar">
+                    {filteredSubjects.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onMouseDown={() => {
+                          setSubjectQuery(s);
+                          setField("subject", s);
+                          setShowSubjectDropdown(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-[11px] text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-lg transition-all cursor-pointer font-bold"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                    {isNewSubject && (
+                      <button
+                        type="button"
+                        onMouseDown={() => {
+                          setField("subject", subjectQuery.trim());
+                          setShowSubjectDropdown(false);
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-[11px] font-bold rounded-lg transition-all border-t border-border/20 mt-1 cursor-pointer",
+                          theme.text,
+                          theme.bgHover,
+                        )}
+                      >
+                        + Criar &quot;{subjectQuery.trim()}&quot;
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Título e Data */}
@@ -290,7 +295,12 @@ export function GradeForm({
                   style={{ width: `${Math.min(100, percentual)}%` }}
                 />
               </div>
-              <span className={cn("text-sm font-black tabular-nums", percentualColor)}>
+              <span
+                className={cn(
+                  "text-sm font-black tabular-nums",
+                  percentualColor,
+                )}
+              >
                 {percentual}%
               </span>
             </div>
@@ -321,9 +331,12 @@ export function GradeForm({
           {/* Dividir pela metade */}
           <div className="flex items-center justify-between p-3.5 bg-card/65 border border-border rounded-xl gap-3">
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-foreground">Dividir nota pela metade?</span>
+              <span className="text-xs font-bold text-foreground">
+                Dividir nota pela metade?
+              </span>
               <span className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                Se ativado, esta nota será dividida por 2 no cálculo das médias (ex: 8.0 vira 4.0).
+                Se ativado, esta nota será dividida por 2 no cálculo das médias
+                (ex: 8.0 vira 4.0).
               </span>
             </div>
             <Switch
@@ -338,7 +351,9 @@ export function GradeForm({
             <div className="bg-card/40 border border-border/60 rounded-xl p-4 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-bold text-neutral-600">Total</span>
+                  <span className="text-[10px] font-bold text-neutral-600">
+                    Total
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -354,7 +369,9 @@ export function GradeForm({
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-bold text-green-500/80">Acertos</span>
+                  <span className="text-[10px] font-bold text-green-500/80">
+                    Acertos
+                  </span>
                   <Input
                     type="number"
                     min="0"

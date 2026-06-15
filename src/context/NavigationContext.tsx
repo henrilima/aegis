@@ -6,8 +6,8 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState,
   useMemo,
+  useState,
 } from "react";
 
 export type AppRoute =
@@ -83,33 +83,36 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     return backTarget || "dashboard";
   }, [route, backTarget]);
 
-  const navigate = useCallback((newRoute: AppRoute) => {
-    if (!VALID_ROUTES.has(newRoute)) return;
-    
-    setBackTarget(() => {
-      if (newRoute === "dashboard") {
-        return null;
-      }
-      if (SUB_MODULES.has(newRoute)) {
-        return route;
-      }
-      return "dashboard";
-    });
+  const navigate = useCallback(
+    (newRoute: AppRoute) => {
+      if (!VALID_ROUTES.has(newRoute)) return;
 
-    const url =
-      newRoute === "dashboard" ? "/dashboard" : `/dashboard/${newRoute}`;
-    try {
-      window.history.pushState(null, "", url);
-    } catch {}
-    
-    setRoute(newRoute);
+      setBackTarget(() => {
+        if (newRoute === "dashboard") {
+          return null;
+        }
+        if (SUB_MODULES.has(newRoute)) {
+          return route;
+        }
+        return "dashboard";
+      });
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("aegis-route-click", { detail: newRoute })
-      );
-    }
-  }, [route]);
+      const url =
+        newRoute === "dashboard" ? "/dashboard" : `/dashboard/${newRoute}`;
+      try {
+        window.history.pushState(null, "", url);
+      } catch {}
+
+      setRoute(newRoute);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("aegis-route-click", { detail: newRoute }),
+        );
+      }
+    },
+    [route],
+  );
 
   useEffect(() => {
     const handlePop = () => {
@@ -157,7 +160,13 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
   return (
     <NavigationContext.Provider
-      value={{ route, previousRoute, navigate, isSettingsOpen, setSettingsOpen }}
+      value={{
+        route,
+        previousRoute,
+        navigate,
+        isSettingsOpen,
+        setSettingsOpen,
+      }}
     >
       {children}
     </NavigationContext.Provider>

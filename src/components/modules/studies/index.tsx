@@ -7,8 +7,8 @@ import {
   Copy,
   Flame,
   HelpCircle,
-  LayoutDashboard,
   Layers,
+  LayoutDashboard,
   Plus,
   Settings,
   X,
@@ -22,15 +22,16 @@ import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { GradesModal } from "../grades";
+import type { SubjectMeta } from "../grades/types";
 import type { AppConfig } from "../settings/useSettingsLogic";
 import { HistoryTab } from "./components/historyTab";
+import { MateriasTab } from "./components/materiasTab";
 import { MetasTab } from "./components/metasTab";
 import { OverviewTab } from "./components/overviewTab";
 import { RelatorioTab } from "./components/reportTab";
 import { SessionModal } from "./components/studiesModals";
 import { StudiesHeatmap } from "./heatmap";
-import { GradesModal } from "../grades";
-import { MateriasTab } from "./components/materiasTab";
 import type { StudyGoal, StudySession, TabId } from "./types";
 import {
   computeStats,
@@ -60,7 +61,7 @@ export default function StudiesPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState(1);
   const [showGrades, setShowGrades] = useState(false);
-  const [subjectMetas, setSubjectMetas] = useState<any[]>([]);
+  const [subjectMetas, setSubjectMetas] = useState<SubjectMeta[]>([]);
 
   useEffect(() => {
     const handleOpenGrades = () => setShowGrades(true);
@@ -93,7 +94,7 @@ export default function StudiesPage() {
           monthsBack: 5,
         }),
         invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
-        invoke<any[]>("subjects_list", { userId: uid }),
+        invoke<SubjectMeta[]>("subjects_list", { userId: uid }),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -363,8 +364,6 @@ export default function StudiesPage() {
       {tab === "materias" && (
         <MateriasTab studySubjects={existingSubjects} userId={uid} />
       )}
-
-
 
       {/* Configurações e Metas */}
       {showSettings && (

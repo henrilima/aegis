@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, BarChart2, Book, type LucideIcon, Search, Timer } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart2,
+  Book,
+  type LucideIcon,
+  Search,
+  Timer,
+} from "lucide-react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useNavigation } from "@/context/NavigationContext";
@@ -120,7 +127,11 @@ export function ModuleHeader({
         {/* Identidade do módulo */}
         <div className="flex items-center gap-3">
           {(appMode !== "default" || onBack) && (
-            <ToolTip content={onBack || previousRoute ? "Voltar" : "Voltar para o início"}>
+            <ToolTip
+              content={
+                onBack || previousRoute ? "Voltar" : "Voltar para o início"
+              }
+            >
               <button
                 type="button"
                 onClick={() => {
