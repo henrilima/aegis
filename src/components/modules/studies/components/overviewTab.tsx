@@ -1,7 +1,17 @@
-import { BookOpen, CheckCircle, Clock, Target, TrendingUp } from "lucide-react";
+import {
+  Award,
+  BookOpen,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  Target,
+  TrendingUp,
+} from "lucide-react";
+import { useMemo } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import type { StudyGrade } from "../../grades/types";
 import { GOAL_LABELS } from "../goalPanel";
 import type { StudyStats, SubjectData } from "../types";
 import { formatHours, hitRate } from "../utils";
@@ -13,6 +23,8 @@ interface OverviewTabProps {
   goalValue: (type: string) => number;
   goalProgress: (current: number, type: string) => number;
   subjectMap: Record<string, SubjectData>;
+  grades: StudyGrade[];
+  onOpenGrades: () => void;
 }
 
 export function OverviewTab({
@@ -21,9 +33,42 @@ export function OverviewTab({
   goalValue,
   goalProgress,
   subjectMap,
+  grades = [],
+  onOpenGrades,
 }: OverviewTabProps) {
   const color = getModuleColor("studies");
   const theme = getColorTheme(color);
+
+  // Estatísticas de simulados e notas
+  const gradesStats = useMemo(() => {
+    if (!grades || grades.length === 0) return null;
+    const total = grades.length;
+    const sum = grades.reduce((acc, curr) => {
+      const norm = curr.maxGrade > 0 ? (curr.grade / curr.maxGrade) * 10 : 0;
+      return acc + norm;
+    }, 0);
+    const avg = Math.round((sum / total) * 10) / 10;
+
+    const totalQuestions = grades.reduce(
+      (acc, curr) => acc + curr.questionsTotal,
+      0,
+    );
+    const correctQuestions = grades.reduce(
+      (acc, curr) => acc + curr.questionsCorrect,
+      0,
+    );
+    const hitRateVal =
+      totalQuestions > 0
+        ? Math.round((correctQuestions / totalQuestions) * 100)
+        : 0;
+
+    return {
+      total,
+      avg,
+      hitRate: hitRateVal,
+      hasQuestions: totalQuestions > 0,
+    };
+  }, [grades]);
 
   // Média de progresso das metas mensais para um "Score" global
   const monthlyTargetHours = goalValue("monthly_hours");
@@ -314,76 +359,138 @@ export function OverviewTab({
           </div>
         </div>
 
-        {/* Top Subjects Section */}
-        <div className="flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className={cn("w-4 h-4", theme.text)} />
-            <h3 className="text-sm font-bold text-foreground">
-              Domínio por Matéria
-            </h3>
-          </div>
-
-          {Object.keys(subjectMap).length === 0 ? (
-            <EmptyState
-              icon={BookOpen}
-              title="Aguardando registros"
-              description="Sua performance aparecerá aqui em breve."
-              className="py-10"
-            />
-          ) : (
-            <div className="flex flex-col gap-4">
-              {Object.entries(subjectMap)
-                .sort((a, b) => b[1].hours - a[1].hours)
-                .slice(0, 5)
-                .map(([subj, d]) => {
-                  const totalQ = d.qNew + d.qRev;
-                  const totalC = d.cNew + d.cRev;
-                  const rate = hitRate(totalC, totalQ);
-                  return (
-                    <div key={subj} className="flex flex-col gap-1.5 group">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
-                          {subj}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-[10px] font-black",
-                            rate >= 70
-                              ? "text-emerald-500"
-                              : rate >= 50
-                                ? "text-amber-500"
-                                : "text-rose-500",
-                          )}
-                        >
-                          {rate}% acerto
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            rate >= 70
-                              ? "bg-emerald-500"
-                              : rate >= 50
-                                ? "bg-amber-500"
-                                : "bg-rose-500",
-                          )}
-                          style={{ width: `${rate}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between items-center opacity-60">
-                        <span className="text-[9px] font-medium uppercaseer">
-                          {formatHours(d.hours)} dedicadas
-                        </span>
-                        <span className="text-[9px] font-medium">
-                          {totalQ} questões
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+        {/* Right Column (Grades stats + Top Subjects) */}
+        <div className="flex flex-col gap-6 lg:col-span-1">
+          {/* Card de Notas & Simulados */}
+          <button
+            type="button"
+            onClick={onOpenGrades}
+            className="w-full text-left flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6 transition-all duration-300 hover:bg-card/65 hover:border-emerald-500/50 cursor-pointer group"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
+                <h3 className="text-sm font-bold text-foreground">
+                  Notas & Simulados
+                </h3>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform duration-300" />
             </div>
-          )}
+
+            {gradesStats ? (
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-foreground tabular-nums">
+                    {gradesStats.avg}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    /10 média geral
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-1 border-t border-border/30 pt-3 w-full">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Avaliações
+                    </span>
+                    <span className="text-sm font-extrabold text-foreground">
+                      {gradesStats.total} registradas
+                    </span>
+                  </div>
+
+                  {gradesStats.hasQuestions && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Acertos
+                      </span>
+                      <span className="text-sm font-extrabold text-emerald-400">
+                        {gradesStats.hitRate}% acerto
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-4 gap-2 w-full">
+                <Award className="w-6 h-6 text-neutral-600/70" />
+                <p className="text-xs text-neutral-500 font-semibold max-w-sm">
+                  Nenhuma avaliação registrada. Clique para começar.
+                </p>
+              </div>
+            )}
+          </button>
+
+          {/* Top Subjects Section */}
+          <div className="flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6 w-full">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className={cn("w-4 h-4", theme.text)} />
+              <h3 className="text-sm font-bold text-foreground">
+                Domínio por Matéria
+              </h3>
+            </div>
+
+            {Object.keys(subjectMap).length === 0 ? (
+              <EmptyState
+                icon={BookOpen}
+                title="Aguardando registros"
+                description="Sua performance aparecerá aqui em breve."
+                className="py-10"
+              />
+            ) : (
+              <div className="flex flex-col gap-4">
+                {Object.entries(subjectMap)
+                  .sort((a, b) => b[1].hours - a[1].hours)
+                  .slice(0, 5)
+                  .map(([subj, d]) => {
+                    const totalQ = d.qNew + d.qRev;
+                    const totalC = d.cNew + d.cRev;
+                    const rate = hitRate(totalC, totalQ);
+                    return (
+                      <div key={subj} className="flex flex-col gap-1.5 group">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
+                            {subj}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-[10px] font-black",
+                              rate >= 70
+                                ? "text-emerald-500"
+                                : rate >= 50
+                                  ? "text-amber-500"
+                                  : "text-rose-500",
+                            )}
+                          >
+                            {rate}% acerto
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500",
+                              rate >= 70
+                                ? "bg-emerald-500"
+                                : rate >= 50
+                                  ? "bg-amber-500"
+                                  : "bg-rose-500",
+                            )}
+                            style={{ width: `${rate}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center opacity-60">
+                          <span className="text-[9px] font-medium uppercaseer">
+                            {formatHours(d.hours)} dedicadas
+                          </span>
+                          <span className="text-[9px] font-medium">
+                            {totalQ} questões
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

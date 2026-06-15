@@ -15,6 +15,7 @@ import {
   Star,
   Target,
   ThumbsUp,
+  Trash2,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -51,6 +52,7 @@ interface GradesOverviewProps {
   allSubjects: string[];
   onConfigFormula: (subject: string) => void;
   onEditGrade?: (grade: StudyGrade) => void;
+  onDeleteGrade?: (id: number) => void;
   userId: string;
 }
 
@@ -187,6 +189,7 @@ export function GradesOverview({
   allSubjects,
   onConfigFormula,
   onEditGrade,
+  onDeleteGrade,
   userId,
 }: GradesOverviewProps) {
   const color = getModuleColor("grades");
@@ -224,6 +227,10 @@ export function GradesOverview({
     }
     return [];
   });
+
+  const validActiveSubjects = useMemo(() => {
+    return activeSubjects.filter((s) => allSubjects.includes(s));
+  }, [activeSubjects, allSubjects]);
 
   const toggleActiveSubject = (subject: string) => {
     const newVal = activeSubjects.includes(subject)
@@ -272,19 +279,19 @@ export function GradesOverview({
   const attentionSubjects = useMemo(() => {
     return statuses.filter(
       (s) =>
-        activeSubjects.includes(s.subject) &&
+        validActiveSubjects.includes(s.subject) &&
         ((s.gradesCount > 0 && s.average < s.passingGrade) ||
           s.status === "reprovado" ||
           s.status === "em-risco" ||
           (s.hitRate > 0 && s.hitRate < 60)),
     );
-  }, [statuses, activeSubjects]);
+  }, [statuses, validActiveSubjects]);
 
   // Projeção de Notas para todas as matérias ativas
   const activeReports = useMemo(() => {
-    if (activeSubjects.length === 0) return [];
+    if (validActiveSubjects.length === 0) return [];
 
-    return activeSubjects.map((sub) => {
+    return validActiveSubjects.map((sub) => {
       const activeStatus = statuses.find((s) => s.subject === sub);
       const passing = activeStatus?.passingGrade ?? 7.0;
       const currentAvg = activeStatus?.average ?? 0.0;
@@ -383,7 +390,7 @@ export function GradesOverview({
         needed: null,
       };
     });
-  }, [activeSubjects, statuses, grades]);
+  }, [validActiveSubjects, statuses, grades]);
 
   // Filtra as matérias baseado na busca e no grupo
   const filteredStatuses = useMemo(() => {
@@ -419,7 +426,7 @@ export function GradesOverview({
   const renderSubjectCard = (s: SubjectStatus) => {
     const cfg = STATUS_CONFIG[s.status] || STATUS_CONFIG["sem-nota"];
     const isExpanded = expandedSubject === s.subject;
-    const isStarred = activeSubjects.includes(s.subject);
+    const isStarred = validActiveSubjects.includes(s.subject);
     const subjectGrades = grades
       .filter((g) => g.subject === s.subject)
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -633,6 +640,20 @@ export function GradesOverview({
                             className="p-1 rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors cursor-pointer"
                           >
                             <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </ToolTip>
+                      )}
+                      {onDeleteGrade && (
+                        <ToolTip content="Excluir avaliação">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (g.id !== undefined) onDeleteGrade(g.id);
+                            }}
+                            className="p-1 rounded-lg border border-border/50 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </ToolTip>
                       )}

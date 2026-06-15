@@ -182,18 +182,12 @@ impl StudiesManager {
             "ALTER TABLE study_sessions ADD COLUMN focus_score INTEGER",
             [],
         );
-        let _ = conn.execute(
-            "ALTER TABLE study_sessions ADD COLUMN topic TEXT",
-            [],
-        );
+        let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN topic TEXT", []);
 
         // Migração manual: renomeia tipo de fórmula 'custom' para 'personalizada'
         let _ = conn.execute("UPDATE study_subject_formulas SET formula_type = 'personalizada' WHERE formula_type = 'custom'", []);
 
-        let _ = conn.execute(
-            "ALTER TABLE study_subject_groups ADD COLUMN color TEXT",
-            [],
-        );
+        let _ = conn.execute("ALTER TABLE study_subject_groups ADD COLUMN color TEXT", []);
         let _ = conn.execute(
             "ALTER TABLE study_grades ADD COLUMN half_grade INTEGER DEFAULT 0",
             [],
@@ -427,6 +421,7 @@ impl StudiesManager {
                 custom_metric_label: c_label,
                 custom_metric_value: Some(c_value),
                 focus_score: Some(focus),
+                topic: None,
             };
             self.add_session(s).ok();
             count += 1;
@@ -713,7 +708,9 @@ impl StudiesManager {
             .unwrap();
 
         let groups_basic: Vec<(i64, String, Option<String>)> = stmt_groups
-            .query_map(params![user_id], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .query_map(params![user_id], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
             .unwrap()
             .filter_map(|r| r.ok())
             .collect();

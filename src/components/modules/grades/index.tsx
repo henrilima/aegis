@@ -217,6 +217,7 @@ export function GradesModal({
                     setEditGrade(g);
                     setShowForm(true);
                   }}
+                  onDeleteGrade={setDeleteConfirm}
                   userId={uid}
                 />
               )}

@@ -23,7 +23,7 @@ import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { GradesModal } from "../grades";
-import type { SubjectMeta } from "../grades/types";
+import type { StudyGrade, SubjectMeta } from "../grades/types";
 import type { AppConfig } from "../settings/useSettingsLogic";
 import { HistoryTab } from "./components/historyTab";
 import { MateriasTab } from "./components/materiasTab";
@@ -63,6 +63,7 @@ export default function StudiesPage() {
   const [showGrades, setShowGrades] = useState(false);
   const [subjectMetas, setSubjectMetas] = useState<SubjectMeta[]>([]);
   const [filterSubject, setFilterSubject] = useState("all");
+  const [grades, setGrades] = useState<StudyGrade[]>([]);
 
   useEffect(() => {
     const handleOpenGrades = () => setShowGrades(true);
@@ -96,6 +97,7 @@ export default function StudiesPage() {
         }),
         invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
         invoke<SubjectMeta[]>("subjects_list", { userId: uid }),
+        invoke<StudyGrade[]>("grades_list", { userId: uid }),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -110,6 +112,10 @@ export default function StudiesPage() {
 
       if (results[2].status === "fulfilled") {
         setSubjectMetas(results[2].value);
+      }
+
+      if (results[3].status === "fulfilled") {
+        setGrades(results[3].value);
       }
 
       const config = await invoke<{ weekStartDay: number }>(
@@ -334,6 +340,8 @@ export default function StudiesPage() {
           goalValue={goalValue}
           goalProgress={goalProgress}
           subjectMap={subjectMap}
+          grades={grades}
+          onOpenGrades={() => setShowGrades(true)}
         />
       )}
 

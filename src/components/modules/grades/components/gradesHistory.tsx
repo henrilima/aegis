@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { BarChart2, Pencil, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -20,20 +19,6 @@ import {
   type SubjectGroup,
 } from "../types";
 import { fmtGrade, GRADE_TYPE_COLORS, hitRate, parseDate } from "../utils";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 15 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 260, damping: 25 },
-  },
-};
 
 interface GradesHistoryProps {
   grades: StudyGrade[];
@@ -185,12 +170,7 @@ export function GradesHistory({
           className="py-12"
         />
       ) : (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="flex flex-col gap-2"
-        >
+        <div className="flex flex-col gap-2">
           {filtered.map((g) => {
             const pct =
               g.maxGrade > 0 ? Math.round((g.grade / g.maxGrade) * 100) : 0;
@@ -200,18 +180,8 @@ export function GradesHistory({
               "bg-neutral-500/10 text-neutral-400 border-neutral-500/20";
 
             return (
-              <motion.div
+              <div
                 key={g.id}
-                variants={itemVariants}
-                whileHover={{
-                  y: -3,
-                  boxShadow: "0 10px 25px -10px rgba(0,0,0,0.12)",
-                }}
-                transition={{
-                  type: "spring" as const,
-                  stiffness: 300,
-                  damping: 20,
-                }}
                 className={cn(
                   "group bg-card/50 border border-border rounded-xl p-5 transition-all duration-300",
                   theme.borderHover,
@@ -338,10 +308,10 @@ export function GradesHistory({
                     </ToolTip>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
       )}
     </div>
   );
