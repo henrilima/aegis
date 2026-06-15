@@ -39,6 +39,8 @@ interface MateriasTabProps {
   /** Matérias existentes das sessões de estudo */
   studySubjects: string[];
   userId: string;
+  /** Callback para notificar o pai de mudanças que exijam recarga de dados */
+  onRefresh?: () => void;
 }
 
 const _FORMULA_OPTIONS = [
@@ -64,7 +66,11 @@ const _FORMULA_OPTIONS = [
   },
 ];
 
-export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
+export function MateriasTab({
+  studySubjects,
+  userId,
+  onRefresh,
+}: MateriasTabProps) {
   const color = getModuleColor("studies");
   const theme = getColorTheme(color);
 
@@ -212,6 +218,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
 
       toast.success("Grupo criado!");
       await load();
+      onRefresh?.();
     } catch (err) {
       toast.error(`Erro ao criar grupo: ${err}`);
     }
@@ -245,6 +252,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
 
       toast.success("Grupo atualizado!");
       await load();
+      onRefresh?.();
     } catch (err) {
       toast.error(`Erro ao atualizar grupo: ${err}`);
     }
@@ -265,6 +273,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
       });
       toast.success("Grupo removido!");
       await load();
+      onRefresh?.();
     } catch (err) {
       toast.error(`Erro ao excluir grupo: ${err}`);
     }
@@ -299,6 +308,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
         group: { ...group, subjects: newSubjects },
       });
       await load();
+      onRefresh?.();
     } catch (err) {
       toast.error(`Erro ao atualizar grupo: ${err}`);
     }
@@ -673,6 +683,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
           onSave={async () => {
             setEditingSubject(null);
             await load();
+            onRefresh?.();
           }}
         />
       )}
@@ -747,6 +758,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
               });
               toast.success("Matéria excluída com sucesso!");
               await load();
+              onRefresh?.();
             } catch (err) {
               toast.error(`Erro ao excluir matéria: ${err}`);
             } finally {

@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BookOpen, Clock, Pencil, Search, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Clock,
+  FileText,
+  Pencil,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   Select,
@@ -47,6 +54,10 @@ interface HistoryTabProps {
   onSearchChange: (val: string) => void;
   filterMonth: string;
   onFilterMonthChange: (val: string) => void;
+  /** Lista de matérias únicas para o filtro por matéria */
+  subjects: string[];
+  filterSubject: string;
+  onFilterSubjectChange: (val: string) => void;
   months: string[];
   onEdit: (s: StudySession) => void;
   onDelete: (id: number) => void;
@@ -58,6 +69,9 @@ export function HistoryTab({
   onSearchChange,
   filterMonth,
   onFilterMonthChange,
+  subjects,
+  filterSubject,
+  onFilterSubjectChange,
   months,
   onEdit,
   onDelete,
@@ -66,7 +80,9 @@ export function HistoryTab({
   const theme = getColorTheme(color);
   return (
     <div className="flex flex-col gap-4">
+      {/* Barra de Filtros */}
       <div className="flex gap-3 flex-wrap">
+        {/* Campo de busca */}
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
           <input
@@ -74,11 +90,30 @@ export function HistoryTab({
               "w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-colors",
               theme.borderHover.replace("hover:", "focus:"),
             )}
-            placeholder="Buscar por matéria, data ou anotação..."
+            placeholder="Buscar por matéria, conteúdo, data ou anotação..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
+
+        {/* Filtro por matéria */}
+        <Select value={filterSubject} onValueChange={onFilterSubjectChange}>
+          <SelectTrigger className="bg-card border-border rounded-xl h-9 text-xs min-w-[160px]">
+            <SelectValue placeholder="Todas as matérias" />
+          </SelectTrigger>
+          <SelectContent className="bg-card border-border">
+            <SelectItem value="all" className="text-xs">
+              Todas as matérias
+            </SelectItem>
+            {subjects.map((s) => (
+              <SelectItem key={s} value={s} className="text-xs">
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Filtro por mês */}
         <div>
           <Select value={filterMonth} onValueChange={onFilterMonthChange}>
             <SelectTrigger className="bg-card border-border rounded-xl h-9 text-xs min-w-[160px]">
@@ -132,11 +167,22 @@ export function HistoryTab({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 flex flex-col gap-3">
-                    {/* Linha Superior: Matéria e Data */}
+                    {/* Linha Superior: Materia e Data */}
                     <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-base font-bold text-foreground truncate">
-                        {s.subject}
-                      </h3>
+                      <div className="flex flex-col min-w-0">
+                        <h3 className="text-base font-bold text-foreground truncate">
+                          {s.subject}
+                        </h3>
+                        {/* Conteúdo estudado — exibido apenas quando preenchido */}
+                        {s.topic && (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
+                            <span className="text-xs text-muted-foreground truncate">
+                              {s.topic}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <span
                         className={cn(
                           "shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full border",
@@ -148,6 +194,7 @@ export function HistoryTab({
                         {parseDate(s.date).toLocaleDateString("pt-BR", {
                           day: "2-digit",
                           month: "short",
+                          year: "numeric",
                         })}
                       </span>
                     </div>

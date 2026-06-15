@@ -23,6 +23,8 @@ pub struct StudySession {
     pub custom_metric_label: Option<String>,
     pub custom_metric_value: Option<f64>,
     pub focus_score: Option<i32>,
+    #[serde(default)]
+    pub topic: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -180,6 +182,10 @@ impl StudiesManager {
             "ALTER TABLE study_sessions ADD COLUMN focus_score INTEGER",
             [],
         );
+        let _ = conn.execute(
+            "ALTER TABLE study_sessions ADD COLUMN topic TEXT",
+            [],
+        );
 
         // Migração manual: renomeia tipo de fórmula 'custom' para 'personalizada'
         let _ = conn.execute("UPDATE study_subject_formulas SET formula_type = 'personalizada' WHERE formula_type = 'custom'", []);
@@ -207,12 +213,12 @@ impl StudiesManager {
         let conn = self.conn();
         conn.execute(
             "INSERT INTO study_sessions
-             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value, focus_score)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
+             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value, focus_score, topic)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
             params![s.user_id, s.date, s.subject, s.hours,
                     s.questions_new, s.questions_review,
                     s.correct_new, s.correct_review, s.note,
-                    s.pages_read, s.custom_metric_label, s.custom_metric_value, s.focus_score],
+                    s.pages_read, s.custom_metric_label, s.custom_metric_value, s.focus_score, s.topic],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
     }
@@ -223,7 +229,7 @@ impl StudiesManager {
         conn.execute(
             "UPDATE study_sessions SET date=?2, subject=?3, hours=?4,
              questions_new=?5, questions_review=?6, correct_new=?7, correct_review=?8, note=?9,
-             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12, focus_score=?14
+             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12, focus_score=?14, topic=?15
              WHERE id=?1 AND user_id=?13",
             params![
                 id,
@@ -239,7 +245,8 @@ impl StudiesManager {
                 s.custom_metric_label,
                 s.custom_metric_value,
                 s.user_id,
-                s.focus_score
+                s.focus_score,
+                s.topic
             ],
         )
         .map_err(|e| e.to_string())?;
@@ -268,7 +275,7 @@ impl StudiesManager {
             .format("%Y-%m-%d")
             .to_string();
         let mut stmt = conn.prepare(
-            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value, focus_score
+            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value, focus_score, topic
              FROM study_sessions
              WHERE user_id=?1 AND date >= ?2
              ORDER BY date DESC, id DESC"
@@ -291,6 +298,7 @@ impl StudiesManager {
                 custom_metric_label: row.get(11)?,
                 custom_metric_value: row.get(12)?,
                 focus_score: row.get(13)?,
+                topic: row.get(14)?,
             })
         })
         .unwrap()

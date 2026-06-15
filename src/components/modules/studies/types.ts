@@ -15,6 +15,7 @@ export interface StudySession {
   custom_metric_label?: string;
   custom_metric_value?: number;
   focusScore?: number;
+  topic?: string;
 }
 
 export interface StudyGoal {

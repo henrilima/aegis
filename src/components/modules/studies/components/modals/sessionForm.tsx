@@ -44,6 +44,7 @@ export function SessionForm({
     custom_metric_label: initial?.custom_metric_label ?? "",
     custom_metric_value: initial?.custom_metric_value ?? 0,
     focusScore: initial?.focusScore ?? 0,
+    topic: initial?.topic ?? "",
   });
 
   const [activeModes, setActiveModes] = useState<
@@ -131,6 +132,20 @@ export function SessionForm({
                 onChange={(v) => setField("subject", v)}
                 existingSubjects={existingSubjects}
                 inputClass={inputStyle}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sf-topic" className={lc}>
+                Conteúdo Estudado
+              </Label>
+              <Input
+                id="sf-topic"
+                type="text"
+                className={inputStyle}
+                placeholder="Ex: Teoria dos Atos Administrativos, Geometria Espacial..."
+                value={form.topic || ""}
+                onChange={(e) => setField("topic", e.target.value)}
               />
             </div>
 

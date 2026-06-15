@@ -62,6 +62,7 @@ export default function StudiesPage() {
   const [weekStartDay, setWeekStartDay] = useState(1);
   const [showGrades, setShowGrades] = useState(false);
   const [subjectMetas, setSubjectMetas] = useState<SubjectMeta[]>([]);
+  const [filterSubject, setFilterSubject] = useState("all");
 
   useEffect(() => {
     const handleOpenGrades = () => setShowGrades(true);
@@ -225,12 +226,15 @@ export default function StudiesPage() {
           search === "" ||
           s.subject.toLowerCase().includes(search.toLowerCase()) ||
           s.date.includes(search) ||
-          (s.note ?? "").toLowerCase().includes(search.toLowerCase());
+          (s.note ?? "").toLowerCase().includes(search.toLowerCase()) ||
+          (s.topic ?? "").toLowerCase().includes(search.toLowerCase());
         const matchMonth =
           filterMonth === "all" || s.date.startsWith(filterMonth);
-        return matchSearch && matchMonth;
+        const matchSubject =
+          filterSubject === "all" || s.subject === filterSubject;
+        return matchSearch && matchMonth && matchSubject;
       }),
-    [sessions, search, filterMonth],
+    [sessions, search, filterMonth, filterSubject],
   );
 
   if (loading)
@@ -262,6 +266,7 @@ export default function StudiesPage() {
           setShowGrades(false);
           load();
         }}
+        onRefresh={load}
       />
     );
   }
@@ -339,6 +344,9 @@ export default function StudiesPage() {
           onSearchChange={setSearch}
           filterMonth={filterMonth}
           onFilterMonthChange={setFilterMonth}
+          filterSubject={filterSubject}
+          onFilterSubjectChange={setFilterSubject}
+          subjects={existingSubjects}
           months={months}
           onEdit={(s) => {
             setEditSession(s);
@@ -362,7 +370,11 @@ export default function StudiesPage() {
       {tab === "guia" && <StudyGuidePanel />}
 
       {tab === "materias" && (
-        <MateriasTab studySubjects={existingSubjects} userId={uid} />
+        <MateriasTab
+          studySubjects={existingSubjects}
+          userId={uid}
+          onRefresh={load}
+        />
       )}
 
       {/* Configurações e Metas */}

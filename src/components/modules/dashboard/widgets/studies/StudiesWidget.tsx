@@ -133,8 +133,8 @@ export function EstudosWidget({
                     <span className="text-sm font-bold text-foreground truncate">
                       {s.subject}
                     </span>
-                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                      Sessão de estudo
+                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5 truncate max-w-[110px]">
+                      {s.topic || "Sessão de estudo"}
                     </span>
                   </div>
                 </div>

@@ -28,6 +28,8 @@ interface GradesModalProps {
   /** Matérias existentes do módulo de estudos */
   existingSubjects?: string[];
   onClose: () => void;
+  /** Callback para notificar o pai de mudanças que exijam recarga de dados */
+  onRefresh?: () => void;
 }
 
 const GRADES_TABS: {
@@ -47,6 +49,7 @@ const GRADES_TABS: {
 export function GradesModal({
   existingSubjects = [],
   onClose,
+  onRefresh,
 }: GradesModalProps) {
   const { user } = useAuth();
   const color = getModuleColor("grades");
@@ -118,6 +121,7 @@ export function GradesModal({
       setShowForm(false);
       setEditGrade(undefined);
       await load();
+      onRefresh?.();
     } catch (err) {
       toast.error(`Erro ao salvar: ${err}`);
     } finally {
@@ -131,6 +135,7 @@ export function GradesModal({
       toast.success("Avaliação removida");
       setDeleteConfirm(null);
       await load();
+      onRefresh?.();
     } catch {
       toast.error("Erro ao remover avaliação");
     }
@@ -326,6 +331,7 @@ export function GradesModal({
           onSave={async () => {
             setFormulaSubject(null);
             await load();
+            onRefresh?.();
           }}
         />
       )}
