@@ -126,7 +126,9 @@ export function ModuleHeader({
       <div className="flex items-center justify-between flex-wrap gap-3">
         {/* Identidade do módulo */}
         <div className="flex items-center gap-3">
-          {(appMode !== "default" || onBack) && (
+          {(appMode !== "default" ||
+            onBack ||
+            (previousRoute && previousRoute !== "dashboard")) && (
             <ToolTip
               content={
                 onBack || previousRoute ? "Voltar" : "Voltar para o início"

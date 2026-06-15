@@ -203,7 +203,11 @@ export function SubjectEditModal({
         },
       });
 
-      toast.success("Matéria atualizada com sucesso!");
+      toast.success(
+        subjectName
+          ? "Matéria atualizada com sucesso!"
+          : "Matéria criada com sucesso!",
+      );
       onSave();
     } catch (err) {
       toast.error(`Erro ao salvar matéria: ${err}`);
@@ -215,7 +219,9 @@ export function SubjectEditModal({
   return (
     <ModalShell isOpen={isOpen} onClose={onClose} size="xl" zIndex="z-[60]">
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
-        <h2 className="text-base font-bold text-foreground">Editar Matéria</h2>
+        <h2 className="text-base font-bold text-foreground">
+          {subjectName ? "Editar Matéria" : "Nova Matéria"}
+        </h2>
         <button
           type="button"
           onClick={onClose}
@@ -436,9 +442,13 @@ export function SubjectEditModal({
           type="button"
           disabled={isSaving || loading}
           onClick={handleSaveComplete}
-          className="flex-[2] px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs transition-all hover:bg-emerald-500 cursor-pointer disabled:opacity-50"
+          className="flex-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs transition-all hover:bg-emerald-500 cursor-pointer disabled:opacity-50"
         >
-          {isSaving ? "Salvando..." : "Salvar Alterações"}
+          {isSaving
+            ? "Salvando..."
+            : subjectName
+              ? "Salvar Alterações"
+              : "Criar Matéria"}
         </button>
       </div>
     </ModalShell>

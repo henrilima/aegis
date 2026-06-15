@@ -94,6 +94,7 @@ commands.allow = [
     "subjects_upsert",
     "subjects_delete",
     "subjects_list",
+    "subjects_rename",
     "subject_groups_upsert",
     "subject_groups_delete",
     "subject_groups_list",

@@ -9,6 +9,7 @@ import {
   FolderPlus,
   Layers,
   Pencil,
+  Plus,
   Search,
   Trash2,
   X,
@@ -80,6 +81,9 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   const [editingGroup, setEditingGroup] = useState<SubjectGroup | null>(null);
   const [deleteConfirmGroup, setDeleteConfirmGroup] =
     useState<SubjectGroup | null>(null);
+  const [deleteConfirmSubject, setDeleteConfirmSubject] = useState<
+    string | null
+  >(null);
   const [expandedGroups, setExpandedGroups] = useState<number[]>([]);
   const [deleteSubjects, setDeleteSubjects] = useState(false);
 
@@ -176,6 +180,11 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
   // Abre o modal unificado de edição da matéria
   const handleOpenEditSubject = (name: string) => {
     setEditingSubject(name);
+  };
+
+  // Abre o modal unificado de criação de matéria (usando nome vazio)
+  const handleOpenCreateSubject = () => {
+    setEditingSubject("");
   };
 
   // Salvar criação do grupo
@@ -310,28 +319,61 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Barra de pesquisa geral */}
-      <div className="relative w-full h-11 shrink-0">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Buscar matérias ou grupos..."
-          className={cn(
-            "w-full h-full pl-10 pr-4 text-sm font-medium bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 transition-colors outline-none",
-            theme.borderHover.replace("hover:", "focus:"),
+      {/* Barra de pesquisa geral + Ações */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center shrink-0">
+        <div className="relative flex-1 w-full h-11">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar matérias ou grupos..."
+            className={cn(
+              "w-full h-full pl-10 pr-4 text-sm font-medium bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 transition-colors outline-none",
+              theme.borderHover.replace("hover:", "focus:"),
+            )}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+        </div>
+
+        <div className="flex gap-2 w-full sm:w-auto">
+          {/* Botão Nova Matéria */}
+          <Button
+            onClick={handleOpenCreateSubject}
+            className={cn(
+              "flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-4 rounded-xl text-white font-bold text-xs transition-all active:scale-[0.98]",
+              theme.solid,
+              theme.solidHover,
+            )}
           >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
+            <Plus className="w-4 h-4" />
+            Nova matéria
+          </Button>
+
+          {/* Botão Novo Grupo */}
+          <Button
+            variant="outline"
+            onClick={() => setShowNewGroup(true)}
+            className={cn(
+              "flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-4 rounded-xl border font-bold text-xs transition-all active:scale-[0.98]",
+              theme.text,
+              theme.bg,
+              theme.border,
+              theme.bgHover,
+            )}
+          >
+            <FolderPlus className="w-4 h-4" />
+            Novo grupo
+          </Button>
+        </div>
       </div>
 
       {/* Seção de Grupos */}
@@ -341,20 +383,6 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
             <FolderOpen className={cn("w-4 h-4", theme.text)} />
             Grupos de matérias
           </h3>
-          <button
-            type="button"
-            onClick={() => setShowNewGroup(true)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer active:scale-95",
-              theme.bg,
-              theme.border,
-              theme.text,
-              theme.bgHover,
-            )}
-          >
-            <FolderPlus className="w-3.5 h-3.5" />
-            Novo grupo
-          </button>
         </div>
 
         {filteredGroups.length === 0 ? (
@@ -484,25 +512,38 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                                   </div>
 
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleOpenEditSubject(subject)
-                                      }
-                                      className={cn(
-                                        "flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-accent/40 active:scale-95 cursor-pointer text-muted-foreground",
-                                        theme.borderHover,
-                                      )}
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                      Editar
-                                    </button>
+                                    <ButtonGroup className="bg-card rounded-md">
+                                      <ToolTip content="Editar matéria">
+                                        <Button
+                                          variant="outline"
+                                          size="xs"
+                                          onClick={() =>
+                                            handleOpenEditSubject(subject)
+                                          }
+                                          className="text-neutral-500 hover:text-foreground cursor-pointer h-7"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </ToolTip>
+                                      <ToolTip content="Excluir matéria">
+                                        <Button
+                                          variant="outline"
+                                          size="xs"
+                                          onClick={() =>
+                                            setDeleteConfirmSubject(subject)
+                                          }
+                                          className="text-neutral-500 hover:bg-rose-500/10 hover:text-rose-500 cursor-pointer h-7"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </ToolTip>
+                                    </ButtonGroup>
                                     <button
                                       type="button"
                                       onClick={() =>
                                         toggleSubjectInGroup(group, subject)
                                       }
-                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-rose-500/10 hover:text-rose-500 active:scale-95 cursor-pointer text-muted-foreground border-border"
+                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-rose-500/10 hover:text-rose-500 active:scale-95 cursor-pointer text-muted-foreground border-border h-7"
                                       title="Desvincular matéria"
                                     >
                                       <X className="w-3.5 h-3.5" />
@@ -591,17 +632,28 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditSubject(subject)}
-                      className={cn(
-                        "flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card text-xs font-bold transition-all hover:bg-accent/40 active:scale-95 cursor-pointer text-muted-foreground",
-                        theme.borderHover,
-                      )}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      Editar
-                    </button>
+                    <ButtonGroup className="bg-card rounded-md">
+                      <ToolTip content="Editar matéria">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => handleOpenEditSubject(subject)}
+                          className="text-neutral-500 hover:text-foreground cursor-pointer h-7"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                      </ToolTip>
+                      <ToolTip content="Excluir matéria">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => setDeleteConfirmSubject(subject)}
+                          className="text-neutral-500 hover:bg-rose-500/10 hover:text-rose-500 cursor-pointer h-7"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </ToolTip>
+                    </ButtonGroup>
                   </div>
                 </div>
               );
@@ -611,7 +663,7 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
       </div>
 
       {/* Modal Unificado de Edição de Matéria */}
-      {editingSubject && (
+      {editingSubject !== null && (
         <SubjectEditModal
           isOpen
           subjectName={editingSubject}
@@ -679,6 +731,31 @@ export function MateriasTab({ studySubjects, userId }: MateriasTabProps) {
           </div>
         </ConfirmModal>
       )}
+
+      {deleteConfirmSubject && (
+        <ConfirmModal
+          title="Excluir Matéria"
+          description={`Tem certeza de que deseja excluir permanentemente a matéria "${deleteConfirmSubject}"? Ela será desvinculada de grupos e configurações de cores, mas suas sessões de estudo e notas registradas serão mantidas.`}
+          confirmLabel="Excluir"
+          cancelLabel="Cancelar"
+          variant="danger"
+          onConfirm={async () => {
+            try {
+              await invoke("subjects_delete", {
+                userId,
+                name: deleteConfirmSubject,
+              });
+              toast.success("Matéria excluída com sucesso!");
+              await load();
+            } catch (err) {
+              toast.error(`Erro ao excluir matéria: ${err}`);
+            } finally {
+              setDeleteConfirmSubject(null);
+            }
+          }}
+          onCancel={() => setDeleteConfirmSubject(null)}
+        />
+      )}
     </div>
   );
 }
@@ -705,6 +782,7 @@ function GroupCreateModal({
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupColor, setGroupColor] = useState("emerald");
+  const [subjectSearch, setSubjectSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleToggleSubject = (subject: string) => {
@@ -714,6 +792,14 @@ function GroupCreateModal({
         : [...prev, subject],
     );
   };
+
+  const availableSubjects = useMemo(() => {
+    return allSubjects.filter(
+      (s) =>
+        !selected.includes(s) &&
+        s.toLowerCase().includes(subjectSearch.toLowerCase()),
+    );
+  }, [allSubjects, selected, subjectSearch]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -730,7 +816,7 @@ function GroupCreateModal({
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} size="md" zIndex="z-[60]">
+    <ModalShell isOpen={isOpen} onClose={onClose} size="xl" zIndex="z-[60]">
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
         <div>
           <h2 className="text-base font-bold text-foreground">
@@ -749,93 +835,161 @@ function GroupCreateModal({
         </button>
       </div>
 
-      <div className="p-6 overflow-y-auto max-h-[50vh] flex flex-col gap-4 custom-scrollbar">
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">
-            Nome do Grupo
-          </Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Engenharia, Humanas, Idiomas..."
-            className="bg-card border-border rounded-xl"
-            autoFocus
-          />
-        </div>
+      <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[350px]">
+          {/* Coluna da Esquerda: Configurações do Grupo e Pesquisa */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-bold text-muted-foreground">
+                Nome do Grupo
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Engenharia, Humanas, Idiomas..."
+                className="bg-card border-border rounded-xl"
+                autoFocus
+              />
+            </div>
 
-        {/* Seletor de Cores do Grupo */}
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">
-            Cor do Grupo
-          </Label>
-          <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
-            {SELECTABLE_COLORS.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setGroupColor(c.key)}
-                className={cn(
-                  "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
-                  groupColor === c.key
-                    ? "border-foreground scale-110"
-                    : "border-transparent",
-                )}
-                style={{ backgroundColor: c.hex }}
-                title={c.label}
-              >
-                {groupColor === c.key && (
-                  <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">
-            Vincular Matérias (Opcional)
-          </Label>
-          <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            {allSubjects.map((subject) => {
-              const isChecked = selected.includes(subject);
-              const hex = resolveColor(colorMap[subject] ?? "slate");
-              return (
-                <button
-                  key={subject}
-                  type="button"
-                  onClick={() => handleToggleSubject(subject)}
-                  className={cn(
-                    "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left",
-                    isChecked
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-foreground"
-                      : "bg-card border-border hover:bg-accent/45 text-muted-foreground",
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: hex }}
-                    />
-                    <span className="text-xs font-bold">{subject}</span>
-                  </div>
-                  <div
+            {/* Seletor de Cores do Grupo */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-bold text-muted-foreground">
+                Cor do Grupo
+              </Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
+                {SELECTABLE_COLORS.map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setGroupColor(c.key)}
                     className={cn(
-                      "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all",
-                      isChecked
-                        ? "bg-emerald-600 border-emerald-500"
-                        : "border-border",
+                      "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
+                      groupColor === c.key
+                        ? "border-foreground scale-110"
+                        : "border-transparent",
                     )}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.label}
                   >
-                    {isChecked && <Check className="w-3 h-3 text-white" />}
+                    {groupColor === c.key && (
+                      <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pesquisar e Adicionar Matérias */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-bold text-muted-foreground">
+                Adicionar Matérias
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={subjectSearch}
+                  onChange={(e) => setSubjectSearch(e.target.value)}
+                  placeholder="Pesquisar matéria..."
+                  className="bg-card border-border rounded-xl pl-9"
+                />
+                {subjectSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setSubjectSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Lista de resultados da busca */}
+              <div className="flex flex-col gap-1.5 mt-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                {availableSubjects.map((subject) => {
+                  const hex = resolveColor(colorMap[subject] ?? "slate");
+                  return (
+                    <button
+                      key={subject}
+                      type="button"
+                      onClick={() => {
+                        setSelected((prev) => [...prev, subject]);
+                        setSubjectSearch("");
+                      }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl border border-border bg-card hover:bg-accent/45 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: hex }}
+                        />
+                        <span className="text-xs font-bold">{subject}</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                        + Vincular
+                      </span>
+                    </button>
+                  );
+                })}
+                {availableSubjects.length === 0 && (
+                  <p className="text-xs text-muted-foreground/60 italic text-center py-4">
+                    {subjectSearch
+                      ? "Nenhuma matéria correspondente."
+                      : "Todas as matérias foram vinculadas ou digite para buscar."}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Coluna da Direita: Matérias Vinculadas */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs font-bold text-muted-foreground flex justify-between items-center">
+              <span>Matérias Vinculadas</span>
+              <span className="px-2 py-0.5 rounded-full bg-muted border border-border text-[10px] font-bold">
+                {selected.length}
+              </span>
+            </Label>
+            <div className="flex-1 max-h-[360px] overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card/25 p-3 flex flex-col gap-2 min-h-[250px]">
+              {selected.map((subject) => {
+                const hex = resolveColor(colorMap[subject] ?? "slate");
+                return (
+                  <div
+                    key={subject}
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-card text-foreground"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: hex }}
+                      />
+                      <span className="text-xs font-bold truncate">
+                        {subject}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSubject(subject)}
+                      className="p-1 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all cursor-pointer shrink-0"
+                      title="Desvincular matéria"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                </button>
-              );
-            })}
-            {allSubjects.length === 0 && (
-              <p className="text-xs text-muted-foreground italic text-center py-4">
-                Nenhuma matéria criada ainda.
-              </p>
-            )}
+                );
+              })}
+              {selected.length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                  <span className="text-xs font-bold text-muted-foreground">
+                    Nenhuma matéria vinculada
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/60 mt-1 leading-normal">
+                    Busque e selecione matérias na coluna da esquerda para
+                    adicioná-las a este grupo.
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -886,6 +1040,7 @@ function GroupEditModal({
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupColor, setGroupColor] = useState("emerald");
+  const [subjectSearch, setSubjectSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -904,6 +1059,14 @@ function GroupEditModal({
     );
   };
 
+  const availableSubjects = useMemo(() => {
+    return allSubjects.filter(
+      (s) =>
+        !selected.includes(s) &&
+        s.toLowerCase().includes(subjectSearch.toLowerCase()),
+    );
+  }, [allSubjects, selected, subjectSearch]);
+
   const handleSave = async () => {
     if (!name.trim()) {
       toast.error("O nome do grupo é obrigatório");
@@ -920,7 +1083,7 @@ function GroupEditModal({
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} size="md" zIndex="z-[60]">
+    <ModalShell isOpen={isOpen} onClose={onClose} size="xl" zIndex="z-[60]">
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
         <div>
           <h2 className="text-base font-bold text-foreground">Editar Grupo</h2>
@@ -937,92 +1100,161 @@ function GroupEditModal({
         </button>
       </div>
 
-      <div className="p-6 overflow-y-auto max-h-[50vh] flex flex-col gap-4 custom-scrollbar">
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">
-            Nome do Grupo
-          </Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-card border-border rounded-xl"
-            autoFocus
-          />
-        </div>
+      <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[350px]">
+          {/* Coluna da Esquerda: Configurações do Grupo e Pesquisa */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-bold text-muted-foreground">
+                Nome do Grupo
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Engenharia, Humanas, Idiomas..."
+                className="bg-card border-border rounded-xl"
+                autoFocus
+              />
+            </div>
 
-        {/* Seletor de Cores do Grupo */}
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">
-            Cor do Grupo
-          </Label>
-          <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
-            {SELECTABLE_COLORS.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setGroupColor(c.key)}
-                className={cn(
-                  "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
-                  groupColor === c.key
-                    ? "border-foreground scale-110"
-                    : "border-transparent",
-                )}
-                style={{ backgroundColor: c.hex }}
-                title={c.label}
-              >
-                {groupColor === c.key && (
-                  <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-bold text-muted-foreground">
-            Gerenciar Matérias Vinculadas
-          </Label>
-          <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            {allSubjects.map((subject) => {
-              const isChecked = selected.includes(subject);
-              const hex = resolveColor(colorMap[subject] ?? "slate");
-              return (
-                <button
-                  key={subject}
-                  type="button"
-                  onClick={() => handleToggleSubject(subject)}
-                  className={cn(
-                    "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left",
-                    isChecked
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-foreground"
-                      : "bg-card border-border hover:bg-accent/45 text-muted-foreground",
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: hex }}
-                    />
-                    <span className="text-xs font-bold">{subject}</span>
-                  </div>
-                  <div
+            {/* Seletor de Cores do Grupo */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-bold text-muted-foreground">
+                Cor do Grupo
+              </Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
+                {SELECTABLE_COLORS.map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setGroupColor(c.key)}
                     className={cn(
-                      "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all",
-                      isChecked
-                        ? "bg-emerald-600 border-emerald-500"
-                        : "border-border",
+                      "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
+                      groupColor === c.key
+                        ? "border-foreground scale-110"
+                        : "border-transparent",
                     )}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.label}
                   >
-                    {isChecked && <Check className="w-3.5 h-3.5 text-white" />}
+                    {groupColor === c.key && (
+                      <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pesquisar e Adicionar Matérias */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-bold text-muted-foreground">
+                Adicionar Matérias
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={subjectSearch}
+                  onChange={(e) => setSubjectSearch(e.target.value)}
+                  placeholder="Pesquisar matéria..."
+                  className="bg-card border-border rounded-xl pl-9"
+                />
+                {subjectSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setSubjectSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Lista de resultados da busca */}
+              <div className="flex flex-col gap-1.5 mt-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                {availableSubjects.map((subject) => {
+                  const hex = resolveColor(colorMap[subject] ?? "slate");
+                  return (
+                    <button
+                      key={subject}
+                      type="button"
+                      onClick={() => {
+                        setSelected((prev) => [...prev, subject]);
+                        setSubjectSearch("");
+                      }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl border border-border bg-card hover:bg-accent/45 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: hex }}
+                        />
+                        <span className="text-xs font-bold">{subject}</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                        + Vincular
+                      </span>
+                    </button>
+                  );
+                })}
+                {availableSubjects.length === 0 && (
+                  <p className="text-xs text-muted-foreground/60 italic text-center py-4">
+                    {subjectSearch
+                      ? "Nenhuma matéria correspondente."
+                      : "Todas as matérias foram vinculadas ou digite para buscar."}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Coluna da Direita: Matérias Vinculadas */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs font-bold text-muted-foreground flex justify-between items-center">
+              <span>Matérias Vinculadas</span>
+              <span className="px-2 py-0.5 rounded-full bg-muted border border-border text-[10px] font-bold">
+                {selected.length}
+              </span>
+            </Label>
+            <div className="flex-1 max-h-[360px] overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card/25 p-3 flex flex-col gap-2 min-h-[250px]">
+              {selected.map((subject) => {
+                const hex = resolveColor(colorMap[subject] ?? "slate");
+                return (
+                  <div
+                    key={subject}
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-card text-foreground"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: hex }}
+                      />
+                      <span className="text-xs font-bold truncate">
+                        {subject}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSubject(subject)}
+                      className="p-1 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all cursor-pointer shrink-0"
+                      title="Desvincular matéria"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                </button>
-              );
-            })}
-            {allSubjects.length === 0 && (
-              <p className="text-xs text-muted-foreground italic text-center py-4">
-                Nenhuma matéria disponível.
-              </p>
-            )}
+                );
+              })}
+              {selected.length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                  <span className="text-xs font-bold text-muted-foreground">
+                    Nenhuma matéria vinculada
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/60 mt-1 leading-normal">
+                    Busque e selecione matérias na coluna da esquerda para
+                    adicioná-las a este grupo.
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

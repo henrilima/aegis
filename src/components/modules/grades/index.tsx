@@ -2,7 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart2, BookOpen, Clock, Plus, X } from "lucide-react";
+import { BarChart2, BookOpen, Clock, HelpCircle, Plus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { SubjectEditModal } from "../studies/components/SubjectEditModal";
+import { GradesGuidePanel } from "./components/GradesInfoModal";
 import { GradeForm } from "./components/gradeForm";
 import { GradesHistory } from "./components/gradesHistory";
 import { GradesOverview } from "./components/gradesOverview";
@@ -36,6 +37,7 @@ const GRADES_TABS: {
 }[] = [
   { id: "visao-geral", label: "Visão Geral", icon: BarChart2 },
   { id: "historico", label: "Histórico", icon: Clock },
+  { id: "guia", label: "Guia", icon: HelpCircle },
 ];
 
 /**
@@ -224,6 +226,7 @@ export function GradesModal({
                   onDelete={setDeleteConfirm}
                 />
               )}
+              {tab === "guia" && <GradesGuidePanel />}
             </motion.div>
           </AnimatePresence>
         )}

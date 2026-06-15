@@ -124,15 +124,6 @@ export function HistoryTab({
               <motion.div
                 key={s.id}
                 variants={itemVariants}
-                whileHover={{
-                  y: -4,
-                  boxShadow: "0 12px 30px -10px rgba(0,0,0,0.15)",
-                }}
-                transition={{
-                  type: "spring" as const,
-                  stiffness: 300,
-                  damping: 20,
-                }}
                 className={cn(
                   "group bg-card/50 border border-border rounded-xl p-5 transition-all duration-300",
                   theme.borderHover,
