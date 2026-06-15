@@ -1297,6 +1297,12 @@ pub fn run() {
             studies::estudos_list_sessions, studies::estudos_upsert_goal, studies::estudos_list_goals, 
             studies::estudos_export_csv, studies::estudos_import_csv,
 
+            // Simulados & Notas
+            studies::grades_add, studies::grades_update, studies::grades_delete, studies::grades_list,
+            studies::subjects_upsert, studies::subjects_delete, studies::subjects_list, studies::subjects_rename,
+            studies::subject_groups_upsert, studies::subject_groups_delete, studies::subject_groups_list,
+            studies::subject_formulas_upsert, studies::subject_formulas_list,
+
             // Sleep
             sleep::sono_upsert_entry, sleep::sono_delete_entry, sleep::sono_list_entries, 
             sleep::sono_upsert_goal, sleep::sono_get_goal, sleep::sono_export_csv, sleep::sono_import_csv,

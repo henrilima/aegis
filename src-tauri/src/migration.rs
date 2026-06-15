@@ -48,6 +48,14 @@ pub struct UserFullBackup {
     pub flashcard_decks: Vec<crate::flashcards::FlashcardDeck>,
     #[serde(default)]
     pub flashcards: Vec<crate::flashcards::Flashcard>,
+    #[serde(default)]
+    pub study_grades: Vec<crate::studies::StudyGrade>,
+    #[serde(default)]
+    pub study_subjects: Vec<crate::studies::SubjectMeta>,
+    #[serde(default)]
+    pub study_subject_groups: Vec<crate::studies::SubjectGroup>,
+    #[serde(default)]
+    pub study_subject_formulas: Vec<crate::studies::SubjectFormula>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -132,6 +140,10 @@ pub async fn global_export_user_package(
             }
             cards
         },
+        study_grades: state.studies.list_grades(&user_id),
+        study_subjects: state.studies.list_subjects(&user_id),
+        study_subject_groups: state.studies.list_subject_groups(&user_id),
+        study_subject_formulas: state.studies.list_subject_formulas(&user_id),
     };
 
     let json = serde_json::to_vec(&backup).map_err(|e| e.to_string())?;
@@ -213,6 +225,10 @@ pub async fn global_export_raw_user_json(
             }
             cards
         },
+        study_grades: state.studies.list_grades(&user_id),
+        study_subjects: state.studies.list_subjects(&user_id),
+        study_subject_groups: state.studies.list_subject_groups(&user_id),
+        study_subject_formulas: state.studies.list_subject_formulas(&user_id),
     };
 
     // Serializa e gera o JSON formatado e legível
@@ -412,6 +428,27 @@ pub async fn global_import_raw_user_json(
         }
     }
 
+    for mut grade in backup.study_grades {
+        grade.user_id = target_user_id.clone();
+        grade.id = None;
+        let _ = state.studies.add_grade(grade);
+    }
+    for mut subj in backup.study_subjects {
+        subj.user_id = target_user_id.clone();
+        subj.id = None;
+        let _ = state.studies.upsert_subject(subj);
+    }
+    for mut group in backup.study_subject_groups {
+        group.user_id = target_user_id.clone();
+        group.id = None;
+        let _ = state.studies.upsert_subject_group(group);
+    }
+    for mut formula in backup.study_subject_formulas {
+        formula.user_id = target_user_id.clone();
+        formula.id = None;
+        let _ = state.studies.upsert_subject_formula(formula);
+    }
+
     Ok(())
 }
 
@@ -609,6 +646,27 @@ pub async fn global_import_user_package(
             card.deck_id = *new_deck_id;
             let _ = state.flashcards.add_card(card);
         }
+    }
+
+    for mut grade in backup.study_grades {
+        grade.user_id = target_user_id.clone();
+        grade.id = None;
+        let _ = state.studies.add_grade(grade);
+    }
+    for mut subj in backup.study_subjects {
+        subj.user_id = target_user_id.clone();
+        subj.id = None;
+        let _ = state.studies.upsert_subject(subj);
+    }
+    for mut group in backup.study_subject_groups {
+        group.user_id = target_user_id.clone();
+        group.id = None;
+        let _ = state.studies.upsert_subject_group(group);
+    }
+    for mut formula in backup.study_subject_formulas {
+        formula.user_id = target_user_id.clone();
+        formula.id = None;
+        let _ = state.studies.upsert_subject_formula(formula);
     }
 
     Ok(())

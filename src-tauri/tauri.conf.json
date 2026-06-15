@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",
@@ -31,13 +31,22 @@
       "csp": "default-src 'self'; connect-src 'self' https://api.github.com https://github.com https://*.githubusercontent.com https://brasilapi.com.br https://openlibrary.org https://www.googleapis.com https://books.googleapis.com https://discord.com https://*.discord.com https://ptb.discord.com https://api.themoviedb.org https://image.tmdb.org https://wttr.in https://geocoding-api.open-meteo.com https://api.dictionaryapi.dev https://translate.googleapis.com https://api.dicionario-aberto.net; img-src 'self' asset: http://asset.localhost data: https://covers.openlibrary.org https://*.openlibrary.org https://www.google.com https://is1-ssl.mzstatic.com https: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi", "deb", "rpm", "dmg", "app"],
+    "targets": [
+      "nsis",
+      "msi",
+      "deb",
+      "rpm",
+      "dmg",
+      "app"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -45,10 +54,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["../aegis.changelog", "../public/sounds/*"],
+    "resources": [
+      "../aegis.changelog",
+      "../public/sounds/*"
+    ],
     "windows": {
       "nsis": {
-        "languages": ["PortugueseBR"]
+        "languages": [
+          "PortugueseBR"
+        ]
       },
       "wix": {
         "language": "pt-BR"

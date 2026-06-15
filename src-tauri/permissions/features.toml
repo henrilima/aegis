@@ -86,7 +86,19 @@ commands.allow = [
     "estudos_upsert_goal",
     "estudos_list_goals",
     "estudos_export_csv",
-    "estudos_import_csv"
+    "estudos_import_csv",
+    "grades_add",
+    "grades_update",
+    "grades_delete",
+    "grades_list",
+    "subjects_upsert",
+    "subjects_delete",
+    "subjects_list",
+    "subject_groups_upsert",
+    "subject_groups_delete",
+    "subject_groups_list",
+    "subject_formulas_upsert",
+    "subject_formulas_list"
 ]
 
 [[permission]]

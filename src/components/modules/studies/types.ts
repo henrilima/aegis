@@ -46,7 +46,8 @@ export type TabId =
   | "historico"
   | "relatorio"
   | "heatmap"
-  | "guia";
+  | "guia"
+  | "materias";
 
 export interface StudyStats {
   hours: number;

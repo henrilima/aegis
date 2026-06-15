@@ -20,6 +20,7 @@ interface ConfirmModalProps {
   icon?: LucideIcon;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
 }
 
 const VARIANT_CONFIG: Record<
@@ -67,6 +68,7 @@ export function ConfirmModal({
   icon,
   onConfirm,
   onCancel,
+  children,
 }: ConfirmModalProps) {
   const cfg = VARIANT_CONFIG[variant];
   const Icon = icon ?? cfg.icon;
@@ -87,9 +89,11 @@ export function ConfirmModal({
         <h3 className="font-bold text-xl text-foreground mb-2 text-center">
           {title}
         </h3>
-        <p className="text-xs text-muted-foreground mb-8 font-medium leading-relaxed px-4 text-center">
+        <p className="text-xs text-muted-foreground mb-6 font-medium leading-relaxed px-4 text-center">
           {description}
         </p>
+
+        {children && <div className="w-full mb-6">{children}</div>}
 
         <div className="flex flex-col gap-2 w-full mt-auto">
           <button

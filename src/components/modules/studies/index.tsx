@@ -8,6 +8,7 @@ import {
   Flame,
   HelpCircle,
   LayoutDashboard,
+  Layers,
   Plus,
   Settings,
   X,
@@ -28,6 +29,8 @@ import { OverviewTab } from "./components/overviewTab";
 import { RelatorioTab } from "./components/reportTab";
 import { SessionModal } from "./components/studiesModals";
 import { StudiesHeatmap } from "./heatmap";
+import { GradesModal } from "../grades";
+import { MateriasTab } from "./components/materiasTab";
 import type { StudyGoal, StudySession, TabId } from "./types";
 import {
   computeStats,
@@ -56,6 +59,27 @@ export default function StudiesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState(1);
+  const [showGrades, setShowGrades] = useState(false);
+  const [subjectMetas, setSubjectMetas] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handleOpenGrades = () => setShowGrades(true);
+    const handleSidebarNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail === "studies") {
+        setShowGrades(false);
+        setTab("visao-geral");
+      }
+    };
+
+    window.addEventListener("open-grades-module", handleOpenGrades);
+    window.addEventListener("aegis-route-click", handleSidebarNavigate);
+
+    return () => {
+      window.removeEventListener("open-grades-module", handleOpenGrades);
+      window.removeEventListener("aegis-route-click", handleSidebarNavigate);
+    };
+  }, []);
 
   const uid = user ? String(user.id) : "";
 
@@ -69,6 +93,7 @@ export default function StudiesPage() {
           monthsBack: 5,
         }),
         invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
+        invoke<any[]>("subjects_list", { userId: uid }),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -79,6 +104,10 @@ export default function StudiesPage() {
 
       if (results[1].status === "fulfilled") {
         setGoals(results[1].value);
+      }
+
+      if (results[2].status === "fulfilled") {
+        setSubjectMetas(results[2].value);
       }
 
       const config = await invoke<{ weekStartDay: number }>(
@@ -178,8 +207,9 @@ export default function StudiesPage() {
   const existingSubjects = useMemo(() => {
     const set = new Set<string>();
     for (const s of sessions) set.add(s.subject);
+    for (const m of subjectMetas) set.add(m.name);
     return Array.from(set).sort();
-  }, [sessions]);
+  }, [sessions, subjectMetas]);
 
   const months = useMemo(() => {
     const set = new Set<string>();
@@ -216,11 +246,24 @@ export default function StudiesPage() {
 
   const STUDIES_TABS = [
     { id: "visao-geral", label: "Visão Geral", icon: LayoutDashboard },
+    { id: "materias", label: "Matérias", icon: Layers },
     { id: "historico", label: "Histórico", icon: Calendar },
     { id: "heatmap", label: "Constância", icon: Flame },
     { id: "relatorio", label: "Relatório", icon: Copy },
     { id: "guia", label: "Guia", icon: HelpCircle },
   ];
+
+  if (showGrades) {
+    return (
+      <GradesModal
+        existingSubjects={existingSubjects}
+        onClose={() => {
+          setShowGrades(false);
+          load();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 pb-10">
@@ -232,7 +275,7 @@ export default function StudiesPage() {
         tabs={STUDIES_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
-        integrations={["dictionary", "pomodoro"]}
+        integrations={["dictionary", "pomodoro", "grades"]}
         actions={[
           {
             id: "settings",
@@ -316,6 +359,12 @@ export default function StudiesPage() {
       )}
 
       {tab === "guia" && <StudyGuidePanel />}
+
+      {tab === "materias" && (
+        <MateriasTab studySubjects={existingSubjects} userId={uid} />
+      )}
+
+
 
       {/* Configurações e Metas */}
       {showSettings && (

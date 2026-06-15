@@ -300,7 +300,16 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                     <button
                       key={item.route}
                       type="button"
-                      onClick={() => navigate(item.route)}
+                      onClick={() => {
+                        navigate(item.route);
+                        if (typeof window !== "undefined") {
+                          window.dispatchEvent(
+                            new CustomEvent("sidebar-navigate", {
+                              detail: item.route,
+                            })
+                          );
+                        }
+                      }}
                       className={cn(
                         "relative flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-[10px] font-medium transition-colors duration-200 group cursor-pointer border select-none focus:outline-none z-10",
                         active
@@ -351,7 +360,16 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                   <button
                     key={item.route}
                     type="button"
-                    onClick={() => navigate(item.route)}
+                    onClick={() => {
+                      navigate(item.route);
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(
+                          new CustomEvent("sidebar-navigate", {
+                            detail: item.route,
+                          })
+                        );
+                      }
+                    }}
                     className={cn(
                       "relative flex items-center w-full text-left gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors duration-200 group cursor-pointer border select-none focus:outline-none z-10",
                       active

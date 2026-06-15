@@ -1,3 +1,19 @@
+# Aegis v3.1.0
+
+### Novidades
+- **Módulo Simulados & Notas**: Registro simplificado de avaliações acadêmicas, simulados e atividades. Suporta múltiplas formas de média: simples, ponderada, por meta (acúmulo de pontos) e o modelo UFPE.
+- **Gerenciamento de Matérias**: Nova aba dedicada no módulo de Estudos para gerenciar disciplinas. Permite criar grupos com cores personalizadas, renomear disciplinas e organizar as matérias de forma visual.
+- **Sincronização e Múltiplas Matérias Ativas**: Novo sistema para favoritar múltiplas matérias ativas ao mesmo tempo, gerando relatórios de metas e painéis de atenção consolidados.
+- **Navegação de Volta Inteligente e Contextual**: Roteamento em memória no React para retornar ao módulo de origem correto (ex: Pomodoro -> Estudos, Notas -> Estudos) de forma nativa e estável.
+
+### Correções e Estabilidade
+- **Animações de Acordeões Aninhados**: Correção de clipping e travamentos de animações do Framer Motion ao expandir accordions dentro de outros accordions na aba de Notas.
+- **Detecção de Notas Divididas pela Metade**: Opção para marcar avaliações em que a nota deve ser dividida pela metade no cálculo das médias das matérias.
+- **Comunicação Positiva de Rendimento**: Rótulo de status acadêmico atualizado de "Reprovado" para "Ainda não aprovado".
+- **Padronização dos Botões de Voltar**: Remoção de botões redundantes e fixação do botão de retorno no canto superior esquerdo para manter a consistência da UI do Aegis.
+
+---
+
 # Aegis v3.0.1
 
 ### Novidades

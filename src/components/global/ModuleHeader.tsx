@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, Book, type LucideIcon, Search, Timer } from "lucide-react";
+import { ArrowLeft, BarChart2, Book, type LucideIcon, Search, Timer } from "lucide-react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useNavigation } from "@/context/NavigationContext";
@@ -48,6 +48,7 @@ export interface ModuleHeaderProps {
   onSearchChange?: (v: string) => void;
   searchPlaceholder?: string;
   integrations?: string[];
+  onBack?: () => void;
 }
 
 interface Integration {
@@ -75,6 +76,17 @@ const integrationsData: Record<string, Integration> = {
     icon: Timer,
     action: () => changeModule("pomodoro"),
   },
+  grades: {
+    tooltip: "Simulados & Notas",
+    label: "Notas",
+    color: getModuleColor("grades"),
+    icon: BarChart2,
+    action: () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("open-grades-module"));
+      }
+    },
+  },
 };
 
 // Componente
@@ -91,10 +103,11 @@ export function ModuleHeader({
   onSearchChange,
   searchPlaceholder = "Pesquisar...",
   integrations,
+  onBack,
 }: ModuleHeaderProps) {
   const m = getColorTheme(color as string);
   const { appMode } = useTheme();
-  const { navigate } = useNavigation();
+  const { navigate, previousRoute } = useNavigation();
 
   const filteredActions = actions;
 
@@ -106,13 +119,21 @@ export function ModuleHeader({
       <div className="flex items-center justify-between flex-wrap gap-3">
         {/* Identidade do módulo */}
         <div className="flex items-center gap-3">
-          {appMode !== "default" && (
-            <ToolTip content="Voltar para o início">
+          {(appMode !== "default" || onBack) && (
+            <ToolTip content={onBack || previousRoute ? "Voltar" : "Voltar para o início"}>
               <button
                 type="button"
-                onClick={() => navigate("dashboard")}
+                onClick={() => {
+                  if (onBack) {
+                    onBack();
+                  } else if (previousRoute) {
+                    navigate(previousRoute);
+                  } else {
+                    navigate("dashboard");
+                  }
+                }}
                 className="p-2 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all cursor-pointer mr-1"
-                aria-label="Voltar para o início"
+                aria-label="Voltar"
               >
                 <ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
               </button>

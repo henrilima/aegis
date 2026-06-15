@@ -16,6 +16,13 @@ import { getModuleColor } from "@/modules.config";
 import type { StudySession } from "../types";
 import { formatHours, hitRate, parseDate } from "../utils";
 import { StudyStars } from "./studyStars";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Variantes de animação para entrada escalonada (staggered entrance)
 const containerVariants = {
@@ -79,26 +86,23 @@ export function HistoryTab({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        <div className="relative">
-          <select
-            className={cn(
-              "appearance-none bg-card border border-border rounded-xl pl-3 pr-8 py-2 text-foreground focus:outline-none transition-colors cursor-pointer",
-              theme.borderHover.replace("hover:", "focus:"),
-            )}
-            value={filterMonth}
-            onChange={(e) => onFilterMonthChange(e.target.value)}
-          >
-            <option value="all">Todos os meses</option>
-            {months.map((m) => (
-              <option key={m} value={m}>
-                {parseDate(`${m}-01`).toLocaleDateString("pt-BR", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600 pointer-events-none" />
+        <div>
+          <Select value={filterMonth} onValueChange={onFilterMonthChange}>
+            <SelectTrigger className="bg-card border-border rounded-xl h-9 text-xs min-w-[160px]">
+              <SelectValue placeholder="Todos os meses" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="all" className="text-xs">Todos os meses</SelectItem>
+              {months.map((m) => (
+                <SelectItem key={m} value={m} className="text-xs">
+                  {parseDate(`${m}-01`).toLocaleDateString("pt-BR", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

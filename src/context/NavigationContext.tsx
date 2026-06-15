@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useMemo,
 } from "react";
 
 export type AppRoute =
@@ -58,8 +59,11 @@ function getInitialRoute(): AppRoute {
   return parsePathname(window.location.pathname);
 }
 
+const SUB_MODULES = new Set<AppRoute>(["pomodoro", "dictionary"]);
+
 interface NavigationContextType {
   route: AppRoute;
+  previousRoute: AppRoute | null;
   navigate: (route: AppRoute) => void;
   isSettingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
@@ -71,21 +75,53 @@ const NavigationContext = createContext<NavigationContextType | undefined>(
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const [route, setRoute] = useState<AppRoute>(getInitialRoute);
+  const [backTarget, setBackTarget] = useState<AppRoute | null>(null);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
+
+  const previousRoute = useMemo(() => {
+    if (route === "dashboard") return null;
+    return backTarget || "dashboard";
+  }, [route, backTarget]);
 
   const navigate = useCallback((newRoute: AppRoute) => {
     if (!VALID_ROUTES.has(newRoute)) return;
+    
+    setBackTarget(() => {
+      if (newRoute === "dashboard") {
+        return null;
+      }
+      if (SUB_MODULES.has(newRoute)) {
+        return route;
+      }
+      return "dashboard";
+    });
+
     const url =
       newRoute === "dashboard" ? "/dashboard" : `/dashboard/${newRoute}`;
     try {
       window.history.pushState(null, "", url);
     } catch {}
+    
     setRoute(newRoute);
-  }, []);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("aegis-route-click", { detail: newRoute })
+      );
+    }
+  }, [route]);
 
   useEffect(() => {
     const handlePop = () => {
-      setRoute(parsePathname(window.location.pathname));
+      const nextRoute = parsePathname(window.location.pathname);
+      setRoute(nextRoute);
+      if (nextRoute === "dashboard") {
+        setBackTarget(null);
+      } else if (SUB_MODULES.has(nextRoute)) {
+        setBackTarget((prev) => (prev === nextRoute ? "dashboard" : prev));
+      } else {
+        setBackTarget("dashboard");
+      }
     };
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
@@ -121,7 +157,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
   return (
     <NavigationContext.Provider
-      value={{ route, navigate, isSettingsOpen, setSettingsOpen }}
+      value={{ route, previousRoute, navigate, isSettingsOpen, setSettingsOpen }}
     >
       {children}
     </NavigationContext.Provider>

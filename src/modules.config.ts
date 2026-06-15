@@ -57,6 +57,11 @@ export const MODULE_CONFIGS = {
     label: "Estudos",
     color: "violet",
   },
+  grades: {
+    route: "grades",
+    label: "Simulados & Notas",
+    color: "emerald",
+  },
   reading: {
     route: "reading",
     label: "Leitura",
@@ -115,6 +120,8 @@ export const PORTAL_DESCRIPTIONS: Record<string, string> = {
   notes: "Editor pessoal de anotações com suporte nativo a Markdown.",
   studies:
     "Controle do tempo de estudo por matéria, progresso e metas semanais.",
+  grades:
+    "Registro de notas e simulados com cálculo de médias e status de aprovação por matéria.",
   reading: "Acompanhamento de hábitos de leitura, páginas lidas e progresso.",
   dictionary: "Glossário e dicionário bilíngue pessoal de termos e idiomas.",
   movies: "Acervo cinematográfico pessoal integrado com busca automática TMDb.",
