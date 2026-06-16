@@ -30,7 +30,7 @@ export function avgSimples(grades: StudyGrade[]): number {
   if (grades.length === 0) return 0;
   const sum = grades.reduce((a, g) => {
     const val = g.halfGrade ? g.grade / 2 : g.grade;
-    return a + (val / g.maxGrade) * 10;
+    return a + val;
   }, 0);
   return Math.round((sum / grades.length) * 100) / 100;
 }
@@ -42,7 +42,7 @@ export function avgPonderada(grades: StudyGrade[]): number {
   if (totalWeight === 0) return 0;
   const sum = grades.reduce((a, g) => {
     const val = g.halfGrade ? g.grade / 2 : g.grade;
-    return a + (val / g.maxGrade) * 10 * g.weight;
+    return a + val * g.weight;
   }, 0);
   return Math.round((sum / totalWeight) * 100) / 100;
 }
@@ -148,14 +148,13 @@ export function calcMetaNota(
   const isMeta = formula.formulaType === "meta";
   const currentSum = grades.reduce((a, g) => {
     const val = g.halfGrade ? g.grade / 2 : g.grade;
-    return a + (isMeta ? val : (val / g.maxGrade) * 10);
+    return a + val;
   }, 0);
   // Nota necessária nas restantes
   const needed = isMeta
     ? (passingGrade - currentSum) / remaining
     : (passingGrade * totalAvaliacoes - currentSum) / remaining;
   if (needed <= 0) return 0; // Já aprovado
-  if (!isMeta && needed > 10) return null; // Impossível
   return Math.round(needed * 10) / 10;
 }
 

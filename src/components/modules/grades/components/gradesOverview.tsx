@@ -345,7 +345,7 @@ export function GradesOverview({
       if (formulaType === "simples") {
         const currentSum = subjectGrades.reduce((a, g) => {
           const val = g.halfGrade ? g.grade / 2 : g.grade;
-          return a + (val / g.maxGrade) * 10;
+          return a + val;
         }, 0);
 
         const hasFinal = subjectGrades.some((g) => {
@@ -395,7 +395,7 @@ export function GradesOverview({
       if (formulaType === "ponderada") {
         const currentSumWeighted = subjectGrades.reduce((a, g) => {
           const val = g.halfGrade ? g.grade / 2 : g.grade;
-          return a + (val / g.maxGrade) * 10 * g.weight;
+          return a + val * g.weight;
         }, 0);
         const currentWeight = subjectGrades.reduce((a, g) => a + g.weight, 0);
 
@@ -855,7 +855,7 @@ export function GradesOverview({
                         </span>
                       ) : (
                         <span>
-                          Nota necessária na próxima avaliação:{" "}
+                          Nota necessária para atingir a média:{" "}
                           <span className="font-bold text-foreground">
                             {fmtGrade(report.needed)}
                           </span>
