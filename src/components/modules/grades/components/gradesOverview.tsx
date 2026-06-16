@@ -855,7 +855,7 @@ export function GradesOverview({
                         </span>
                       ) : (
                         <span>
-                          Nota necessária na próxima prova:{" "}
+                          Nota necessária na próxima avaliação:{" "}
                           <span className="font-bold text-foreground">
                             {fmtGrade(report.needed)}
                           </span>
