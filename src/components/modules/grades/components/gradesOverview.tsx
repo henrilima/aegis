@@ -347,15 +347,48 @@ export function GradesOverview({
           const val = g.halfGrade ? g.grade / 2 : g.grade;
           return a + (val / g.maxGrade) * 10;
         }, 0);
-        const needed = passing * (n + 1) - currentSum;
+
+        const hasFinal = subjectGrades.some((g) => {
+          const t = (g.title ?? "").toLowerCase();
+          return (
+            t.includes("final") ||
+            t.includes("recupera") ||
+            t.includes("rec") ||
+            t.includes("exame")
+          );
+        });
+
+        const hasSemesterAverage = subjectGrades.some((g) => {
+          const t = (g.title ?? "").toLowerCase();
+          return t.includes("média") || t.includes("media");
+        });
+
+        let needed = null;
+        let passingTarget = passing;
+        let neededAvgVal = Math.max(0, passing - currentAvg);
+        let isApprovedVal = false;
+
+        if (hasSemesterAverage) {
+          passingTarget = 5.0;
+          neededAvgVal = Math.max(0, 5.0 - currentAvg);
+          if (hasFinal) {
+            isApprovedVal = currentAvg >= 5.0;
+            needed = null;
+          } else {
+            needed = 10.0 - currentAvg;
+          }
+        } else {
+          needed = passing * (n + 1) - currentSum;
+        }
+
         return {
           subject: sub,
           formulaType,
           currentAvg,
-          passing,
-          isApproved: false,
-          neededAvg: Math.max(0, passing - currentAvg),
-          needed: needed <= 0 ? 0 : needed,
+          passing: passingTarget,
+          isApproved: isApprovedVal,
+          neededAvg: neededAvgVal,
+          needed: needed === null ? null : needed <= 0 ? 0 : needed,
         };
       }
 
@@ -365,18 +398,51 @@ export function GradesOverview({
           return a + (val / g.maxGrade) * 10 * g.weight;
         }, 0);
         const currentWeight = subjectGrades.reduce((a, g) => a + g.weight, 0);
-        const nextWeight = 1.0; // Assume peso padrão 1.0
-        const needed =
-          (passing * (currentWeight + nextWeight) - currentSumWeighted) /
-          nextWeight;
+
+        const hasFinal = subjectGrades.some((g) => {
+          const t = (g.title ?? "").toLowerCase();
+          return (
+            t.includes("final") ||
+            t.includes("recupera") ||
+            t.includes("rec") ||
+            t.includes("exame")
+          );
+        });
+
+        const hasSemesterAverage = subjectGrades.some((g) => {
+          const t = (g.title ?? "").toLowerCase();
+          return t.includes("média") || t.includes("media");
+        });
+
+        let needed = null;
+        let passingTarget = passing;
+        let neededAvgVal = Math.max(0, passing - currentAvg);
+        let isApprovedVal = false;
+
+        if (hasSemesterAverage) {
+          passingTarget = 5.0;
+          neededAvgVal = Math.max(0, 5.0 - currentAvg);
+          if (hasFinal) {
+            isApprovedVal = currentAvg >= 5.0;
+            needed = null;
+          } else {
+            needed = 10.0 - currentAvg;
+          }
+        } else {
+          const nextWeight = 1.0;
+          needed =
+            (passing * (currentWeight + nextWeight) - currentSumWeighted) /
+            nextWeight;
+        }
+
         return {
           subject: sub,
           formulaType,
           currentAvg,
-          passing,
-          isApproved: false,
-          neededAvg: Math.max(0, passing - currentAvg),
-          needed: needed <= 0 ? 0 : needed,
+          passing: passingTarget,
+          isApproved: isApprovedVal,
+          neededAvg: neededAvgVal,
+          needed: needed === null ? null : needed <= 0 ? 0 : needed,
         };
       }
 
