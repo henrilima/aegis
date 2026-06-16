@@ -1,4 +1,4 @@
-[version]:["3.1.0"]
+[version]:["3.3.0"]
 
 [passwords]("Atualizado")
 [1]:["Armazene credenciais de forma segura em um cofre criptografado localmente utilizando chaves AES-256-GCM robustas e integradas ao Tauri."]

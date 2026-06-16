@@ -1,4 +1,4 @@
-# Aegis v3.1.0
+# Aegis v3.3.0
 
 ### Novidades
 
