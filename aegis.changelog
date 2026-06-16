@@ -1,4 +1,4 @@
-[version]:["3.1.0"]
+[version]:["3.3.0"]
 [updates]
 [1]:["Módulo Simulados e Notas: Registro simplificado de avaliações acadêmicas, simulados e atividades. Suporta múltiplas formas de média: simples, ponderada, por meta ou personalizada."]
 [2]:["Gerenciamento de Matérias: Nova aba dedicada no módulo de Estudos para gerenciar disciplinas, permitindo criar grupos com cores customizadas, renomear disciplinas e organizar matérias de forma visual."]

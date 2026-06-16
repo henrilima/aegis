@@ -330,27 +330,6 @@ export function BackupTab() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-300">
-      {/* Header Padronizado */}
-      <section className="flex items-center gap-4">
-        <div
-          className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center",
-            themeStyles.bg,
-          )}
-        >
-          <HardDriveDownload className={cn("w-6 h-6", themeStyles.text)} />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">
-            Cópias de segurança
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Crie backups, exporte perfis ou agende cópias automáticas dos seus
-            dados.
-          </p>
-        </div>
-      </section>
-
       {/* Guia de Formatos de Backup */}
       <section className="space-y-3">
         <div className="flex items-center gap-2 px-1">

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { useModules } from "@/context/ModuleContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { changeModule, cn, getColorTheme, toHoverClass } from "@/lib/utils";
@@ -115,6 +116,7 @@ export function ModuleHeader({
   const m = getColorTheme(color as string);
   const { appMode } = useTheme();
   const { navigate, previousRoute } = useNavigation();
+  const { isModuleEnabled } = useModules();
 
   const filteredActions = actions;
 
@@ -169,6 +171,14 @@ export function ModuleHeader({
           {integrations && (
             <div className="flex gap-2 flex-wrap">
               {integrations.map((integrationId) => {
+                if (
+                  (integrationId === "dictionary" ||
+                    integrationId === "pomodoro") &&
+                  !isModuleEnabled(integrationId)
+                ) {
+                  return null;
+                }
+
                 const integration = integrationsData[integrationId];
                 if (!integration) return null;
 

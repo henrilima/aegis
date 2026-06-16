@@ -7,7 +7,10 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
+import { useEffect } from "react";
+import { Kbd } from "@/components/ui/kbd";
 import { ModalShell } from "@/components/ui/ModalShell";
+import { cn } from "@/lib/utils";
 
 export type ConfirmVariant = "danger" | "warning" | "default";
 
@@ -73,6 +76,23 @@ export function ConfirmModal({
   const cfg = VARIANT_CONFIG[variant];
   const Icon = icon ?? cfg.icon;
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onConfirm();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onConfirm, onCancel]);
+
   return (
     <ModalShell onClose={onCancel} size="xs" zIndex="z-[999]">
       <div
@@ -99,16 +119,25 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onConfirm}
-            className={`w-full py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] ${cfg.btnClass}`}
+            className={cn(
+              "w-full py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2",
+              cfg.btnClass,
+            )}
           >
-            {confirmLabel}
+            <span>{confirmLabel}</span>
+            <Kbd className="bg-white/15 text-white border-white/20 text-[9px]">
+              Enter
+            </Kbd>
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="w-full py-2 text-muted-foreground hover:text-muted-foreground text-sm font-medium transition-all cursor-pointer"
+            className="w-full py-2 text-muted-foreground hover:text-muted-foreground text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2"
           >
-            {cancelLabel}
+            <span>{cancelLabel}</span>
+            <Kbd className="bg-muted/40 text-muted-foreground border-border text-[9px]">
+              Esc
+            </Kbd>
           </button>
         </div>
       </div>

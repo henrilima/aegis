@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Info,
   Moon,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
@@ -118,10 +117,6 @@ export function PeriodOverview({
             <p className="text-xs text-muted-foreground mt-1">
               Totais consolidados e destaques dos ultimos {days} dias.
             </p>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-muted-foreground border border-border rounded-lg px-3 py-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Sintese
           </div>
         </div>
 

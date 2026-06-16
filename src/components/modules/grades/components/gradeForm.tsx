@@ -335,8 +335,11 @@ export function GradeForm({
                 Dividir nota pela metade?
               </span>
               <span className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                Se ativado, esta nota será dividida por 2 no cálculo das médias
-                (ex: 8.0 vira 4.0).
+                Deve ser ativado quando o cálculo que algumas escolas utilizam
+                é: Somar a nota da prova (0-10) com o total de pontos acumulados
+                nas atividades (0-10) e dividir o resultado final por 2. Ex:
+                (Soma das Atividades + AV1) / 2. Para isso, o modo de cálculo da
+                matéria tem que ser "Meta de nota".
               </span>
             </div>
             <Switch

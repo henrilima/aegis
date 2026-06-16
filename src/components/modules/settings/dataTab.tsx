@@ -8,7 +8,6 @@ import {
   BookOpen,
   Brain,
   Cpu,
-  Database,
   DownloadCloud,
   Film,
   HardDrive,
@@ -245,27 +244,6 @@ export function DataTab() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-300">
-      {/* Header Padronizado */}
-      <section className="flex items-center gap-4">
-        <div
-          className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10",
-            themeStyles.text,
-          )}
-        >
-          <Database className="w-6 h-6" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">
-            Gerenciamento de Dados
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Configure o local físico de armazenamento do seu perfil e gerencie a
-            integridade do banco de dados.
-          </p>
-        </div>
-      </section>
-
       {/* Localização dos Dados */}
       <section className="space-y-3">
         <h3 className="text-xs font-semibold text-muted-foreground px-1">

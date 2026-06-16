@@ -16,6 +16,7 @@ import { GradesGuidePanel } from "./components/GradesInfoModal";
 import { GradeForm } from "./components/gradeForm";
 import { GradesHistory } from "./components/gradesHistory";
 import { GradesOverview } from "./components/gradesOverview";
+import { GradesSubjects } from "./components/gradesSubjects";
 import type {
   GradesTabId,
   StudyGrade,
@@ -38,6 +39,7 @@ const GRADES_TABS: {
   icon: typeof BarChart2;
 }[] = [
   { id: "visao-geral", label: "Visão Geral", icon: BarChart2 },
+  { id: "materias", label: "Matérias", icon: BookOpen },
   { id: "historico", label: "Histórico", icon: Clock },
   { id: "guia", label: "Guia", icon: HelpCircle },
 ];
@@ -158,7 +160,7 @@ export function GradesModal({
     : undefined;
 
   return (
-    <div className="w-full flex flex-col gap-6 pb-10 animate-in fade-in duration-300">
+    <div className="w-full flex flex-col gap-4 pb-2 animate-in fade-in duration-300">
       <ModuleHeader
         color={getModuleColor("grades")}
         title="Simulados & Notas"
@@ -184,7 +186,7 @@ export function GradesModal({
       />
 
       {/* Conteúdo */}
-      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div
@@ -208,6 +210,14 @@ export function GradesModal({
             >
               {tab === "visao-geral" && (
                 <GradesOverview
+                  grades={grades}
+                  formulas={formulas}
+                  allSubjects={allSubjects}
+                  userId={uid}
+                />
+              )}
+              {tab === "materias" && (
+                <GradesSubjects
                   grades={grades}
                   formulas={formulas}
                   groups={groups}

@@ -168,7 +168,6 @@ export function OverviewTab({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Hero Section: Global Performance */}
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl border border-border bg-card/40 backdrop-blur-xl p-8 flex flex-col md:flex-row items-center gap-8",
@@ -259,7 +258,6 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* Stat Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((c) => (
           <div
@@ -298,7 +296,6 @@ export function OverviewTab({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Progress Section */}
         <div className="lg:col-span-2 flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -359,9 +356,7 @@ export function OverviewTab({
           </div>
         </div>
 
-        {/* Right Column (Grades stats + Top Subjects) */}
         <div className="flex flex-col gap-6 lg:col-span-1">
-          {/* Card de Notas & Simulados */}
           <button
             type="button"
             onClick={onOpenGrades}
@@ -420,7 +415,6 @@ export function OverviewTab({
             )}
           </button>
 
-          {/* Top Subjects Section */}
           <div className="flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6 w-full">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className={cn("w-4 h-4", theme.text)} />

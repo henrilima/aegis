@@ -96,7 +96,7 @@ export default function DashboardClient() {
           key={route}
           initial={{ opacity: 0, y: 10, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.985, filter: "blur(8px)" }}
+          exit={{ opacity: 0, y: -10, scale: 0.985 }}
           transition={{
             duration: 0.35,
             ease: [0.33, 1, 0.68, 1],

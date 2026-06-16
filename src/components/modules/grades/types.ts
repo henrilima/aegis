@@ -47,7 +47,7 @@ export interface SubjectFormula {
   customFormula?: string;
 }
 
-export type GradesTabId = "visao-geral" | "historico" | "guia";
+export type GradesTabId = "visao-geral" | "materias" | "historico" | "guia";
 
 export const GRADE_TYPE_LABELS: Record<StudyGrade["gradeType"], string> = {
   prova: "Prova",

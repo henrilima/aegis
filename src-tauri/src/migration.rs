@@ -239,6 +239,16 @@ pub async fn global_export_raw_user_json(
     std::fs::write(&path, json_string)
         .map_err(|e| format!("Falha ao salvar o arquivo físico de backup: {}", e))?;
 
+    // Rotação de backups automáticos: mantém apenas as 2 cópias mais recentes do usuário
+    if let Some(filename) = std::path::Path::new(&path).file_name().and_then(|n| n.to_str()) {
+        if filename.starts_with("aegis_auto_backup_") && filename.len() > 16 {
+            if let Some(parent) = std::path::Path::new(&path).parent() {
+                let prefix = &filename[..filename.len() - 15];
+                rotate_auto_backups(parent, prefix, 2);
+            }
+        }
+    }
+
     // Adiciona uma notificação in-app sobre a conclusão do backup
     let filename = std::path::Path::new(&path)
         .file_name()
@@ -827,3 +837,96 @@ fn collect_notes_recursive(
         }
     }
 }
+
+fn rotate_auto_backups(dir: &std::path::Path, prefix: &str, limit: usize) {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        let mut backup_files = Vec::new();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    if filename.starts_with(prefix) && filename.ends_with(".json") {
+                        backup_files.push(path);
+                    }
+                }
+            }
+        }
+
+        // Ordenação alfabética natural (uma vez que os nomes contêm data YYYY-MM-DD no final,
+        // a ordenação alfabética colocará os arquivos mais antigos primeiro).
+        backup_files.sort();
+
+        if backup_files.len() > limit {
+            let to_remove = backup_files.len() - limit;
+            for file_path in backup_files.iter().take(to_remove) {
+                let _ = std::fs::remove_file(file_path);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_rotate_auto_backups() {
+        let temp_dir = std::env::temp_dir().join("aegis_test_backup_rotation");
+        let _ = fs::create_dir_all(&temp_dir);
+
+        // Limpa arquivos anteriores se existirem
+        if let Ok(entries) = fs::read_dir(&temp_dir) {
+            for entry in entries.flatten() {
+                let _ = fs::remove_file(entry.path());
+            }
+        }
+
+        // Criar arquivos de backup simulados (do mais antigo para o mais novo)
+        let files = vec![
+            "aegis_auto_backup_user1_2026-06-10.json",
+            "aegis_auto_backup_user1_2026-06-11.json",
+            "aegis_auto_backup_user1_2026-06-12.json",
+            "aegis_auto_backup_user1_2026-06-13.json",
+            // Um arquivo de outro usuário que não deve ser apagado
+            "aegis_auto_backup_user2_2026-06-10.json",
+            // Um arquivo que não é backup automático e não deve ser apagado
+            "aegis_manual_backup_user1_2026-06-10.json",
+        ];
+
+        for filename in &files {
+            let file_path = temp_dir.join(filename);
+            let _ = fs::write(&file_path, "{}");
+        }
+
+        // Executar a rotação mantendo o limite de 2 para o user1
+        rotate_auto_backups(&temp_dir, "aegis_auto_backup_user1_", 2);
+
+        // Verificar quais arquivos sobraram na pasta
+        let mut remaining = Vec::new();
+        if let Ok(entries) = fs::read_dir(&temp_dir) {
+            for entry in entries.flatten() {
+                if let Some(name) = entry.file_name().to_str() {
+                    remaining.push(name.to_string());
+                }
+            }
+        }
+        remaining.sort();
+
+        // Esperamos que restem apenas os dois mais recentes do user1: 2026-06-12.json e 2026-06-13.json
+        // e os outros arquivos intactos (do user2 e o manual)
+        assert!(remaining.contains(&"aegis_auto_backup_user1_2026-06-12.json".to_string()));
+        assert!(remaining.contains(&"aegis_auto_backup_user1_2026-06-13.json".to_string()));
+        assert!(remaining.contains(&"aegis_auto_backup_user2_2026-06-10.json".to_string()));
+        assert!(remaining.contains(&"aegis_manual_backup_user1_2026-06-10.json".to_string()));
+
+        // Os antigos do user1 devem ter sido apagados
+        assert!(!remaining.contains(&"aegis_auto_backup_user1_2026-06-10.json".to_string()));
+        assert!(!remaining.contains(&"aegis_auto_backup_user1_2026-06-11.json".to_string()));
+
+        // Limpa a pasta temporária
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+}
+
+

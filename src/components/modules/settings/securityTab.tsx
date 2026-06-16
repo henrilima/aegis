@@ -150,24 +150,6 @@ export function SecurityTab() {
 
   return (
     <div className="w-full space-y-10 animate-in fade-in duration-500">
-      {/* Header Padronizado */}
-      <section className="flex items-center gap-5">
-        <div
-          className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center",
-            theme.bg,
-          )}
-        >
-          <ShieldCheck className={cn("w-7 h-7", theme.text)} />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-foreground">Segurança</h2>
-          <p className="text-sm text-muted-foreground">
-            Proteja sua conta e isole seus dados sensíveis.
-          </p>
-        </div>
-      </section>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Senha da Conta */}
         <section className="space-y-4">

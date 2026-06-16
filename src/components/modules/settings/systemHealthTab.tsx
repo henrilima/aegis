@@ -2,7 +2,6 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import {
-  Activity,
   BellRing,
   CheckCircle2,
   Database,
@@ -149,22 +148,8 @@ export function SystemHealthTab() {
   };
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-500">
-      <section className="flex items-center justify-between gap-5">
-        <div className="flex items-center gap-5 min-w-0">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-red-500/10">
-            <Activity className="w-7 h-7 text-red-500" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-2xl font-black text-foreground">
-              Saúde do Sistema
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Diagnóstico técnico de notificações, áudio, dados locais e
-              runtime.
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-end">
         <Button
           type="button"
           variant="outline"
@@ -178,7 +163,7 @@ export function SystemHealthTab() {
           />
           Revalidar
         </Button>
-      </section>
+      </div>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <StatusPanel

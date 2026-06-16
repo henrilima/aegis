@@ -1,11 +1,11 @@
-[version]:["3.0.0"]
+[version]:["3.1.0"]
 
 [passwords]("Atualizado")
 [1]:["Armazene credenciais de forma segura em um cofre criptografado localmente utilizando chaves AES-256-GCM robustas e integradas ao Tauri."]
 [2]:["Organize suas senhas em categorias personalizáveis (ex: Trabalho, Pessoal, Finanças) e realize buscas rápidas em tempo real por título, usuário ou URL."]
 [3]:["Gere senhas fortes de forma integrada com controle completo sobre comprimento, inclusão de números, símbolos e letras maiúsculas/minúsculas."]
 [4]:["Exporte e importe suas senhas em formato CSV para compatibilidade universal com gerenciadores de credenciais externos."]
-[5]:["Realize backups automáticos seguros e criptografados em arquivos locais protegidos, incluindo opção para cópias do cofre formatadas em JSON."]
+[5]:["Realize backups automáticos locais do progresso e dados com rotação inteligente integrada (mantendo no máximo as últimas 2 cópias por usuário)."]
 
 [tasks]("Atualizado")
 [1]:["Gerencie listas de afazeres com suporte a títulos, descrições detalhadas, prioridades alta/média/baixa e datas de vencimento."]
@@ -26,11 +26,13 @@
 [3]:["Pesquise notas instantaneamente usando filtros de busca por texto livre, nomes de arquivos ou tags inseridas no cabeçalho."]
 [4]:["Adicione prefixos identificadores automatizados para controle de ordenação e segurança contra conflitos de gravação."]
 
-[studies]
+[studies]("Atualizado")
 [1]:["Monitore o tempo dedicado de estudo para cada disciplina ou matéria através de um cronômetro e timer de estudos nativo."]
 [2]:["Defina metas de estudos semanais ou diárias por disciplina, visualizando barras de progresso que indicam o cumprimento em tempo real."]
-[3]:["Registre sessões de estudo manuais no histórico detalhado, especificando data, matéria estudada e anotações resumidas de progresso."]
-[4]:["Visualize estatísticas consolidadas de horas dedicadas aos estudos na Dashboard através de gráficos de linhas e resumos de tempo."]
+[3]:["Registre avaliações acadêmicas, simulados e notas de matérias com suporte a médias simples, ponderadas, por meta ou personalizadas."]
+[4]:["Gerencie disciplinas de forma visual em grupos com cores customizadas, suporte a renomeação e organização dedicada no painel de estudos."]
+[5]:["Registre sessões de estudo manuais no histórico detalhado, especificando data, matéria estudada e anotações resumidas de progresso."]
+[6]:["Visualize estatísticas consolidadas de horas dedicadas aos estudos na Dashboard através de gráficos de linhas e resumos de tempo."]
 
 [reading]
 [1]:["Gerencie uma estante virtual com livros físicos e digitais que você está lendo, quer ler ou já concluiu com sucesso."]
@@ -75,7 +77,7 @@
 [4]:["Visualize os próximos horários de disparo calculados em tempo real diretamente na lista e no widget interativo de alarmes do painel."]
 
 [statistics]("Atualizado")
-[1]:["Analise seu rendimento geral através de um painel integrado com relatórios visuais densos de estudos, tarefas, sono e leitura."]
+[1]:["Analise seu rendimento geral através de um painel integrado com relatórios visuais densos de estudos, tarefas, sono, leitura e notas acadêmicas."]
 [2]:["Visualize seu engajamento histórico através de um mapa térmico temporal de atividades (heatmap de consistência de hábitos) que usa a largura completa do monitor."]
 [3]:["Aproveite tooltips informativos e descrições detalhadas que explicam de forma clara como as métricas são calculadas e o que elas significam."]
 [4]:["Filtre estatísticas por períodos dinâmicos e compare métricas para otimizar suas metas de hábitos e produtividade pessoal."]

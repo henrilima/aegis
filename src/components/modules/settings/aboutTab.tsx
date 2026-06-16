@@ -18,16 +18,6 @@ export function AboutTab() {
 
   return (
     <div className="space-y-10 w-full animate-in fade-in duration-500">
-      {/* Cabeçalho */}
-      <section className="space-y-2">
-        <h3 className="text-3xl font-black text-foreground">
-          Sobre o {APP_CONFIG.name}
-        </h3>
-        <p className="text-muted-foreground font-medium">
-          Criado com foco em produtividade, privacidade e elegância.
-        </p>
-      </section>
-
       {/* Grid de Informações da Versão */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AboutCard

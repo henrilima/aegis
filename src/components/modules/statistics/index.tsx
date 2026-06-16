@@ -7,6 +7,7 @@ import {
   BookOpen,
   Brain,
   Gauge,
+  HelpCircle,
   Moon,
   Target,
   Zap,
@@ -151,9 +152,9 @@ export default function StatisticsPage() {
         subtitle="Leitura cruzada de estudo, sono, foco e leitura"
         icon={BarChart3}
         tabs={[
-          { id: "overview", label: "Visão geral" },
-          { id: "comparison", label: "Comparativo" },
-          { id: "guide", label: "Guia" },
+          { id: "overview", label: "Visão geral", icon: BarChart3 },
+          { id: "comparison", label: "Comparativo", icon: Activity },
+          { id: "guide", label: "Guia", icon: HelpCircle },
         ]}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as typeof activeTab)}

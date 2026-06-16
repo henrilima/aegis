@@ -2,7 +2,7 @@
 
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { Image, Layout, Palette, RefreshCw, Upload } from "lucide-react";
+import { Image, Layout, RefreshCw, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { ThemeColorKey } from "@/colors.config";
 import { ColorPicker } from "@/components/global/ColorPicker";
@@ -93,24 +93,6 @@ export function ThemesTab() {
 
   return (
     <div className="w-full space-y-10 animate-in fade-in duration-500">
-      {/* Cabeçalho Principal */}
-      <div className="flex items-center gap-5">
-        <div
-          className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300",
-            themeStyles.bg,
-          )}
-        >
-          <Palette className={cn("w-7 h-7", themeStyles.text)} />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-foreground">Aparência</h2>
-          <p className="text-sm text-muted-foreground">
-            Escolha e personalize o estilo base do seu sistema.
-          </p>
-        </div>
-      </div>
-
       {/* Seção de Temas */}
       <section className="space-y-5">
         <div className="flex flex-col">
@@ -312,13 +294,13 @@ export function ThemesTab() {
             <div className="flex items-center gap-4 text-left">
               <div
                 className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center border border-border/30 shrink-0 overflow-hidden bg-background",
+                  "w-20 h-20 rounded-2xl flex items-center justify-center border border-border/30 shrink-0 overflow-hidden bg-background shadow-sm",
                 )}
               >
                 {customIconUrl ? (
                   <img
                     src={customIconUrl}
-                    className="w-10 h-10 object-contain"
+                    className="w-full h-full object-cover"
                     alt="Ícone Atual"
                   />
                 ) : (
@@ -328,7 +310,7 @@ export function ThemesTab() {
                       themeStyles.bg,
                     )}
                   >
-                    <Image className={cn("w-6 h-6", themeStyles.text)} />
+                    <Image className={cn("w-8 h-8", themeStyles.text)} />
                   </div>
                 )}
               </div>

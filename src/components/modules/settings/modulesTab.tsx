@@ -9,7 +9,6 @@ import {
   CalendarDays,
   FileText,
   Film,
-  LayoutGrid,
   ListTodo,
   Lock,
   type LucideIcon,
@@ -134,24 +133,6 @@ export function ModulesTab() {
 
   return (
     <div className="w-full space-y-10 animate-in fade-in duration-500">
-      {/* Header Padronizado */}
-      <section className="flex items-center gap-5">
-        <div
-          className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center",
-            themeStyles.bg,
-          )}
-        >
-          <LayoutGrid className={cn("w-7 h-7", themeStyles.text)} />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-foreground">Módulos</h2>
-          <p className="text-sm text-muted-foreground">
-            Personalize as ferramentas ativas no seu workspace.
-          </p>
-        </div>
-      </section>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {MODULE_DEFS.map((mod) => {
           const enabled = isModuleEnabled(mod.id);

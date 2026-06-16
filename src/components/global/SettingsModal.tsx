@@ -19,8 +19,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import type React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -92,6 +91,87 @@ const GROUPS: { label: string; items: SettingsItem[] }[] = [
 ];
 
 type SettingsTabId = string | "telemetry";
+
+// Metadados unificados para os cabeçalhos das abas
+const TAB_DEFS: Record<
+  string,
+  {
+    title: string;
+    description: string;
+    iconBg?: string;
+    iconColor?: string;
+  }
+> = {
+  profile: {
+    title: "Perfil",
+    description:
+      "Gerencie suas informações de perfil, avatar e credenciais locais.",
+  },
+  notifications: {
+    title: "Notificações",
+    description: "Gerencie como o Aegis se comunica com você.",
+  },
+  security: {
+    title: "Segurança",
+    description: "Proteja sua conta e isole seus dados sensíveis.",
+  },
+  data: {
+    title: "Gerenciamento de Dados",
+    description:
+      "Configure o local físico de armazenamento do seu perfil e gerencie a integridade do banco de dados.",
+    iconBg: "bg-primary/10",
+  },
+  backup: {
+    title: "Cópias de segurança",
+    description:
+      "Crie backups, exporte perfis ou agende cópias automáticas dos seus dados.",
+  },
+  themes: {
+    title: "Aparência",
+    description: "Escolha e personalize o estilo base do seu sistema.",
+  },
+  system: {
+    title: "Geral",
+    description:
+      "Ajuste o comportamento do sistema, zoom do aplicativo e integrações com o SO.",
+  },
+  modules: {
+    title: "Módulos",
+    description: "Personalize as ferramentas ativas no seu workspace.",
+  },
+  integrations: {
+    title: "Integrações",
+    description: "Conecte serviços externos para enriquecer seus dados.",
+  },
+  developer: {
+    title: "Área Restrita",
+    description: "Ferramentas avançadas para diagnóstico e comandos internos.",
+    iconBg: "bg-red-500/10",
+    iconColor: "text-red-500",
+  },
+  "system-health": {
+    title: "Saúde do Sistema",
+    description:
+      "Diagnóstico técnico de notificações, áudio, dados locais e runtime.",
+    iconBg: "bg-red-500/10",
+    iconColor: "text-red-500",
+  },
+  about: {
+    title: "Sobre o Aegis",
+    description: "Criado com foco em produtividade, privacidade e elegância.",
+  },
+  danger: {
+    title: "Zona de Perigo",
+    description:
+      "Ações irreversíveis que afetam sua conta e seus dados permanentemente.",
+    iconBg: "bg-red-500/10",
+    iconColor: "text-red-500",
+  },
+  telemetry: {
+    title: "Telemetria",
+    description: "Logs e telemetria em tempo real do sistema.",
+  },
+};
 
 export function SettingsModal() {
   const { isSettingsOpen, setSettingsOpen } = useNavigation();
@@ -348,23 +428,31 @@ export function SettingsModal() {
                 >
                   <Menu className="w-5 h-5" />
                 </button>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   {activeItem && (
                     <div
                       className={cn(
-                        "hidden sm:flex w-8 h-8 rounded-xl items-center justify-center",
-                        themeStyles.bg,
+                        "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300",
+                        TAB_DEFS[activeTab]?.iconBg || themeStyles.bg,
                       )}
                     >
-                      <activeItem.icon
-                        className={cn("w-4 h-4", themeStyles.text)}
-                      />
+                      {React.createElement(activeItem.icon, {
+                        className: cn(
+                          "w-6 h-6 sm:w-7 sm:h-7",
+                          TAB_DEFS[activeTab]?.iconColor || themeStyles.text,
+                        ),
+                      })}
                     </div>
                   )}
                   <div className="flex flex-col">
-                    <h3 className="text-lg md:text-xl font-bold text-foreground">
-                      {activeItem?.label}
+                    <h3 className="text-xl md:text-2xl font-black text-foreground leading-tight">
+                      {TAB_DEFS[activeTab]?.title || activeItem?.label}
                     </h3>
+                    {TAB_DEFS[activeTab]?.description && (
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-medium leading-normal">
+                        {TAB_DEFS[activeTab].description}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

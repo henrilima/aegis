@@ -9,7 +9,6 @@ import {
   Film,
   Key,
   Loader2,
-  Puzzle,
   RefreshCw,
   Trash2,
   TriangleAlert,
@@ -119,24 +118,6 @@ export function IntegrationsTab() {
 
   return (
     <div className="w-full space-y-10 animate-in fade-in duration-500">
-      {/* Header Padronizado */}
-      <section className="flex items-center gap-5">
-        <div
-          className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center",
-            themeStyles.bg,
-          )}
-        >
-          <Puzzle className={cn("w-7 h-7", themeStyles.text)} />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-foreground">Integrações</h2>
-          <p className="text-sm text-muted-foreground">
-            Conecte serviços externos para enriquecer seus dados.
-          </p>
-        </div>
-      </section>
-
       {/* TMDb Card */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         {/* Card header */}

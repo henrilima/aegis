@@ -1,9 +1,8 @@
 "use client";
 
-import { Cpu, ShieldAlert, Terminal } from "lucide-react";
+import { Cpu, Terminal } from "lucide-react";
 import * as React from "react";
 import { Kbd } from "@/components/ui/kbd";
-import { cn } from "@/lib/utils";
 import { TelemetryTab } from "./telemetryTab";
 
 interface DeveloperTabProps {
@@ -15,23 +14,6 @@ export function DeveloperTab({ handleInternalCommand }: DeveloperTabProps) {
 
   return (
     <div className="w-full space-y-10 animate-in fade-in duration-500">
-      {/* Header Padronizado */}
-      <section className="flex items-center gap-5">
-        <div
-          className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center bg-red-500/10",
-          )}
-        >
-          <ShieldAlert className="w-7 h-7 text-red-500" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-foreground">Desenvolvedor</h2>
-          <p className="text-sm text-muted-foreground">
-            Ferramentas avançadas para diagnóstico e comandos internos.
-          </p>
-        </div>
-      </section>
-
       <div className="grid grid-cols-1 gap-8">
         {/* Comandos Internos */}
         <section className="p-6 bg-card border border-border rounded-2xl space-y-4">
