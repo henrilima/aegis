@@ -71,7 +71,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bundle-${{ matrix.artifact }}-${{ runner.arch }}
-          path: src-tauri/target/release/bundle/**/*
+          path: |
+            src-tauri/target/release/bundle/**/*
+            !src-tauri/target/release/bundle/**/*.app
+            !src-tauri/target/release/bundle/**/*.app/**/*
           if-no-files-found: error
 
   release:
