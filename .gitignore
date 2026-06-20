@@ -45,7 +45,7 @@ next-env.d.ts
 
 # Local files
 todo.md
-scripts/
+/scripts/
 passwords.db
 config.db
 *.db

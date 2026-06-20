@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aegis",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "identifier": "com.aegis.system",
   "build": {
     "frontendDist": "../out",
@@ -39,9 +39,11 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": [
       "nsis",
       "msi",
+      "appimage",
       "deb",
       "rpm",
       "dmg",

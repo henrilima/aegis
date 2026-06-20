@@ -714,6 +714,38 @@ pub fn get_notes_path(app_handle: &AppHandle) -> PathBuf {
     let db_dir = db_path.parent().expect("Failed to get db parent dir");
     let target_notes_dir = db_dir.join("notes");
 
+    // Auto-migration from legacy executable-relative directory to target_notes_dir
+    let current_exe = std::env::current_exe().unwrap_or_default();
+    let current_dir = std::env::current_dir().unwrap_or_default();
+    let path_str = current_exe.to_string_lossy();
+    let base_dir = if path_str.contains("target/debug")
+        || path_str.contains("target/release")
+        || path_str.contains("target\\debug")
+        || path_str.contains("target\\release")
+    {
+        current_dir
+    } else {
+        current_exe.parent().unwrap_or(&current_dir).to_path_buf()
+    };
+    let legacy_notes_dir = base_dir.join("notes");
+
+    if legacy_notes_dir.exists() && legacy_notes_dir != target_notes_dir {
+        let is_target_empty = if target_notes_dir.exists() {
+            if let Ok(mut entries) = std::fs::read_dir(&target_notes_dir) {
+                entries.next().is_none()
+            } else {
+                true
+            }
+        } else {
+            true
+        };
+
+        if is_target_empty {
+            let _ = std::fs::create_dir_all(&target_notes_dir);
+            let _ = copy_notes_recursive(&legacy_notes_dir, &target_notes_dir);
+        }
+    }
+
     // Auto-migration: if we are using a custom data dir, and the target notes directory
     // is empty or does not exist, but the default notes directory has notes, copy them.
     if let Ok(default_dir) = app_handle.path().app_data_dir() {

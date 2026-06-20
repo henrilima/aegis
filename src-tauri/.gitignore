@@ -3,3 +3,4 @@
 /target/
 /target_temp/
 /gen/schemas
+/tauri.local.conf.json

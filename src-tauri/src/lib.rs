@@ -856,11 +856,8 @@ pub fn run() {
                 let config = state.config.get_config();
                 
                 if config.minimize_on_close {
-                    #[cfg(not(target_os = "macos"))]
-                    {
-                        let _ = window.hide();
-                        api.prevent_close();
-                    }
+                    let _ = window.hide();
+                    api.prevent_close();
                 }
             }
         })

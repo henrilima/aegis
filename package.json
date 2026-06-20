@@ -1,6 +1,6 @@
 {
   "name": "aegis",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,6 +9,7 @@
     "bump": "node scripts/bump-version.js",
     "lint": "npx @biomejs/biome check --write . --unsafe",
     "tauri:build:linux": "npx tauri build --bundles deb rpm",
+    "tauri:build:local": "npx tauri build --config src-tauri/tauri.local.conf.json",
     "icon": "npx tauri icon ./src/icon.png",
     "tauri": "tauri"
   },
