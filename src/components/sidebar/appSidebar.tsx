@@ -20,8 +20,13 @@ import {
   Moon,
   Settings,
   Shield,
+  Trophy,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import type { UserProgressState } from "@/components/modules/achievements/types";
+import type { AppConfig } from "@/components/modules/settings/useSettingsLogic";
+import { AvatarRankWrapper } from "@/components/ui/AvatarRankWrapper";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { type ModuleId, useModules } from "@/context/ModuleContext";
@@ -30,7 +35,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAvatar } from "@/hooks/useAvatar";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useUpdate } from "@/hooks/useUpdate";
-import { cn, getColorTheme } from "@/lib/utils";
+import { cn, formatDateLocal, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 export const NAV_GROUPS = [
@@ -119,6 +124,11 @@ export const NAV_GROUPS = [
     compact: false,
     items: [
       {
+        title: "Conquistas",
+        route: "achievements" as AppRoute,
+        icon: Trophy,
+      },
+      {
         title: "Estatísticas",
         route: "statistics" as AppRoute,
         icon: BarChart3,
@@ -150,6 +160,79 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { isModuleEnabled } = useModules();
 
+  const [level, setLevel] = useState<number>(1);
+  const [selectedTitle, setSelectedTitle] = useState<string>("");
+  const [showSidebarRankBorder, setShowSidebarRankBorder] = useState(true);
+
+  const prevLevelRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const loadRankAndConfig = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const now = new Date();
+        const todayStr = formatDateLocal(now);
+        const threeDaysAgo = new Date(now);
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const threeDaysAgoStr = formatDateLocal(threeDaysAgo);
+
+        const progressState = await invoke<UserProgressState>(
+          "achievements_get_user_state",
+          {
+            userId: user.id,
+            today: todayStr,
+            threeDaysAgo: threeDaysAgoStr,
+          },
+        );
+        if (progressState && typeof progressState.level === "number") {
+          if (
+            prevLevelRef.current !== null &&
+            progressState.level > prevLevelRef.current
+          ) {
+            window.dispatchEvent(
+              new CustomEvent("aegis-level-up", {
+                detail: { level: progressState.level },
+              }),
+            );
+            const win = window as unknown as {
+              aegisTriggerLevelUp?: (lvl: number) => void;
+            };
+            if (typeof window !== "undefined" && win.aegisTriggerLevelUp) {
+              win.aegisTriggerLevelUp(progressState.level);
+            }
+          }
+          prevLevelRef.current = progressState.level;
+          setLevel(progressState.level);
+        }
+
+        const config = await invoke<AppConfig>("global_get_app_config");
+        if (config && typeof config.selectedRankTitle === "string") {
+          setSelectedTitle(config.selectedRankTitle);
+        }
+        if (config && typeof config.showSidebarRankBorder === "boolean") {
+          setShowSidebarRankBorder(config.showSidebarRankBorder);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar nível/título da sidebar:", err);
+      }
+    };
+
+    loadRankAndConfig();
+
+    window.addEventListener("aegis-achievements-refresh", loadRankAndConfig);
+    window.addEventListener("aegis-config-changed", loadRankAndConfig);
+
+    return () => {
+      window.removeEventListener(
+        "aegis-achievements-refresh",
+        loadRankAndConfig,
+      );
+      window.removeEventListener("aegis-config-changed", loadRankAndConfig);
+    };
+  }, [user?.id]);
+
   const handleToggle = () => {
     window.dispatchEvent(new Event("toggle-sidebar"));
   };
@@ -157,6 +240,41 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
   const isActive = (r: AppRoute) => route === r;
 
   const [mounted, setMounted] = useState(false);
+  const [_clickCount, setClickCount] = useState(0);
+
+  const handleVersionClick = () => {
+    setClickCount((prev) => {
+      const next = prev + 1;
+      if (next === 5) {
+        import("@tauri-apps/api/core").then(({ invoke }) => {
+          invoke<[boolean, number, number, number]>("achievements_unlock", {
+            userId: user?.id || "",
+            achievementId: "easter_egg_version",
+            xpAward: 150,
+            unlockedAt: new Date().toISOString(),
+          })
+            .then((res) => {
+              const unlocked = res[0];
+              if (unlocked) {
+                toast.success(
+                  "Conquista Desbloqueada: Curioso das Versões! (+150 XP)",
+                  {
+                    description:
+                      "Você clicou 5 vezes seguidas na versão do app!",
+                    icon: "🏆",
+                    duration: 5000,
+                  },
+                );
+                window.dispatchEvent(new Event("aegis-achievements-refresh"));
+              }
+            })
+            .catch(console.error);
+        });
+        return 0;
+      }
+      return next;
+    });
+  };
 
   const { avatarSrc } = useAvatar(user?.id);
 
@@ -187,34 +305,49 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
     <aside
       inert={!isOpen || undefined}
       className={cn(
-        "fixed inset-y-0 left-0 z-20 flex h-full w-72 flex-col bg-background border-r border-border/70 transition-transform duration-300 ease-in-out",
+        "fixed inset-y-0 left-0 z-20 flex h-full w-72 flex-col bg-sidebar border-r border-sidebar-border backdrop-blur-md transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >
       <SidebarTrigger isOpen={isOpen} onToggle={handleToggle} />
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70">
-        <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold overflow-hidden ${themeStyles.bg} border ${themeStyles.border} ${themeStyles.text}`}
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
+        <AvatarRankWrapper
+          level={level}
+          rounded="xl"
+          size="sm"
+          badgePosition="bottom-right"
+          showBorder={showSidebarRankBorder}
+          className="shrink-0"
         >
-          {avatarSrc ? (
-            <img
-              src={avatarSrc}
-              alt="Foto de perfil"
-              width={36}
-              height={36}
-              loading="lazy"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            (user?.username?.[0] ?? "A").toUpperCase()
-          )}
-        </div>
+          <div
+            className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold overflow-hidden ${themeStyles.bg} ${themeStyles.text}`}
+          >
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt="Foto de perfil"
+                width={36}
+                height={36}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              (user?.username?.[0] ?? "A").toUpperCase()
+            )}
+          </div>
+        </AvatarRankWrapper>
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate leading-none">
             {user?.username ?? "Usuário"}
           </p>
-          {user?.email ? (
+          {selectedTitle &&
+          selectedTitle !== "Sem Título" &&
+          selectedTitle !== "Sem título" ? (
+            <p className="text-[11px] font-semibold text-primary truncate mt-0.5">
+              {selectedTitle}
+            </p>
+          ) : user?.email ? (
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">
               {user.email}
             </p>
@@ -435,7 +568,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
         ))}
       </nav>
 
-      <div className="px-4 py-3 border-t border-border/50 flex items-center justify-between gap-2">
+      <div className="px-4 py-3 border-t border-sidebar-border flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div
             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${themeStyles.bg} border ${themeStyles.border}`}
@@ -445,7 +578,11 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
               strokeWidth={2.5}
             />
           </div>
-          <span className="text-[11px] text-neutral-600 font-medium">
+          <button
+            type="button"
+            onClick={handleVersionClick}
+            className="text-[11px] text-neutral-600 font-medium cursor-pointer select-none hover:text-foreground transition-colors bg-transparent border-none p-0 m-0"
+          >
             {updateAvailable ? (
               <div
                 className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${themeStyles.border} ${themeStyles.bg} bg-opacity-50`}
@@ -462,7 +599,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
             ) : (
               "Aegis - Proteção Local"
             )}
-          </span>
+          </button>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">

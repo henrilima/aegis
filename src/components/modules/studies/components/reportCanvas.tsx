@@ -68,7 +68,7 @@ export function ReportCanvas({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Dark semi-transparent overlay to reduce background contrast
+      // Overlay escuro semi-transparente para reduzir o contraste do fundo
       ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 

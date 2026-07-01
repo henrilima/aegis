@@ -25,7 +25,8 @@ export type AppRoute =
   | "dictionary"
   | "tasks"
   | "movies"
-  | "flashcards";
+  | "flashcards"
+  | "achievements";
 
 const VALID_ROUTES = new Set<AppRoute>([
   "dashboard",
@@ -43,6 +44,7 @@ const VALID_ROUTES = new Set<AppRoute>([
   "tasks",
   "movies",
   "flashcards",
+  "achievements",
 ]);
 
 function parsePathname(raw: string): AppRoute {

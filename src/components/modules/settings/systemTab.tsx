@@ -1,4 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { fetch } from "@tauri-apps/plugin-http";
 import {
   Cloud,
   Fullscreen,

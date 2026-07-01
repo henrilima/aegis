@@ -12,16 +12,30 @@ import {
   type LucideIcon,
   ShieldCheck,
   Trash2,
+  Trophy,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { APP_CONFIG } from "@/app.config";
 import { HEX_COLORS } from "@/colors.config";
+import { AvatarRankWrapper } from "@/components/ui/AvatarRankWrapper";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { getRankForLevel } from "@/config/achievements.config";
+import { RANK_BORDERS, RANK_TITLES } from "@/config/ranks.config";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAvatar } from "@/hooks/useAvatar";
-import { cn } from "@/lib/utils";
+import { cn, formatDateLocal } from "@/lib/utils";
+import type { UserProgressState } from "../achievements/types";
+import { useSettingsLogic } from "./useSettingsLogic";
 
 // Protocolo de segurança (conforme definido no sistema de recuperação)
 const MASTER_ENTRIES = [
@@ -59,6 +73,44 @@ export function ProfileTab({
     pickAvatar,
     removeAvatar,
   } = useAvatar(user?.id);
+
+  const {
+    selectedRankTitle,
+    showProfileRankBorder,
+    showSidebarRankBorder,
+    updateConfigField,
+    isConfigLoading,
+  } = useSettingsLogic();
+  const [level, setLevel] = useState<number>(1);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const loadLevel = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const now = new Date();
+        const todayStr = formatDateLocal(now);
+        const threeDaysAgo = new Date(now);
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const threeDaysAgoStr = formatDateLocal(threeDaysAgo);
+
+        const progressState = await invoke<UserProgressState>(
+          "achievements_get_user_state",
+          {
+            userId: user.id,
+            today: todayStr,
+            threeDaysAgo: threeDaysAgoStr,
+          },
+        );
+        if (progressState && typeof progressState.level === "number") {
+          setLevel(progressState.level);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar nível no profileTab:", err);
+      }
+    };
+    loadLevel();
+  }, [user?.id]);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(initialUsername);
@@ -124,30 +176,33 @@ export function ProfileTab({
 
         {/* Avatar redondo destacado e centralizado */}
         <div className="relative group/avatar mb-6">
-          {/* Glow traseiro do avatar sutil */}
-          <div
-            className="absolute inset-0 rounded-full opacity-25 blur-md scale-95 transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:opacity-40"
-            style={{ backgroundColor: hexColor }}
-          />
-          <div
-            className={cn(
-              "w-32 h-32 rounded-full flex items-center justify-center text-5xl font-black text-accent-foreground overflow-hidden border border-white/10 dark:border-white/5 bg-background shadow-2xl relative z-10 transition-transform duration-300 group-hover/avatar:scale-[1.02]",
-              !avatarSrc && theme.solid,
-            )}
+          <AvatarRankWrapper
+            level={level}
+            rounded="full"
+            size="lg"
+            showBorder={showProfileRankBorder}
+            className="relative z-10"
           >
-            {avatarSrc ? (
-              <img
-                src={avatarSrc}
-                alt="Foto de perfil"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              initialUsername[0]?.toUpperCase()
-            )}
-          </div>
+            <div
+              className={cn(
+                "w-32 h-32 rounded-full flex items-center justify-center text-5xl font-black text-accent-foreground overflow-hidden border border-white/10 dark:border-white/5 bg-background relative",
+                !avatarSrc && theme.solid,
+              )}
+            >
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="Foto de perfil"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initialUsername[0]?.toUpperCase()
+              )}
+            </div>
+          </AvatarRankWrapper>
 
           {/* Controles de Avatar (no canto inferior direito do círculo) */}
-          <div className="absolute bottom-0 right-0 flex gap-1.5 z-20">
+          <div className="absolute bottom-0 right-0 flex gap-1.5 z-20 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300">
             <button
               type="button"
               onClick={pickAvatar}
@@ -223,6 +278,24 @@ export function ProfileTab({
               </button>
             </div>
           )}
+          {/* Badges de Rank e Título */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+            <span
+              className={cn(
+                "px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
+                getRankForLevel(level).color,
+              )}
+            >
+              Rank {getRankForLevel(level).name}
+            </span>
+            {selectedRankTitle &&
+              selectedRankTitle !== "Sem Título" &&
+              selectedRankTitle !== "Sem título" && (
+                <p className="text-xs font-semibold text-primary tracking-wide px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                  {selectedRankTitle}
+                </p>
+              )}
+          </div>
           <p className="text-muted-foreground font-medium text-sm sm:text-base">
             {email}
           </p>
@@ -237,6 +310,164 @@ export function ProfileTab({
             <Calendar className="w-3.5 h-3.5" />
             Criado em {formattedDate}
           </span>
+        </div>
+      </section>
+
+      {/* Sistema de rank global */}
+      <section
+        className="p-6 bg-linear-to-b from-white/[0.07] to-white/1 dark:from-white/5 dark:to-white/0.5 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-2xl flex flex-col gap-5 relative overflow-hidden transition-all duration-300 hover:border-white/20 dark:hover:border-white/10"
+        style={{
+          backgroundImage: `radial-gradient(circle at 95% 50%, ${hexColor}15, transparent 40%)`,
+        }}
+      >
+        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
+
+        <div className="flex items-center gap-3">
+          <Trophy className="w-5 h-5 text-yellow-500" />
+          <div className="text-left">
+            <h3 className="text-sm font-bold text-foreground">
+              Sistema de rank global
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Escolha o seu título desbloqueado por nível e confira seu rank
+              atual.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="space-y-2 text-left">
+            <label
+              htmlFor="rank-title-select"
+              className="text-[11px] font-semibold text-muted-foreground block"
+            >
+              Título de rank selecionado
+            </label>
+            <Select
+              value={selectedRankTitle || "none"}
+              onValueChange={(val) =>
+                updateConfigField(
+                  "selectedRankTitle",
+                  val === "none" ? "" : val,
+                )
+              }
+              disabled={isConfigLoading}
+            >
+              <SelectTrigger
+                id="rank-title-select"
+                className="bg-card border-border rounded-xl h-10 text-xs w-full min-w-[220px]"
+              >
+                <SelectValue placeholder="Sem Título" />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                className="bg-card border-border max-h-60 overflow-y-auto min-w-[--radix-select-trigger-width]"
+              >
+                {RANK_TITLES.map((t) => {
+                  const isUnlocked = level >= t.minLevel;
+                  const label =
+                    t.title === "Sem Título" ? (
+                      "Sem Título"
+                    ) : isUnlocked ? (
+                      t.title
+                    ) : (
+                      <span>
+                        {t.title}{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (desbloqueia no nível{" "}
+                          <span className="font-bold text-foreground">
+                            {t.minLevel}
+                          </span>
+                          )
+                        </span>
+                      </span>
+                    );
+                  return (
+                    <SelectItem
+                      key={t.title}
+                      value={t.title === "Sem Título" ? "none" : t.title}
+                      disabled={!isUnlocked}
+                      className="text-xs"
+                    >
+                      {label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Novos títulos são desbloqueados a cada 5 níveis. Seu nível atual é{" "}
+              {level}.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5 w-full">
+            {/* Joia/Pedra do Rank dentro de um círculo cinza claro */}
+            <div className="w-[24px] h-[24px] rounded-full bg-[#e7e7e7] flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.15)] border border-black/5">
+              <span
+                className={cn(
+                  "w-[15px] h-[15px] block transition-all duration-300",
+                  RANK_BORDERS[getRankForLevel(level).name]?.gemColor,
+                )}
+                style={{
+                  clipPath:
+                    RANK_BORDERS[getRankForLevel(level).name]?.clipPath ||
+                    "circle(50% at 50% 50%)",
+                }}
+              />
+            </div>
+            <div className="text-left space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground block">
+                Rank atual
+              </span>
+              <p className="text-sm font-bold text-foreground">
+                {getRankForLevel(level).name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {getRankForLevel(level).description}
+              </p>
+            </div>
+          </div>
+
+          {/* Toggles de visibilidade da borda de rank */}
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-center justify-between bg-white/5 px-4 py-3 rounded-xl border border-white/5">
+              <div className="text-left">
+                <p className="text-xs font-medium text-foreground">
+                  Borda de rank no perfil
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Exibir a borda colorida do rank na foto de perfil
+                </p>
+              </div>
+              <Switch
+                id="show-profile-rank-border"
+                checked={showProfileRankBorder ?? true}
+                onCheckedChange={(v) =>
+                  updateConfigField("showProfileRankBorder", v)
+                }
+                disabled={isConfigLoading}
+              />
+            </div>
+            <div className="flex items-center justify-between bg-white/5 px-4 py-3 rounded-xl border border-white/5">
+              <div className="text-left">
+                <p className="text-xs font-medium text-foreground">
+                  Borda de rank na sidebar
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Exibir a borda colorida do rank no avatar da barra lateral
+                </p>
+              </div>
+              <Switch
+                id="show-sidebar-rank-border"
+                checked={showSidebarRankBorder ?? true}
+                onCheckedChange={(v) =>
+                  updateConfigField("showSidebarRankBorder", v)
+                }
+                disabled={isConfigLoading}
+              />
+            </div>
+          </div>
         </div>
       </section>
 

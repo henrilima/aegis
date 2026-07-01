@@ -786,7 +786,18 @@ pub async fn estudos_add_session(
     state: tauri::State<'_, crate::AppState>,
     session: StudySession,
 ) -> Result<i64, String> {
-    state.studies.add_session(session)
+    let res = state.studies.add_session(session.clone());
+    if let Ok(inserted_id) = res {
+        let xp_to_add = 10 + (session.hours * 15.0) as i32;
+        state.stats.add_xp_with_source_and_ref(
+            &session.user_id,
+            xp_to_add,
+            "Sessão de Estudos",
+            Some("study_sessions"),
+            Some(&inserted_id.to_string()),
+        );
+    }
+    res
 }
 
 #[tauri::command]
@@ -803,7 +814,11 @@ pub async fn estudos_delete_session(
     id: i64,
     user_id: String,
 ) -> Result<(), String> {
-    state.studies.delete_session(id, &user_id)
+    let result = state.studies.delete_session(id, &user_id);
+    if result.is_ok() {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "study_sessions", &id.to_string());
+    }
+    result
 }
 
 #[tauri::command]

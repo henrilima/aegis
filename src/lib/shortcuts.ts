@@ -69,6 +69,12 @@ export const shortcuts: ShortcutConfig = {
       },
       description: "Reportar bug / Sugestões (Feedback)",
     },
+    "ctrl+shift+d": {
+      action: () => {
+        window.dispatchEvent(new Event("open-whats-new"));
+      },
+      description: "Abrir novidades da versão (O que há de novo?)",
+    },
     "alt+shift+d": {
       action: ({ navigate }) => navigate("dictionary"),
       description: "Abrir módulo Dicionário",

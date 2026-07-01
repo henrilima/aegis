@@ -1,8 +1,8 @@
 /** * Configurações estáticas do projeto Aegis. */
 export const APP_CONFIG = {
   name: "Aegis",
-  version: "3.3.1",
-  codename: "prisma",
+  version: "3.5.0",
+  codename: "chroma",
   stage: "stable",
   get versionLabel() {
     return `${this.stage}-${this.version} (${this.codename})`;

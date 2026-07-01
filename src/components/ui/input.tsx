@@ -5,9 +5,7 @@ import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface InputProps extends React.ComponentProps<"input"> {
-  // Add any custom props here if needed
-}
+interface InputProps extends React.ComponentProps<"input"> {}
 
 function getWrapperClasses(className?: string) {
   if (!className) return "";
@@ -68,7 +66,7 @@ function Input({
     if (newValue < min) newValue = min;
     if (newValue > max) newValue = max;
 
-    // Use native setter to trigger React's state binding correctly
+    // Usa setter nativo para disparar a vinculação de estado do React corretamente
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       "value",
@@ -144,7 +142,7 @@ function Input({
         if (onFocus) onFocus(e);
       }}
       onBlur={(e) => {
-        // Safe timeout to handle button clicks before hiding
+        // Delay seguro para processar cliques de botões antes de ocultar
         setTimeout(() => {
           setIsFocused(false);
           stopStepping();
@@ -163,7 +161,7 @@ function Input({
     const wrapperClass = getWrapperClasses(className);
     const pickerIcon =
       type === "time" ? (
-        // Clock icon (inline SVG to avoid import)
+        // Ícone de relógio (SVG inline para evitar importações redundantes)
         <svg
           viewBox="0 0 24 24"
           fill="none"

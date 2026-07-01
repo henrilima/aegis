@@ -27,14 +27,14 @@ export function StudyModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-study configuration state
+  // Estado de configuração pré-estudo
   const [isConfiguring, setIsConfiguring] = useState(true);
   const [limitOption, setLimitOption] = useState<string>("all");
   const [orderOption, setOrderOption] = useState<"shuffle" | "chrono">(
     "shuffle",
   );
 
-  // Session state
+  // Estado da sessão
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -42,7 +42,7 @@ export function StudyModal({
 
   const m = getColorTheme(deck?.color || "indigo");
 
-  // Fisher-Yates shuffle
+  // Embaralhamento Fisher-Yates
   const shuffleArray = (array: Flashcard[]): Flashcard[] => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -98,7 +98,7 @@ export function StudyModal({
     if (orderOption === "shuffle") {
       processed = shuffleArray(processed);
     } else {
-      // Chronological (oldest first)
+      // Cronológico (mais antigo primeiro)
       processed.sort(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
@@ -128,7 +128,7 @@ export function StudyModal({
     if (!currentCard || !currentCard.id) return;
 
     try {
-      // Record review in Tauri Rust SQLite
+      // Registra a revisão no SQLite do Tauri
       await invoke("flashcards_record_review", {
         id: currentCard.id,
         success,
@@ -139,10 +139,10 @@ export function StudyModal({
         setCorrectCount((prev) => prev + 1);
       }
 
-      // Next card flow
+      // Fluxo para o próximo cartão
       if (currentIndex + 1 < cards.length) {
         setIsFlipped(false);
-        // Wait for the flip animation to finish back to front before showing the next card content
+        // Aguarda a animação de flip terminar para mostrar o próximo cartão
         setTimeout(() => {
           setCurrentIndex((prev) => prev + 1);
         }, 200);

@@ -30,7 +30,7 @@ export function MovieCanvasModal({
   const { avatarSrc } = useAvatar(user?.id);
   const [isDrawing, setIsDrawing] = useState(true);
 
-  // Safe roundRect helper wrapped in useCallback to fix dependency issues
+  // Helper seguro de roundRect para contornar problemas de dependências
   const drawRoundRect = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -65,7 +65,6 @@ export function MovieCanvasModal({
       ctx.save();
       ctx.translate(cx, cy);
 
-      // Draw star path
       ctx.beginPath();
       ctx.moveTo(0, -r);
       ctx.lineTo(r * 0.24, -r * 0.32);
@@ -83,15 +82,15 @@ export function MovieCanvasModal({
         ctx.fillStyle = "#fbbf24"; // Amber 400
         ctx.fill();
       } else if (half) {
-        // Draw half filled star using clipping
+        // Desenha meia estrela usando recorte (clipping)
         ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
         ctx.fill();
         ctx.save();
         ctx.beginPath();
-        ctx.rect(-r, -r, r, r * 2); // Left half rectangle
+        ctx.rect(-r, -r, r, r * 2);
         ctx.clip();
 
-        // Redraw star path to fill left half
+        // Redesenha a estrela para preencher a metade esquerda
         ctx.beginPath();
         ctx.moveTo(0, -r);
         ctx.lineTo(r * 0.24, -r * 0.32);
@@ -133,14 +132,13 @@ export function MovieCanvasModal({
 
       setIsDrawing(true);
 
-      // Base Canvas Dimensions (Story Format 1080x1920)
       canvas.width = 1080;
       canvas.height = 1920;
 
-      // 1. Draw Background Image
+      // 1. Desenha a imagem de fundo
       if (bgImg?.complete && bgImg.naturalWidth > 0) {
         ctx.save();
-        ctx.filter = "brightness(0.35)"; // Slightly darker background for superior contrast
+        ctx.filter = "brightness(0.35)"; // Fundo ligeiramente mais escuro para melhor contraste
         const ca = canvas.width / canvas.height;
         const ia = bgImg.width / bgImg.height;
         let dW = canvas.width;
@@ -161,7 +159,7 @@ export function MovieCanvasModal({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Add soft blur and dark cinematic layer
+      // Adiciona desfoque suave e camada cinemática escura
       ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -173,37 +171,37 @@ export function MovieCanvasModal({
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. Render Aegis Branding & Subtitle
+      // 2. Renderiza a marca e subtítulo do Aegis
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "900 120px Montserrat, sans-serif";
       ctx.fillText("AEGIS", canvas.width / 2, 200);
 
-      ctx.fillStyle = "#e11d48"; // Rose-600 movie accent
+      ctx.fillStyle = "#e11d48"; // Cor de destaque Rose-600
       ctx.font = "800 38px Montserrat, sans-serif";
       ctx.fillText("MEMÓRIA CINEMATOGRÁFICA", canvas.width / 2, 280);
       ctx.restore();
 
-      // 3. Draw Movie Poster Cover
+      // 3. Desenha a capa do filme (Poster)
       const pw = 580;
       const ph = 850;
       const px = (canvas.width - pw) / 2;
       const py = 340;
       const pr = 36;
 
-      // Draw poster shadow using a solid background path to avoid clips
+      // Desenha a sombra do poster para profundidade
       ctx.save();
       ctx.shadowColor = "rgba(0, 0, 0, 0.82)";
       ctx.shadowBlur = 55;
       ctx.shadowOffsetY = 24;
-      ctx.fillStyle = "#16161a"; // Base color for shadow
+      ctx.fillStyle = "#16161a";
       ctx.beginPath();
       drawRoundRect(ctx, px, py, pw, ph, pr);
       ctx.fill();
       ctx.restore();
 
-      // Draw actual poster inside frame
+      // Desenha o poster real dentro do quadro
       if (posterImg?.complete && posterImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -212,7 +210,7 @@ export function MovieCanvasModal({
         ctx.drawImage(posterImg, px, py, pw, ph);
         ctx.restore();
       } else {
-        // Fallback elegant cover
+        // Capa padrão (fallback)
         ctx.save();
         ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
         ctx.lineWidth = 6;
@@ -223,7 +221,7 @@ export function MovieCanvasModal({
         ctx.restore();
       }
 
-      // Draw thin elegant frame outline over poster for an elite finish
+      // Desenha contorno elegante sobre o poster
       ctx.save();
       ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
       ctx.lineWidth = 2.5;
@@ -232,13 +230,13 @@ export function MovieCanvasModal({
       ctx.stroke();
       ctx.restore();
 
-      // 4. Wrap text and calculate dynamic card height
+      // 4. Calcula o tamanho e formata o texto do card
       const cx = canvas.width / 2;
       const cy = 1290;
       const cw = 960;
       const cr = 44;
 
-      // Title wrapping logic (Support up to 2 lines cleanly)
+      // Lógica de quebra de linha do título
       const wrapText = (txt: string, maxW: number): string[] => {
         const words = txt.split(" ");
         const res: string[] = [];
@@ -263,7 +261,7 @@ export function MovieCanvasModal({
       ctx.font = `800 ${fontSize}px Montserrat, sans-serif`;
       let lines = wrapText(movie?.title || "", 840);
 
-      // Dynamically scale down font size if title is exceptionally long
+      // Reduz dinamicamente a fonte se o título for muito longo
       while (
         (lines.length > 2 ||
           (lines.length === 2 && ctx.measureText(lines[1]).width > 840)) &&
@@ -274,7 +272,7 @@ export function MovieCanvasModal({
         lines = wrapText(movie?.title || "", 840);
       }
 
-      // Hard truncate with ellipsis if it still overflows 2 lines
+      // Trunca com reticências caso passe de 2 linhas
       if (lines.length > 2) {
         let secondLine = lines[1];
         while (
@@ -287,7 +285,7 @@ export function MovieCanvasModal({
       }
       ctx.restore();
 
-      // Dynamic Card Height calculations:
+      // Cálculos de altura dinâmica do card
       const titleHeight = lines.length === 1 ? fontSize : fontSize * 2 + 12;
       const directorHeight = movie?.director ? 24 + 30 : 0;
       const starsHeight = 24 + 56;
@@ -300,7 +298,7 @@ export function MovieCanvasModal({
         userProfileHeight +
         44;
 
-      // Draw Glassmorphic Card
+      // Desenha o card translúcido
       ctx.save();
       const cardGrad = ctx.createLinearGradient(cx, cy, cx, cy + ch);
       cardGrad.addColorStop(0, "rgba(20, 20, 25, 0.88)");
@@ -319,8 +317,8 @@ export function MovieCanvasModal({
       ctx.stroke();
       ctx.restore();
 
-      // 5. Draw Movie Details Inside Card
-      // Subtitle Pill Badge (Year & Category)
+      // 5. Desenha detalhes do filme no card
+      // Badge de subtítulo (ano e categoria)
       const details = [
         movie?.year ? String(movie.year) : "",
         movie?.category ? movie.category.toUpperCase() : "",
@@ -337,7 +335,7 @@ export function MovieCanvasModal({
         const badgeX = cx - badgeW / 2;
         const badgeY = cy + 42;
 
-        // Glass pill background
+        // Fundo translúcido da pílula
         ctx.fillStyle = "rgba(225, 29, 72, 0.12)";
         ctx.strokeStyle = "rgba(225, 29, 72, 0.26)";
         ctx.lineWidth = 1.5;
@@ -346,13 +344,13 @@ export function MovieCanvasModal({
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = "#f43f5e"; // Rose 500
+        ctx.fillStyle = "#f43f5e";
         ctx.textAlign = "center";
         ctx.fillText(details, cx, badgeY + 27);
         ctx.restore();
       }
 
-      // Draw Title vertically centered in its region
+      // Desenha título centralizado verticalmente
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
@@ -369,7 +367,6 @@ export function MovieCanvasModal({
       }
       ctx.restore();
 
-      // Director / Creator
       if (movie?.director) {
         ctx.save();
         ctx.textAlign = "center";
@@ -383,7 +380,6 @@ export function MovieCanvasModal({
         ctx.restore();
       }
 
-      // Stars
       const rating = movie?.stars ?? 0;
       const fullStars = Math.floor(rating);
       const hasHalfStar = rating % 1 !== 0;
@@ -399,7 +395,7 @@ export function MovieCanvasModal({
         drawStar(ctx, starX, starY, starRadius, isFilled, isHalf);
       }
 
-      // 5.5 Draw User Profile Section
+      // 5.5 Desenha seção do perfil do usuário
       const userY =
         cy + 110 + titleHeight + directorHeight + starsHeight + 24 + 28;
       const avatarR = 28;
@@ -414,7 +410,7 @@ export function MovieCanvasModal({
       const avatarX = blockStartX + 28;
       ctx.restore();
 
-      // Draw avatar image or default initial
+      // Desenha imagem de avatar ou inicial padrão
       if (avatarImg?.complete && avatarImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -429,7 +425,7 @@ export function MovieCanvasModal({
         );
         ctx.restore();
       } else {
-        // Draw elegant default avatar
+        // Desenha avatar padrão elegante
         ctx.save();
         ctx.fillStyle = "rgba(225, 29, 72, 0.2)";
         ctx.strokeStyle = "rgba(225, 29, 72, 0.5)";
@@ -448,7 +444,7 @@ export function MovieCanvasModal({
         ctx.restore();
       }
 
-      // Draw avatar fine outline
+      // Desenha contorno fino do avatar
       ctx.save();
       ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
       ctx.lineWidth = 2;
@@ -457,7 +453,7 @@ export function MovieCanvasModal({
       ctx.stroke();
       ctx.restore();
 
-      // Draw Username and Label next to avatar
+      // Desenha nome do usuário e rótulo
       ctx.save();
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
@@ -471,7 +467,7 @@ export function MovieCanvasModal({
       ctx.fillText(displayUsername, avatarX + 40, userY + 12);
       ctx.restore();
 
-      // 6. Draw Footer Credits
+      // 6. Desenha créditos no rodapé
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
@@ -509,7 +505,7 @@ export function MovieCanvasModal({
       }
     };
 
-    // Load Cinematic Background
+    // Carrega imagem de fundo cinemática
     const bgImg = new Image();
     bgImg.onload = handleLoad;
     bgImg.onerror = handleLoad;

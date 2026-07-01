@@ -1,5 +1,6 @@
 "use client";
 
+import { fetch } from "@tauri-apps/plugin-http";
 import {
   Bell,
   Cloud,
@@ -237,6 +238,9 @@ export function DashboardHeader({
     dashboardClockStyle,
     dashboardClockAnimated,
     dashboardHeaderStyle = "default",
+    dashboardWelcomingGlass = true,
+    dashboardCoverImage = "",
+    dashboardShowDate = true,
   } = useSettingsLogic();
   const [weather, setWeather] = useState<WeatherData | null>(null);
 
@@ -334,10 +338,7 @@ export function DashboardHeader({
       weather.condition.slice(1).toLowerCase()
     : "";
 
-  const weatherLocationStr = weather ? weather.location.split(",")[0] : "";
-
-  const showHeaderDate =
-    dashboardClockStyle !== "datetime" && dashboardClockStyle !== "semanal";
+  const showHeaderDate = dashboardShowDate;
 
   const habitsLabel = `${doneTodayCount}/${positiveHabitsCount} Hábitos`;
   const tasksLabel = `${pendingTasksCount} ${
@@ -366,7 +367,7 @@ export function DashboardHeader({
   // LAYOUT 1: DEFAULT (Padrão)
   if (dashboardHeaderStyle === "default") {
     return (
-      <div className="flex flex-col gap-10 mb-12 w-full animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="flex flex-col gap-10 mb-6 w-full animate-in fade-in slide-in-from-top-2 duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -393,8 +394,7 @@ export function DashboardHeader({
                         strokeWidth={2.5}
                       />
                       <span className="text-xs font-bold text-muted-foreground">
-                        {weather.temp.replace("°c", "")}° • {weatherCond} em{" "}
-                        {weatherLocationStr}
+                        {weather.temp.replace("°c", "")}° • {weatherCond}
                       </span>
                     </div>
                   </div>
@@ -481,10 +481,19 @@ export function DashboardHeader({
   // LAYOUT 2: COMPACT (Compacto)
   if (dashboardHeaderStyle === "compact") {
     return (
-      <div className="flex flex-col gap-4 mb-8 w-full animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 mb-4 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-3xl bg-card/45 border border-border/40 backdrop-blur-sm">
+        <div
+          className={cn(
+            "flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-3xl transition-all duration-300",
+            dashboardCoverImage
+              ? "bg-transparent border-transparent"
+              : dashboardWelcomingGlass
+                ? "bg-card/45 border border-border/40 backdrop-blur-sm"
+                : "bg-card/30 border border-border/40",
+          )}
+        >
           {/* Esquerda: Identidade & Clima Compactados */}
           <div className="flex flex-wrap items-center gap-4 min-w-0">
             <h1 className="text-2xl font-black text-foreground tracking-tight whitespace-nowrap">
@@ -537,7 +546,10 @@ export function DashboardHeader({
                 onClick={() =>
                   window.dispatchEvent(new Event("open-command-palette"))
                 }
-                className="flex items-center gap-2 p-2 px-3 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-card/45 backdrop-blur-sm text-xs font-bold"
+                className={cn(
+                  "flex items-center gap-2 p-2 px-3 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-xs font-bold",
+                  dashboardWelcomingGlass && "bg-card/45 backdrop-blur-sm",
+                )}
                 title="Buscar módulos (Ctrl + K)"
               >
                 <Search className="w-4 h-4" />
@@ -545,13 +557,24 @@ export function DashboardHeader({
                 <Kbd>Ctrl K</Kbd>
               </button>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border-2 border-border text-[11px] font-black">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/50 bg-card/80 text-xs font-black">
                 <span
-                  className={
+                  className={cn(
+                    doneTodayCount === positiveHabitsCount &&
+                      positiveHabitsCount > 0
+                      ? "text-emerald-500"
+                      : "text-foreground",
+                  )}
+                >
+                  {habitsLabel}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                <span
+                  className={cn(
                     pendingTasksCount > 0
                       ? "text-orange-500"
-                      : "text-foreground"
-                  }
+                      : "text-foreground",
+                  )}
                 >
                   {tasksLabel}
                 </span>
@@ -574,7 +597,7 @@ export function DashboardHeader({
   // LAYOUT 3: CENTERED (Focado / Centralizado)
   if (dashboardHeaderStyle === "centered") {
     return (
-      <div className="flex flex-col gap-6 mb-12 w-full text-center items-center animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 mb-6 w-full text-center items-center animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
 
@@ -607,8 +630,7 @@ export function DashboardHeader({
                   className={cn("w-3.5 h-3.5 inline", theme.text)}
                   strokeWidth={2.5}
                 />
-                {weather.temp.replace("°c", "")}° • {weatherCond} em{" "}
-                {weatherLocationStr}
+                {weather.temp.replace("°c", "")}° • {weatherCond}
               </span>
             )}
           </div>
@@ -656,7 +678,7 @@ export function DashboardHeader({
   // LAYOUT 4: MINIMAL (Minimalista)
   if (dashboardHeaderStyle === "minimal") {
     return (
-      <div className="flex flex-col gap-6 mb-10 w-full animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 mb-4 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -680,7 +702,10 @@ export function DashboardHeader({
               <button
                 type="button"
                 onClick={onOpenConfig}
-                className="p-2.5 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-card/45 backdrop-blur-sm"
+                className={cn(
+                  "p-2.5 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer",
+                  dashboardWelcomingGlass && "bg-card/45 backdrop-blur-sm",
+                )}
                 title="Personalizar Interface"
               >
                 <Layout className="w-4 h-4" />
@@ -692,7 +717,10 @@ export function DashboardHeader({
               onClick={() =>
                 window.dispatchEvent(new Event("open-command-palette"))
               }
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-card/45 backdrop-blur-sm text-xs font-black"
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-xs font-black",
+                dashboardWelcomingGlass && "bg-card/45 backdrop-blur-sm",
+              )}
               title="Buscar módulos (Ctrl + K)"
             >
               <Search className="w-4 h-4" />
@@ -716,29 +744,40 @@ export function DashboardHeader({
   // LAYOUT 5: ACOLHEDOR (Welcoming) - Redesenhado para ser incrivelmente bonito e glassmórfico
   if (dashboardHeaderStyle === "welcoming") {
     return (
-      <div className="flex flex-col gap-6 mb-12 w-full animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 mb-6 w-full animate-in fade-in duration-500">
         {renderGlobalActions()}
         {simulatedBanner}
 
         {/* Card Hero Glassmórfico Unificado e Elegante */}
-        <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 p-6 sm:p-8 backdrop-blur-md flex flex-col lg:flex-row items-center justify-between gap-8 group">
-          {/* Aura de Ambiente Dinâmica e Sutil */}
-          <div
-            className={cn(
-              "absolute -right-20 -bottom-20 w-80 h-80 rounded-full blur-[100px] opacity-10 dark:opacity-15 transition-all duration-700 pointer-events-none",
-              accentColor === "blue"
-                ? "bg-blue-500"
-                : accentColor === "emerald"
-                  ? "bg-emerald-500"
-                  : accentColor === "teal"
-                    ? "bg-teal-500"
-                    : accentColor === "violet"
-                      ? "bg-violet-500"
-                      : accentColor === "orange"
-                        ? "bg-orange-500"
-                        : "bg-primary",
-            )}
-          />
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-8 group transition-all duration-300",
+            dashboardCoverImage
+              ? "border border-transparent bg-transparent backdrop-blur-none"
+              : dashboardWelcomingGlass
+                ? "border border-border/40 bg-linear-to-br from-card/75 via-card/45 to-card/10 backdrop-blur-md"
+                : "border border-transparent bg-transparent backdrop-blur-none",
+          )}
+        >
+          {/* Aura de Ambiente Dinâmica e Sutil — oculta quando cover está ativa ou glass está desativado */}
+          {!dashboardCoverImage && dashboardWelcomingGlass && (
+            <div
+              className={cn(
+                "absolute -right-20 -bottom-20 w-80 h-80 rounded-full blur-[100px] opacity-10 dark:opacity-15 transition-all duration-700 pointer-events-none",
+                accentColor === "blue"
+                  ? "bg-blue-500"
+                  : accentColor === "emerald"
+                    ? "bg-emerald-500"
+                    : accentColor === "teal"
+                      ? "bg-teal-500"
+                      : accentColor === "violet"
+                        ? "bg-violet-500"
+                        : accentColor === "orange"
+                          ? "bg-orange-500"
+                          : "bg-primary",
+              )}
+            />
+          )}
 
           {/* Bloco Esquerdo: Micro-título Moderno, Título e Indicadores Clean de Status Inline */}
           <div className="space-y-5 flex-1 w-full relative z-10 text-left">
@@ -777,8 +816,7 @@ export function DashboardHeader({
                     strokeWidth={2.5}
                   />
                   <span>
-                    {weather.temp.replace("°c", "")}° • {weatherCond} em{" "}
-                    {weatherLocationStr}
+                    {weather.temp.replace("°c", "")}° • {weatherCond}
                   </span>
                 </div>
               )}
@@ -830,7 +868,14 @@ export function DashboardHeader({
 
           {/* Bloco Direito: Relógio de Vidro Flutuante com Micro-brilho */}
           <div className="shrink-0 relative z-10 scale-90 sm:scale-95">
-            <div className="p-5 rounded-2xl bg-card/25 border border-border/20 backdrop-blur-md">
+            <div
+              className={cn(
+                "p-5 rounded-2xl border border-border/20 backdrop-blur-md transition-all duration-300",
+                dashboardWelcomingGlass
+                  ? "bg-card/25"
+                  : "bg-transparent border-transparent backdrop-blur-none",
+              )}
+            >
               <DashboardClock
                 time={time}
                 style={dashboardClockStyle}

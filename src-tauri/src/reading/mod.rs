@@ -411,17 +411,50 @@ pub async fn reading_list_books(state: tauri::State<'_, crate::AppState>, user_i
 
 #[tauri::command]
 pub async fn reading_upsert_book(state: tauri::State<'_, crate::AppState>, book: ReadingBook) -> Result<i64, String> {
-    state.reading.upsert_book(book)
+    let is_new = book.id.is_none();
+    let user_id = book.user_id.clone();
+    let res = state.reading.upsert_book(book);
+    if let Ok(inserted_id) = res {
+        if is_new {
+            state.stats.add_xp_with_source_and_ref(
+                &user_id,
+                30,
+                "Novo Livro Adicionado",
+                Some("reading_books"),
+                Some(&inserted_id.to_string()),
+            );
+        }
+    }
+    res
 }
 
 #[tauri::command]
 pub async fn reading_delete_book(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.reading.delete_book(id, &user_id)
+    let result = state.reading.delete_book(id, &user_id);
+    if result.is_ok() {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "reading_books", &id.to_string());
+    }
+    result
 }
 
 #[tauri::command]
 pub async fn reading_upsert_session(state: tauri::State<'_, crate::AppState>, session: ReadingSession) -> Result<i64, String> {
-    state.reading.upsert_session(session)
+    let is_new = session.id.is_none();
+    let user_id = session.user_id.clone();
+    let pages = session.pages_read;
+    let res = state.reading.upsert_session(session);
+    if let Ok(inserted_id) = res {
+        if is_new {
+            state.stats.add_xp_with_source_and_ref(
+                &user_id,
+                10 + pages * 2,
+                "Sessão de Leitura",
+                Some("reading_sessions"),
+                Some(&inserted_id.to_string()),
+            );
+        }
+    }
+    res
 }
 
 #[tauri::command]
@@ -432,7 +465,11 @@ pub async fn reading_list_sessions(state: tauri::State<'_, crate::AppState>, use
 
 #[tauri::command]
 pub async fn reading_delete_session(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.reading.delete_session(id, &user_id)
+    let result = state.reading.delete_session(id, &user_id);
+    if result.is_ok() {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "reading_sessions", &id.to_string());
+    }
+    result
 }
 
 #[tauri::command]

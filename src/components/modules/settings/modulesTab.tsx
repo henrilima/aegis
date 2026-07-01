@@ -14,6 +14,7 @@ import {
   type LucideIcon,
   Moon,
   Timer,
+  Trophy,
 } from "lucide-react";
 import { type ModuleId, useModules } from "@/context/ModuleContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -124,6 +125,14 @@ const MODULE_DEFS: {
     description: "Análise global de desempenho e uso do app",
     icon: BarChart3,
     color: "red",
+  },
+  {
+    id: "achievements",
+    label: "Conquistas & Árvore",
+    description:
+      "Salão de troféus, desafios diários e crescimento da árvore do Aegis",
+    icon: Trophy,
+    color: "amber",
   },
 ];
 

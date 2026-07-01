@@ -132,7 +132,17 @@ identifier = "statistic-management"
 description = "Permissões do módulo de Estatísticas de performance"
 commands.allow = [
     "stats_get_cross_metrics",
-    "stats_get_performance_summary"
+    "stats_get_performance_summary",
+    "stats_get_global_realtime_metrics",
+    "achievements_get_user_state",
+    "achievements_unlock",
+    "achievements_complete_challenge",
+    "achievements_undo_challenge",
+    "achievements_add_xp",
+    "achievements_sync_ledger",
+    "achievements_reset_xp_and_resync",
+    "stats_get_xp_history",
+    "stats_export_xp_history_csv"
 ]
 
 [[permission]]
@@ -229,11 +239,14 @@ commands.allow = [
     "global_test_notification",
     "global_check_dnd_status",
     "global_open_notification_settings",
+    "global_notif_push",
     "global_notif_list",
     "global_notif_unread_count",
     "global_notif_mark_read",
+    "global_notif_mark_unread",
     "global_notif_mark_all_read",
     "global_notif_delete",
+    "global_notif_delete_by_tag",
     "global_notif_clear_read",
     "global_send_critical_notification",
     "global_ensure_discord_invite",

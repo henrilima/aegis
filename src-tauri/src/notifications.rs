@@ -50,9 +50,6 @@ impl NotificationsManager {
         let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN color TEXT", []);
         let _ = conn.execute("ALTER TABLE app_notifications ADD COLUMN icon TEXT", []);
 
-        // Limpa todas as notificações persistentes legadas do banco de dados ao inicializar
-        let _ = conn.execute("DELETE FROM app_notifications WHERE persistent = 1", []);
-
         // Garante constraint UNIQUE em (user_id, tag) para idempotência
         let _ = conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_notifications_user_tag ON app_notifications(user_id, tag) WHERE tag IS NOT NULL",
@@ -192,6 +189,16 @@ impl NotificationsManager {
         Ok(())
     }
 
+    /// Marca uma notificação específica como não lida.
+    pub fn mark_unread(&self, id: i64, user_id: &str) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "UPDATE app_notifications SET is_read=0 WHERE id=?1 AND user_id=?2",
+            params![id, user_id],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     /// Marca todas as notificações do usuário como lidas.
     pub fn mark_all_read(&self, user_id: &str) -> Result<(), String> {
         let conn = self.conn();
@@ -202,29 +209,56 @@ impl NotificationsManager {
         Ok(())
     }
 
-    /// Remove uma notificação permanentemente (exceto notificações persistentes).
-    pub fn delete(&self, id: i64, user_id: &str) -> Result<(), String> {
+    /// Remove uma notificação permanentemente (exceto notificações persistentes) e retorna sua tag se existir.
+    pub fn delete(&self, id: i64, user_id: &str) -> Result<Option<String>, String> {
         let conn = self.conn();
+        let tag: Option<String> = conn.query_row(
+            "SELECT tag FROM app_notifications WHERE id=?1 AND user_id=?2 AND persistent=0",
+            params![id, user_id],
+            |row| row.get(0)
+        ).ok();
+
         conn.execute(
             "DELETE FROM app_notifications WHERE id=?1 AND user_id=?2 AND persistent=0",
             params![id, user_id],
         ).map_err(|e| e.to_string())?;
+        Ok(tag)
+    }
+
+    /// Remove uma notificação permanentemente através de sua tag única (usado na sincronização com servidor).
+    pub fn delete_by_tag(&self, tag: &str, user_id: &str) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "DELETE FROM app_notifications WHERE tag=?1 AND user_id=?2",
+            params![tag, user_id],
+        ).map_err(|e| e.to_string())?;
         Ok(())
     }
 
-    /// Remove todas as notificações lidas do usuário (exceto persistentes).
-    pub fn clear_read(&self, user_id: &str) -> Result<(), String> {
+    /// Remove todas as notificações lidas do usuário (exceto persistentes) e retorna as tags das deletadas.
+    pub fn clear_read(&self, user_id: &str) -> Result<Vec<String>, String> {
         let conn = self.conn();
+
+        let mut stmt = conn.prepare(
+            "SELECT tag FROM app_notifications WHERE user_id=?1 AND is_read=1 AND persistent=0 AND tag IS NOT NULL"
+        ).map_err(|e| e.to_string())?;
+
+        let tags: Vec<String> = stmt.query_map(params![user_id], |row| {
+            row.get::<_, String>(0)
+        }).map_err(|e| e.to_string())?
+          .filter_map(|r| r.ok())
+          .collect();
+
         conn.execute(
             "DELETE FROM app_notifications WHERE user_id=?1 AND is_read=1 AND persistent=0",
             params![user_id],
         ).map_err(|e| e.to_string())?;
-        Ok(())
+        Ok(tags)
     }
     pub fn add_notification_direct(&self, n: AppNotification) -> Result<(), String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO app_notifications (user_id, title, body, category, tag, is_read, created_at, persistent, color, icon) 
+            "INSERT OR IGNORE INTO app_notifications (user_id, title, body, category, tag, is_read, created_at, persistent, color, icon)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![n.user_id, n.title, n.body, n.category, n.tag, if n.is_read { 1 } else { 0 }, n.created_at, if n.persistent { 1 } else { 0 }, n.color, n.icon],
         ).map_err(|e| e.to_string())?;

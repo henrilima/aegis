@@ -49,6 +49,7 @@ impl TaskManager {
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN category TEXT", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN color TEXT", []);
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT", []);
 
         // Evita duplicados (mesmo título para o mesmo usuário)
         conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title, parent_id)"#, []).ok();
@@ -97,19 +98,27 @@ impl TaskManager {
         rows.filter_map(Result::ok).collect()
     }
 
-    pub fn upsert_task(&self, task: Task) -> Result<(), String> {
+    pub fn upsert_task(&self, task: Task, today: Option<String>) -> Result<(), String> {
         let conn = self.get_connection();
         let completed_int = if task.completed { 1 } else { 0 };
+        let today_str = today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
         let result = if let Some(id) = task.id {
             conn.execute(
-                "UPDATE tasks SET title = ?1, description = ?2, completed = ?3, due_date = ?4, parent_id = ?5, priority = ?6, category = ?7, color = ?8 WHERE id = ?9",
-                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, id],
+                "UPDATE tasks SET title = ?1, description = ?2, completed = ?3, due_date = ?4, parent_id = ?5, priority = ?6, category = ?7, color = ?8,
+                 completed_at = CASE WHEN ?3 = 1 THEN COALESCE(completed_at, ?9) ELSE NULL END 
+                 WHERE id = ?10",
+                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, today_str, id],
             )
         } else {
+            let completed_at = if task.completed {
+                Some(today_str)
+            } else {
+                None
+            };
             conn.execute(
-                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color],
+                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, completed_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color, completed_at],
             )
         };
 
@@ -123,12 +132,17 @@ impl TaskManager {
         })
     }
 
-    pub fn toggle_task(&self, id: i32, completed: bool) -> Result<(), String> {
+    pub fn toggle_task(&self, id: i32, completed: bool, today: Option<String>) -> Result<(), String> {
         let conn = self.get_connection();
         let completed_int = if completed { 1 } else { 0 };
+        let completed_at = if completed {
+            Some(today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string()))
+        } else {
+            None
+        };
         conn.execute(
-            "UPDATE tasks SET completed = ?1 WHERE id = ?2",
-            params![completed_int, id],
+            "UPDATE tasks SET completed = ?1, completed_at = ?2 WHERE id = ?3",
+            params![completed_int, completed_at, id],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -177,7 +191,7 @@ impl TaskManager {
                 category: None,
                 color: None,
             };
-            let _ = self.upsert_task(task);
+            let _ = self.upsert_task(task, None);
             count += 1;
         }
         Ok(count)
@@ -191,12 +205,14 @@ pub async fn tasks_list(state: tauri::State<'_, crate::AppState>, user_id: Strin
 
 #[tauri::command]
 pub async fn tasks_upsert(state: tauri::State<'_, crate::AppState>, task: Task) -> Result<(), String> {
-    state.tasks.upsert_task(task)
+    let today = state.config.get_now().with_timezone(&chrono::Local).format("%Y-%m-%d").to_string();
+    state.tasks.upsert_task(task, Some(today))
 }
 
 #[tauri::command]
 pub async fn tasks_toggle(state: tauri::State<'_, crate::AppState>, id: i32, completed: bool) -> Result<(), String> {
-    state.tasks.toggle_task(id, completed)
+    let today = state.config.get_now().with_timezone(&chrono::Local).format("%Y-%m-%d").to_string();
+    state.tasks.toggle_task(id, completed, Some(today))
 }
 
 #[tauri::command]

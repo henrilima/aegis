@@ -9,6 +9,7 @@ import {
   Search,
   Timer,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useModules } from "@/context/ModuleContext";
@@ -44,7 +45,7 @@ export interface ModuleHeaderProps {
   /** Cor identitária do módulo (ex: "blue", "orange", "violet", "teal", "amber") */
   color: string;
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   icon: LucideIcon;
   actions?: ModuleAction[];
   // Tabs opcionais
@@ -160,7 +161,9 @@ export function ModuleHeader({
           <div>
             <h1 className="text-xl font-semibold leading-none">{title}</h1>
             {subtitle && (
-              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {subtitle}
+              </div>
             )}
           </div>
         </div>

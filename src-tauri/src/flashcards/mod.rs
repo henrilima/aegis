@@ -118,6 +118,15 @@ impl FlashcardManager {
         Ok(())
     }
 
+    pub fn get_deck_user_id(&self, id: i32) -> Result<String, String> {
+        let conn = self.get_connection();
+        conn.query_row(
+            "SELECT user_id FROM flashcard_decks WHERE id = ?1",
+            params![id],
+            |row| row.get(0)
+        ).map_err(|e| e.to_string())
+    }
+
     pub fn delete_deck(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
         // Deleta os cartões associados ao baralho
@@ -237,7 +246,18 @@ pub async fn flashcards_list_decks(state: tauri::State<'_, crate::AppState>, use
 
 #[tauri::command]
 pub async fn flashcards_add_deck(state: tauri::State<'_, crate::AppState>, deck: FlashcardDeck) -> Result<i32, String> {
-    state.flashcards.add_deck(deck)
+    let user_id = deck.user_id.clone();
+    let res = state.flashcards.add_deck(deck);
+    if let Ok(inserted_id) = res {
+        state.stats.add_xp_with_source_and_ref(
+            &user_id,
+            25,
+            "Novo Deck Flashcard",
+            Some("flashcard_decks"),
+            Some(&inserted_id.to_string()),
+        );
+    }
+    res
 }
 
 #[tauri::command]
@@ -247,6 +267,9 @@ pub async fn flashcards_update_deck(state: tauri::State<'_, crate::AppState>, de
 
 #[tauri::command]
 pub async fn flashcards_delete_deck(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
+    if let Ok(user_id) = state.flashcards.get_deck_user_id(id) {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "flashcard_decks", &id.to_string());
+    }
     state.flashcards.delete_deck(id)
 }
 

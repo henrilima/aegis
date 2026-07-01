@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use rusqlite::{params, Connection};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::AppHandle;
 
@@ -49,14 +49,18 @@ impl MovieManager {
             [],
         );
         // Migration for existing databases
-        let _ = conn.execute("ALTER TABLE movies ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute(
+            "ALTER TABLE movies ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
 
         Self { db_path }
     }
 
     fn conn(&self) -> Connection {
         let conn = Connection::open(&self.db_path).expect("Falha ao conectar");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha ao definir timeout");
+        conn.busy_timeout(std::time::Duration::from_millis(5000))
+            .expect("Falha ao definir timeout");
         conn
     }
 
@@ -82,7 +86,10 @@ impl MovieManager {
                 created_at: row.get(9)?,
                 is_favorite: row.get::<_, i32>(10).unwrap_or(0) != 0,
             })
-        }).unwrap().filter_map(|r| r.ok()).collect()
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect()
     }
 
     pub fn upsert_movie(&self, m: Movie) -> Result<(i64, bool), String> {
@@ -96,9 +103,15 @@ impl MovieManager {
             Ok((id, false))
         } else {
             // Check for duplicates (same title and director for the user)
-            let mut stmt = conn.prepare("SELECT id FROM movies WHERE user_id = ?1 AND title = ?2 AND director IS ?3").unwrap();
-            let existing_id: Option<i64> = stmt.query_row(params![m.user_id, m.title, m.director], |row| row.get(0)).ok();
-            
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id FROM movies WHERE user_id = ?1 AND title = ?2 AND director IS ?3",
+                )
+                .unwrap();
+            let existing_id: Option<i64> = stmt
+                .query_row(params![m.user_id, m.title, m.director], |row| row.get(0))
+                .ok();
+
             if let Some(id) = existing_id {
                 return Ok((id, false)); // Already exists, return existing ID and false (not new)
             }
@@ -112,19 +125,28 @@ impl MovieManager {
         }
     }
 
-    pub fn toggle_favorite_movie(&self, id: i64, user_id: &str, is_favorite: bool) -> Result<(), String> {
+    pub fn toggle_favorite_movie(
+        &self,
+        id: i64,
+        user_id: &str,
+        is_favorite: bool,
+    ) -> Result<(), String> {
         let conn = self.conn();
         conn.execute(
             "UPDATE movies SET is_favorite=?1 WHERE id=?2 AND user_id=?3",
             params![is_favorite as i32, id, user_id],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn delete_movie(&self, id: i64, user_id: &str) -> Result<(), String> {
         let conn = self.conn();
-        conn.execute("DELETE FROM movies WHERE id=?1 AND user_id=?2", params![id, user_id])
-            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "DELETE FROM movies WHERE id=?1 AND user_id=?2",
+            params![id, user_id],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -151,7 +173,10 @@ impl MovieManager {
 }
 
 #[tauri::command]
-pub async fn movies_search(state: tauri::State<'_, crate::AppState>, query: String) -> Result<serde_json::Value, String> {
+pub async fn movies_search(
+    state: tauri::State<'_, crate::AppState>,
+    query: String,
+) -> Result<serde_json::Value, String> {
     let api_key = state.config.get_tmdb_api_key();
 
     if api_key.is_empty() {
@@ -186,7 +211,10 @@ pub async fn get_tmdb_api_key(state: tauri::State<'_, crate::AppState>) -> Resul
 }
 
 #[tauri::command]
-pub async fn set_tmdb_api_key(state: tauri::State<'_, crate::AppState>, api_key: String) -> Result<(), String> {
+pub async fn set_tmdb_api_key(
+    state: tauri::State<'_, crate::AppState>,
+    api_key: String,
+) -> Result<(), String> {
     if !api_key.is_empty() {
         let url = format!(
             "https://api.themoviedb.org/3/configuration?api_key={}",
@@ -209,31 +237,76 @@ pub async fn set_tmdb_api_key(state: tauri::State<'_, crate::AppState>, api_key:
 }
 
 #[tauri::command]
-pub async fn movies_list(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Movie>, String> {
+pub async fn movies_list(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<Movie>, String> {
     Ok(state.movies.list_movies(&user_id))
 }
 
 #[tauri::command]
-pub async fn movies_upsert(state: tauri::State<'_, crate::AppState>, movie: Movie) -> Result<i64, String> {
-    state.movies.upsert_movie(movie).map(|(id, _)| id)
+pub async fn movies_upsert(
+    state: tauri::State<'_, crate::AppState>,
+    movie: Movie,
+) -> Result<i64, String> {
+    let user_id = movie.user_id.clone();
+    let res = state.movies.upsert_movie(movie);
+    match res {
+        Ok((id, is_new)) => {
+            if is_new {
+                state.stats.add_xp_with_source_and_ref(
+                    &user_id,
+                    25,
+                    "Filme Assistido",
+                    Some("movies"),
+                    Some(&id.to_string()),
+                );
+            }
+            Ok(id)
+        }
+        Err(e) => Err(e),
+    }
 }
 
 #[tauri::command]
-pub async fn movies_delete(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.movies.delete_movie(id, &user_id)
+pub async fn movies_delete(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+) -> Result<(), String> {
+    let result = state.movies.delete_movie(id, &user_id);
+    if result.is_ok() {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "movies", &id.to_string());
+    }
+    result
 }
 
 #[tauri::command]
-pub async fn movies_toggle_favorite(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
-    state.movies.toggle_favorite_movie(id, &user_id, is_favorite)
+pub async fn movies_toggle_favorite(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+    is_favorite: bool,
+) -> Result<(), String> {
+    state
+        .movies
+        .toggle_favorite_movie(id, &user_id, is_favorite)
 }
 
 #[tauri::command]
-pub async fn movies_export_json(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<(), String> {
+pub async fn movies_export_json(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    path: String,
+) -> Result<(), String> {
     state.movies.export_json(&user_id, &path)
 }
 
 #[tauri::command]
-pub async fn movies_import_json(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<usize, String> {
+pub async fn movies_import_json(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    path: String,
+) -> Result<usize, String> {
     state.movies.import_json(&user_id, &path)
 }

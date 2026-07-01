@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import type { StudyGoal } from "./types";
 
 export const GOAL_LABELS: Record<string, string> = {
   weekly_hours: "Horas semanais",
@@ -26,12 +23,11 @@ export const GOAL_UNITS: Record<string, string> = {
 };
 
 interface GoalPanelProps {
-  goals: StudyGoal[];
-  userId: string;
-  onSave: (gs: StudyGoal[]) => void;
+  vals: Record<string, string>;
+  setVals: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
-export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
+export function GoalPanel({ vals, setVals }: GoalPanelProps) {
   const color = getModuleColor("studies");
   const theme = getColorTheme(color);
   const goalTypes = [
@@ -42,48 +38,6 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
     "weekly_pages",
     "monthly_pages",
   ] as const;
-
-  const [vals, setVals] = useState<Record<string, string>>(() => {
-    const m: Record<string, string> = {};
-    for (const t of goalTypes) {
-      const g = goals.find((g) => g.goalType === t);
-      m[t] = g ? String(g.targetValue) : "";
-    }
-    return m;
-  });
-
-  const [isSaving, setIsSaving] = useState(false);
-
-  async function saveAll() {
-    setIsSaving(true);
-    const updates: StudyGoal[] = [];
-
-    for (const type of goalTypes) {
-      const valStr = vals[type] ?? "";
-      const v = valStr === "" ? 0 : parseFloat(valStr);
-
-      if (Number.isNaN(v) || v < 0) {
-        toast.error(`Valor inválido para ${GOAL_LABELS[type]}`);
-        setIsSaving(false);
-        return;
-      }
-
-      updates.push({
-        userId: userId,
-        goalType: type as StudyGoal["goalType"],
-        targetValue: v,
-      });
-    }
-
-    try {
-      await onSave(updates);
-      toast.success("Todas as metas foram atualizadas!");
-    } catch {
-      toast.error("Erro ao salvar metas");
-    } finally {
-      setIsSaving(false);
-    }
-  }
 
   const ic = cn(
     "flex-1 bg-background/50 border border-border rounded-xl px-4 py-2.5 text-sm font-bold text-foreground placeholder:text-neutral-700 focus:outline-none transition-all",
@@ -116,7 +70,7 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
                 min="0"
                 className={ic}
                 placeholder={GOAL_UNITS[type] === "h" ? "Ex: 40" : "Ex: 300"}
-                value={vals[type]}
+                value={vals[type] ?? ""}
                 onChange={(e) =>
                   setVals((v) => ({ ...v, [type]: e.target.value }))
                 }
@@ -130,21 +84,6 @@ export function GoalPanel({ goals, userId, onSave }: GoalPanelProps) {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="pt-4 border-t border-border/50">
-        <button
-          type="button"
-          onClick={saveAll}
-          disabled={isSaving}
-          className={cn(
-            "w-full p-3 rounded-2xl text-xs font-bold text-white transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50",
-            theme.solid,
-            theme.solidHover,
-          )}
-        >
-          {isSaving ? "Sincronizando..." : "Salvar objetivos"}
-        </button>
       </div>
     </div>
   );

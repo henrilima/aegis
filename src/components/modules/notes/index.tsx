@@ -15,6 +15,7 @@ import { NoteCreateModal } from "@/components/modules/notes/components/modals/no
 import { NoteExpandModal } from "@/components/modules/notes/components/modals/noteExpandModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
+import { useTime } from "@/context/TimeContext";
 import { getModuleColor } from "@/modules.config";
 
 // O gerenciador usa DnD e só é carregado ao abrir Notas.
@@ -29,6 +30,7 @@ const MAX_PINS = 3;
 
 export default function NotesPage() {
   const { user } = useAuth();
+  const { now: simulatedNow } = useTime();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -73,7 +75,7 @@ export default function NotesPage() {
           userId: uid,
           title: title.trim(),
           content: content.trim(),
-          createdAt: new Date().toISOString(),
+          createdAt: simulatedNow.toISOString(),
           pinned: false,
           path: creationPath || undefined,
           color,
@@ -104,7 +106,7 @@ export default function NotesPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await invoke("note_delete_note", { id });
+      await invoke("note_delete_note", { id, userId: user?.id });
       setRefreshTrigger((prev) => prev + 1);
       fetchNotes();
       toast.success("Nota removida");

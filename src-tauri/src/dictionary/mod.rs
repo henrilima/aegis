@@ -85,7 +85,7 @@ impl DictionaryManager {
         rows.filter_map(|r| r.ok()).collect()
     }
 
-    pub fn add_word(&self, word: GlossaryWord) -> Result<bool, String> {
+    pub fn add_word(&self, word: GlossaryWord) -> Result<Option<i32>, String> {
         let conn = self.get_connection();
         
         // Verifica se já existe (Duplicado)
@@ -93,7 +93,7 @@ impl DictionaryManager {
         let exists: i32 = stmt.query_row(params![word.user_id, word.word, word.definition], |row| row.get(0)).unwrap_or(0);
         
         if exists > 0 {
-            return Ok(false); // Já existe, não adiciona
+            return Ok(None); // Já existe, não adiciona
         }
 
         conn.execute(
@@ -108,7 +108,16 @@ impl DictionaryManager {
                 word.created_at
             ],
         ).map_err(|e| e.to_string())?;
-        Ok(true)
+        Ok(Some(conn.last_insert_rowid() as i32))
+    }
+
+    pub fn get_word_user_id(&self, id: i32) -> Result<String, String> {
+        let conn = self.get_connection();
+        conn.query_row(
+            "SELECT user_id FROM glossary WHERE id = ?1",
+            params![id],
+            |row| row.get(0)
+        ).map_err(|e| e.to_string())
     }
 
     pub fn delete_word(&self, id: i32) -> Result<(), String> {
@@ -160,7 +169,7 @@ impl DictionaryManager {
                 is_favorite: record.get(4).map(|s| s == "true").unwrap_or(false),
                 created_at: record.get(5).filter(|s| !s.is_empty()).map(|s| s.to_string()).unwrap_or_else(|| chrono::Local::now().to_rfc3339()),
             };
-            if let Ok(true) = self.add_word(word) {
+            if let Ok(Some(_)) = self.add_word(word) {
                 count += 1;
             }
         }
@@ -359,11 +368,25 @@ pub async fn dictionary_list(state: tauri::State<'_, crate::AppState>, user_id: 
 
 #[tauri::command]
 pub async fn dictionary_add(state: tauri::State<'_, crate::AppState>, word: GlossaryWord) -> Result<(), String> {
-    state.dictionary.add_word(word).map(|_| ())
+    let user_id = word.user_id.clone();
+    let res = state.dictionary.add_word(word)?;
+    if let Some(id) = res {
+        state.stats.add_xp_with_source_and_ref(
+            &user_id,
+            15,
+            "Nova Palavra Dicionário",
+            Some("glossary"),
+            Some(&id.to_string()),
+        );
+    }
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn dictionary_delete(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
+    if let Ok(user_id) = state.dictionary.get_word_user_id(id) {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "glossary", &id.to_string());
+    }
     state.dictionary.delete_word(id)
 }
 

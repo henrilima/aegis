@@ -6,6 +6,7 @@ import { GlobalScheduler } from "@/components/GlobalScheduler";
 import { GlobalShortcuts } from "@/components/GlobalShortcuts";
 import { DictionaryQuickSearch } from "@/components/global/DictionaryQuickSearch";
 import { FeedbackDialog } from "@/components/global/FeedbackDialog";
+import { LevelUpParticles } from "@/components/global/LevelUpParticles";
 import { SettingsModal } from "@/components/global/SettingsModal";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { AppSidebar } from "@/components/sidebar/appSidebar";
@@ -25,6 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     notifications,
     unreadCount,
     markRead,
+    markUnread,
     markAllRead,
     remove,
     clearRead,
@@ -85,10 +87,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <GlobalShortcuts />
         <DictionaryQuickSearch />
         <SettingsModal />
+        <LevelUpParticles />
 
         {isSidebarVisible && <AppSidebar isOpen={isSidebarOpen} />}
 
-        {/* Floating Trigger (visible when sidebar is closed) */}
+        {/* Gatilho flutuante (visível quando a barra lateral está fechada) */}
         {isSidebarVisible && (
           <SidebarTrigger
             isOpen={isSidebarOpen}
@@ -109,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main
           className={cn(
             "relative z-0 flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden p-6 md:p-10 scrollbar-stable scroll-smooth",
-            isSidebarVisible && isSidebarOpen ? "lg:ml-72" : "ml-0",
+            isSidebarVisible && isSidebarOpen ? "lg:ml-72 lg:pl-6" : "ml-0",
           )}
         >
           {children}
@@ -126,6 +129,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           isOpen={showNotifications}
           onClose={() => setShowNotifications(false)}
           onMarkRead={markRead}
+          onMarkUnread={markUnread}
           onMarkAllRead={markAllRead}
           onDelete={remove}
           onClearRead={clearRead}

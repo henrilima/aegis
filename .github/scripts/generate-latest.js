@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const [assetsDir, outputPath, tag, repo] = process.argv.slice(2);
 
@@ -89,4 +89,6 @@ const latest = {
 };
 
 fs.writeFileSync(outputPath, `${JSON.stringify(latest, null, 2)}\n`);
-console.log(`Generated ${outputPath} for: ${Object.keys(platforms).join(", ")}`);
+console.log(
+  `Generated ${outputPath} for: ${Object.keys(platforms).join(", ")}`,
+);

@@ -31,7 +31,7 @@ export function SidebarTrigger({
 
   if (!mounted) return null;
 
-  // Logic to prevent double triggers
+  // Lógica para evitar disparos duplos
   if (floating) {
     if (!showFloatingTrigger || isOpen) return null;
   } else {

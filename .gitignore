@@ -45,6 +45,7 @@ next-env.d.ts
 
 # Local files
 todo.md
+/dev_commands.md
 /scripts/
 passwords.db
 config.db
@@ -53,3 +54,5 @@ config.db
 # Tauri Updater
 main.key
 main.key.pub
+
+aegis-web-system/

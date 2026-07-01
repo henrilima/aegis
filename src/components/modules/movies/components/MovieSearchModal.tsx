@@ -131,7 +131,7 @@ export function MovieSearchModal({
 
   if (!isOpen) return null;
 
-  // No key: show the full setup guide
+  // Sem chave: mostra o guia completo de configuração
   if (hasTmdbKey === false) {
     return (
       <ModalShell isOpen={isOpen} onClose={onClose} size="md">

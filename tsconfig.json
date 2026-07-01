@@ -19,6 +19,14 @@
       }
     ],
     "paths": {
+      "@/config/*": ["./src/config/*"],
+      "@/app.config": ["./src/config/app.config.ts"],
+      "@/colors.config": ["./src/config/colors.config.ts"],
+      "@/modules.config": ["./src/config/modules.config.ts"],
+      "@/persistentNotifications.config": [
+        "./src/config/persistentNotifications.config.ts"
+      ],
+      "@/themes.config": ["./src/config/themes.config.ts"],
       "@/*": ["./src/*"]
     }
   },

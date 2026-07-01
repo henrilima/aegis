@@ -106,6 +106,11 @@ export const MODULE_CONFIGS = {
     label: "Estatísticas",
     color: "purple",
   },
+  achievements: {
+    route: "achievements",
+    label: "Conquistas & Desafios",
+    color: "amber",
+  },
 } as const satisfies Record<string, ModuleConfig>;
 
 export type ModuleId = keyof typeof MODULE_CONFIGS;
@@ -131,6 +136,8 @@ export const PORTAL_DESCRIPTIONS: Record<string, string> = {
   alarms: "Gerenciamento de despertadores e múltiplos alarmes recorrentes.",
   statistics: "Painel central de estatísticas integradas e heatmaps.",
   flashcards: "Memorização ativa com baralhos, repetição espaçada e flip 3D.",
+  achievements:
+    "Quadro de medalhas, desafios diários com recompensa de XP e evolução.",
 };
 
 /**

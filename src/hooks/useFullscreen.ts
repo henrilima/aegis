@@ -4,7 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
 /**
- * Hook to handle global fullscreen shortcut (F11) and exit shortcut (F11/Esc)
+ * Hook para gerenciar o atalho global de tela cheia (F11) e saída (F11/Esc).
  */
 export function useFullscreen() {
   useEffect(() => {

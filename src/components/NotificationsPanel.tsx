@@ -35,6 +35,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { APP_CONFIG } from "@/app.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useLog } from "@/hooks/useLog";
 import type { AppNotification } from "@/hooks/useNotifications";
@@ -47,6 +48,7 @@ interface NotificationsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onMarkRead: (id: number) => void;
+  onMarkUnread: (id: number) => void;
   onMarkAllRead: () => void;
   onDelete: (id: number) => void;
   onClearRead: () => void;
@@ -288,6 +290,7 @@ export function NotificationsPanel({
   isOpen,
   onClose,
   onMarkRead,
+  onMarkUnread,
   onMarkAllRead,
   onDelete,
   onClearRead,
@@ -298,7 +301,123 @@ export function NotificationsPanel({
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Update State
+  // Controle de estado reativo para leitura de notificações locais (ex: Discord)
+  const [_localReadVersion, setLocalReadVersion] = useState(0);
+
+  const localPersistentNotificationsReadStatus = useMemo(() => {
+    if (typeof window === "undefined") return new Set<string>();
+    const saved = localStorage.getItem("aegis_local_persistent_read_tags");
+    return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
+  }, []);
+
+  const resolvedLocalPersistentNotifications = useMemo(() => {
+    return (PERSISTENT_NOTIFICATIONS as AppNotification[]).map((n) => {
+      const isRead = n.tag
+        ? localPersistentNotificationsReadStatus.has(n.tag)
+        : n.isRead;
+      return { ...n, isRead };
+    });
+  }, [localPersistentNotificationsReadStatus]);
+
+  const localPersistentUnreadCount = useMemo(() => {
+    return resolvedLocalPersistentNotifications.filter((n) => !n.isRead).length;
+  }, [resolvedLocalPersistentNotifications]);
+
+  const totalUnreadCount = unreadCount + localPersistentUnreadCount;
+
+  const handleMarkRead = useCallback(
+    (ids: number[]) => {
+      const negativeIds = ids.filter((id) => id < 0);
+      if (negativeIds.length > 0) {
+        const saved = localStorage.getItem("aegis_local_persistent_read_tags");
+        const readTags = saved
+          ? new Set<string>(JSON.parse(saved))
+          : new Set<string>();
+        for (const id of negativeIds) {
+          const notif = PERSISTENT_NOTIFICATIONS.find((pn) => pn.id === id);
+          if (notif?.tag) {
+            readTags.add(notif.tag);
+          }
+        }
+        localStorage.setItem(
+          "aegis_local_persistent_read_tags",
+          JSON.stringify(Array.from(readTags)),
+        );
+        setLocalReadVersion((v) => v + 1);
+      }
+
+      const positiveIds = ids.filter((id) => id >= 0);
+      if (positiveIds.length > 0) {
+        for (const id of positiveIds)
+          setExitingIds((prev) => new Set(prev).add(id));
+        setTimeout(() => {
+          for (const id of positiveIds) {
+            onMarkRead(id);
+            setExitingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(id);
+              return next;
+            });
+          }
+        }, 350);
+      }
+    },
+    [onMarkRead],
+  );
+
+  const _handleMarkUnread = useCallback(
+    (ids: number[]) => {
+      const negativeIds = ids.filter((id) => id < 0);
+      if (negativeIds.length > 0) {
+        const saved = localStorage.getItem("aegis_local_persistent_read_tags");
+        const readTags = saved
+          ? new Set<string>(JSON.parse(saved))
+          : new Set<string>();
+        for (const id of negativeIds) {
+          const notif = PERSISTENT_NOTIFICATIONS.find((pn) => pn.id === id);
+          if (notif?.tag) {
+            readTags.delete(notif.tag);
+          }
+        }
+        localStorage.setItem(
+          "aegis_local_persistent_read_tags",
+          JSON.stringify(Array.from(readTags)),
+        );
+        setLocalReadVersion((v) => v + 1);
+      }
+
+      const positiveIds = ids.filter((id) => id >= 0);
+      for (const id of positiveIds) {
+        onMarkUnread(id);
+      }
+    },
+    [onMarkUnread],
+  );
+
+  const handleMarkAllRead = useCallback(() => {
+    const localTags = PERSISTENT_NOTIFICATIONS.map((n) => n.tag).filter(
+      Boolean,
+    ) as string[];
+    if (localTags.length > 0) {
+      localStorage.setItem(
+        "aegis_local_persistent_read_tags",
+        JSON.stringify(localTags),
+      );
+      setLocalReadVersion((v) => v + 1);
+    }
+    onMarkAllRead();
+  }, [onMarkAllRead]);
+
+  const handleDeleteGroup = useCallback(
+    (ids: number[]) => {
+      for (const id of ids) {
+        onDelete(id);
+      }
+    },
+    [onDelete],
+  );
+
+  // Estado de Atualização
   const [release, setRelease] = useState<GithubRelease | null>(cachedRelease);
   const [vState, setVState] = useState<VersionState>(cachedVState);
   const [vDiff, setVDiff] = useState(cachedVDiff);
@@ -620,17 +739,17 @@ export function NotificationsPanel({
       setExitingIds(new Set());
       panelRef.current?.focus();
 
-      if (unreadCount > 0) {
+      if (totalUnreadCount > 0) {
         invoke<{ autoReadNotifications: boolean }>("global_get_app_config")
           .then((config) => {
             if (config.autoReadNotifications) {
-              onMarkAllRead();
+              handleMarkAllRead();
             }
           })
           .catch(console.error);
       }
     }
-  }, [isOpen, unreadCount, onMarkAllRead]);
+  }, [isOpen, handleMarkAllRead, totalUnreadCount]);
 
   // Captura robusta de Alt + N e do evento toggle para fechamento gracioso
   useEffect(() => {
@@ -697,36 +816,29 @@ export function NotificationsPanel({
     }
   };
 
-  const handleMarkRead = (ids: number[]) => {
-    for (const id of ids) setExitingIds((prev) => new Set(prev).add(id));
-    setTimeout(() => {
-      for (const id of ids) {
-        onMarkRead(id);
-        setExitingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    }, 350);
-  };
-
-  const handleDeleteGroup = (ids: number[]) => {
-    for (const id of ids) {
-      onDelete(id);
-    }
-  };
-
   const combinedNotifications = useMemo(() => {
     const dbNotifs = notifications.filter((n) => !n.persistent);
     if (activeFilter === "all") {
       return dbNotifs;
     }
     if (activeFilter === "fixas") {
-      return PERSISTENT_NOTIFICATIONS as AppNotification[];
+      return [
+        ...resolvedLocalPersistentNotifications,
+        ...notifications.filter((n) => n.persistent),
+      ];
     }
     return dbNotifs.filter((n) => n.category === activeFilter);
-  }, [notifications, activeFilter]);
+  }, [notifications, activeFilter, resolvedLocalPersistentNotifications]);
+
+  const fixasStats = useMemo(() => {
+    const allFixas = [
+      ...resolvedLocalPersistentNotifications,
+      ...notifications.filter((n) => n.persistent),
+    ];
+    const unread = allFixas.filter((n) => !n.isRead).length;
+    const read = allFixas.filter((n) => n.isRead).length;
+    return { unread, read, total: allFixas.length };
+  }, [notifications, resolvedLocalPersistentNotifications]);
 
   const groupedNotifications = useMemo(() => {
     const groups: Map<
@@ -818,11 +930,11 @@ export function NotificationsPanel({
               <h2 className="font-bold text-[15px] text-foreground">
                 Notificações
               </h2>
-              {unreadCount > 0 ? (
+              {totalUnreadCount > 0 ? (
                 <p
                   className={`text-[11px] font-medium ${theme.text} opacity-80`}
                 >
-                  {unreadCount} não lida{unreadCount !== 1 ? "s" : ""}
+                  {totalUnreadCount} não lida{totalUnreadCount !== 1 ? "s" : ""}
                 </p>
               ) : (
                 <p
@@ -849,11 +961,11 @@ export function NotificationsPanel({
                 </button>
               </ToolTip>
             )}
-            {unreadCount > 0 && (
+            {totalUnreadCount > 0 && (
               <ToolTip content="Marcar todas como lidas">
                 <button
                   type="button"
-                  onClick={onMarkAllRead}
+                  onClick={handleMarkAllRead}
                   className="p-2 rounded-xl text-muted-foreground hover:text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 transition-all cursor-pointer active:scale-95"
                 >
                   <CheckCheck className="w-4 h-4" />
@@ -921,13 +1033,18 @@ export function NotificationsPanel({
                   type="button"
                   onClick={() => setActiveFilter(cat)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap",
+                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-1.5",
                     activeFilter === cat
                       ? `${theme.bg} ${theme.text}`
                       : "bg-muted/50 text-muted-foreground hover:bg-muted",
                   )}
                 >
-                  {categoryLabels[cat] || cat}
+                  <span>{categoryLabels[cat] || cat}</span>
+                  {cat === "fixas" && fixasStats.unread > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/20">
+                      {fixasStats.unread} não vistas
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -1002,12 +1119,81 @@ function NotificationCard({
 }: {
   n: AppNotification & { count: number; ids: number[] };
   idx: number;
-  theme: { solid: string; solidHover: string; text: string; bg: string };
+  theme: {
+    solid: string;
+    solidHover: string;
+    text: string;
+    bg: string;
+    border: string;
+  };
   exitingIds: Set<number>;
   handleMarkRead: (ids: number[]) => void;
   handleDeleteGroup: (ids: number[]) => void;
   onClose: () => void;
 }) {
+  const { user } = useAuth();
+  const [selectedVote, setSelectedVote] = useState<string>("");
+  const [votedOption, setVotedOption] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const surveyId = n.tag?.startsWith("remote_")
+      ? Number(n.tag.substring("remote_".length))
+      : n.id;
+    return localStorage.getItem(`survey_vote_${surveyId}`);
+  });
+  const [isSubmittingVote, setIsSubmittingVote] = useState(false);
+
+  // Tenta parsear o corpo da enquete
+  let surveyData: { question: string; options: string[] } | null = null;
+  if (n.category === "enquete") {
+    try {
+      surveyData = JSON.parse(n.body);
+    } catch (_e) {}
+  }
+
+  const handleVoteSubmit = async () => {
+    if (!selectedVote || !user) return;
+    setIsSubmittingVote(true);
+    try {
+      const baseUrl =
+        localStorage.getItem("aegis_remote_api_url") ||
+        "https://aegiswebpainel.vercel.app";
+      const apiKey = localStorage.getItem("aegis_remote_api_key") || "96421340";
+
+      const surveyId = n.tag?.startsWith("remote_")
+        ? Number(n.tag.substring("remote_".length))
+        : n.id;
+
+      const res = await fetch(`${baseUrl}/api/surveys/${surveyId}/vote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          username: user.username,
+          option: selectedVote,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Falha ao registrar voto");
+
+      localStorage.setItem(`survey_vote_${surveyId}`, selectedVote);
+      setVotedOption(selectedVote);
+
+      // Marca como lida após o voto com sucesso
+      if (!n.isRead) {
+        handleMarkRead(n.ids);
+      }
+      toast.success("Voto registrado com sucesso!");
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao registrar voto";
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmittingVote(false);
+    }
+  };
   return (
     <div
       style={{ animationDelay: `${idx * 50}ms` }}
@@ -1021,14 +1207,12 @@ function NotificationCard({
       )}
     >
       {/* Botão de ação principal (Overlay) - Satisfaz a semântica sem aninhar botões */}
-      {!n.persistent && (
-        <button
-          type="button"
-          onClick={() => !n.isRead && handleMarkRead(n.ids)}
-          className="absolute inset-0 w-full h-full bg-transparent cursor-pointer z-0 outline-none focus-visible:bg-muted/20"
-          aria-label={`Marcar "${n.title}" como lida`}
-        />
-      )}
+      <button
+        type="button"
+        onClick={() => !n.isRead && handleMarkRead(n.ids)}
+        className="absolute inset-0 w-full h-full bg-transparent cursor-pointer z-0 outline-none focus-visible:bg-muted/20"
+        aria-label={`Marcar "${n.title}" como lida`}
+      />
 
       {/* Conteúdo e botões secundários */}
       <div className="relative z-10 flex gap-3 px-4 py-3.5 pointer-events-none">
@@ -1063,7 +1247,14 @@ function NotificationCard({
                   {n.title}
                 </p>
                 {!n.isRead && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 text-[8px] font-bold animate-in fade-in zoom-in">
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.5 rounded-md text-[8px] font-bold animate-in fade-in zoom-in border",
+                      theme.bg,
+                      theme.text,
+                      theme.border,
+                    )}
+                  >
                     Novo
                   </span>
                 )}
@@ -1077,35 +1268,100 @@ function NotificationCard({
                 )}
               </p>
 
-              <p
-                className={cn(
-                  "text-[12px] leading-relaxed mt-1",
-                  n.isRead ? "text-muted-foreground" : "text-muted-foreground",
-                )}
-              >
-                {n.body.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
-                  part.match(/^https?:\/\//) ? (
-                    <span
-                      key={`${n.id}-part-${i}`}
-                      className={`${theme.text} font-bold break-all`}
-                    >
-                      {part}
-                    </span>
+              {n.category === "enquete" && surveyData ? (
+                <div className="mt-2.5 p-3 rounded-xl bg-muted/20 border border-border/40 pointer-events-auto flex flex-col gap-2.5">
+                  {votedOption ? (
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-semibold bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
+                      <span>✓</span> Voto registrado: {votedOption}
+                    </div>
                   ) : (
-                    part
-                  ),
-                )}
-              </p>
+                    <>
+                      <div className="flex flex-col gap-1.5">
+                        {surveyData.options.map((opt) => (
+                          <label
+                            key={opt}
+                            className={cn(
+                              "flex items-center gap-2 text-[10px] p-2 rounded-lg border border-transparent cursor-pointer transition-all hover:bg-muted/30 hover:border-border/30",
+                              selectedVote === opt &&
+                                "bg-muted/50 border-primary-ring text-foreground font-semibold",
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              name={`survey-${n.id}`}
+                              value={opt}
+                              checked={selectedVote === opt}
+                              onChange={() => setSelectedVote(opt)}
+                              className="w-3.5 h-3.5 accent-primary cursor-pointer"
+                            />
+                            <span>{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!selectedVote || isSubmittingVote}
+                        onClick={handleVoteSubmit}
+                        className={cn(
+                          "w-full py-1.5 rounded-lg text-[10px] font-extrabold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-50",
+                          theme.solid,
+                          theme.solidHover,
+                        )}
+                      >
+                        {isSubmittingVote ? "Enviando Voto..." : "Enviar Voto"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p
+                  className={cn(
+                    "text-[12px] leading-relaxed mt-1",
+                    n.isRead
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {n.body.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                    part.match(/^https?:\/\//) ? (
+                      <span
+                        key={`${n.id}-part-${i}`}
+                        className={`${theme.text} font-bold break-all`}
+                      >
+                        {part}
+                      </span>
+                    ) : (
+                      part
+                    ),
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0 ml-auto self-center pointer-events-auto">
-              {n.persistent ? (
-                <ToolTip content="Esta notificação é permanente">
-                  <span className="p-1.5 rounded-lg text-muted-foreground/80 cursor-default flex">
-                    <Pin className="w-3.5 h-3.5" />
-                  </span>
+              {n.persistent && (
+                <span
+                  className="p-1 text-muted-foreground/60 cursor-default flex"
+                  title="Notificação Fixa"
+                >
+                  <Pin className="w-3.5 h-3.5" />
+                </span>
+              )}
+              {!n.isRead && (
+                <ToolTip content="Marcar como vista">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkRead(n.ids);
+                    }}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-teal-600 dark:text-teal-400 hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
                 </ToolTip>
-              ) : (
+              )}
+              {!n.persistent && (
                 <ToolTip content="Remover todas">
                   <button
                     type="button"
@@ -1116,21 +1372,6 @@ function NotificationCard({
                     className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
-                  </button>
-                </ToolTip>
-              )}
-
-              {!n.isRead && !n.persistent && (
-                <ToolTip content="Marcar todas como lidas">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkRead(n.ids);
-                    }}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 transition-colors cursor-pointer"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
                   </button>
                 </ToolTip>
               )}
@@ -1170,7 +1411,7 @@ function NotificationCard({
             </div>
           )}
 
-          {/* Dynamic Link buttons for Non-persistent database notifications */}
+          {/* Botões de link dinâmico para notificações não-persistentes no banco de dados */}
           {n.body.match(/https?:\/\/[^\s]+/) &&
             !(n.buttons && n.buttons.length > 0) && (
               <div className="mt-1 flex gap-2 pointer-events-auto">

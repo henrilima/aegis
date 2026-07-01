@@ -309,7 +309,7 @@ export function GlobalShortcuts() {
             )}
           </AnimatePresence>
 
-          {/* Trigger Button */}
+          {/* Botão de Gatilho */}
           <ToolTip
             content={isDropdownOpen ? "Fechar menu" : "Menu de utilitários"}
           >

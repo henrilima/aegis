@@ -305,7 +305,7 @@ pub async fn global_import_raw_user_json(
     for mut t in backup.tasks {
         t.user_id = target_user_id.clone();
         t.id = None;
-        let _ = state.tasks.upsert_task(t);
+        let _ = state.tasks.upsert_task(t, None);
     }
 
     // Carrega notas existentes para desduplicação
@@ -524,7 +524,7 @@ pub async fn global_import_user_package(
     for mut t in backup.tasks {
         t.user_id = target_user_id.clone();
         t.id = None;
-        let _ = state.tasks.upsert_task(t);
+        let _ = state.tasks.upsert_task(t, None);
     }
 
     // Carrega notas existentes para desduplicação

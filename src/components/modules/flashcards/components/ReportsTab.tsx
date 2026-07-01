@@ -103,11 +103,8 @@ export function ReportsTab({ decks }: ReportsTabProps) {
         rangeText = `${monthName} / ${start.getFullYear()}`;
       }
 
-      // Filter cards whose lastReviewed falls within the period
-      // Note: we only have lastReviewed (last touch date), not a full review log.
-      // So we count each card reviewed in the period as 1 session.
-      // Parse lastReviewed as LOCAL date to avoid UTC timezone mismatch.
-      // new Date().toISOString() stores UTC, but local date getters (getDate etc.) are local.
+      // Filtra cartões revisados no período. Como temos apenas lastReviewed,
+      // consideramos cada cartão revisado como 1 sessão. Parse local para evitar fuso horário UTC.
       const getLocalDateStr = (isoStr: string) => {
         const d = new Date(isoStr);
         const pad = (n: number) => String(n).padStart(2, "0");
@@ -127,7 +124,7 @@ export function ReportsTab({ decks }: ReportsTabProps) {
         }
       });
 
-      // Count cards reviewed in period; use their individual accuracy ratios for the period metric
+      // Calcula métricas de aproveitamento com base nas revisões do período
       const periodReviews = cardsReviewedInPeriod.length;
       const periodSuccess = cardsReviewedInPeriod.filter(
         (c) => c.reviewCount > 0 && c.successCount / c.reviewCount >= 0.5,
@@ -137,14 +134,14 @@ export function ReportsTab({ decks }: ReportsTabProps) {
           ? Math.round((periodSuccess / periodReviews) * 100)
           : 0;
 
-      // Daily distribution of reviews during the period — Mon first (pt-BR)
+      // Distribuição diária de revisões no período (começando na segunda)
       const days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
       const dist = days.map((label) => ({ label, value: 0 }));
 
       cardsReviewedInPeriod.forEach((c) => {
         if (!c.lastReviewed) return;
         const d = new Date(c.lastReviewed);
-        // Use local day to match the local-time date comparison above
+        // Usa o dia local do fuso horário para bater com a comparação acima
         const rawDay = d.getDay(); // 0=Sun, 1=Mon...6=Sat
         const monFirstIdx = rawDay === 0 ? 6 : rawDay - 1; // Mon=0 … Sun=6
         dist[monFirstIdx].value += 1;

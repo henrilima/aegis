@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { StudyGuidePanel } from "@/components/modules/studies/components/modals/StudyInfoModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
@@ -31,6 +32,7 @@ import { MetasTab } from "./components/metasTab";
 import { OverviewTab } from "./components/overviewTab";
 import { RelatorioTab } from "./components/reportTab";
 import { SessionModal } from "./components/studiesModals";
+import { GOAL_LABELS } from "./goalPanel";
 import { StudiesHeatmap } from "./heatmap";
 import type { StudyGoal, StudySession, TabId } from "./types";
 import {
@@ -84,7 +86,67 @@ export default function StudiesPage() {
     };
   }, []);
 
+  const [goalVals, setGoalVals] = useState<Record<string, string>>({});
+  const [isSavingGoals, setIsSavingGoals] = useState(false);
+
+  useEffect(() => {
+    const m: Record<string, string> = {};
+    const goalTypes = [
+      "weekly_hours",
+      "monthly_hours",
+      "weekly_questions",
+      "monthly_questions",
+      "weekly_pages",
+      "monthly_pages",
+    ];
+    for (const t of goalTypes) {
+      const g = goals.find((g) => g.goalType === t);
+      m[t] = g ? String(g.targetValue) : "";
+    }
+    setGoalVals(m);
+  }, [goals]);
+
   const uid = user ? String(user.id) : "";
+
+  const saveAllGoals = async () => {
+    setIsSavingGoals(true);
+    const updates: StudyGoal[] = [];
+    const goalTypes = [
+      "weekly_hours",
+      "monthly_hours",
+      "weekly_questions",
+      "monthly_questions",
+      "weekly_pages",
+      "monthly_pages",
+    ];
+
+    for (const type of goalTypes) {
+      const valStr = goalVals[type] ?? "";
+      const v = valStr === "" ? 0 : parseFloat(valStr);
+
+      if (Number.isNaN(v) || v < 0) {
+        toast.error(`Valor inválido para ${GOAL_LABELS[type]}`);
+        setIsSavingGoals(false);
+        return;
+      }
+
+      updates.push({
+        userId: uid,
+        goalType: type as StudyGoal["goalType"],
+        targetValue: v,
+      });
+    }
+
+    try {
+      await handleGoalSave(updates);
+      toast.success("Todas as metas foram atualizadas!");
+      setShowSettings(false);
+    } catch {
+      toast.error("Erro ao salvar metas");
+    } finally {
+      setIsSavingGoals(false);
+    }
+  };
 
   // Carregamento inicial
   const load = useCallback(async () => {
@@ -386,54 +448,66 @@ export default function StudiesPage() {
       )}
 
       {/* Configurações e Metas */}
-      {showSettings && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-card/90 backdrop-blur-xl border border-border/60 rounded-[32px] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
-            <div className="p-8 border-b border-border/50 flex items-center justify-between bg-card/50">
-              <div className="flex items-center gap-4">
-                <div className={cn("p-3 rounded-2xl bg-muted/50", theme.text)}>
-                  <Settings className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-foreground">
-                    Metas e Preferências
-                  </h2>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Configure seu ambiente de estudos
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSettings(false)}
-                className="p-3 hover:bg-red-500/10 rounded-2xl transition-all text-muted-foreground hover:text-red-500 cursor-pointer group"
-              >
-                <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
-              </button>
+      <ModalShell
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        size="lg"
+        zIndex="z-60"
+      >
+        <div className="p-8 border-b border-border/50 flex items-center justify-between bg-card/50">
+          <div className="flex items-center gap-4">
+            <div className={cn("p-3 rounded-2xl bg-muted/50", theme.text)}>
+              <Settings className="w-6 h-6" />
             </div>
-            <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
-              <div className="p-7">
-                <MetasTab
-                  goals={goals}
-                  userId={uid}
-                  onSave={handleGoalSave}
-                  weekStartDay={weekStartDay}
-                  onWeekStartChange={async (val: number) => {
-                    setWeekStartDay(val);
-                    const config = await invoke<AppConfig>(
-                      "global_get_app_config",
-                    );
-                    await invoke("global_set_app_config", {
-                      config: { ...config, weekStartDay: val },
-                    });
-                    toast.success("Início da semana atualizado!");
-                  }}
-                />
-              </div>
+            <div>
+              <h2 className="text-xl font-black text-foreground">
+                Metas e Preferências
+              </h2>
+              <p className="text-xs text-muted-foreground font-medium">
+                Configure seu ambiente de estudos
+              </p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowSettings(false)}
+            className="p-3 hover:bg-red-500/10 rounded-2xl transition-all text-muted-foreground hover:text-red-500 cursor-pointer group"
+          >
+            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+          </button>
         </div>
-      )}
+        <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
+          <div className="p-7">
+            <MetasTab
+              vals={goalVals}
+              setVals={setGoalVals}
+              weekStartDay={weekStartDay}
+              onWeekStartChange={async (val: number) => {
+                setWeekStartDay(val);
+                const config = await invoke<AppConfig>("global_get_app_config");
+                await invoke("global_set_app_config", {
+                  config: { ...config, weekStartDay: val },
+                });
+                toast.success("Início da semana atualizado!");
+              }}
+            />
+          </div>
+        </div>
+        <div className="p-8 border-t border-border/50 shrink-0 bg-card/50">
+          <button
+            type="button"
+            onClick={saveAllGoals}
+            disabled={isSavingGoals}
+            className={cn(
+              "w-full p-4 rounded-2xl text-xs font-bold text-white transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50",
+              theme.solid,
+              theme.solidHover,
+            )}
+          >
+            {isSavingGoals ? "Sincronizando..." : "Salvar metas de estudos"}
+          </button>
+        </div>
+      </ModalShell>
     </div>
   );
 }

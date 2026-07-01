@@ -120,7 +120,7 @@ export default function FlashcardsPage() {
     "baralhos",
   );
 
-  // Modals state
+  // Estado dos modais
   const [isDeckFormOpen, setIsDeckFormOpen] = useState(false);
   const [selectedDeckForEdit, setSelectedDeckForEdit] = useState<
     FlashcardDeck | undefined
@@ -177,7 +177,7 @@ export default function FlashcardsPage() {
     return list;
   }, [decks]);
 
-  // Active dropdown state for deck actions
+  // Estado do dropdown ativo para ações do baralho
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   const fetchDecks = useCallback(async () => {
@@ -208,7 +208,7 @@ export default function FlashcardsPage() {
     fetchDecks();
   }, [fetchDecks]);
 
-  // Close dropdowns on click outside
+  // Fecha dropdowns ao clicar fora
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -228,7 +228,7 @@ export default function FlashcardsPage() {
     if (!user?.id) return;
     try {
       if (selectedDeckForEdit?.id) {
-        // Update deck
+        // Atualiza o baralho
         const updated: FlashcardDeck = {
           ...selectedDeckForEdit,
           name: deckData.name,
@@ -450,12 +450,12 @@ export default function FlashcardsPage() {
                       }}
                       className="relative rounded-2xl border border-border bg-card/30 hover:border-border/80 hover:bg-card/45 p-6 flex flex-col gap-4 transition-all duration-300 group"
                     >
-                      {/* Accent indicator bar on the left */}
+                      {/* Barra indicadora de destaque à esquerda */}
                       <div
                         className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-lg ${mDeck.solid}`}
                       />
 
-                      {/* Deck Title & Actions Dropdown */}
+                      {/* Título do baralho e dropdown de ações */}
                       <div className="flex justify-between items-start pl-2">
                         <div className="min-w-0">
                           <h3

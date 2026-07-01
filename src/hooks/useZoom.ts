@@ -5,8 +5,8 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useEffect } from "react";
 
 /**
- * Hook to apply global interface zoom based on user configuration
- * Uses Tauri's native Webview Zoom for better layout stability
+ * Hook para aplicar o zoom global da interface com base na configuração do usuário.
+ * Usa o zoom nativo do Webview do Tauri para melhor estabilidade de layout.
  */
 export function useZoom() {
   useEffect(() => {

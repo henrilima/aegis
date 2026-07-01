@@ -8,7 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-montserrat), "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-sans:
+    var(--font-montserrat), "Montserrat", "Segoe UI", system-ui, sans-serif;
   --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -46,6 +47,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --z-9999: 9999;
+  --z-9990: 9990;
 }
 /* Global Button Cursor Fix */
 button,
@@ -140,6 +143,7 @@ button,
   --popover: oklch(0.12 0 0);
   --sidebar: oklch(0.1 0 0);
   --muted: oklch(0.16 0 0);
+  --muted-foreground: oklch(0.68 0 0);
   --accent: oklch(0.18 0 0);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
@@ -155,6 +159,7 @@ button,
   --popover: oklch(0.16 0.03 230);
   --sidebar: oklch(0.14 0.02 230);
   --muted: oklch(0.2 0.03 230);
+  --muted-foreground: oklch(0.72 0.02 230);
   --accent: oklch(0.24 0.04 230);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
@@ -169,24 +174,11 @@ button,
   --popover: oklch(0.14 0.015 245);
   --sidebar: oklch(0.12 0.01 245);
   --muted: oklch(0.16 0.02 245);
+  --muted-foreground: oklch(0.72 0.01 245);
   --accent: oklch(0.2 0.03 245);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
   --primary: var(--primary-sky);
-  --primary-foreground: oklch(1 0 0);
-}
-
-[data-theme="indigo"] {
-  --background: oklch(0.1 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.13 0 0);
-  --popover: oklch(0.13 0 0);
-  --sidebar: oklch(0.11 0 0);
-  --muted: oklch(0.16 0 0);
-  --accent: oklch(0.18 0.02 48);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
-  --primary: var(--primary-orange);
   --primary-foreground: oklch(1 0 0);
 }
 
@@ -204,34 +196,6 @@ button,
   --primary-foreground: oklch(1 0 0);
 }
 
-[data-theme="purple"] {
-  --background: oklch(0.12 0.04 285);
-  --foreground: oklch(0.95 0.02 285);
-  --card: oklch(0.16 0.05 285);
-  --popover: oklch(0.16 0.05 285);
-  --sidebar: oklch(0.14 0.04 285);
-  --muted: oklch(0.2 0.05 285);
-  --accent: oklch(0.24 0.06 285);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --primary: var(--primary-violet);
-  --primary-foreground: oklch(1 0 0);
-}
-
-[data-theme="graphite"] {
-  --background: oklch(0.08 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.11 0 0);
-  --popover: oklch(0.11 0 0);
-  --sidebar: oklch(0.09 0 0);
-  --muted: oklch(0.14 0 0);
-  --accent: oklch(0.16 0.02 22);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
-  --primary: var(--primary-red);
-  --primary-foreground: oklch(1 0 0);
-}
-
 [data-theme="dracula"] {
   --background: oklch(0.14 0.02 280);
   --foreground: oklch(0.95 0.02 280);
@@ -239,6 +203,7 @@ button,
   --popover: oklch(0.19 0.03 280);
   --sidebar: oklch(0.16 0.02 280);
   --muted: oklch(0.24 0.04 280);
+  --muted-foreground: oklch(0.74 0.03 280);
   --accent: oklch(0.28 0.06 280);
   --border: oklch(0.7 0.08 280 / 15%);
   --input: oklch(0.7 0.08 280 / 18%);
@@ -451,5 +416,32 @@ button,
 
   .animate-float {
     animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes play-spritesheet {
+    from {
+      background-position-x: 0px;
+    }
+    to {
+      background-position-x: var(--spritesheet-width);
+    }
+  }
+
+  @keyframes play-spritesheet-once {
+    from {
+      background-position-x: 0px;
+    }
+    to {
+      background-position-x: var(--spritesheet-last-frame-width);
+    }
+  }
+
+  @keyframes scroll-background {
+    from {
+      background-position-x: 0px;
+    }
+    to {
+      background-position-x: -1000px;
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
   ListTodo,
   type LucideIcon,
   Moon,
+  Trophy,
   UploadCloud,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -31,9 +32,9 @@ interface ModuleDataConfig {
   label: string;
   icon: LucideIcon;
   format: "CSV" | "JSON";
-  importCmd: string;
+  importCmd?: string;
   exportCmd: string;
-  importFileParam: string;
+  importFileParam?: string;
   exportFileParam: string;
 }
 
@@ -118,6 +119,14 @@ const MODULE_DATA_LIST: ModuleDataConfig[] = [
     importFileParam: "path",
     exportFileParam: "path",
   },
+  {
+    id: "achievements",
+    label: "Trophy Hall (XP & Conquistas)",
+    icon: Trophy,
+    format: "CSV",
+    exportCmd: "stats_export_xp_history_csv",
+    exportFileParam: "path",
+  },
 ];
 
 export function DataTab() {
@@ -178,6 +187,7 @@ export function DataTab() {
       setIsOptimizing(true);
       const res = await invoke<string>("global_apply_internal_command", {
         command: "db optimize",
+        userId: uid,
       });
       toast.success(res || "Banco de dados otimizado com sucesso");
     } catch (e) {
@@ -217,6 +227,10 @@ export function DataTab() {
   const handleImport = async (mod: ModuleDataConfig) => {
     if (!uid) {
       toast.error("Usuário não autenticado");
+      return;
+    }
+    if (!mod.importCmd || !mod.importFileParam) {
+      toast.error("Este módulo não suporta importação direta");
       return;
     }
     try {
@@ -343,14 +357,16 @@ export function DataTab() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleImport(mod)}
-                      className="px-3 h-8 rounded-lg bg-accent hover:bg-accent/80 text-foreground font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1"
-                    >
-                      <UploadCloud className="w-3 h-3" />
-                      Importar
-                    </button>
+                    {mod.importCmd && (
+                      <button
+                        type="button"
+                        onClick={() => handleImport(mod)}
+                        className="px-3 h-8 rounded-lg bg-accent hover:bg-accent/80 text-foreground font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <UploadCloud className="w-3 h-3" />
+                        Importar
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleExport(mod)}

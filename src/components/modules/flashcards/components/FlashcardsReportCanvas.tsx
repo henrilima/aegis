@@ -5,29 +5,8 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import { Download, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { HEX_COLORS } from "@/colors.config";
 import { cn, getColorTheme } from "@/lib/utils";
-
-const COLOR_HEX: Record<string, string> = {
-  rose: "#f43f5e",
-  pink: "#ec4899",
-  fuchsia: "#d946ef",
-  purple: "#a855f7",
-  violet: "#8b5cf6",
-  indigo: "#6366f1",
-  blue: "#3b82f6",
-  sky: "#0ea5e9",
-  cyan: "#06b6d4",
-  teal: "#14b8a6",
-  emerald: "#10b981",
-  green: "#22c55e",
-  lime: "#84cc16",
-  yellow: "#eab308",
-  amber: "#f59e0b",
-  orange: "#f97316",
-  red: "#ef4444",
-  zinc: "#71717a",
-  slate: "#64748b",
-};
 
 interface PeriodStats {
   decksCount: number;
@@ -55,7 +34,8 @@ export function FlashcardsReportCanvas({
     weekly: "indigo",
     monthly: "emerald",
   }[reportMode];
-  const accentHex = COLOR_HEX[modeAccentColor] || "#3b82f6";
+  const accentHex =
+    HEX_COLORS[modeAccentColor as keyof typeof HEX_COLORS] || "#3b82f6";
   const theme = getColorTheme(modeAccentColor);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fileName, setFileName] = useState("");
@@ -66,11 +46,10 @@ export function FlashcardsReportCanvas({
       canvas: HTMLCanvasElement,
       img?: HTMLImageElement,
     ) => {
-      // Dimensions for Story (1080x1920)
       canvas.width = 1080;
       canvas.height = 1920;
 
-      // Draw background image
+      // Desenha a imagem de fundo
       if (img) {
         ctx.save();
         ctx.filter = "brightness(0.6)";
@@ -94,11 +73,11 @@ export function FlashcardsReportCanvas({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Dark semi-transparent card overlay to reduce background contrast
+      // Overlay escuro semi-transparente para contraste
       ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Dark edge gradients
+      // Gradientes de borda escuros
       const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
       grad.addColorStop(0, "rgba(0,0,0,0.5)");
       grad.addColorStop(0.3, "transparent");
@@ -107,7 +86,7 @@ export function FlashcardsReportCanvas({
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Aegis Header
+      // Cabeçalho do Aegis
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "900 120px Montserrat, sans-serif";
@@ -121,7 +100,7 @@ export function FlashcardsReportCanvas({
       ctx.font = "600 32px Montserrat, sans-serif";
       ctx.fillText(periodRange, canvas.width / 2, 340);
 
-      // Main accuracy rate metric
+      // Métrica principal de aproveitamento
       const accuracyText = `${periodStats.accuracy}%`;
       ctx.font = "900 280px Montserrat, sans-serif";
       ctx.fillStyle = "#ffffff";
@@ -136,7 +115,7 @@ export function FlashcardsReportCanvas({
       const borderColor = "rgba(255, 255, 255, 0.15)";
       const cx = canvas.width / 2;
 
-      // Draw custom vector icons
+      // Desenha ícones vetoriais customizados
       const drawIcon = (type: string, x: number, y: number) => {
         ctx.save();
         ctx.strokeStyle = accentHex;
@@ -146,7 +125,7 @@ export function FlashcardsReportCanvas({
         ctx.translate(x, y);
         ctx.beginPath();
         if (type === "loop") {
-          // Circular arrow icon for reviews
+          // Ícone de seta circular
           ctx.arc(0, 0, 22, 0, Math.PI * 1.5);
           ctx.stroke();
           ctx.beginPath();
@@ -158,13 +137,13 @@ export function FlashcardsReportCanvas({
           ctx.lineTo(-5, 18);
           ctx.lineTo(22, -20);
         } else if (type === "cards") {
-          // Double card rectangles
+          // Retângulos de cartões
           ctx.rect(-24, -20, 36, 44);
           ctx.stroke();
           ctx.beginPath();
           ctx.rect(-10, -32, 36, 44);
         } else if (type === "box") {
-          // Deck folder icon
+          // Pasta do baralho
           ctx.moveTo(-24, -20);
           ctx.lineTo(-6, -20);
           ctx.lineTo(0, -10);
@@ -283,7 +262,7 @@ export function FlashcardsReportCanvas({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const img = new Image();
-    // Using user-requested custom background image
+    // Usando imagem de fundo personalizada solicitada pelo usuário
     img.src = "/images/flashcards-background.jpg";
     img.onload = () => drawReport(ctx, canvas, img);
     img.onerror = () => drawReport(ctx, canvas);

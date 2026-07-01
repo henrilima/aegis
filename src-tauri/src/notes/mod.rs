@@ -73,7 +73,7 @@ impl NoteManager {
         path.join(format!("{}_{}.md", id, safe_title))
     }
 
-    fn find_note_file(&self, id: i32) -> Option<PathBuf> {
+    pub fn find_note_file(&self, id: i32) -> Option<PathBuf> {
         self.find_note_file_recursive(&self.notes_dir, id)
     }
 
@@ -97,7 +97,7 @@ impl NoteManager {
         None
     }
 
-    fn parse_note_file(&self, path: &PathBuf) -> Result<Note, String> {
+    pub fn parse_note_file(&self, path: &PathBuf) -> Result<Note, String> {
         let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
         let content = content.replace("\r\n", "\n");
 
@@ -215,13 +215,14 @@ impl NoteManager {
         }
     }
 
-    pub fn add_note(&self, note: Note) -> Result<(), String> {
+    pub fn add_note(&self, note: Note) -> Result<i32, String> {
         let mut next_id = 1;
         self.find_max_id(&self.notes_dir, &mut next_id);
 
         let mut new_note = note.clone();
         new_note.id = Some(next_id);
-        self.write_note_file(&new_note)
+        self.write_note_file(&new_note)?;
+        Ok(next_id)
     }
 
     fn find_max_id(&self, dir: &PathBuf, max_id: &mut i32) {
@@ -363,53 +364,105 @@ impl NoteManager {
 }
 
 #[tauri::command]
-pub async fn note_list_notes(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Note>, String> {
+pub async fn note_list_notes(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<Note>, String> {
     Ok(state.note.list_notes(&user_id))
 }
 
 #[tauri::command]
-pub async fn note_list_note_items(state: tauri::State<'_, crate::AppState>, user_id: String, _parent_id: Option<i64>) -> Result<Vec<FileSystemItem>, String> {
+pub async fn note_list_note_items(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    _parent_id: Option<i64>,
+) -> Result<Vec<FileSystemItem>, String> {
     Ok(state.note.list_items(&user_id))
 }
 
 #[tauri::command]
-pub async fn note_add_note(state: tauri::State<'_, crate::AppState>, note: Note) -> Result<i64, String> {
-    state.note.add_note(note)?;
-    Ok(0)
+pub async fn note_add_note(
+    state: tauri::State<'_, crate::AppState>,
+    note: Note,
+) -> Result<i64, String> {
+    let user_id = note.user_id.clone();
+    let id = state.note.add_note(note)?;
+    state.stats.add_xp_with_source_and_ref(
+        &user_id,
+        15,
+        "Nova Anotação",
+        Some("notes"),
+        Some(&id.to_string()),
+    );
+    let today = state.config.get_now().with_timezone(&chrono::Local).to_rfc3339();
+    state.stats.log_note_activity(&user_id, id, "create", &today);
+    Ok(id as i64)
 }
 
 #[tauri::command]
-pub async fn note_update_note(state: tauri::State<'_, crate::AppState>, note: Note) -> Result<(), String> {
-    state.note.update_note(note)
+pub async fn note_update_note(
+    state: tauri::State<'_, crate::AppState>,
+    note: Note,
+) -> Result<(), String> {
+    let user_id = note.user_id.clone();
+    let id = note.id.unwrap_or(0);
+    state.note.update_note(note)?;
+    let today = state.config.get_now().with_timezone(&chrono::Local).to_rfc3339();
+    state.stats.log_note_activity(&user_id, id, "update", &today);
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn note_create_note_folder(state: tauri::State<'_, crate::AppState>, path: String) -> Result<(), String> {
+pub async fn note_create_note_folder(
+    state: tauri::State<'_, crate::AppState>,
+    path: String,
+) -> Result<(), String> {
     state.note.create_folder(path)
 }
 
 #[tauri::command]
-pub async fn note_delete_note_folder(state: tauri::State<'_, crate::AppState>, path: String) -> Result<(), String> {
+pub async fn note_delete_note_folder(
+    state: tauri::State<'_, crate::AppState>,
+    path: String,
+) -> Result<(), String> {
     state.note.delete_folder(path)
 }
 
 #[tauri::command]
-pub async fn note_move_note_item(state: tauri::State<'_, crate::AppState>, source_path: String, dest_path: String) -> Result<(), String> {
+pub async fn note_move_note_item(
+    state: tauri::State<'_, crate::AppState>,
+    source_path: String,
+    dest_path: String,
+) -> Result<(), String> {
     state.note.move_item(source_path, dest_path)
 }
 
 #[tauri::command]
-pub async fn note_delete_note(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
-    state.note.delete_note(id)
+pub async fn note_delete_note(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    user_id: String,
+) -> Result<(), String> {
+    let result = state.note.delete_note(id);
+    if result.is_ok() {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "notes", &id.to_string());
+    }
+    result
 }
 
 #[tauri::command]
-pub async fn note_update_note_pinned(state: tauri::State<'_, crate::AppState>, id: i32, pinned: bool) -> Result<(), String> {
+pub async fn note_update_note_pinned(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    pinned: bool,
+) -> Result<(), String> {
     state.note.update_note_pinned(id, pinned)
 }
 
 #[tauri::command]
-pub async fn note_open_notes_folder(state: tauri::State<'_, crate::AppState>) -> Result<(), String> {
+pub async fn note_open_notes_folder(
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<(), String> {
     state.note.open_folder()
 }
 

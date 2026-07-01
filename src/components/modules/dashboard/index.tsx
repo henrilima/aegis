@@ -24,6 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { AlarmFormState } from "@/components/modules/alarms/hooks/useAlarmsLogic";
 import { DashboardConfigModal } from "@/components/modules/dashboard/components/modals/DashboardConfigModal";
+import { useSettingsLogic } from "@/components/modules/settings/useSettingsLogic";
 import { NAV_GROUPS } from "@/components/sidebar/appSidebar";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
@@ -211,6 +212,16 @@ export default function Dashboard() {
   const { isModuleEnabled } = useModules();
   const { appMode } = useTheme();
   const { navigate } = useNavigation();
+  const {
+    dashboardCoverImage,
+    dashboardCoverPositionX = 50,
+    dashboardCoverPositionY = 50,
+    dashboardCoverBlur = 0,
+    dashboardCoverGrayscale = 0,
+    dashboardCoverSaturation = 100,
+    dashboardCoverZoom = 100,
+    dashboardCoverHeight = 300,
+  } = useSettingsLogic();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [taskToConfirm, setTaskToConfirm] = useState<{
     task: Task;
@@ -293,9 +304,36 @@ export default function Dashboard() {
     );
 
     return (
-      <div className="flex flex-col items-center w-full min-h-screen bg-background p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
-        <div className="w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0">
-          <div className="flex-none px-4 sm:px-0 mt-4 sm:mt-0">
+      <div className="flex flex-col items-center w-full min-h-screen bg-background animate-in fade-in duration-700 relative">
+        {dashboardCoverImage && (
+          <div
+            className="absolute -top-6 md:-top-10 -left-6 md:-left-10 -right-6 md:-right-10 overflow-hidden pointer-events-none z-0"
+            style={{ height: `${dashboardCoverHeight}px` }}
+          >
+            <img
+              src={dashboardCoverImage}
+              alt="Dashboard Cover"
+              className="w-full h-full object-cover"
+              style={{
+                objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
+                filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
+                transform: `scale(${dashboardCoverZoom / 100})`,
+              }}
+            />
+            <div className="absolute inset-0 bg-linear-to-b from-background/25 to-background" />
+          </div>
+        )}
+        <div
+          className={cn(
+            "w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0 relative z-10",
+          )}
+          style={
+            dashboardCoverImage
+              ? { paddingTop: `${Math.max(12, dashboardCoverHeight - 220)}px` }
+              : undefined
+          }
+        >
+          <div className={cn("flex-none px-4 sm:px-0 mt-4 sm:mt-0")}>
             <DashboardHeader
               time={time}
               greeting="Olá"
@@ -365,9 +403,36 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-background p-0 sm:p-8 animate-in fade-in duration-700 overflow-x-hidden">
-      <div className="w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0">
-        <div className="flex-none px-4 sm:px-0 mt-4 sm:mt-0">
+    <div className="flex flex-col items-center w-full min-h-screen bg-background animate-in fade-in duration-700 relative">
+      {dashboardCoverImage && (
+        <div
+          className="absolute -top-6 md:-top-10 -left-6 md:-left-10 -right-6 md:-right-10 overflow-hidden pointer-events-none z-0"
+          style={{ height: `${dashboardCoverHeight}px` }}
+        >
+          <img
+            src={dashboardCoverImage}
+            alt="Dashboard Cover"
+            className="w-full h-full object-cover"
+            style={{
+              objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
+              filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
+              transform: `scale(${dashboardCoverZoom / 100})`,
+            }}
+          />
+          <div className="absolute inset-0 bg-linear-to-b from-background/25 to-background" />
+        </div>
+      )}
+      <div
+        className={cn(
+          "w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0 relative z-10",
+        )}
+        style={
+          dashboardCoverImage
+            ? { paddingTop: `${Math.max(12, dashboardCoverHeight - 220)}px` }
+            : undefined
+        }
+      >
+        <div className={cn("flex-none px-4 sm:px-0 mt-4 sm:mt-0")}>
           <DashboardHeader
             time={time}
             greeting="Olá"

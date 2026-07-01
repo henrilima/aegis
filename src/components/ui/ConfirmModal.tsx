@@ -23,6 +23,7 @@ interface ConfirmModalProps {
   icon?: LucideIcon;
   onConfirm: () => void;
   onCancel: () => void;
+  disablePortal?: boolean;
   children?: React.ReactNode;
 }
 
@@ -71,6 +72,7 @@ export function ConfirmModal({
   icon,
   onConfirm,
   onCancel,
+  disablePortal = false,
   children,
 }: ConfirmModalProps) {
   const cfg = VARIANT_CONFIG[variant];
@@ -94,7 +96,12 @@ export function ConfirmModal({
   }, [onConfirm, onCancel]);
 
   return (
-    <ModalShell onClose={onCancel} size="xs" zIndex="z-[999]">
+    <ModalShell
+      onClose={onCancel}
+      size="xs"
+      zIndex="z-[999]"
+      disablePortal={disablePortal}
+    >
       <div
         className={`w-full py-10 flex justify-center ${cfg.bgColor} border-b border-border/50 shrink-0`}
       >

@@ -1,4 +1,5 @@
 // ─── Macros de Log Semântico ─────────────────────────────────────────────────
+
 #[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => { log::info!($($arg)*); };
@@ -466,8 +467,13 @@ async fn global_set_app_config(state: State<'_, AppState>, config: AppConfig) ->
 }
 
 #[tauri::command]
-async fn global_apply_internal_command(_app_handle: tauri::AppHandle, state: State<'_, AppState>, command: String) -> Result<String, String> {
-    state.config.apply_debug_command(&command)
+async fn global_apply_internal_command(
+    app_handle: tauri::AppHandle,
+    state: State<'_, AppState>,
+    command: String,
+    user_id: Option<String>,
+) -> Result<String, String> {
+    state.config.apply_debug_command(&app_handle, user_id, &command)
 }
 
 #[tauri::command]
@@ -753,6 +759,13 @@ async fn global_notif_list(state: State<'_, AppState>, user_id: String) -> Resul
 }
 
 #[tauri::command]
+async fn global_notif_push(app_handle: tauri::AppHandle, state: State<'_, AppState>, n: notifications::AppNotification) -> Result<(), String> {
+    state.notif.add_notification_direct(n)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": false }));
+    Ok(())
+}
+
+#[tauri::command]
 async fn global_notif_unread_count(state: State<'_, AppState>, user_id: String) -> Result<i64, String> {
     Ok(state.notif.unread_count(&user_id))
 }
@@ -765,6 +778,20 @@ async fn global_notif_mark_read(app_handle: tauri::AppHandle, state: State<'_, A
 }
 
 #[tauri::command]
+async fn global_notif_mark_unread(app_handle: tauri::AppHandle, state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
+    state.notif.mark_unread(id, &user_id)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
+    Ok(())
+}
+
+#[tauri::command]
+async fn global_notif_delete_by_tag(app_handle: tauri::AppHandle, state: State<'_, AppState>, tag: String, user_id: String) -> Result<(), String> {
+    state.notif.delete_by_tag(&tag, &user_id)?;
+    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
+    Ok(())
+}
+
+#[tauri::command]
 async fn global_notif_mark_all_read(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
     state.notif.mark_all_read(&user_id)?;
     let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
@@ -772,17 +799,17 @@ async fn global_notif_mark_all_read(app_handle: tauri::AppHandle, state: State<'
 }
 
 #[tauri::command]
-async fn global_notif_delete(app_handle: tauri::AppHandle, state: State<'_, AppState>, id: i64, user_id: String) -> Result<(), String> {
-    state.notif.delete(id, &user_id)?;
+async fn global_notif_delete(app_handle: tauri::AppHandle, state: State<'_, AppState>, id: i64, user_id: String) -> Result<Option<String>, String> {
+    let tag = state.notif.delete(id, &user_id)?;
     let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
-    Ok(())
+    Ok(tag)
 }
 
 #[tauri::command]
-async fn global_notif_clear_read(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<(), String> {
-    state.notif.clear_read(&user_id)?;
+async fn global_notif_clear_read(app_handle: tauri::AppHandle, state: State<'_, AppState>, user_id: String) -> Result<Vec<String>, String> {
+    let tags = state.notif.clear_read(&user_id)?;
     let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": true }));
-    Ok(())
+    Ok(tags)
 }
 
 #[tauri::command]
@@ -1260,7 +1287,7 @@ pub fn run() {
             global_export_user_package, global_import_user_package, global_export_full_system_bundle, global_import_full_system_bundle,
             global_export_raw_user_json, global_import_raw_user_json,
             global_list_notification_sounds,
-            global_notif_list, global_notif_unread_count, global_notif_mark_read, global_notif_mark_all_read, global_notif_delete, global_notif_clear_read, global_ensure_discord_invite,
+            global_notif_push, global_notif_list, global_notif_unread_count, global_notif_mark_read, global_notif_mark_unread, global_notif_mark_all_read, global_notif_delete, global_notif_delete_by_tag, global_notif_clear_read, global_ensure_discord_invite,
 
             // Passwords
             passwords::password_add_password, passwords::password_list_passwords, passwords::password_decrypt_entry, 
@@ -1310,6 +1337,16 @@ pub fn run() {
 
             // Statistics
             statistics::stats_get_cross_metrics, statistics::stats_get_performance_summary,
+            statistics::stats_get_global_realtime_metrics,
+            statistics::achievements_get_user_state,
+            statistics::achievements_unlock,
+            statistics::achievements_complete_challenge,
+            statistics::achievements_undo_challenge,
+            statistics::achievements_add_xp,
+            statistics::achievements_sync_ledger,
+            statistics::achievements_reset_xp_and_resync,
+            statistics::stats_get_xp_history,
+            statistics::stats_export_xp_history_csv,
 
             // Reading
             reading::reading_list_books, reading::reading_upsert_book, reading::reading_delete_book, 

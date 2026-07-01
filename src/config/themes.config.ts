@@ -6,11 +6,7 @@ export type ChromaticThemeId =
   | "midnight"
   | "nordic"
   | "carbon"
-  | "amber-eclipse"
-  | "indigo"
   | "coffee"
-  | "purple"
-  | "graphite"
   | "dracula"
   | "light";
 
@@ -61,34 +57,6 @@ export const CHROMATIC_THEMES: ChromaticTheme[] = [
     description: "Cinza industrial metálico e ultra-resistente.",
     previewColor: "#121417",
     primary: "carbon",
-  },
-  {
-    id: "amber-eclipse",
-    label: "Amber Eclipse",
-    description: "Contraste vibrante entre o preto profundo e o laranja brasa.",
-    previewColor: "#0A0A0A",
-    primary: "orange",
-  },
-  {
-    id: "indigo",
-    label: "Indigo Nights",
-    description: "O equilíbrio clássico entre o azul e o roxo profundo.",
-    previewColor: "#10101A",
-    primary: "indigo",
-  },
-  {
-    id: "purple",
-    label: "Cyber Purple",
-    description: "Violeta elétrico e tecnológico.",
-    previewColor: "#160F1A",
-    primary: "violet",
-  },
-  {
-    id: "graphite",
-    label: "Crimson Red",
-    description: "Um visual agressivo e moderno em preto e vermelho.",
-    previewColor: "#080808",
-    primary: "red",
   },
   {
     id: "dracula",

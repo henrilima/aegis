@@ -125,7 +125,7 @@ export default function MoviesPage() {
         movie: { ...movie, stars, userId: uid },
       });
       fetchMovies();
-      // Update detail movie state to reflect change immediately if open
+      // Atualiza o estado do filme detalhado se ele estiver aberto
       setDetailMovie((prev) => (prev ? { ...prev, stars } : null));
     } catch {
       toast.error("Erro ao atualizar nota");
@@ -135,7 +135,7 @@ export default function MoviesPage() {
   const filteredMovies = useMemo(() => {
     const q = search.toLowerCase();
 
-    // Filter by tab first
+    // Filtra primeiro pela aba ativa
     const byTab =
       activeTab === "wishlist"
         ? movies.filter((m) => m.status === "WantToWatch")
@@ -152,7 +152,7 @@ export default function MoviesPage() {
           ]
         : byTab;
 
-    // Then filter by search
+    // Depois filtra pela busca
     if (!q) return sorted;
     return sorted.filter(
       (m) =>
@@ -261,7 +261,7 @@ export default function MoviesPage() {
         </div>
       ) : (
         <>
-          {/* Divider sections only on "all" tab when both groups exist */}
+          {/* Seções separadoras apenas na aba "Tudo" quando ambos os grupos existem */}
           {activeTab === "all" && counts.wishlist > 0 && counts.watched > 0 ? (
             <div className="space-y-6">
               <MovieSection
@@ -379,7 +379,7 @@ export default function MoviesPage() {
   );
 }
 
-// Section with label (used in "all" tab)
+// Seção com etiqueta (usada na aba "Tudo")
 function MovieSection({
   title,
   movies,

@@ -82,7 +82,7 @@ export function CardListModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
+  // Estado do formulário
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
   const [editingCardId, setEditingCardId] = useState<number | null>(null);
@@ -296,7 +296,7 @@ export function CardListModal({
           </form>
         </div>
 
-        {/* Right Side: List of existing cards */}
+        {/* Lado direito: Lista de cartões existentes */}
         <div className="flex-1 flex flex-col overflow-hidden p-6">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h3 className="text-sm font-bold text-foreground">

@@ -6,7 +6,7 @@ import { createContext, type ReactNode, useContext } from "react";
 import type { ThemeColorKey } from "@/lib/utils";
 import { cn, getColorTheme } from "@/lib/utils";
 
-//  Context
+// Contexto
 
 interface ModuleColorCtx {
   color: ThemeColorKey;

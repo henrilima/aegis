@@ -16,6 +16,7 @@ import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { SleepGuidePanel } from "@/components/modules/sleep/components/modals/SleepInfoModal";
 import { SleepEntryModal } from "@/components/modules/sleep/components/modals/sleepModals";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
@@ -319,63 +320,64 @@ export default function SleepPage() {
       {tab === "guia" && <SleepGuidePanel />}
 
       {/* Configurações e Metas */}
-      {showSettings && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-card/90 backdrop-blur-xl border border-border/60 rounded-[32px] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
-            <div className="p-8 border-b border-border/50 flex items-center justify-between bg-card/50 shrink-0">
-              <div className="flex items-center gap-4">
-                <div className={cn("p-3 rounded-2xl bg-muted/50", theme.text)}>
-                  <Settings className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-foreground">
-                    Metas de Descanso
-                  </h2>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Configure seus ciclos de sono e alertas
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSettings(false)}
-                className="p-3 hover:bg-red-500/10 rounded-2xl transition-all text-muted-foreground hover:text-red-500 cursor-pointer group"
-              >
-                <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
-              </button>
+      <ModalShell
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        size="lg"
+        zIndex="z-60"
+      >
+        <div className="p-8 border-b border-border/50 flex items-center justify-between bg-card/50 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className={cn("p-3 rounded-2xl bg-muted/50", theme.text)}>
+              <Settings className="w-6 h-6" />
             </div>
-            <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
-              <div className="p-7">
-                <SleepGoalTab
-                  goalHours={goalHours}
-                  setGoalHours={setGoalHours}
-                  goalBedtime={goalBedtime}
-                  setGoalBedtime={setGoalBedtime}
-                  reminderEnabled={reminderEnabled}
-                  setReminderEnabled={setReminderEnabled}
-                  onSave={handleGoalSave}
-                />
-              </div>
-            </div>
-            <div className="p-8 border-t border-border/50 shrink-0 bg-card/50">
-              <button
-                type="button"
-                onClick={async () => {
-                  await handleGoalSave();
-                  setShowSettings(false);
-                }}
-                className={cn(
-                  "w-full p-4 rounded-2xl text-xs font-bold text-white transition-all active:scale-[0.98] cursor-pointer",
-                  theme.solid,
-                  theme.solidHover,
-                )}
-              >
-                Salvar metas de descanso
-              </button>
+            <div>
+              <h2 className="text-xl font-black text-foreground">
+                Metas de Descanso
+              </h2>
+              <p className="text-xs text-muted-foreground font-medium">
+                Configure seus ciclos de sono e alertas
+              </p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowSettings(false)}
+            className="p-3 hover:bg-red-500/10 rounded-2xl transition-all text-muted-foreground hover:text-red-500 cursor-pointer group"
+          >
+            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+          </button>
         </div>
-      )}
+        <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
+          <div className="p-7">
+            <SleepGoalTab
+              goalHours={goalHours}
+              setGoalHours={setGoalHours}
+              goalBedtime={goalBedtime}
+              setGoalBedtime={setGoalBedtime}
+              reminderEnabled={reminderEnabled}
+              setReminderEnabled={setReminderEnabled}
+              onSave={handleGoalSave}
+            />
+          </div>
+        </div>
+        <div className="p-8 border-t border-border/50 shrink-0 bg-card/50">
+          <button
+            type="button"
+            onClick={async () => {
+              await handleGoalSave();
+              setShowSettings(false);
+            }}
+            className={cn(
+              "w-full p-4 rounded-2xl text-xs font-bold text-white transition-all active:scale-[0.98] cursor-pointer",
+              theme.solid,
+              theme.solidHover,
+            )}
+          >
+            Salvar metas de descanso
+          </button>
+        </div>
+      </ModalShell>
     </div>
   );
 }

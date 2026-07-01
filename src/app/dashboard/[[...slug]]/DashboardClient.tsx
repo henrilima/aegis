@@ -5,9 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Loading from "@/components/global/Loading";
+import Achievements from "@/components/modules/achievements";
 import Alarms from "@/components/modules/alarms";
 import Calendar from "@/components/modules/calendar";
-
 import Dashboard from "@/components/modules/dashboard";
 import Dictionary from "@/components/modules/dictionary";
 import Flashcards from "@/components/modules/flashcards";
@@ -84,6 +84,8 @@ export default function DashboardClient() {
         return <Tasks />;
       case "movies":
         return <Movies />;
+      case "achievements":
+        return <Achievements />;
       default:
         return <Dashboard />;
     }

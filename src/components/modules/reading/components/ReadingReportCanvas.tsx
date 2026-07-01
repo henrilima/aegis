@@ -5,31 +5,10 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import { Download, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { HEX_COLORS } from "@/colors.config";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { formatMinutes } from "../utils";
-
-const COLOR_HEX: Record<string, string> = {
-  rose: "#f43f5e",
-  pink: "#ec4899",
-  fuchsia: "#d946ef",
-  purple: "#a855f7",
-  violet: "#8b5cf6",
-  indigo: "#6366f1",
-  blue: "#3b82f6",
-  sky: "#0ea5e9",
-  cyan: "#06b6d4",
-  teal: "#14b8a6",
-  emerald: "#10b981",
-  green: "#22c55e",
-  lime: "#84cc16",
-  yellow: "#eab308",
-  amber: "#f59e0b",
-  orange: "#f97316",
-  red: "#ef4444",
-  zinc: "#71717a",
-  slate: "#64748b",
-};
 
 interface PeriodStats {
   pages: number;
@@ -56,7 +35,8 @@ export function ReadingReportCanvas({
   reportMode,
   accentColor = getModuleColor("reading"),
 }: ReadingReportCanvasProps) {
-  const accentHex = COLOR_HEX[accentColor] || accentColor;
+  const accentHex =
+    HEX_COLORS[accentColor as keyof typeof HEX_COLORS] || accentColor;
   const theme = getColorTheme(accentColor);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fileName, setFileName] = useState("");
@@ -95,7 +75,7 @@ export function ReadingReportCanvas({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Dark semi-transparent overlay to reduce background contrast
+      // Overlay escuro semi-transparente para reduzir o contraste do fundo
       ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 

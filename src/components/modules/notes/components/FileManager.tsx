@@ -154,7 +154,10 @@ export function FileManager({
           path: deleteConfirmTarget.path,
         });
       } else {
-        await invoke("note_delete_note", { id: deleteConfirmTarget.note?.id });
+        await invoke("note_delete_note", {
+          id: deleteConfirmTarget.note?.id,
+          userId: user?.id,
+        });
       }
       setDeleteConfirmTarget(null);
       fetchItems();
@@ -170,11 +173,11 @@ export function FileManager({
       const parent = renameTarget.path.split(/[\\/]/).slice(0, -1).join("/");
       let newName = renameValue.trim();
 
-      // For files, preserve the original extension and the `{id}_` prefix
+      // Para arquivos, preserva a extensão original e o prefixo `{id}_`
       if (!renameTarget.isDir) {
         const oldFileName = renameTarget.path.split(/[\\/]/).pop() || "";
 
-        // Extract prefix if it matches ID_ pattern (e.g. "1_")
+        // Extrai o prefixo se ele corresponder ao padrão ID_ (ex: "1_")
         const prefixMatch = oldFileName.match(/^(\d+_)/);
         const prefix = prefixMatch ? prefixMatch[1] : "";
 
@@ -184,7 +187,7 @@ export function FileManager({
           newName = newName + originalExt;
         }
 
-        // Prepend prefix to newName if it doesn't already have it
+        // Adiciona o prefixo no início do novo nome se já não o tiver
         if (prefix && !newName.startsWith(prefix)) {
           newName = prefix + newName;
         }

@@ -91,6 +91,16 @@ impl SleepManager {
         Ok(conn.last_insert_rowid())
     }
 
+    pub fn exists(&self, user_id: &str, date: &str) -> bool {
+        let conn = self.conn();
+        let count: i32 = conn.query_row(
+            "SELECT COUNT(*) FROM sleep_entries WHERE user_id=?1 AND date=?2",
+            params![user_id, date],
+            |r| r.get(0)
+        ).unwrap_or(0);
+        count > 0
+    }
+
     pub fn delete_entry(&self, id: i64, user_id: &str) -> Result<(), String> {
         let conn = self.conn();
         conn.execute(
@@ -266,7 +276,22 @@ pub async fn sono_upsert_entry(
     state: tauri::State<'_, crate::AppState>,
     entry: SleepEntry,
 ) -> Result<i64, String> {
-    state.sleep.upsert_entry(entry)
+    let is_new = !state.sleep.exists(&entry.user_id, &entry.date);
+    let res = state.sleep.upsert_entry(entry.clone());
+    if let Ok(inserted_id) = res {
+        if is_new {
+            let hours = entry.duration_minutes as f64 / 60.0;
+            let xp_to_add = 30 + (hours * 5.0) as i32;
+            state.stats.add_xp_with_source_and_ref(
+                &entry.user_id,
+                xp_to_add,
+                "Registro de Sono",
+                Some("sleep_entries"),
+                Some(&inserted_id.to_string()),
+            );
+        }
+    }
+    res
 }
 
 #[tauri::command]
@@ -275,7 +300,11 @@ pub async fn sono_delete_entry(
     id: i64,
     user_id: String,
 ) -> Result<(), String> {
-    state.sleep.delete_entry(id, &user_id)
+    let result = state.sleep.delete_entry(id, &user_id);
+    if result.is_ok() {
+        let _ = state.stats.delete_xp_for_ref(&user_id, "sleep_entries", &id.to_string());
+    }
+    result
 }
 
 #[tauri::command]

@@ -30,6 +30,8 @@ interface ModalShellProps {
   className?: string;
   /** Impede o fechamento pelo ESC se true */
   disableClose?: boolean;
+  /** Impede a renderização via Portal no document.body */
+  disablePortal?: boolean;
   children: ReactNode;
 }
 
@@ -54,6 +56,7 @@ export function ModalShell({
   zIndex = "z-50",
   className,
   disableClose = false,
+  disablePortal = false,
   children,
 }: ModalShellProps) {
   useLockBodyScroll(isOpen);
@@ -78,7 +81,7 @@ export function ModalShell({
 
   const isFull = size === "full";
 
-  return createPortal(
+  const element = (
     <div
       className={cn(
         "fixed inset-y-0 right-0 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200",
@@ -109,7 +112,9 @@ export function ModalShell({
       >
         {children}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  if (disablePortal) return element;
+  return createPortal(element, document.body);
 }

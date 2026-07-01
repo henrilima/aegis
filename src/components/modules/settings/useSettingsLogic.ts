@@ -45,6 +45,20 @@ export interface AppConfig {
   dashboardClockAnimated: boolean;
   dashboardHeaderStyle?: string;
   customDataDir: string;
+  dashboardCoverImage?: string;
+  dashboardWelcomingGlass?: boolean;
+  dashboardCoverPositionX?: number;
+  dashboardCoverPositionY?: number;
+  dashboardShowDate?: boolean;
+  dashboardCoverBlur?: number;
+  dashboardCoverGrayscale?: number;
+  dashboardCoverSaturation?: number;
+  dashboardCoverZoom?: number;
+  dashboardCoverHeight?: number;
+  selectedRankTitle?: string;
+  showProfileRankBorder?: boolean;
+  showSidebarRankBorder?: boolean;
+  achievementsEnabled?: boolean;
 }
 
 export function useSettingsLogic() {
@@ -77,6 +91,19 @@ export function useSettingsLogic() {
   const [dashboardClockAnimated, setDashboardClockAnimated] = useState(true);
   const [dashboardHeaderStyle, setDashboardHeaderStyle] = useState("default");
   const [customDataDir, setCustomDataDir] = useState("");
+  const [dashboardCoverImage, setDashboardCoverImage] = useState("");
+  const [dashboardWelcomingGlass, setDashboardWelcomingGlass] = useState(true);
+  const [dashboardCoverPositionX, setDashboardCoverPositionX] = useState(50);
+  const [dashboardCoverPositionY, setDashboardCoverPositionY] = useState(50);
+  const [dashboardShowDate, setDashboardShowDate] = useState(true);
+  const [dashboardCoverBlur, setDashboardCoverBlur] = useState(0);
+  const [dashboardCoverGrayscale, setDashboardCoverGrayscale] = useState(0);
+  const [dashboardCoverSaturation, setDashboardCoverSaturation] = useState(100);
+  const [dashboardCoverZoom, setDashboardCoverZoom] = useState(100);
+  const [dashboardCoverHeight, setDashboardCoverHeight] = useState(300);
+  const [selectedRankTitle, setSelectedRankTitle] = useState("");
+  const [showProfileRankBorder, setShowProfileRankBorder] = useState(true);
+  const [showSidebarRankBorder, setShowSidebarRankBorder] = useState(true);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const { navigate, setSettingsOpen } = useNavigation();
   const username = user?.username || "Usuário";
@@ -125,6 +152,8 @@ export function useSettingsLogic() {
       }
       setNotificationSound(activeSound);
       if (config.tmdbApiKey !== undefined) setTmdbApiKey(config.tmdbApiKey);
+      if (config.selectedRankTitle !== undefined)
+        setSelectedRankTitle(config.selectedRankTitle);
       if (config.weatherLocation !== undefined)
         setWeatherLocation(config.weatherLocation);
       if (config.showWeatherWidget !== undefined)
@@ -142,6 +171,30 @@ export function useSettingsLogic() {
         setDashboardHeaderStyle(config.dashboardHeaderStyle);
       if (config.customDataDir !== undefined)
         setCustomDataDir(config.customDataDir);
+      if (config.dashboardCoverImage !== undefined)
+        setDashboardCoverImage(config.dashboardCoverImage);
+      if (config.dashboardWelcomingGlass !== undefined)
+        setDashboardWelcomingGlass(config.dashboardWelcomingGlass);
+      if (config.dashboardCoverPositionX !== undefined)
+        setDashboardCoverPositionX(config.dashboardCoverPositionX);
+      if (config.dashboardCoverPositionY !== undefined)
+        setDashboardCoverPositionY(config.dashboardCoverPositionY);
+      if (config.dashboardShowDate !== undefined)
+        setDashboardShowDate(config.dashboardShowDate);
+      if (config.dashboardCoverBlur !== undefined)
+        setDashboardCoverBlur(config.dashboardCoverBlur);
+      if (config.dashboardCoverGrayscale !== undefined)
+        setDashboardCoverGrayscale(config.dashboardCoverGrayscale);
+      if (config.dashboardCoverSaturation !== undefined)
+        setDashboardCoverSaturation(config.dashboardCoverSaturation);
+      if (config.dashboardCoverZoom !== undefined)
+        setDashboardCoverZoom(config.dashboardCoverZoom);
+      if (config.dashboardCoverHeight !== undefined)
+        setDashboardCoverHeight(config.dashboardCoverHeight);
+      if (config.showProfileRankBorder !== undefined)
+        setShowProfileRankBorder(config.showProfileRankBorder);
+      if (config.showSidebarRankBorder !== undefined)
+        setShowSidebarRankBorder(config.showSidebarRankBorder);
       setIsConfigLoading(false);
     } catch (err) {
       console.error("Failed to load config:", err);
@@ -189,6 +242,19 @@ export function useSettingsLogic() {
       dashboardClockAnimated,
       dashboardHeaderStyle,
       customDataDir,
+      dashboardCoverImage,
+      dashboardWelcomingGlass,
+      dashboardCoverPositionX,
+      dashboardCoverPositionY,
+      dashboardShowDate,
+      dashboardCoverBlur,
+      dashboardCoverGrayscale,
+      dashboardCoverSaturation,
+      dashboardCoverZoom,
+      dashboardCoverHeight,
+      selectedRankTitle,
+      showProfileRankBorder,
+      showSidebarRankBorder,
       [key]: value,
     };
 
@@ -226,10 +292,148 @@ export function useSettingsLogic() {
         setDashboardClockAnimated(value as boolean);
       if (key === "dashboardHeaderStyle")
         setDashboardHeaderStyle(value as string);
+      if (key === "dashboardCoverImage")
+        setDashboardCoverImage(value as string);
+      if (key === "dashboardShowDate") setDashboardShowDate(value as boolean);
+      if (key === "dashboardWelcomingGlass")
+        setDashboardWelcomingGlass(value as boolean);
+      if (key === "dashboardCoverPositionX")
+        setDashboardCoverPositionX(value as number);
+      if (key === "dashboardCoverPositionY")
+        setDashboardCoverPositionY(value as number);
+      if (key === "dashboardCoverBlur") setDashboardCoverBlur(value as number);
+      if (key === "dashboardCoverGrayscale")
+        setDashboardCoverGrayscale(value as number);
+      if (key === "dashboardCoverSaturation")
+        setDashboardCoverSaturation(value as number);
+      if (key === "dashboardCoverZoom") setDashboardCoverZoom(value as number);
+      if (key === "dashboardCoverHeight")
+        setDashboardCoverHeight(value as number);
+      if (key === "selectedRankTitle") setSelectedRankTitle(value as string);
+      if (key === "showProfileRankBorder")
+        setShowProfileRankBorder(value as boolean);
+      if (key === "showSidebarRankBorder")
+        setShowSidebarRankBorder(value as boolean);
       toast.success("Configuração atualizada");
     } catch (err) {
       console.error("Failed to save config:", err);
       toast.error("Erro ao salvar configuração");
+    }
+  };
+
+  const updateConfigFields = async (fields: Partial<AppConfig>) => {
+    const newConfig: AppConfig = {
+      minimizeOnClose,
+      startAtLogin,
+      highPriorityNotifications,
+      startMinimized,
+      weekStartDay,
+      showHolidays,
+      autoReadNotifications,
+      notifSleepBedtime,
+      notifSleepBedtimeTime,
+      notifSleepMorning,
+      notifSleepMorningTime,
+      notifHabitUncompleted,
+      notifHabitTime,
+      notifEventUpcoming,
+      notifEventUpcomingTime,
+      notifSleepTargetHours,
+      notificationSound,
+      tmdbApiKey,
+      weatherLocation,
+      showWeatherWidget,
+      appZoom,
+      showSidebarTrigger,
+      showFloatingTrigger,
+      dashboardClockStyle,
+      dashboardClockAnimated,
+      dashboardHeaderStyle,
+      customDataDir,
+      dashboardCoverImage,
+      dashboardWelcomingGlass,
+      dashboardCoverPositionX,
+      dashboardCoverPositionY,
+      dashboardShowDate,
+      dashboardCoverBlur,
+      dashboardCoverGrayscale,
+      dashboardCoverSaturation,
+      dashboardCoverZoom,
+      dashboardCoverHeight,
+      selectedRankTitle,
+      showProfileRankBorder,
+      showSidebarRankBorder,
+      ...fields,
+    };
+
+    try {
+      await invoke("global_set_app_config", { config: newConfig });
+      window.dispatchEvent(new Event("aegis-config-changed"));
+
+      Object.entries(fields).forEach(([key, value]) => {
+        if (key === "notifSleepBedtime") setNotifSleepBedtime(value as boolean);
+        if (key === "notifSleepBedtimeTime")
+          setNotifSleepBedtimeTime(value as string);
+        if (key === "notifSleepMorning") setNotifSleepMorning(value as boolean);
+        if (key === "notifSleepMorningTime")
+          setNotifSleepMorningTime(value as string);
+        if (key === "notifHabitUncompleted")
+          setNotifHabitUncompleted(value as boolean);
+        if (key === "notifHabitTime") setNotifHabitTime(value as string);
+        if (key === "notifEventUpcoming")
+          setNotifEventUpcoming(value as boolean);
+        if (key === "notifEventUpcomingTime")
+          setNotifEventUpcomingTime(value as string);
+        if (key === "highPriorityNotifications")
+          setHighPriorityNotifications(value as boolean);
+        if (key === "autoReadNotifications")
+          setAutoReadNotifications(value as boolean);
+        if (key === "notifSleepTargetHours")
+          setNotifSleepTargetHours(value as number);
+        if (key === "notificationSound") setNotificationSound(value as string);
+        if (key === "weatherLocation") setWeatherLocation(value as string);
+        if (key === "showWeatherWidget") setShowWeatherWidget(value as boolean);
+        if (key === "appZoom") setAppZoom(value as number);
+        if (key === "showSidebarTrigger")
+          setShowSidebarTrigger(value as boolean);
+        if (key === "showFloatingTrigger")
+          setShowFloatingTrigger(value as boolean);
+        if (key === "dashboardClockStyle")
+          setDashboardClockStyle(value as string);
+        if (key === "dashboardClockAnimated")
+          setDashboardClockAnimated(value as boolean);
+        if (key === "dashboardHeaderStyle")
+          setDashboardHeaderStyle(value as string);
+        if (key === "dashboardCoverImage")
+          setDashboardCoverImage(value as string);
+        if (key === "dashboardShowDate") setDashboardShowDate(value as boolean);
+        if (key === "dashboardWelcomingGlass")
+          setDashboardWelcomingGlass(value as boolean);
+        if (key === "dashboardCoverPositionX")
+          setDashboardCoverPositionX(value as number);
+        if (key === "dashboardCoverPositionY")
+          setDashboardCoverPositionY(value as number);
+        if (key === "dashboardCoverBlur")
+          setDashboardCoverBlur(value as number);
+        if (key === "dashboardCoverGrayscale")
+          setDashboardCoverGrayscale(value as number);
+        if (key === "dashboardCoverSaturation")
+          setDashboardCoverSaturation(value as number);
+        if (key === "dashboardCoverZoom")
+          setDashboardCoverZoom(value as number);
+        if (key === "dashboardCoverHeight")
+          setDashboardCoverHeight(value as number);
+        if (key === "selectedRankTitle") setSelectedRankTitle(value as string);
+        if (key === "showProfileRankBorder")
+          setShowProfileRankBorder(value as boolean);
+        if (key === "showSidebarRankBorder")
+          setShowSidebarRankBorder(value as boolean);
+      });
+
+      toast.success("Configurações atualizadas");
+    } catch (err) {
+      console.error("Failed to save config:", err);
+      toast.error("Erro ao salvar configurações");
     }
   };
 
@@ -265,6 +469,19 @@ export function useSettingsLogic() {
       dashboardClockAnimated,
       dashboardHeaderStyle,
       customDataDir,
+      dashboardCoverImage,
+      dashboardWelcomingGlass,
+      dashboardCoverPositionX,
+      dashboardCoverPositionY,
+      dashboardShowDate,
+      dashboardCoverBlur,
+      dashboardCoverGrayscale,
+      dashboardCoverSaturation,
+      dashboardCoverZoom,
+      dashboardCoverHeight,
+      selectedRankTitle,
+      showProfileRankBorder,
+      showSidebarRankBorder,
     };
 
     try {
@@ -318,6 +535,19 @@ export function useSettingsLogic() {
       dashboardClockAnimated,
       dashboardHeaderStyle,
       customDataDir,
+      dashboardCoverImage,
+      dashboardWelcomingGlass,
+      dashboardCoverPositionX,
+      dashboardCoverPositionY,
+      dashboardShowDate,
+      dashboardCoverBlur,
+      dashboardCoverGrayscale,
+      dashboardCoverSaturation,
+      dashboardCoverZoom,
+      dashboardCoverHeight,
+      selectedRankTitle,
+      showProfileRankBorder,
+      showSidebarRankBorder,
     };
 
     try {
@@ -360,6 +590,19 @@ export function useSettingsLogic() {
       dashboardClockAnimated,
       dashboardHeaderStyle,
       customDataDir,
+      dashboardCoverImage,
+      dashboardWelcomingGlass,
+      dashboardCoverPositionX,
+      dashboardCoverPositionY,
+      dashboardShowDate,
+      dashboardCoverBlur,
+      dashboardCoverGrayscale,
+      dashboardCoverSaturation,
+      dashboardCoverZoom,
+      dashboardCoverHeight,
+      selectedRankTitle,
+      showProfileRankBorder,
+      showSidebarRankBorder,
     };
 
     try {
@@ -405,6 +648,19 @@ export function useSettingsLogic() {
       dashboardClockAnimated,
       dashboardHeaderStyle,
       customDataDir,
+      dashboardCoverImage,
+      dashboardWelcomingGlass,
+      dashboardCoverPositionX,
+      dashboardCoverPositionY,
+      dashboardShowDate,
+      dashboardCoverBlur,
+      dashboardCoverGrayscale,
+      dashboardCoverSaturation,
+      dashboardCoverZoom,
+      dashboardCoverHeight,
+      selectedRankTitle,
+      showProfileRankBorder,
+      showSidebarRankBorder,
     };
 
     try {
@@ -474,8 +730,11 @@ export function useSettingsLogic() {
       // Se não for um comando do Frontend, envia pro Backend (time skipto, db, sys info, etc)
       const response = await invoke<string>("global_apply_internal_command", {
         command: normalizedCmd,
+        userId: user?.id,
       });
       toast.success(response);
+      window.dispatchEvent(new Event("aegis-achievements-refresh"));
+      window.dispatchEvent(new Event("aegis-config-changed"));
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
@@ -506,7 +765,21 @@ export function useSettingsLogic() {
     dashboardClockAnimated,
     dashboardHeaderStyle,
     customDataDir,
+    dashboardCoverImage,
+    dashboardWelcomingGlass,
+    dashboardCoverPositionX,
+    dashboardCoverPositionY,
+    dashboardShowDate,
+    dashboardCoverBlur,
+    dashboardCoverGrayscale,
+    dashboardCoverSaturation,
+    dashboardCoverZoom,
+    dashboardCoverHeight,
+    selectedRankTitle,
+    showProfileRankBorder,
+    showSidebarRankBorder,
     updateConfigField,
+    updateConfigFields,
     showHolidays,
     username,
     email,

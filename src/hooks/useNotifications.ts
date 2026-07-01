@@ -104,6 +104,15 @@ export function useNotifications(userId: string | undefined) {
     [userId, refresh],
   );
 
+  const markUnread = useCallback(
+    async (id: number) => {
+      if (!userId) return;
+      await invoke("global_notif_mark_unread", { id, userId });
+      await refresh();
+    },
+    [userId, refresh],
+  );
+
   const markAllRead = useCallback(async () => {
     if (!userId) return;
     await invoke("global_notif_mark_all_read", { userId });
@@ -113,7 +122,25 @@ export function useNotifications(userId: string | undefined) {
   const remove = useCallback(
     async (id: number) => {
       if (!userId) return;
-      await invoke("global_notif_delete", { id, userId });
+      try {
+        const deletedTag = await invoke<string | null>("global_notif_delete", {
+          id,
+          userId,
+        });
+        if (deletedTag?.startsWith("remote_")) {
+          const saved = localStorage.getItem("aegis_deleted_remote_tags");
+          const deleted = saved ? JSON.parse(saved) : [];
+          if (!deleted.includes(deletedTag)) {
+            deleted.push(deletedTag);
+            localStorage.setItem(
+              "aegis_deleted_remote_tags",
+              JSON.stringify(deleted),
+            );
+          }
+        }
+      } catch (e) {
+        console.warn("[useNotifications] Erro ao remover notificação:", e);
+      }
       await refresh();
     },
     [userId, refresh],
@@ -121,7 +148,31 @@ export function useNotifications(userId: string | undefined) {
 
   const clearRead = useCallback(async () => {
     if (!userId) return;
-    await invoke("global_notif_clear_read", { userId });
+    try {
+      const deletedTags = await invoke<string[]>("global_notif_clear_read", {
+        userId,
+      });
+      const remoteTags = deletedTags.filter((t) => t.startsWith("remote_"));
+      if (remoteTags.length > 0) {
+        const saved = localStorage.getItem("aegis_deleted_remote_tags");
+        const deleted = saved ? JSON.parse(saved) : [];
+        let updated = false;
+        for (const tag of remoteTags) {
+          if (!deleted.includes(tag)) {
+            deleted.push(tag);
+            updated = true;
+          }
+        }
+        if (updated) {
+          localStorage.setItem(
+            "aegis_deleted_remote_tags",
+            JSON.stringify(deleted),
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[useNotifications] Erro ao limpar notificações lidas:", e);
+    }
     await refresh();
   }, [userId, refresh]);
 
@@ -130,6 +181,7 @@ export function useNotifications(userId: string | undefined) {
     unreadCount,
     refresh,
     markRead,
+    markUnread,
     markAllRead,
     remove,
     clearRead,
