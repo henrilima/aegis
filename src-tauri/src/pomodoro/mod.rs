@@ -3,6 +3,8 @@ use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use tauri::AppHandle;
 use chrono::{DateTime, Utc};
+use std::sync::Mutex;
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +32,7 @@ pub struct PomodoroHistory {
 
 pub struct PomodoroManager {
     db_path: PathBuf,
+    active_states: Mutex<HashMap<String, PomodoroState>>,
 }
 
 impl PomodoroManager {
@@ -69,7 +72,36 @@ impl PomodoroManager {
             [],
         ).ok();
 
-        Self { db_path }
+        // Carrega os estados iniciais do banco para o cache em memória
+        let mut active_states = HashMap::new();
+        if let Ok(mut stmt) = conn.prepare("SELECT user_id, is_running, start_time, work_minutes, break_minutes, cycle_type, cycles_completed, accumulated_seconds FROM pomodoro_v2") {
+            if let Ok(rows) = stmt.query_map([], |row| {
+                let is_running: i32 = row.get(1)?;
+                let start_time_str: Option<String> = row.get(2)?;
+                let start_time = start_time_str.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&Utc)));
+                Ok((
+                    row.get::<_, String>(0)?,
+                    PomodoroState {
+                        is_running: is_running != 0,
+                        start_time,
+                        work_minutes: row.get(3)?,
+                        break_minutes: row.get(4)?,
+                        cycle_type: row.get(5)?,
+                        cycles_completed: row.get(6)?,
+                        accumulated_seconds: row.get(7)?,
+                    }
+                ))
+            }) {
+                for r in rows.flatten() {
+                    active_states.insert(r.0, r.1);
+                }
+            }
+        }
+
+        Self {
+            db_path,
+            active_states: Mutex::new(active_states),
+        }
     }
 
     fn get_connection(&self) -> Connection {
@@ -78,7 +110,7 @@ impl PomodoroManager {
         conn
     }
 
-    pub fn get_state(&self, user_id: &str) -> PomodoroState {
+    fn get_state_from_db(&self, user_id: &str) -> PomodoroState {
         let conn = self.get_connection();
         let result = conn.query_row(
             "SELECT is_running, start_time, work_minutes, break_minutes, cycle_type, cycles_completed, accumulated_seconds FROM pomodoro_v2 WHERE user_id = ?1",
@@ -111,6 +143,20 @@ impl PomodoroManager {
         })
     }
 
+    pub fn get_state(&self, user_id: &str) -> PomodoroState {
+        {
+            let lock = self.active_states.lock().unwrap();
+            if let Some(state) = lock.get(user_id) {
+                return state.clone();
+            }
+        }
+
+        let state = self.get_state_from_db(user_id);
+        let mut lock = self.active_states.lock().unwrap();
+        lock.insert(user_id.to_string(), state.clone());
+        state
+    }
+
     pub fn save_state(&self, user_id: &str, state: &PomodoroState) -> Result<(), String> {
         let conn = self.get_connection();
         let start_time_str = state.start_time.map(|dt| dt.to_rfc3339());
@@ -138,6 +184,8 @@ impl PomodoroManager {
             ],
         ).map_err(|e| e.to_string())?;
 
+        let mut lock = self.active_states.lock().unwrap();
+        lock.insert(user_id.to_string(), state.clone());
         Ok(())
     }
 
@@ -194,16 +242,8 @@ impl PomodoroManager {
     }
 
     pub fn get_all_user_ids(&self) -> Vec<String> {
-        let conn = self.get_connection();
-        let mut stmt = match conn.prepare("SELECT user_id FROM pomodoro_v2") {
-            Ok(s) => s,
-            Err(_) => return vec![],
-        };
-        let rows = match stmt.query_map([], |row| row.get(0)) {
-            Ok(r) => r,
-            Err(_) => return vec![],
-        };
-        rows.filter_map(|r| r.ok()).collect()
+        let lock = self.active_states.lock().unwrap();
+        lock.keys().cloned().collect()
     }
 }
 

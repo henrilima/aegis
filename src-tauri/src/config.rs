@@ -101,6 +101,7 @@ impl Default for AppConfig {
 
 pub struct ConfigManager {
     db_path: PathBuf,
+    time_offset: std::sync::Mutex<Option<i64>>,
 }
 
 impl ConfigManager {
@@ -175,7 +176,10 @@ impl ConfigManager {
             .ok();
         }
 
-        Self { db_path }
+        Self {
+            db_path,
+            time_offset: std::sync::Mutex::new(None),
+        }
     }
 
     fn get_connection(&self) -> Connection {
@@ -991,8 +995,15 @@ impl ConfigManager {
         Ok(())
     }
     pub fn get_time_offset(&self) -> i64 {
+        {
+            let lock = self.time_offset.lock().unwrap();
+            if let Some(val) = *lock {
+                return val;
+            }
+        }
+
         let conn = self.get_connection();
-        conn.query_row(
+        let val = conn.query_row(
             "SELECT value FROM settings WHERE key = 'debug_time_offset'",
             [],
             |row| {
@@ -1000,7 +1011,11 @@ impl ConfigManager {
                 Ok(s.parse::<i64>().unwrap_or(0))
             },
         )
-        .unwrap_or(0)
+        .unwrap_or(0);
+
+        let mut lock = self.time_offset.lock().unwrap();
+        *lock = Some(val);
+        val
     }
 
     pub fn set_time_offset(&self, offset: i64) -> Result<(), String> {
@@ -1010,6 +1025,9 @@ impl ConfigManager {
             params![offset.to_string()],
         )
         .map_err(|e| e.to_string())?;
+
+        let mut lock = self.time_offset.lock().unwrap();
+        *lock = Some(offset);
         Ok(())
     }
 
