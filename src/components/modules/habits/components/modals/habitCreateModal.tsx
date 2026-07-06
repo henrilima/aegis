@@ -1,5 +1,3 @@
-"use client";
-
 import { Activity, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -22,33 +20,57 @@ interface HabitCreateModalProps {
     chargesAmount: number,
     chargesInterval: number,
     goalDays: number,
+    frequency?: "daily" | "weekdays",
+    weekdays?: string,
   ) => void;
   onClose: () => void;
 }
 
+const DAYS_LIST = [
+  { value: 1, label: "S" },
+  { value: 2, label: "T" },
+  { value: 3, label: "Q" },
+  { value: 4, label: "Q" },
+  { value: 5, label: "S" },
+  { value: 6, label: "S" },
+  { value: 0, label: "D" },
+];
+
 /**
- * Modal para criação de novos hábitos e vícios
+ * Modal para criação e parametrização de novos hábitos
  */
 export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
   const [name, setName] = useState("");
-  const [cooldown, setCooldown] = useState(1);
   const [type, setType] = useState<"Positive" | "Negative">("Positive");
+  const [frequency, setFrequency] = useState<"daily" | "weekdays">("daily");
+  const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5]); // Segunda a Sexta por padrão
+  const [cooldown, setCooldown] = useState(1);
   const [chargesAmount, setChargesAmount] = useState(0);
-  const [chargesInterval, setChargesInterval] = useState(2);
+  const [chargesInterval, setChargesInterval] = useState(7);
   const [goalDays, setGoalDays] = useState(0);
 
   const minCooldown = type === "Negative" ? 2 : 1;
+
+  const toggleWeekday = (val: number) => {
+    setWeekdays((prev) =>
+      prev.includes(val)
+        ? prev.filter((d) => d !== val)
+        : [...prev, val].sort(),
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     onAdd(
       name.trim(),
-      cooldown,
+      type === "Positive" ? 1 : cooldown,
       type,
-      chargesAmount,
-      chargesInterval,
+      type === "Positive" ? 0 : chargesAmount,
+      type === "Positive" ? 1 : chargesInterval,
       goalDays,
+      frequency,
+      type === "Positive" ? weekdays.join(",") : "",
     );
   };
 
@@ -104,6 +126,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
           <div className="grid grid-cols-2 gap-8 items-start">
             {/* Coluna Esquerda: Definição Básica */}
             <div className="flex flex-col gap-6">
+              {/* O que vamos rastrear? */}
               <div className="space-y-1.5">
                 <label htmlFor="hcm-name" className={lc}>
                   O que vamos rastrear?
@@ -118,6 +141,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                 />
               </div>
 
+              {/* Natureza */}
               <div className="space-y-1.5">
                 <label htmlFor="hcm-type" className={lc}>
                   Natureza do hábito
@@ -141,127 +165,183 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                       value="Positive"
                       className="text-sm font-medium"
                     >
-                      ✅ Hábito Construtivo
+                      Hábito Diário
                     </SelectItem>
                     <SelectItem
                       value="Negative"
                       className="text-sm font-medium"
                     >
-                      🔒 Controle de Danos
+                      Controle de Vício
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="hcm-goal" className={lc}>
-                  Meta de Dias (opcional)
-                </label>
-                <div className="relative">
-                  <Input
-                    id="hcm-goal"
-                    type="number"
-                    min={0}
-                    value={goalDays === 0 ? "" : goalDays}
-                    onChange={(e) =>
-                      setGoalDays(Math.max(0, Number(e.target.value)))
-                    }
-                    placeholder="Sem meta"
-                    className={ic}
-                  />
-                  {goalDays > 0 && (
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">
-                      Dias
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground ml-1">
-                  Defina quantos dias de sequência você deseja alcançar (ex: 10,
-                  15, 30).
-                </p>
-              </div>
             </div>
 
-            {/* Coluna Direita: Lógica de Recorrência */}
-            <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="hcm-cooldown" className={lc}>
-                    {type === "Negative" ? "Tolerância" : "Recorrência"}
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="hcm-cooldown"
-                      type="number"
-                      min={minCooldown}
-                      value={cooldown}
-                      onChange={(e) =>
-                        setCooldown(
-                          Math.max(minCooldown, Number(e.target.value)),
-                        )
+            {/* Coluna Direita: Lógica Adicional */}
+            <div className="flex flex-col gap-6">
+              {type === "Positive" ? (
+                <>
+                  {/* Frequência */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="hcm-frequency" className={lc}>
+                      Frequência
+                    </label>
+                    <Select
+                      value={frequency}
+                      onValueChange={(v: "daily" | "weekdays") =>
+                        setFrequency(v)
                       }
-                      className={`${ic} pr-12`}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">
-                      Dias
-                    </span>
+                    >
+                      <SelectTrigger
+                        id="hcm-frequency"
+                        className="w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:ring-0"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        <SelectItem
+                          value="daily"
+                          className="text-sm font-medium"
+                        >
+                          Todos os dias
+                        </SelectItem>
+                        <SelectItem
+                          value="weekdays"
+                          className="text-sm font-medium"
+                        >
+                          Dias específicos
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="hcm-charges" className={lc}>
-                    Cargas iniciais
-                  </label>
-                  <Input
-                    id="hcm-charges"
-                    type="number"
-                    min={0}
-                    value={chargesAmount}
-                    onChange={(e) =>
-                      setChargesAmount(Math.max(0, Number(e.target.value)))
-                    }
-                    className={ic}
-                  />
-                </div>
-              </div>
 
-              {chargesAmount > 0 ? (
-                <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
-                  <label htmlFor="hcm-interval" className={lc}>
-                    Intervalo de recuperação
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="hcm-interval"
-                      type="number"
-                      min={2}
-                      value={chargesInterval}
-                      onChange={(e) =>
-                        setChargesInterval(Math.max(2, Number(e.target.value)))
-                      }
-                      className={`${ic} pr-12`}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">
-                      Dias
-                    </span>
+                  {frequency === "weekdays" && (
+                    <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                      <span className={lc}>Selecione os dias</span>
+                      <div className="flex gap-2 justify-between">
+                        {DAYS_LIST.map((day) => {
+                          const active = weekdays.includes(day.value);
+                          return (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleWeekday(day.value)}
+                              className={cn(
+                                "w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center transition-all cursor-pointer border",
+                                active
+                                  ? cn(
+                                      theme.solid,
+                                      "border-transparent text-white",
+                                    )
+                                  : "bg-card border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                              )}
+                            >
+                              {day.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Meta */}
+                  <div className="space-y-1.5 pt-2 border-t border-border/40">
+                    <label htmlFor="hcm-goal" className={lc}>
+                      Meta de Dias (opcional)
+                    </label>
+                    <div className="relative">
+                      <Input
+                        id="hcm-goal"
+                        type="number"
+                        min={0}
+                        value={goalDays === 0 ? "" : goalDays}
+                        onChange={(e) =>
+                          setGoalDays(Math.max(0, Number(e.target.value)))
+                        }
+                        placeholder="Sem meta"
+                        className={ic}
+                      />
+                      {goalDays > 0 && (
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">
+                          Dias
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p
-                    className={cn(
-                      "text-[10px] mt-2 px-1 font-bold",
-                      theme.text,
-                      "opacity-80",
-                    )}
-                  >
-                    Mínimo de 2 dias necessário para garantir que falhas sejam
-                    registradas antes da recarga.
-                  </p>
-                </div>
+                </>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-border rounded-xl">
-                  <p className="text-[10px] text-neutral-600 font-bold leading-relaxed uppercaseer">
-                    {type === "Negative"
-                      ? "Cargas: Permissão para falhar e controlar vícios"
-                      : "Cargas: Segurança para não perder a sequência"}
-                  </p>
+                <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="hcm-cooldown" className={lc}>
+                        Tolerância
+                      </label>
+                      <div className="relative">
+                        <Input
+                          id="hcm-cooldown"
+                          type="number"
+                          min={minCooldown}
+                          value={cooldown}
+                          onChange={(e) =>
+                            setCooldown(
+                              Math.max(minCooldown, Number(e.target.value)),
+                            )
+                          }
+                          className={`${ic} pr-12`}
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">
+                          Dias
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="hcm-charges" className={lc}>
+                        Cargas iniciais
+                      </label>
+                      <Input
+                        id="hcm-charges"
+                        type="number"
+                        min={0}
+                        value={chargesAmount}
+                        onChange={(e) =>
+                          setChargesAmount(Math.max(0, Number(e.target.value)))
+                        }
+                        className={ic}
+                      />
+                    </div>
+                  </div>
+
+                  {chargesAmount > 0 ? (
+                    <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+                      <label htmlFor="hcm-interval" className={lc}>
+                        Intervalo de recuperação
+                      </label>
+                      <div className="relative">
+                        <Input
+                          id="hcm-interval"
+                          type="number"
+                          min={2}
+                          value={chargesInterval}
+                          onChange={(e) =>
+                            setChargesInterval(
+                              Math.max(2, Number(e.target.value)),
+                            )
+                          }
+                          className={`${ic} pr-12`}
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">
+                          Dias
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-border rounded-xl">
+                      <p className="text-[10px] text-neutral-600 font-bold leading-relaxed uppercase">
+                        Cargas: Permissão para falhar e controlar vícios
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

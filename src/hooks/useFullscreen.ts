@@ -1,5 +1,11 @@
 "use client";
 
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: unknown;
+  }
+}
+
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
@@ -8,6 +14,7 @@ import { useEffect } from "react";
  */
 export function useFullscreen() {
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     const handleKeyDown = async (e: KeyboardEvent) => {
       const appWindow = getCurrentWindow();
 

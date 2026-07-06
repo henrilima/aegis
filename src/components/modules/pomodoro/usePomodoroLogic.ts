@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: unknown;
+  }
+}
+
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -120,10 +126,12 @@ export function usePomodoroLogic() {
   }, [user, updateDisplayTime, fetchHistory]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     fetchState();
   }, [fetchState]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     // Escuta o evento do backend para sincronizar o timer em tempo real
     const unlisten = listen("pomo-tick", () => {
       fetchState();

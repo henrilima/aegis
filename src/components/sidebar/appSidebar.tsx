@@ -55,12 +55,12 @@ export const NAV_GROUPS = [
     compact: false,
     items: [
       {
-        title: "Senhas & Cofre",
+        title: "Senhas",
         route: "passwords" as AppRoute,
         icon: Lock,
       },
       {
-        title: "Tarefas",
+        title: "Lista de Tarefas",
         route: "tasks" as AppRoute,
         icon: ListTodo,
       },

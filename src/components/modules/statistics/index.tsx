@@ -219,7 +219,6 @@ export default function StatisticsPage() {
           )}
 
           {activeTab === "overview" ? (
-            /* ──────────────── VISÃO GERAL ──────────────── */
             <>
               <PeriodOverview days={days} metrics={metrics} summary={summary} />
 
@@ -382,14 +381,12 @@ export default function StatisticsPage() {
               </div>
             </>
           ) : activeTab === "comparison" ? (
-            /* ──────────────── COMPARATIVO ──────────────── */
             <PeriodComparison
               metrics={metrics}
               days={days}
               activeSources={activeSources}
             />
           ) : (
-            /* ──────────────── GUIA / GLOSSÁRIO ──────────────── */
             <StatisticsGuide />
           )}
         </>

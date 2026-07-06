@@ -10,9 +10,10 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/core";
-import { ArrowLeft, FileText, Folder } from "lucide-react";
+import { ArrowLeft, FileText, Folder, LayoutGrid, List } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { resolveColor } from "@/colors.config";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -29,12 +30,15 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { FileSystemItem, Note } from "../types";
 import { DroppableBreadcrumb } from "./DroppableBreadcrumb";
-import { ItemCard } from "./ItemCard";
+import { ItemCard, type ViewMode } from "./ItemCard";
+
+const VIEW_MODE_KEY = "aegis-notes-view-mode";
 
 interface FileManagerProps {
   onNoteClick: (note: Note, edit?: boolean) => void;
@@ -43,6 +47,8 @@ interface FileManagerProps {
   searchQuery: string;
   externalFolderTrigger?: boolean;
   onFolderModalClose?: () => void;
+  currentPath: string;
+  setCurrentPath: (path: string) => void;
 }
 
 export function FileManager({
@@ -51,14 +57,24 @@ export function FileManager({
   searchQuery,
   externalFolderTrigger,
   onFolderModalClose,
+  currentPath,
+  setCurrentPath,
 }: FileManagerProps) {
   const color = getModuleColor("notes");
   const theme = getColorTheme(color);
   const { user } = useAuth();
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPath, setCurrentPath] = useState("");
   const [activeItem, setActiveItem] = useState<FileSystemItem | null>(null);
+
+  // Modo de visualização: grade ou lista, persistido no localStorage
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(VIEW_MODE_KEY);
+      if (saved === "list" || saved === "grid") return saved;
+    }
+    return "grid";
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -95,6 +111,12 @@ export function FileManager({
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Persiste a alteração de modo
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  };
 
   const currentItems = useMemo(() => {
     const filtered = items.filter((item) => {
@@ -231,6 +253,35 @@ export function FileManager({
     }
   };
 
+  const handleNoteColorChange = async (item: FileSystemItem, color: string) => {
+    if (item.isDir || !item.note) return;
+    try {
+      await invoke("note_update_note_color", {
+        id: item.note.id,
+        color: color || null,
+      });
+      fetchItems();
+    } catch {
+      toast.error("Erro ao alterar cor");
+    }
+  };
+
+  const handleFolderColorChange = async (
+    item: FileSystemItem,
+    color: string,
+  ) => {
+    if (!item.isDir) return;
+    try {
+      await invoke("note_update_folder_color", {
+        path: item.path,
+        color: color || null,
+      });
+      fetchItems();
+    } catch {
+      toast.error("Erro ao alterar cor da pasta");
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const item = items.find((i) => i.path === event.active.id);
     if (item) setActiveItem(item);
@@ -263,46 +314,96 @@ export function FileManager({
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          {currentPath && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                const parts = currentPath.split(/[\\/]/).filter(Boolean);
-                parts.pop();
-                setCurrentPath(parts.join("/"));
-              }}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          )}
-          <Breadcrumb>
-            <BreadcrumbList>
-              <DroppableBreadcrumb
-                id="root"
-                onClick={() => setCurrentPath("")}
-                isCurrent={!currentPath}
+        {/* Barra de navegação com breadcrumb e toggle de modo */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {currentPath && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                onClick={() => {
+                  const parts = currentPath.split(/[\\/]/).filter(Boolean);
+                  parts.pop();
+                  setCurrentPath(parts.join("/"));
+                }}
               >
-                Início
-              </DroppableBreadcrumb>
-              {breadcrumbs.map((bc, i) => (
-                <div key={bc.path} className="flex items-center gap-2">
-                  <BreadcrumbSeparator />
-                  <DroppableBreadcrumb
-                    id={`bc:${bc.path}`}
-                    onClick={() => setCurrentPath(bc.path)}
-                    isCurrent={i === breadcrumbs.length - 1}
-                  >
-                    {bc.name}
-                  </DroppableBreadcrumb>
-                </div>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
+            <Breadcrumb className="min-w-0">
+              <BreadcrumbList>
+                <DroppableBreadcrumb
+                  id="root"
+                  onClick={() => setCurrentPath("")}
+                  isCurrent={!currentPath}
+                >
+                  Início
+                </DroppableBreadcrumb>
+                {breadcrumbs.map((bc, i) => {
+                  // Busca a cor da pasta correspondente na lista de items
+                  const folderColor =
+                    items.find(
+                      (it) =>
+                        it.isDir &&
+                        it.path.replace(/\\/g, "/") ===
+                          bc.path.replace(/\\/g, "/"),
+                    )?.color ?? null;
+                  const folderHex = folderColor
+                    ? resolveColor(folderColor)
+                    : null;
+                  return (
+                    <div key={bc.path} className="flex items-center gap-2">
+                      <BreadcrumbSeparator />
+                      <DroppableBreadcrumb
+                        id={`bc:${bc.path}`}
+                        onClick={() => setCurrentPath(bc.path)}
+                        isCurrent={i === breadcrumbs.length - 1}
+                        color={folderHex}
+                      >
+                        {bc.name}
+                      </DroppableBreadcrumb>
+                    </div>
+                  );
+                })}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          {/* Toggle de modo de visualização */}
+          <div className="flex items-center gap-1 shrink-0 border border-border rounded-xl p-1 bg-card/50">
+            <ToolTip content="Visualização em grade">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange("grid")}
+                className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer",
+                  viewMode === "grid"
+                    ? cn("text-foreground", theme.bg)
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                )}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </ToolTip>
+            <ToolTip content="Visualização em lista">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange("list")}
+                className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer",
+                  viewMode === "list"
+                    ? cn("text-foreground", theme.bg)
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                )}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+            </ToolTip>
+          </div>
         </div>
 
+        {/* Área de conteúdo */}
         <div className="rounded-2xl border border-border bg-card/10 p-4">
           {currentItems.length === 0 ? (
             <EmptyState
@@ -317,12 +418,13 @@ export function FileManager({
               }
               className="py-16"
             />
-          ) : (
+          ) : viewMode === "grid" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {currentItems.map((item) => (
                 <ItemCard
                   key={item.path}
                   item={item}
+                  viewMode="grid"
                   onNavigate={() =>
                     item.isDir
                       ? setCurrentPath(item.path)
@@ -335,6 +437,39 @@ export function FileManager({
                     setRenameValue(item.name);
                   }}
                   onTogglePin={() => handleTogglePin(item)}
+                  onColorChange={(c) =>
+                    item.isDir
+                      ? handleFolderColorChange(item, c)
+                      : handleNoteColorChange(item, c)
+                  }
+                  searchQuery={searchQuery}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-0.5">
+              {currentItems.map((item) => (
+                <ItemCard
+                  key={item.path}
+                  item={item}
+                  viewMode="list"
+                  onNavigate={() =>
+                    item.isDir
+                      ? setCurrentPath(item.path)
+                      : item.note && onNoteClick(item.note, false)
+                  }
+                  onEdit={() => item.note && onNoteClick(item.note, true)}
+                  onDelete={() => handleDelete(item)}
+                  onRename={() => {
+                    setRenameTarget(item);
+                    setRenameValue(item.name);
+                  }}
+                  onTogglePin={() => handleTogglePin(item)}
+                  onColorChange={(c) =>
+                    item.isDir
+                      ? handleFolderColorChange(item, c)
+                      : handleNoteColorChange(item, c)
+                  }
                   searchQuery={searchQuery}
                 />
               ))}
@@ -342,6 +477,7 @@ export function FileManager({
           )}
         </div>
 
+        {/* DragOverlay */}
         <DragOverlay adjustScale={true}>
           {activeItem ? (
             <div
@@ -366,6 +502,7 @@ export function FileManager({
           ) : null}
         </DragOverlay>
 
+        {/* Modal nova pasta */}
         <Dialog
           open={isNewFolderOpen}
           onOpenChange={(open) => {
@@ -408,6 +545,7 @@ export function FileManager({
           </DialogContent>
         </Dialog>
 
+        {/* Modal renomear */}
         <Dialog
           open={!!renameTarget}
           onOpenChange={(open) => !open && setRenameTarget(null)}

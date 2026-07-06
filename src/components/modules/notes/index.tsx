@@ -11,7 +11,6 @@ import {
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
-import { NoteCreateModal } from "@/components/modules/notes/components/modals/noteCreateModal";
 import { NoteExpandModal } from "@/components/modules/notes/components/modals/noteExpandModal";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +22,7 @@ const FileManager = lazy(() =>
   import("./components/FileManager").then((m) => ({ default: m.FileManager })),
 );
 
+import { NoteEditor } from "./components/NoteEditor";
 import { NotesInfoModal } from "./components/NotesInfoModal";
 import type { Note } from "./types";
 
@@ -34,8 +34,6 @@ export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [creationPath, setCreationPath] = useState("");
   const [expandedNote, setExpandedNote] = useState<Note | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -43,6 +41,7 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [currentPath, setCurrentPath] = useState("");
 
   const uid = user ? String(user.id) : "";
 
@@ -67,42 +66,71 @@ export default function NotesPage() {
     setExpandedNote(note);
   };
 
-  const handleAdd = async (title: string, content: string, color?: string) => {
+  const handleCreateEmptyNote = async (path?: string) => {
     if (!uid) return;
     try {
-      await invoke("note_add_note", {
+      const targetPath = path !== undefined ? path : currentPath;
+      const newId = await invoke<number>("note_add_note", {
         note: {
           userId: uid,
-          title: title.trim(),
-          content: content.trim(),
+          title: "",
+          content: "",
           createdAt: simulatedNow.toISOString(),
           pinned: false,
-          path: creationPath || undefined,
-          color,
+          path: targetPath || undefined,
         },
       });
-      setIsNoteModalOpen(false);
-      setCreationPath("");
+
       setRefreshTrigger((prev) => prev + 1);
-      fetchNotes();
-      toast.success("Nota salva com sucesso!");
+      await fetchNotes();
+
+      const newNote: Note = {
+        id: newId,
+        userId: uid,
+        title: "",
+        content: "",
+        createdAt: simulatedNow.toISOString(),
+        pinned: false,
+        path: targetPath || undefined,
+      };
+      setExpandedNote(newNote);
+      setEditMode(true);
+      toast.success("Nova nota criada!");
     } catch (err) {
-      toast.error(typeof err === "string" ? err : "Falha ao salvar nota");
+      toast.error(typeof err === "string" ? err : "Falha ao criar nota");
     }
   };
 
-  const handleUpdate = async (note: Note) => {
-    try {
-      await invoke("note_update_note", { note });
-      setRefreshTrigger((prev) => prev + 1);
-      fetchNotes();
-      toast.success("Nota atualizada!");
-      setExpandedNote(null);
-      setEditMode(false);
-    } catch (err) {
-      toast.error(typeof err === "string" ? err : "Erro na atualização");
-    }
-  };
+  const handleUpdate = useCallback(
+    async (note: Note) => {
+      try {
+        await invoke("note_update_note", { note });
+        setRefreshTrigger((prev) => prev + 1);
+        fetchNotes();
+        toast.success("Nota atualizada!");
+        setExpandedNote(null);
+        setEditMode(false);
+      } catch (err) {
+        toast.error(typeof err === "string" ? err : "Erro na atualização");
+      }
+    },
+    [fetchNotes],
+  );
+
+  const handleUpdateEditor = useCallback(
+    async (note: Note) => {
+      try {
+        await invoke("note_update_note", { note });
+        setRefreshTrigger((prev) => prev + 1);
+        setExpandedNote(note);
+        fetchNotes();
+      } catch (err) {
+        toast.error(typeof err === "string" ? err : "Erro na atualização");
+        throw err;
+      }
+    },
+    [fetchNotes],
+  );
 
   const handleDelete = async (id: number) => {
     try {
@@ -130,6 +158,32 @@ export default function NotesPage() {
             Sincronizando notas...
           </span>
         </div>
+      </div>
+    );
+  }
+
+  if (expandedNote) {
+    return (
+      <div className="w-full flex flex-col h-full text-foreground">
+        <NoteEditor
+          note={expandedNote}
+          onSave={handleUpdateEditor}
+          onClose={() => {
+            setExpandedNote(null);
+            setEditMode(false);
+          }}
+          onDelete={async (id) => {
+            setDeletingId(id);
+          }}
+        />
+
+        {deletingId !== null && (
+          <ConfirmModal
+            {...CONFIRM_PRESETS.deleteNote}
+            onConfirm={() => handleDelete(deletingId)}
+            onCancel={() => setDeletingId(null)}
+          />
+        )}
       </div>
     );
   }
@@ -172,21 +226,13 @@ export default function NotesPage() {
             tooltip: "Nova Nota",
             primary: true,
             onClick: () => {
-              setCreationPath("");
-              setIsNoteModalOpen(true);
+              handleCreateEmptyNote(currentPath);
             },
           },
         ]}
       />
 
       <NotesInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
-
-      {isNoteModalOpen && (
-        <NoteCreateModal
-          onAdd={handleAdd}
-          onClose={() => setIsNoteModalOpen(false)}
-        />
-      )}
 
       {expandedNote && (
         <NoteExpandModal
@@ -213,13 +259,14 @@ export default function NotesPage() {
         <FileManager
           onNoteClick={handleNoteClick}
           onNewNote={(path) => {
-            setCreationPath(path);
-            setIsNoteModalOpen(true);
+            handleCreateEmptyNote(path);
           }}
           refreshTrigger={refreshTrigger}
           searchQuery={searchQuery}
           externalFolderTrigger={isFolderModalOpen}
           onFolderModalClose={() => setIsFolderModalOpen(false)}
+          currentPath={currentPath}
+          setCurrentPath={setCurrentPath}
         />
       </Suspense>
 

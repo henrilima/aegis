@@ -50,6 +50,7 @@ commands.allow = [
     "habit_list_habits",
     "habit_add_habit",
     "habit_update_habit",
+    "habit_toggle_date",
     "habit_mark_habit_done",
     "habit_use_habit_charge",
     "habit_reset_habit",
@@ -72,6 +73,8 @@ commands.allow = [
     "note_delete_note_folder",
     "note_move_note_item",
     "note_update_note_pinned",
+    "note_update_note_color",
+    "note_update_folder_color",
     "note_open_notes_folder"
 ]
 

@@ -22,46 +22,111 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
   const [periodOffset, setPeriodOffset] = useState(0);
+  const [period, setPeriod] = useState<7 | 30 | 100>(30);
 
-  const positive = habits.filter((h) => h.habitType === "Positive");
-  const negative = habits.filter(
-    (h) => h.habitType === "Negative" || h.habitType === "Bad",
+  // Consideramos apenas os hábitos ativos para métricas de progresso e ofensivas atuais.
+  // Hábitos arquivados guardam histórico do passado e não poluem as métricas da rotina atual.
+  const activePositive = habits.filter(
+    (h) => h.habitType === "Positive" && !h.archived,
+  );
+  const activeNegative = habits.filter(
+    (h) => (h.habitType === "Negative" || h.habitType === "Bad") && !h.archived,
   );
 
-  const totalCurrentStreak = positive.reduce(
-    (acc, h) => acc + h.currentStreak,
-    0,
-  );
-  const maxGlobalStreak = habits.reduce(
+  const maxGlobalStreak = activePositive.reduce(
     (acc, h) => Math.max(acc, h.maxStreak),
     0,
   );
 
-  // Cálculo da Taxa de Foco (Performance)
+  // Média de Ofensivas Ativas
+  const avgStreak = useMemo(() => {
+    if (activePositive.length === 0) return 0;
+    const activeStreakSum = activePositive.reduce(
+      (acc, h) => acc + h.currentStreak,
+      0,
+    );
+    return Math.round(activeStreakSum / activePositive.length);
+  }, [activePositive]);
+
+  // Cálculo da Taxa de Foco baseada nos dias reais agendados no período selecionado
   const focusRate = useMemo(() => {
-    if (habits.length === 0) return 0;
-    const totalPerformance = habits.reduce((acc, h) => {
-      const target =
-        h.goalDays && h.goalDays > 0
-          ? h.goalDays
-          : h.maxStreak > 0
-            ? h.maxStreak
-            : 7;
-      const performance = Math.min(100, (h.currentStreak / target) * 100);
-      return acc + performance;
-    }, 0);
-    return Math.round(totalPerformance / habits.length);
-  }, [habits]);
+    if (activePositive.length === 0) return 0;
+
+    let totalAdherence = 0;
+    let habitsWithSchedules = 0;
+
+    // Gera a lista de datas do período de teste (dos últimos N dias até hoje)
+    const dates: Date[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < period; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(d);
+    }
+
+    const getFormattedDate = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
+
+    for (const h of activePositive) {
+      let scheduledCount = 0;
+      let completedCount = 0;
+
+      const weekdays = h.weekdays
+        ? h.weekdays.split(",").map(Number)
+        : [1, 2, 3, 4, 5];
+      const createdDate = new Date(h.createdAt);
+      createdDate.setHours(0, 0, 0, 0);
+
+      for (const d of dates) {
+        // Ignora dias anteriores à criação do hábito para não penalizar a taxa de foco
+        if (d < createdDate) continue;
+
+        const wDay = d.getDay();
+        const isScheduled =
+          !h.frequency || h.frequency === "daily" || weekdays.includes(wDay);
+
+        if (isScheduled) {
+          scheduledCount++;
+          const formatted = getFormattedDate(d);
+          if (h.completedDates?.includes(formatted)) {
+            completedCount++;
+          }
+        }
+      }
+
+      if (scheduledCount > 0) {
+        const rate = (completedCount / scheduledCount) * 100;
+        totalAdherence += rate;
+        habitsWithSchedules++;
+      }
+    }
+
+    return habitsWithSchedules > 0
+      ? Math.round(totalAdherence / habitsWithSchedules)
+      : 100;
+  }, [activePositive, period]);
 
   const statusLabel = useMemo(() => {
-    if (habits.length === 0) return "Sem dados";
+    if (activePositive.length === 0) return "Sem dados";
     if (focusRate >= 90) return "Inabalável";
     if (focusRate >= 60) return "Consistente";
     if (focusRate >= 30) return "Em Evolução";
     return "Iniciando";
-  }, [habits, focusRate]);
+  }, [activePositive.length, focusRate]);
 
   const reportText = useMemo(() => {
+    const periodLabel =
+      period === 7
+        ? "Últimos 7 dias"
+        : period === 30
+          ? "Últimos 30 dias"
+          : "Últimos 100 dias";
     const rawDateStr = new Date().toLocaleDateString("pt-BR", {
       month: "long",
       year: "numeric",
@@ -69,24 +134,25 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
     const cleanRange = rawDateStr.charAt(0).toUpperCase() + rawDateStr.slice(1);
 
     const lines = [
-      "⚡ Aegis — Relatório Mensal de Hábitos",
-      `📅 ${cleanRange}`,
+      "⚡ Aegis — Relatório de Hábitos",
+      `📅 Período: ${periodLabel} (${cleanRange})`,
       "",
-      `🔥 Ofensiva acumulada: ${totalCurrentStreak} dias`,
-      `🏆 Recorde global: ${maxGlobalStreak} dias`,
-      `📊 Performance global: ${focusRate}%`,
-      `✅ Hábitos em foco: ${positive.length}`,
-      `🛡️ Controle de vícios: ${negative.length}`,
+      `🔥 Sequência ativa média: ${avgStreak} dias`,
+      `🏆 Recorde de ofensiva: ${maxGlobalStreak} dias`,
+      `📊 Taxa de foco no período: ${focusRate}%`,
+      `✅ Hábitos diários ativos: ${activePositive.length}`,
+      `🛡️ Controle de vícios ativos: ${activeNegative.length}`,
       "",
       "- Gerado pelo Aegis",
     ];
     return lines.join("\n");
   }, [
-    totalCurrentStreak,
-    maxGlobalStreak,
+    period,
     focusRate,
-    positive.length,
-    negative.length,
+    avgStreak,
+    activePositive.length,
+    activeNegative.length,
+    maxGlobalStreak,
   ]);
 
   const copyReport = () => {
@@ -96,7 +162,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
-      {/* Controles de Período (Simulando o padrão de outros módulos) */}
+      {/* Controles de Período */}
       <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4">
         <div className="flex items-center gap-4">
           <div
@@ -109,7 +175,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              Relatório Mensal
+              Relatório de Desempenho
             </h3>
             <p className="text-[11px] text-muted-foreground font-medium uppercase">
               {new Date().toLocaleDateString("pt-BR", {
@@ -144,13 +210,17 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Canvas Section */}
         <div className="lg:w-[400px] shrink-0">
-          <HabitsReportCanvas habits={habits} />
+          <HabitsReportCanvas
+            habits={habits}
+            focusRate={focusRate}
+            avgStreak={avgStreak}
+          />
         </div>
 
         {/* Text Section */}
         <div className="flex-1 flex flex-col gap-6">
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2 rounded-lg", theme.bg)}>
                   <Activity className={cn("w-4 h-4", theme.text)} />
@@ -159,19 +229,61 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
                   Resumo de Desempenho
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={copyReport}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
-                  theme.bg,
-                  theme.text,
-                  theme.border,
-                  theme.bgHover,
-                )}
-              >
-                <Copy className="w-3.5 h-3.5" /> Copiar Texto
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Seletor de Período */}
+                <div className="flex items-center gap-1 bg-background border border-border rounded-xl p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPeriod(7)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                      period === 7
+                        ? cn(theme.solid, "text-white")
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    7D
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPeriod(30)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                      period === 30
+                        ? cn(theme.solid, "text-white")
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    30D
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPeriod(100)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                      period === 100
+                        ? cn(theme.solid, "text-white")
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    100D
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={copyReport}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                    theme.bg,
+                    theme.text,
+                    theme.border,
+                    theme.bgHover,
+                  )}
+                >
+                  <Copy className="w-3.5 h-3.5" /> Copiar Texto
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 bg-background/50 border border-border rounded-xl p-6 font-mono text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">

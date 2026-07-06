@@ -23,6 +23,14 @@ pub struct FileSystemItem {
     pub is_dir: bool,
     pub path: String, // Caminho relativo a partir de notes_dir
     pub note: Option<Note>,
+    pub color: Option<String>, // Cor da pasta (apenas para is_dir = true)
+}
+
+/// Armazena as cores das pastas em um arquivo JSON na raiz do diretório de notas.
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct FolderColors {
+    #[serde(flatten)]
+    colors: std::collections::HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,6 +56,39 @@ impl NoteManager {
         let _ = fs::create_dir_all(&notes_dir);
 
         NoteManager { notes_dir }
+    }
+
+    fn folder_colors_path(&self) -> PathBuf {
+        self.notes_dir.join(".aegis-folder-colors.json")
+    }
+
+    fn read_folder_colors(&self) -> FolderColors {
+        let path = self.folder_colors_path();
+        if let Ok(raw) = fs::read_to_string(&path) {
+            serde_json::from_str(&raw).unwrap_or_default()
+        } else {
+            FolderColors::default()
+        }
+    }
+
+    fn write_folder_colors(&self, fc: &FolderColors) {
+        if let Ok(raw) = serde_json::to_string_pretty(fc) {
+            let _ = fs::write(self.folder_colors_path(), raw);
+        }
+    }
+
+    pub fn update_folder_color(&self, path: String, color: Option<String>) -> Result<(), String> {
+        let mut fc = self.read_folder_colors();
+        match color {
+            Some(c) if !c.is_empty() => {
+                fc.colors.insert(path, c);
+            }
+            _ => {
+                fc.colors.remove(&path);
+            }
+        }
+        self.write_folder_colors(&fc);
+        Ok(())
     }
 
     fn sanitize_filename(name: &str) -> String {
@@ -172,12 +213,19 @@ impl NoteManager {
     }
 
     pub fn list_items(&self, user_id: &str) -> Vec<FileSystemItem> {
+        let folder_colors = self.read_folder_colors();
         let mut items = Vec::new();
-        self.list_items_recursive(&self.notes_dir, user_id, &mut items);
+        self.list_items_recursive(&self.notes_dir, user_id, &mut items, &folder_colors);
         items
     }
 
-    fn list_items_recursive(&self, dir: &PathBuf, user_id: &str, items: &mut Vec<FileSystemItem>) {
+    fn list_items_recursive(
+        &self,
+        dir: &PathBuf,
+        user_id: &str,
+        items: &mut Vec<FileSystemItem>,
+        folder_colors: &FolderColors,
+    ) {
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -185,9 +233,15 @@ impl NoteManager {
                     .strip_prefix(&self.notes_dir)
                     .unwrap_or(&path)
                     .to_string_lossy()
-                    .to_string();
+                    .replace('\\', "/");
+
+                // Ignora o arquivo de metadados de cores de pastas
+                if rel_path == ".aegis-folder-colors.json" {
+                    continue;
+                }
 
                 if path.is_dir() {
+                    let folder_color = folder_colors.colors.get(&rel_path).cloned();
                     items.push(FileSystemItem {
                         name: path
                             .file_name()
@@ -197,8 +251,9 @@ impl NoteManager {
                         is_dir: true,
                         path: rel_path,
                         note: None,
+                        color: folder_color,
                     });
-                    self.list_items_recursive(&path, user_id, items);
+                    self.list_items_recursive(&path, user_id, items, folder_colors);
                 } else if path.extension().and_then(|s| s.to_str()) == Some("md") {
                     if let Ok(note) = self.parse_note_file(&path) {
                         if note.user_id == user_id {
@@ -207,6 +262,7 @@ impl NoteManager {
                                 is_dir: false,
                                 path: rel_path,
                                 note: Some(note),
+                                color: None,
                             });
                         }
                     }
@@ -250,6 +306,17 @@ impl NoteManager {
         if let Some(id) = note.id {
             if let Some(path) = self.find_note_file(id) {
                 let _ = fs::remove_file(&path);
+                return self.write_note_file(&note);
+            }
+        }
+        Err("Not found".to_string())
+    }
+
+    pub fn update_note_color(&self, id: i32, color: Option<String>) -> Result<(), String> {
+        if let Some(path) = self.find_note_file(id) {
+            if let Ok(mut note) = self.parse_note_file(&path) {
+                let _ = fs::remove_file(&path);
+                note.color = color;
                 return self.write_note_file(&note);
             }
         }
@@ -394,8 +461,14 @@ pub async fn note_add_note(
         Some("notes"),
         Some(&id.to_string()),
     );
-    let today = state.config.get_now().with_timezone(&chrono::Local).to_rfc3339();
-    state.stats.log_note_activity(&user_id, id, "create", &today);
+    let today = state
+        .config
+        .get_now()
+        .with_timezone(&chrono::Local)
+        .to_rfc3339();
+    state
+        .stats
+        .log_note_activity(&user_id, id, "create", &today);
     Ok(id as i64)
 }
 
@@ -407,8 +480,14 @@ pub async fn note_update_note(
     let user_id = note.user_id.clone();
     let id = note.id.unwrap_or(0);
     state.note.update_note(note)?;
-    let today = state.config.get_now().with_timezone(&chrono::Local).to_rfc3339();
-    state.stats.log_note_activity(&user_id, id, "update", &today);
+    let today = state
+        .config
+        .get_now()
+        .with_timezone(&chrono::Local)
+        .to_rfc3339();
+    state
+        .stats
+        .log_note_activity(&user_id, id, "update", &today);
     Ok(())
 }
 
@@ -445,7 +524,9 @@ pub async fn note_delete_note(
 ) -> Result<(), String> {
     let result = state.note.delete_note(id);
     if result.is_ok() {
-        let _ = state.stats.delete_xp_for_ref(&user_id, "notes", &id.to_string());
+        let _ = state
+            .stats
+            .delete_xp_for_ref(&user_id, "notes", &id.to_string());
     }
     result
 }
@@ -457,6 +538,24 @@ pub async fn note_update_note_pinned(
     pinned: bool,
 ) -> Result<(), String> {
     state.note.update_note_pinned(id, pinned)
+}
+
+#[tauri::command]
+pub async fn note_update_note_color(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    color: Option<String>,
+) -> Result<(), String> {
+    state.note.update_note_color(id, color)
+}
+
+#[tauri::command]
+pub async fn note_update_folder_color(
+    state: tauri::State<'_, crate::AppState>,
+    path: String,
+    color: Option<String>,
+) -> Result<(), String> {
+    state.note.update_folder_color(path, color)
 }
 
 #[tauri::command]

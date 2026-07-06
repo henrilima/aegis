@@ -1079,7 +1079,9 @@ impl ConfigManager {
                         rusqlite::types::ValueRef::Null => "NULL".to_string(),
                         rusqlite::types::ValueRef::Integer(n) => n.to_string(),
                         rusqlite::types::ValueRef::Real(r) => r.to_string(),
-                        rusqlite::types::ValueRef::Text(t) => String::from_utf8_lossy(t).into_owned(),
+                        rusqlite::types::ValueRef::Text(t) => {
+                            String::from_utf8_lossy(t).into_owned()
+                        }
                         rusqlite::types::ValueRef::Blob(b) => format!("BLOB ({} bytes)", b.len()),
                     };
                     if i > 0 {

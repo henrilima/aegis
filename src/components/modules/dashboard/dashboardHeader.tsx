@@ -367,7 +367,7 @@ export function DashboardHeader({
   // LAYOUT 1: DEFAULT (Padrão)
   if (dashboardHeaderStyle === "default") {
     return (
-      <div className="flex flex-col gap-10 mb-6 w-full animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="flex flex-col gap-10 mb-6 w-full">
         {renderGlobalActions()}
         {simulatedBanner}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -466,7 +466,7 @@ export function DashboardHeader({
           </div>
 
           {/* Direita: Horário Personalizável */}
-          <div className="flex flex-col items-end justify-center lg:self-center animate-in fade-in duration-700">
+          <div className="flex flex-col items-end justify-center lg:self-center">
             <DashboardClock
               time={time}
               style={dashboardClockStyle}
@@ -481,7 +481,7 @@ export function DashboardHeader({
   // LAYOUT 2: COMPACT (Compacto)
   if (dashboardHeaderStyle === "compact") {
     return (
-      <div className="flex flex-col gap-4 mb-4 w-full animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 mb-4 w-full">
         {renderGlobalActions()}
         {simulatedBanner}
         <div
@@ -581,7 +581,7 @@ export function DashboardHeader({
               </div>
             </div>
 
-            <div className="shrink-0 scale-90 sm:scale-95 animate-in fade-in duration-700">
+            <div className="shrink-0 scale-90 sm:scale-95">
               <DashboardClock
                 time={time}
                 style={dashboardClockStyle}
@@ -597,12 +597,12 @@ export function DashboardHeader({
   // LAYOUT 3: CENTERED (Focado / Centralizado)
   if (dashboardHeaderStyle === "centered") {
     return (
-      <div className="flex flex-col gap-6 mb-6 w-full text-center items-center animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 mb-6 w-full text-center items-center">
         {renderGlobalActions()}
         {simulatedBanner}
 
         {/* Relógio Centralizado no Topo - Reduzido elegantemente para scale-75 sm:scale-80 */}
-        <div className="mb-4 scale-75 sm:scale-80 origin-center animate-in fade-in duration-700 select-none">
+        <div className="mb-4 scale-75 sm:scale-80 origin-center select-none">
           <DashboardClock
             time={time}
             style={dashboardClockStyle}
@@ -678,7 +678,7 @@ export function DashboardHeader({
   // LAYOUT 4: MINIMAL (Minimalista)
   if (dashboardHeaderStyle === "minimal") {
     return (
-      <div className="flex flex-col gap-6 mb-4 w-full animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 mb-4 w-full">
         {renderGlobalActions()}
         {simulatedBanner}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -728,7 +728,7 @@ export function DashboardHeader({
               <Kbd>Ctrl K</Kbd>
             </button>
 
-            <div className="shrink-0 animate-in fade-in duration-700">
+            <div className="shrink-0">
               <DashboardClock
                 time={time}
                 style={dashboardClockStyle}
@@ -744,7 +744,7 @@ export function DashboardHeader({
   // LAYOUT 5: ACOLHEDOR (Welcoming) - Redesenhado para ser incrivelmente bonito e glassmórfico
   if (dashboardHeaderStyle === "welcoming") {
     return (
-      <div className="flex flex-col gap-6 mb-6 w-full animate-in fade-in duration-500">
+      <div className="flex flex-col gap-6 mb-6 w-full">
         {renderGlobalActions()}
         {simulatedBanner}
 

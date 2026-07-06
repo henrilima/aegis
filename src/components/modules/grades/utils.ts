@@ -2,14 +2,14 @@
 
 import type { StudyGrade, SubjectFormula, SubjectStatus } from "./types";
 
-// ─── Utilitários de data ───────────────────────────────────────────────────────
+//  Utilitários de data
 
 export function parseDate(s: string) {
   const [y, m, d] = s.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
-// ─── Cálculo de porcentagem ────────────────────────────────────────────────────
+//  Cálculo de porcentagem
 
 /** Converte nota/máximo para percentual 0-100 */
 export function toPercent(grade: number, maxGrade: number): number {
@@ -23,7 +23,7 @@ export function hitRate(correct: number, total: number): number {
   return Math.round((correct / total) * 100);
 }
 
-// ─── Cálculo de médias por fórmula ────────────────────────────────────────────
+//  Cálculo de médias por fórmula
 
 /** Média simples (soma / quantidade) — notas normalizadas para 0-10 */
 export function avgSimples(grades: StudyGrade[]): number {
@@ -158,7 +158,7 @@ export function calcMetaNota(
   return Math.round(needed * 10) / 10;
 }
 
-// ─── Status de aprovação ──────────────────────────────────────────────────────
+//  Status de aprovação
 
 export function getSubjectStatus(
   subject: string,

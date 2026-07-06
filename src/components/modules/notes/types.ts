@@ -14,4 +14,5 @@ export interface FileSystemItem {
   isDir: boolean;
   path: string;
   note?: Note;
+  color?: string; // Cor da pasta (apenas para isDir = true)
 }

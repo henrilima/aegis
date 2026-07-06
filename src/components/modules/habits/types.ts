@@ -16,4 +16,8 @@ export interface Habit {
   currentCharges: number;
   currentStreak: number;
   goalDays?: number;
+  frequency?: "daily" | "weekdays";
+  weekdays?: string;
+  completedDates?: string[];
+  archived?: boolean;
 }

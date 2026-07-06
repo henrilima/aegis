@@ -1,5 +1,11 @@
 "use client";
 
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: unknown;
+  }
+}
+
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -42,6 +48,7 @@ export function GlobalScheduler() {
 
   // Escuta ações originadas da bandeja do sistema (tray menu)
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     const initTrayListener = async () => {
       const unsub = await listen<string>("tray-action", (event) => {
         const action = event.payload;
@@ -76,6 +83,7 @@ export function GlobalScheduler() {
   // Restaura e foca a janela do Aegis quando o backend emite o evento 'focus-window'.
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     const initFocusListener = async () => {
       const unsub = await listen("focus-window", async () => {
         console.log(
@@ -114,7 +122,8 @@ export function GlobalScheduler() {
 
   // Monitora e executa o backup automático do usuário localmente em formato JSON
   useEffect(() => {
-    if (!user) return;
+    if (!user || typeof window === "undefined" || !window.__TAURI_INTERNALS__)
+      return;
 
     const runAutoBackup = async () => {
       const enabled =
@@ -182,7 +191,13 @@ export function GlobalScheduler() {
 
   // Rastreador do Easter Egg de Temas (Chameleon)
   useEffect(() => {
-    if (!user?.id || !achievementsEnabled) return;
+    if (
+      !user?.id ||
+      !achievementsEnabled ||
+      typeof window === "undefined" ||
+      !window.__TAURI_INTERNALS__
+    )
+      return;
     const key = `theme_change_count_${user.id}`;
     const count = parseInt(localStorage.getItem(key) || "0", 10);
     if (count < 5) {
@@ -215,7 +230,12 @@ export function GlobalScheduler() {
 
   // 1. Loop global para monitorar evolução de nível do usuário em qualquer tela
   useEffect(() => {
-    if (!user?.id) return;
+    if (
+      !user?.id ||
+      typeof window === "undefined" ||
+      !window.__TAURI_INTERNALS__
+    )
+      return;
 
     let active = true;
 
@@ -272,7 +292,13 @@ export function GlobalScheduler() {
 
   // 2. Loop global de verificação de conquistas a liberar
   useEffect(() => {
-    if (!user?.id || !achievementsEnabled) return;
+    if (
+      !user?.id ||
+      !achievementsEnabled ||
+      typeof window === "undefined" ||
+      !window.__TAURI_INTERNALS__
+    )
+      return;
 
     let active = true;
 
@@ -362,7 +388,12 @@ export function GlobalScheduler() {
 
   // Sincronização e Heartbeat periódico com a API Web (aegis-web-system)
   useEffect(() => {
-    if (!user?.id) return;
+    if (
+      !user?.id ||
+      typeof window === "undefined" ||
+      !window.__TAURI_INTERNALS__
+    )
+      return;
 
     let active = true;
 

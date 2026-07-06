@@ -240,7 +240,10 @@ pub async fn global_export_raw_user_json(
         .map_err(|e| format!("Falha ao salvar o arquivo físico de backup: {}", e))?;
 
     // Rotação de backups automáticos: mantém apenas as 2 cópias mais recentes do usuário
-    if let Some(filename) = std::path::Path::new(&path).file_name().and_then(|n| n.to_str()) {
+    if let Some(filename) = std::path::Path::new(&path)
+        .file_name()
+        .and_then(|n| n.to_str())
+    {
         if filename.starts_with("aegis_auto_backup_") && filename.len() > 16 {
             if let Some(parent) = std::path::Path::new(&path).parent() {
                 let prefix = &filename[..filename.len() - 15];
@@ -694,7 +697,8 @@ pub async fn global_export_full_system_bundle(
         .map_err(|e| e.to_string())?;
 
     // 1. Bancos de dados
-    let passwords_db = std::fs::read(crate::config::get_database_path(&app_handle)).unwrap_or_default();
+    let passwords_db =
+        std::fs::read(crate::config::get_database_path(&app_handle)).unwrap_or_default();
     let config_db = std::fs::read(app_dir.join("config.db")).unwrap_or_default();
 
     // 2. Config do dashboard
@@ -748,8 +752,7 @@ pub async fn global_import_full_system_bundle(
 
     // 1. Restaurar bancos
     if !bundle.passwords_db.is_empty() {
-        std::fs::write(&db_path, &bundle.passwords_db)
-            .map_err(|e| e.to_string())?;
+        std::fs::write(&db_path, &bundle.passwords_db).map_err(|e| e.to_string())?;
     }
     if !bundle.config_db.is_empty() {
         std::fs::write(app_dir.join("config.db"), &bundle.config_db).map_err(|e| e.to_string())?;
@@ -928,5 +931,3 @@ mod tests {
         let _ = fs::remove_dir_all(&temp_dir);
     }
 }
-
-

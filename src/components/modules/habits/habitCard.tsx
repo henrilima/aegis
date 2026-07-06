@@ -2,9 +2,6 @@
 
 import {
   AlertTriangle,
-  Check,
-  CheckCheck,
-  Clock,
   Edit2,
   Flame,
   RotateCcw,
@@ -13,7 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { cn, getColorTheme } from "@/lib/utils";
+import { getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Habit } from "./types";
 import { useHabitLogic } from "./useHabitLogic";
@@ -28,7 +25,7 @@ interface HabitCardProps {
 }
 
 /**
- * Card individual de Hábito: Exibe status, métricas de streak e ações rápidas
+ * Card individual de Hábito: Exibe status e ações focados em Controle de Vício
  */
 export function HabitCard({
   habit,
@@ -40,51 +37,37 @@ export function HabitCard({
 }: HabitCardProps) {
   const {
     name,
-    isNegative,
     diaAtual,
     recorde,
-    canUse,
-    timeLeft,
     currentCharges,
     maxCharges,
-    chargeTimeLeft,
     totalContagem,
-    intervalo,
     isActionPending,
     actions,
   } = useHabitLogic(habit, onRefresh);
 
   const color = getModuleColor("habits");
-  const theme = getColorTheme(color);
+  const _theme = getColorTheme(color);
 
-  const accentColor = isNegative
-    ? "text-red-600 dark:text-red-400"
-    : theme.text;
-  const accentBg = isNegative
-    ? "bg-red-500/10 border-red-500/20"
-    : cn(theme.bg, theme.border);
+  const accentColor = "text-red-600 dark:text-red-400";
+  const accentBg = "bg-red-500/10 border-red-500/20";
 
-  // Se tem cargas configuradas, mostra o timer de recarga nos detalhes
   const hasCharges = maxCharges > 0;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-border hover:bg-accent/50/20 transition-all group relative">
+    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-border hover:bg-accent/50/20 transition-all group relative shadow-none">
       {/* Cabeçalho do Card */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3">
           <div className={`mt-0.5 p-2.5 rounded-xl border ${accentBg}`}>
-            {isNegative ? (
-              <Flame className={`w-5 h-5 ${accentColor}`} />
-            ) : (
-              <Check className={`w-5 h-5 ${accentColor}`} />
-            )}
+            <Flame className={`w-5 h-5 ${accentColor}`} />
           </div>
           <div className="flex flex-col gap-0.5">
             <h3 className="font-bold text-base leading-tight text-foreground">
               {name}
             </h3>
             <p className={`text-xs font-medium ${accentColor} opacity-70`}>
-              {isNegative ? "Controle de danos" : "Hábito construtivo"}
+              Controle de Vício
             </p>
           </div>
         </div>
@@ -92,7 +75,7 @@ export function HabitCard({
         {/* Ações Administrativas (Hover) */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <IconBtn onClick={() => habit.id && onEdit(habit)} title="Editar">
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2Icon className="w-3.5 h-3.5" />
           </IconBtn>
           <IconBtn
             onClick={() => habit.id && onOpenHardResetDialog(habit.id)}
@@ -109,6 +92,7 @@ export function HabitCard({
           </IconBtn>
         </div>
       </div>
+
       {/* Barra de Progresso (se tiver meta) */}
       {habit.goalDays
         ? habit.goalDays > 0 && (
@@ -122,17 +106,14 @@ export function HabitCard({
               </div>
               <div className="h-1.5 w-full bg-background border border-border rounded-full overflow-hidden">
                 <div
-                  className={cn(
-                    "h-full transition-all duration-1000 ease-out",
-                    isNegative ? "bg-red-500" : theme.solid.split(" ")[0],
-                  )}
+                  className="h-full bg-red-500 transition-all duration-1000 ease-out"
                   style={{
                     width: `${Math.min(100, (diaAtual / habit.goalDays) * 100)}%`,
                   }}
                 />
               </div>
               <p className="text-[9px] text-center text-muted-foreground/60 font-medium">
-                {diaAtual} de {habit.goalDays} dias concluídos
+                {diaAtual} de {habit.goalDays} dias sem recaídas
               </p>
             </div>
           )
@@ -172,90 +153,38 @@ export function HabitCard({
         />
       </div>
 
-      {/* Linha de detalhes: iterações + frequência + próxima carga */}
-      <div className="flex items-center justify-between px-0.5">
-        <p className="text-[10px] text-neutral-600 font-medium">
-          {isNegative ? "Deslizes" : "Iterações"}:{" "}
-          <span className="text-muted-foreground">{totalContagem}</span>
-        </p>
-
-        {/* Timer de próxima carga - aparece aqui para ambos os tipos se NÃO estiver no máximo */}
-        {hasCharges && currentCharges < maxCharges && chargeTimeLeft ? (
-          <p className="text-[10px] text-neutral-600 font-medium flex items-center gap-1">
-            <Zap className="w-2.5 h-2.5 text-orange-500/60" />
-            Próxima carga em:{" "}
-            <span className="text-muted-foreground ml-0.5">
-              {chargeTimeLeft}
-            </span>
-          </p>
-        ) : !isNegative ? (
+      {/* Seção de Ações e Detalhes do Vício */}
+      <div className="flex flex-col gap-3 mt-auto">
+        <div className="flex items-center justify-between px-0.5">
           <p className="text-[10px] text-neutral-600 font-medium">
-            Frequência:{" "}
-            <span className="text-muted-foreground">{intervalo}d</span>
+            Deslizes:{" "}
+            <span className="text-muted-foreground">{totalContagem}</span>
           </p>
-        ) : null}
-      </div>
+        </div>
 
-      {/* Seção de Ações */}
-      <div className="flex flex-col gap-2 mt-auto">
-        {!isNegative ? (
-          // Hábito Positivo
-          canUse ? (
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={() => habit.id && onOpenResetDialog(habit.id)}
+            disabled={isActionPending}
+            className="w-full py-3 rounded-xl border border-red-500/30 text-red-600 dark:text-red-500 text-sm font-medium hover:bg-red-500/10 bg-red-500/5 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />{" "}
+            {isActionPending ? "Processando..." : "Registrar falha"}
+          </button>
+
+          {currentCharges > 0 && (
             <button
               type="button"
-              onClick={() => habit.id && actions.markDone()}
+              onClick={() => habit.id && actions.handleUseCharge()}
               disabled={isActionPending}
-              className={cn(
-                "w-full py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
-                theme.bg,
-                theme.text,
-                theme.border,
-              )}
+              className="w-full py-2 rounded-xl text-orange-600 dark:text-orange-500 text-xs font-medium hover:bg-orange-500/10 bg-orange-500/5 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Check className="w-4 h-4" />{" "}
-              {isActionPending ? "Processando..." : "Marcar como feito"}
+              <Zap className="w-3 h-3" />{" "}
+              {isActionPending ? "Processando..." : "Usar carga protetora"}
             </button>
-          ) : (
-            <div className="w-full py-3 rounded-xl bg-background/50 border border-border flex flex-col items-center justify-center gap-0.5">
-              <div className={cn("flex items-center gap-1.5", theme.text)}>
-                <CheckCheck className="w-3.5 h-3.5" />
-                <span className="text-xs font-semibold">Feito hoje</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span className="text-[10px] font-medium">
-                  Próximo em:{" "}
-                  <span className="text-muted-foreground">{timeLeft}</span>
-                </span>
-              </div>
-            </div>
-          )
-        ) : (
-          // Controle de Vícios
-          <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              onClick={() => habit.id && onOpenResetDialog(habit.id)}
-              disabled={isActionPending}
-              className="w-full py-3 rounded-xl border border-red-500/30 text-red-600 dark:text-red-500 text-sm font-medium hover:bg-red-500/10 bg-red-500/5 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />{" "}
-              {isActionPending ? "Processando..." : "Registrar falha"}
-            </button>
-
-            {currentCharges > 0 && (
-              <button
-                type="button"
-                onClick={() => habit.id && actions.handleUseCharge()}
-                disabled={isActionPending}
-                className="w-full py-2 rounded-xl text-orange-600 dark:text-orange-500 text-xs font-medium hover:bg-orange-500/10 bg-orange-500/5 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Zap className="w-3 h-3" />{" "}
-                {isActionPending ? "Processando..." : "Usar carga protetora"}
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -319,4 +248,11 @@ function IconBtn({
       </button>
     </ToolTip>
   );
+}
+
+/**
+ * Icone de Editar inline
+ */
+function Edit2Icon({ className }: { className?: string }) {
+  return <Edit2 className={className} />;
 }

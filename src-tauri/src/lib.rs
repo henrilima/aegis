@@ -1,4 +1,4 @@
-// ─── Macros de Log Semântico ─────────────────────────────────────────────────
+//  Macros de Log Semântico 
 
 #[macro_export]
 macro_rules! log_info {
@@ -1192,7 +1192,7 @@ pub fn run() {
 
             app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies, flashcards });
 
-            // ─── Startup Data Summary ──────────────────────────────────────────
+            //  Startup Data Summary 
             {
                 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -1252,7 +1252,7 @@ pub fn run() {
                         let dict_count = safe_startup_count("dicionário", || dict_report.list_words(uid).len());
                         let movies_count = safe_startup_count("filmes/séries", || movies_report.list_movies(uid).len());
 
-                        crate::log_status!("  ┌─ Usuário: {} ({})", name, uid);
+                        crate::log_status!("  ┌ Usuário: {} ({})", name, uid);
                         crate::log_status!("  │  Senhas no cofre : {}", pw_count);
                         crate::log_status!("  │  Notas           : {}", note_count);
                         crate::log_status!("  │  Hábitos         : {}", habit_count);
@@ -1263,13 +1263,13 @@ pub fn run() {
                         crate::log_status!("  │  Filmes/Séries   : {}", movies_count);
                         crate::log_status!("  │  Livros (leitura): {}", book_count);
                         crate::log_status!("  │  Sono (últ. mês) : {} registros", sleep_count);
-                        crate::log_status!("  └─ Eventos (agenda): {}", event_count);
+                        crate::log_status!("  └ Eventos (agenda): {}", event_count);
                     }
                 } else {
                     crate::log_warn!("Não foi possível listar usuários no startup.");
                 }
             }
-            // ──────────────────────────────────────────────────────────────────
+            // 
 
             Ok(())
         })
@@ -1306,6 +1306,7 @@ pub fn run() {
 
             // Habits
             habits::habit_list_habits, habits::habit_add_habit, habits::habit_update_habit, 
+            habits::habit_toggle_date,
             habits::habit_mark_habit_done, habits::habit_use_habit_charge, habits::habit_reset_habit, 
             habits::habit_hard_reset_habit, habits::habit_delete_habit, habits::habit_export_habits_csv, 
             habits::habit_import_habits_csv,
@@ -1314,7 +1315,7 @@ pub fn run() {
             notes::note_list_notes, notes::note_list_note_items, notes::note_add_note, 
             notes::note_update_note, notes::note_create_note_folder, notes::note_delete_note_folder, 
             notes::note_move_note_item, notes::note_delete_note, notes::note_update_note_pinned, 
-            notes::note_open_notes_folder,
+            notes::note_update_note_color, notes::note_update_folder_color, notes::note_open_notes_folder,
 
             // Studies
             studies::estudos_add_session, studies::estudos_update_session, studies::estudos_delete_session, 

@@ -5,7 +5,6 @@ import {
   Activity,
   HelpCircle,
   Image as ImageIcon,
-  LayoutGrid,
   Plus,
   ShieldOff,
   Zap,
@@ -23,10 +22,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { getModuleColor } from "@/modules.config";
 import { HabitsGuidePanel } from "./components/HabitsInfoModal";
+import { HabitsWeeklyBoard } from "./components/weeklyBoard";
 import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
 
-type TabId = "all" | "positive" | "negative" | "report" | "guia";
+type TabId = "positive" | "negative" | "report" | "guia";
 
 /**
  * Módulo de Hábitos: Monitoramento de comportamentos positivos e controle de vícios
@@ -36,7 +36,7 @@ export default function HabitsPage() {
   const { now: simulatedNow } = useTime();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<TabId>("all");
+  const [tab, setTab] = useState<TabId>("positive");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
@@ -71,6 +71,8 @@ export default function HabitsPage() {
     chargesAmount: number,
     chargesInterval: number,
     goalDays: number,
+    frequency?: "daily" | "weekdays",
+    weekdays?: string,
   ) => {
     if (!uid || isAdding) return;
     setIsAdding(true);
@@ -94,6 +96,8 @@ export default function HabitsPage() {
           currentCharges: chargesAmount,
           currentStreak: 0,
           goalDays: goalDays > 0 ? goalDays : 0,
+          frequency: frequency || "daily",
+          weekdays: weekdays || null,
         },
       });
       fetchHabits();
@@ -168,7 +172,7 @@ export default function HabitsPage() {
   // Filtragem de listas
   const positive = habits.filter((h) => h.habitType === "Positive");
   const negative = habits.filter(
-    (h) => h.habitType === "Negative" || h.habitType === "Bad",
+    (h) => (h.habitType === "Negative" || h.habitType === "Bad") && !h.archived,
   );
 
   if (loading)
@@ -178,22 +182,11 @@ export default function HabitsPage() {
       </div>
     );
 
-  const sortedHabits = [...habits].sort((a, b) => {
-    const priority: Record<string, number> = {
-      Positive: 0,
-      Negative: 1,
-      Bad: 1,
-    };
-    return (priority[a.habitType] ?? 2) - (priority[b.habitType] ?? 2);
-  });
-
-  const currentList =
-    tab === "all" ? sortedHabits : tab === "positive" ? positive : negative;
+  const _currentList = tab === "positive" ? positive : negative;
 
   const HABIT_TABS = [
-    { id: "all", label: "Todos", icon: LayoutGrid },
-    { id: "positive", label: "Foco", icon: Zap },
-    { id: "negative", label: "Controle", icon: ShieldOff },
+    { id: "positive", label: "Hábitos Diários", icon: Zap },
+    { id: "negative", label: "Controle de Vício", icon: ShieldOff },
     { id: "report", label: "Relatório", icon: ImageIcon },
     { id: "guia", label: "Guia", icon: HelpCircle },
   ];
@@ -203,7 +196,7 @@ export default function HabitsPage() {
       <ModuleHeader
         color={getModuleColor("habits")}
         title="Hábitos & Disciplina"
-        subtitle={`${habits.length} ativos · ${positive.length} foco · ${negative.length} controle`}
+        subtitle={`${habits.filter((h) => !h.archived).length} ativos · ${positive.length} hábitos · ${negative.length} vícios`}
         icon={Activity}
         tabs={HABIT_TABS}
         activeTab={tab}
@@ -225,15 +218,23 @@ export default function HabitsPage() {
         <HabitsGuidePanel />
       ) : tab === "report" ? (
         <HabitsReportsTab habits={habits} />
-      ) : currentList.length === 0 ? (
+      ) : tab === "positive" ? (
+        <HabitsWeeklyBoard
+          habits={positive}
+          onRefresh={fetchHabits}
+          onEdit={setEditingHabit}
+          onOpenHardResetDialog={setHardResetId}
+          onDelete={setDeleteId}
+        />
+      ) : negative.length === 0 ? (
         <EmptyState
           icon={Activity}
-          title="Nenhum hábito rastreado"
-          description="Você ainda não possui registros nesta categoria. Comece definindo uma nova meta de disciplina."
+          title="Nenhum vício rastreado"
+          description="Cadastre um controle de vício (controle de danos) para monitorar sua sobriedade."
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentList.map((h, i) => (
+          {negative.map((h, i) => (
             <div
               key={h.id}
               className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"

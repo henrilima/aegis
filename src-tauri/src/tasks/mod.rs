@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use rusqlite::{params, Connection};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::AppHandle;
 
@@ -43,14 +43,18 @@ impl TaskManager {
                 color TEXT
             )",
             [],
-        ).ok();
+        )
+        .ok();
 
         // Tenta adicionar novas colunas de forma retrocompatível
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN parent_id INTEGER", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN category TEXT", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN color TEXT", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT", []);
 
+        // Remove o índice antigo sem parent_id para recriá-lo com a nova estrutura
+        let _ = conn.execute("DROP INDEX IF EXISTS idx_tasks_user_title", []);
         // Evita duplicados (mesmo título para o mesmo usuário)
         conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title, parent_id)"#, []).ok();
 
@@ -59,7 +63,8 @@ impl TaskManager {
 
     fn get_connection(&self) -> Connection {
         let conn = Connection::open(&self.db_path).expect("Failed to connect to habit DB");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Failed to set busy timeout");
+        conn.busy_timeout(std::time::Duration::from_millis(5000))
+            .expect("Failed to set busy timeout");
         conn
     }
 
@@ -72,7 +77,7 @@ impl TaskManager {
                 return vec![];
             }
         };
-        
+
         let rows = match stmt.query_map(params![user_id], |row| {
             Ok(Task {
                 id: Some(row.get(0)?),
@@ -101,7 +106,8 @@ impl TaskManager {
     pub fn upsert_task(&self, task: Task, today: Option<String>) -> Result<(), String> {
         let conn = self.get_connection();
         let completed_int = if task.completed { 1 } else { 0 };
-        let today_str = today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
+        let today_str =
+            today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
         let result = if let Some(id) = task.id {
             conn.execute(
@@ -132,7 +138,12 @@ impl TaskManager {
         })
     }
 
-    pub fn toggle_task(&self, id: i32, completed: bool, today: Option<String>) -> Result<(), String> {
+    pub fn toggle_task(
+        &self,
+        id: i32,
+        completed: bool,
+        today: Option<String>,
+    ) -> Result<(), String> {
         let conn = self.get_connection();
         let completed_int = if completed { 1 } else { 0 };
         let completed_at = if completed {
@@ -143,23 +154,33 @@ impl TaskManager {
         conn.execute(
             "UPDATE tasks SET completed = ?1, completed_at = ?2 WHERE id = ?3",
             params![completed_int, completed_at, id],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn delete_task(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
         // Delete subtasks first
-        conn.execute("DELETE FROM tasks WHERE parent_id = ?1", params![id]).map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM tasks WHERE parent_id = ?1", params![id])
+            .map_err(|e| e.to_string())?;
         // Delete the task itself
-        conn.execute("DELETE FROM tasks WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM tasks WHERE id = ?1", params![id])
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn export_csv(&self, user_id: &str, path: &str) -> Result<(), String> {
         let tasks = self.list_tasks(user_id);
         let mut wtr = csv::Writer::from_path(path).map_err(|e| e.to_string())?;
-        wtr.write_record(&["title", "description", "completed", "due_date", "created_at"]).map_err(|e| e.to_string())?;
+        wtr.write_record(&[
+            "title",
+            "description",
+            "completed",
+            "due_date",
+            "created_at",
+        ])
+        .map_err(|e| e.to_string())?;
         for t in tasks {
             wtr.write_record(&[
                 t.title,
@@ -167,7 +188,8 @@ impl TaskManager {
                 t.completed.to_string(),
                 t.due_date.unwrap_or_default(),
                 t.created_at,
-            ]).map_err(|e| e.to_string())?;
+            ])
+            .map_err(|e| e.to_string())?;
         }
         wtr.flush().map_err(|e| e.to_string())?;
         Ok(())
@@ -199,19 +221,39 @@ impl TaskManager {
 }
 
 #[tauri::command]
-pub async fn tasks_list(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<Task>, String> {
+pub async fn tasks_list(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<Task>, String> {
     Ok(state.tasks.list_tasks(&user_id))
 }
 
 #[tauri::command]
-pub async fn tasks_upsert(state: tauri::State<'_, crate::AppState>, task: Task) -> Result<(), String> {
-    let today = state.config.get_now().with_timezone(&chrono::Local).format("%Y-%m-%d").to_string();
+pub async fn tasks_upsert(
+    state: tauri::State<'_, crate::AppState>,
+    task: Task,
+) -> Result<(), String> {
+    let today = state
+        .config
+        .get_now()
+        .with_timezone(&chrono::Local)
+        .format("%Y-%m-%d")
+        .to_string();
     state.tasks.upsert_task(task, Some(today))
 }
 
 #[tauri::command]
-pub async fn tasks_toggle(state: tauri::State<'_, crate::AppState>, id: i32, completed: bool) -> Result<(), String> {
-    let today = state.config.get_now().with_timezone(&chrono::Local).format("%Y-%m-%d").to_string();
+pub async fn tasks_toggle(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    completed: bool,
+) -> Result<(), String> {
+    let today = state
+        .config
+        .get_now()
+        .with_timezone(&chrono::Local)
+        .format("%Y-%m-%d")
+        .to_string();
     state.tasks.toggle_task(id, completed, Some(today))
 }
 
@@ -221,11 +263,19 @@ pub async fn tasks_delete(state: tauri::State<'_, crate::AppState>, id: i32) -> 
 }
 
 #[tauri::command]
-pub async fn export_tasks_csv(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<(), String> {
+pub async fn export_tasks_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    path: String,
+) -> Result<(), String> {
     state.tasks.export_csv(&user_id, &path)
 }
 
 #[tauri::command]
-pub async fn import_tasks_csv(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<usize, String> {
+pub async fn import_tasks_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    path: String,
+) -> Result<usize, String> {
     state.tasks.import_csv(&user_id, &path)
 }

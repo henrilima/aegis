@@ -56,6 +56,7 @@ const ModuleContext = createContext<ModuleContextType | undefined>(undefined);
 
 export function ModuleProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -154,7 +155,7 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
         const managementStatus = localStorage.getItem(
           "aegis_management_status",
         );
-        if (managementStatus === "approved" && user?.id) {
+        if (managementStatus === "approved" && userId) {
           const syncRemoteServer = async () => {
             try {
               const baseUrl =
@@ -163,7 +164,7 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
               const apiKey =
                 localStorage.getItem("aegis_remote_api_key") || "96421340";
 
-              await fetch(`${baseUrl}/api/users/${user.id}/management-status`, {
+              await fetch(`${baseUrl}/api/users/${userId}/management-status`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -188,7 +189,7 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [enabledModules, mounted, user]);
+  }, [enabledModules, mounted, userId]);
 
   const isModuleEnabled = useCallback(
     (id: ModuleId) => {

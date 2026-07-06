@@ -10,6 +10,8 @@ interface DroppableBreadcrumbProps {
   children: React.ReactNode;
   onClick: () => void;
   isCurrent: boolean;
+  /** Cor hex da pasta (opcional) para colorir o texto do breadcrumb */
+  color?: string | null;
 }
 
 export function DroppableBreadcrumb({
@@ -17,6 +19,7 @@ export function DroppableBreadcrumb({
   children,
   onClick,
   isCurrent,
+  color,
 }: DroppableBreadcrumbProps) {
   const theme = getColorTheme(getModuleColor("notes"));
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -25,10 +28,13 @@ export function DroppableBreadcrumb({
       <BreadcrumbLink
         className={cn(
           "cursor-pointer transition-all px-2 py-0.5 rounded-md",
-          theme.textDarkHover,
-          isCurrent ? cn(theme.text, "font-semibold") : "text-muted-foreground",
+          !color && theme.textDarkHover,
+          isCurrent && !color && cn(theme.text, "font-semibold"),
+          isCurrent && color && "font-semibold",
+          !isCurrent && !color && "text-muted-foreground",
           isOver && cn(theme.bg, theme.text),
         )}
+        style={color && !isOver ? { color } : {}}
         onClick={(e) => {
           e.preventDefault();
           onClick();

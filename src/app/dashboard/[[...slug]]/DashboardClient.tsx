@@ -2,27 +2,62 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Loading from "@/components/global/Loading";
-import Achievements from "@/components/modules/achievements";
-import Alarms from "@/components/modules/alarms";
-import Calendar from "@/components/modules/calendar";
-import Dashboard from "@/components/modules/dashboard";
-import Dictionary from "@/components/modules/dictionary";
-import Flashcards from "@/components/modules/flashcards";
-import Habits from "@/components/modules/habits";
-import Movies from "@/components/modules/movies";
-import Notes from "@/components/modules/notes";
-import Passwords from "@/components/modules/passwords";
-import Pomodoro from "@/components/modules/pomodoro";
-import Reading from "@/components/modules/reading";
-import Sleep from "@/components/modules/sleep";
-import Statistics from "@/components/modules/statistics";
-import Studies from "@/components/modules/studies";
-import Tasks from "@/components/modules/tasks";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
+
+const Achievements = dynamic(
+  () => import("@/components/modules/achievements"),
+  { loading: () => <Loading /> },
+);
+const Alarms = dynamic(() => import("@/components/modules/alarms"), {
+  loading: () => <Loading />,
+});
+const Calendar = dynamic(() => import("@/components/modules/calendar"), {
+  loading: () => <Loading />,
+});
+const Dashboard = dynamic(() => import("@/components/modules/dashboard"), {
+  loading: () => <Loading />,
+});
+const Dictionary = dynamic(() => import("@/components/modules/dictionary"), {
+  loading: () => <Loading />,
+});
+const Flashcards = dynamic(() => import("@/components/modules/flashcards"), {
+  loading: () => <Loading />,
+});
+const Habits = dynamic(() => import("@/components/modules/habits"), {
+  loading: () => <Loading />,
+});
+const Movies = dynamic(() => import("@/components/modules/movies"), {
+  loading: () => <Loading />,
+});
+const Notes = dynamic(() => import("@/components/modules/notes"), {
+  loading: () => <Loading />,
+});
+const Passwords = dynamic(() => import("@/components/modules/passwords"), {
+  loading: () => <Loading />,
+});
+const Pomodoro = dynamic(() => import("@/components/modules/pomodoro"), {
+  loading: () => <Loading />,
+});
+const Reading = dynamic(() => import("@/components/modules/reading"), {
+  loading: () => <Loading />,
+});
+const Sleep = dynamic(() => import("@/components/modules/sleep"), {
+  loading: () => <Loading />,
+});
+const Statistics = dynamic(() => import("@/components/modules/statistics"), {
+  loading: () => <Loading />,
+});
+const Studies = dynamic(() => import("@/components/modules/studies"), {
+  loading: () => <Loading />,
+});
+const Tasks = dynamic(() => import("@/components/modules/tasks"), {
+  loading: () => <Loading />,
+});
 
 export default function DashboardClient() {
   const router = useRouter();

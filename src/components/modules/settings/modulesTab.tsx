@@ -37,7 +37,7 @@ const MODULE_DEFS: {
   },
   {
     id: "tasks",
-    label: "Tarefas",
+    label: "Lista de Tarefas",
     description: "Lista de afazeres e gerenciamento de prioridades",
     icon: ListTodo,
     color: "red",

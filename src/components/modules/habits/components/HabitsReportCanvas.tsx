@@ -3,7 +3,7 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { Download, TrendingUp } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HEX_COLORS } from "@/colors.config";
 import { cn, getColorTheme } from "@/lib/utils";
@@ -13,11 +13,15 @@ import type { Habit } from "../types";
 interface HabitsReportCanvasProps {
   habits: Habit[];
   accentColor?: string;
+  focusRate: number;
+  avgStreak: number;
 }
 
 export function HabitsReportCanvas({
   habits,
   accentColor = "#14b8a6", // teal-500
+  focusRate,
+  avgStreak,
 }: HabitsReportCanvasProps) {
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
@@ -30,38 +34,17 @@ export function HabitsReportCanvas({
       ? accentColor
       : HEX_COLORS[color as keyof typeof HEX_COLORS] || "#14b8a6";
 
-  const positive = habits.filter((h) => h.habitType === "Positive");
-  const negative = habits.filter(
-    (h) => h.habitType === "Negative" || h.habitType === "Bad",
+  const activePositive = habits.filter(
+    (h) => h.habitType === "Positive" && !h.archived,
+  );
+  const activeNegative = habits.filter(
+    (h) => (h.habitType === "Negative" || h.habitType === "Bad") && !h.archived,
   );
 
-  const totalCurrentStreak = positive.reduce(
-    (acc, h) => acc + h.currentStreak,
-    0,
-  );
-  const maxGlobalStreak = habits.reduce(
+  const maxGlobalStreak = activePositive.reduce(
     (acc, h) => Math.max(acc, h.maxStreak),
     0,
   );
-  const activeMaxStreak = positive.reduce(
-    (acc, h) => Math.max(acc, h.currentStreak),
-    0,
-  );
-
-  // Cálculo de Performance Global (Média de progresso em relação às metas ou recordes)
-  const _globalPerformance = useMemo(() => {
-    if (habits.length === 0) return 0;
-    const total = habits.reduce((acc, h) => {
-      const target =
-        h.goalDays && h.goalDays > 0
-          ? h.goalDays
-          : h.maxStreak > 0
-            ? h.maxStreak
-            : 7;
-      return acc + Math.min(100, (h.currentStreak / target) * 100);
-    }, 0);
-    return Math.round(total / habits.length);
-  }, [habits]);
 
   const drawReport = useCallback(
     (
@@ -123,8 +106,8 @@ export function HabitsReportCanvas({
       ctx.font = "600 32px Montserrat, sans-serif";
       ctx.fillText(dateStr, canvas.width / 2, 340);
 
-      const mainText = String(totalCurrentStreak);
-      let fSize = 280;
+      const mainText = `${focusRate}%`;
+      let fSize = 260;
       ctx.font = `900 ${fSize}px Montserrat, sans-serif`;
       while (ctx.measureText(mainText).width > 980 && fSize > 100) {
         fSize -= 10;
@@ -133,7 +116,7 @@ export function HabitsReportCanvas({
       ctx.fillStyle = "#ffffff";
       ctx.fillText(mainText, canvas.width / 2, 660);
 
-      const perfLabel = "OFENSIVA ACUMULADA (DIAS)";
+      const perfLabel = "TAXA DE FOCO NO PERÍODO";
       let pFontSize = 34;
       ctx.font = `800 ${pFontSize}px Montserrat, sans-serif`;
       while (ctx.measureText(perfLabel).width > 960 && pFontSize > 20) {
@@ -219,23 +202,23 @@ export function HabitsReportCanvas({
         cx - 960 / 2,
         960,
         "zap",
-        "Hábitos (Foco)",
-        String(positive.length),
+        "Hábitos Ativos",
+        String(activePositive.length),
       );
       drawHalfCard(
         cx + 20,
         960,
         "shield",
-        "Vícios (Controle)",
-        String(negative.length),
+        "Controles Ativos",
+        String(activeNegative.length),
       );
 
       drawHalfCard(
         cx - 960 / 2,
         1320,
         "star",
-        "Maior Ofensiva",
-        String(activeMaxStreak),
+        "Média de Ofensivas",
+        String(avgStreak),
       );
       drawHalfCard(
         cx + 20,
@@ -262,10 +245,10 @@ export function HabitsReportCanvas({
       );
     },
     [
-      positive.length,
-      negative.length,
-      totalCurrentStreak,
-      activeMaxStreak,
+      activePositive.length,
+      activeNegative.length,
+      focusRate,
+      avgStreak,
       maxGlobalStreak,
       accent,
     ],
@@ -300,7 +283,7 @@ export function HabitsReportCanvas({
       });
       if (path) {
         await writeFile(path, binaryData);
-        toast.success("Relatório salvo com sucesso!");
+        toast.success("Relatório salvou com sucesso!");
       }
     } catch (err) {
       console.error("Erro ao salvar relatório:", err);

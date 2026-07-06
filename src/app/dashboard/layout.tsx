@@ -22,6 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const { appMode } = useTheme();
   const { user } = useAuth();
+
   const {
     notifications,
     unreadCount,

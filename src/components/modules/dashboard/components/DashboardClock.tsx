@@ -268,7 +268,7 @@ export function DashboardClock({
   // 1. STYLE: DEFAULT (Padrão Minimalista)
   if (style === "default") {
     return (
-      <div className="flex flex-col items-end gap-1 animate-in fade-in zoom-in-95 duration-500">
+      <div className="flex flex-col items-end gap-1">
         <div className="flex items-baseline gap-2">
           <div className="flex items-center gap-0.5">
             <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none">
@@ -304,7 +304,7 @@ export function DashboardClock({
     if (animated) {
       // Se animado for verdadeiro, renderiza o carrossel de rolagem vertical suave
       return (
-        <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-500 select-none">
+        <div className="flex items-center gap-1 select-none">
           <TimeReel value={hours} animated={animated} />
           <span
             className={cn(
@@ -332,7 +332,7 @@ export function DashboardClock({
 
     // Caso contrário, renderiza o layout estático unificado
     return (
-      <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-500 select-none">
+      <div className="flex items-center gap-1 select-none">
         <span className="font-sans text-5xl sm:text-6xl font-black text-foreground tabular-nums leading-none">
           {hours}
         </span>
@@ -367,7 +367,7 @@ export function DashboardClock({
     const currentDay = time.getDay(); // 0-6
 
     return (
-      <div className="flex flex-col items-end text-right gap-3 animate-in fade-in duration-500 select-none">
+      <div className="flex flex-col items-end text-right gap-3 select-none">
         <div className="flex items-baseline gap-1.5">
           <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
             <span>{hours}</span>
@@ -429,7 +429,7 @@ export function DashboardClock({
     const secondaryClean = words.secondary.toLowerCase();
 
     return (
-      <div className="flex flex-col items-end text-right gap-1.5 animate-in fade-in duration-500 select-none max-w-xs">
+      <div className="flex flex-col items-end text-right gap-1.5 select-none max-w-xs">
         <span className="font-sans text-2xl sm:text-3xl md:text-4xl font-black text-foreground leading-tight tracking-tight">
           {primaryClean}
         </span>
@@ -453,7 +453,7 @@ export function DashboardClock({
     const progressPercent = ((daySeconds / 86400) * 100).toFixed(2);
 
     return (
-      <div className="flex flex-col items-end gap-3.5 animate-in fade-in duration-500 select-none min-w-[240px]">
+      <div className="flex flex-col items-end gap-3.5 select-none min-w-[240px]">
         <div className="flex items-baseline gap-2">
           <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
             <span>{hours}</span>
@@ -513,7 +513,7 @@ export function DashboardClock({
       formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
     return (
-      <div className="flex flex-col items-end text-right gap-1 animate-in fade-in duration-500 select-none min-w-[200px]">
+      <div className="flex flex-col items-end text-right gap-1 select-none min-w-[200px]">
         <div className="flex items-baseline gap-1.5">
           <span className="font-sans text-4xl sm:text-5xl font-black text-foreground tabular-nums leading-none flex items-center gap-0.5">
             <span>{hours}</span>

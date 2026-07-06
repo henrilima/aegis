@@ -1,5 +1,11 @@
 "use client";
 
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: unknown;
+  }
+}
+
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type React from "react";
@@ -54,6 +60,7 @@ export function useNotifications(userId: string | undefined) {
   }, [userId]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     refresh();
 
     const unlistenPromise = listen(

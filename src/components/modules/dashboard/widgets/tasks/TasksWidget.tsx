@@ -48,7 +48,7 @@ export function TasksWidget({
   return (
     <>
       <BaseWidget
-        title="Tarefas"
+        title="Lista de Tarefas"
         icon={ListTodo}
         color={moduleColor}
         route="tasks"

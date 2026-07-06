@@ -6,9 +6,6 @@ import { toast } from "sonner";
 import { useTime } from "@/context/TimeContext";
 import type { Habit } from "./types";
 
-/**
- * Hook de Lógica para Hábitos: Gerencia timers de cooldown, recarga de cargas e ações backend
- */
 export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   const { now: simulatedNow } = useTime();
   const [timeLeft, setTimeLeft] = useState<string>("");
@@ -25,14 +22,12 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     [type],
   );
 
-  // Cálculo da sequência atual baseada no campo do banco para positivos ou tempo para negativos
   const currentStreak = useMemo(() => {
     if (!isNegative) return habit.currentStreak || 0;
 
     if (!habit.lastSlip) return 0;
     const slip = new Date(habit.lastSlip);
 
-    // Zera horas para contar dias de calendário (meia-noite a meia-noite)
     const slipDate = new Date(
       slip.getFullYear(),
       slip.getMonth(),
@@ -50,7 +45,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
 
   const diaAtual = currentStreak;
 
-  // Tempo total desde o início do rastreamento deste hábito
   const tempoDeCriacao = useMemo(() => {
     const created = new Date(habit.createdAt);
     const diff = simulatedNow.getTime() - created.getTime();
@@ -72,7 +66,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   const currentCharges = habit.currentCharges;
   const maxCharges = habit.chargesAmount;
 
-  // Registrar conclusão de hábito positivo
   const markDone = useCallback(async () => {
     if (isActionPending) return;
     try {
@@ -88,7 +81,22 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     }
   }, [id, onRefresh, simulatedNow, isActionPending]);
 
-  // Utilizar carga de proteção (vícios)
+  const toggleDate = useCallback(
+    async (dateStr: string, completed: boolean) => {
+      if (isActionPending) return;
+      try {
+        setIsActionPending(true);
+        await invoke("habit_toggle_date", { id, date: dateStr, completed });
+        onRefresh?.();
+      } catch (e) {
+        toast.error(`Erro ao atualizar hábito: ${e}`);
+      } finally {
+        setIsActionPending(false);
+      }
+    },
+    [id, onRefresh, isActionPending],
+  );
+
   const handleUseCharge = useCallback(async () => {
     if (currentCharges <= 0) {
       toast.error("Sem cargas de proteção disponíveis!");
@@ -103,7 +111,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     }
   }, [id, onRefresh, currentCharges]);
 
-  // Reiniciar sequência por falha ou deslize
   const resetStreak = useCallback(async () => {
     try {
       await invoke("habit_reset_habit", {
@@ -121,7 +128,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     }
   }, [id, isNegative, onRefresh, simulatedNow]);
 
-  // Reset total (zerar todas as métricas)
   const hardReset = useCallback(async () => {
     try {
       await invoke("habit_hard_reset_habit", {
@@ -135,7 +141,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     }
   }, [id, onRefresh, simulatedNow]);
 
-  // Excluir hábito
   const deleteHabit = useCallback(async () => {
     try {
       await invoke("habit_delete_habit", { id });
@@ -146,7 +151,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     }
   }, [id, onRefresh]);
 
-  // Loop de atualização de timers (segundo a segundo)
   useEffect(() => {
     const formatMS = (diff: number) => {
       const d = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -163,7 +167,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     };
 
     const updateTimer = () => {
-      // Cálculo do tempo para próxima ação disponível (Positivos)
       if (isNegative || !habit.lastDone) {
         setCanUse(true);
         setTimeLeft("");
@@ -172,7 +175,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
         const effectiveInterval = Math.max(1, intervalo);
         const nextDate = new Date(lastDate);
         nextDate.setDate(nextDate.getDate() + effectiveInterval);
-        nextDate.setHours(0, 0, 0, 0); // Considera virada do dia
+        nextDate.setHours(0, 0, 0, 0);
 
         const nextAvailable = nextDate.getTime();
         const nowMs = simulatedNow.getTime();
@@ -187,7 +190,6 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
         }
       }
 
-      // Cálculo do tempo para próxima carga (Vícios)
       if (habit.chargesAmount > 0 && habit.chargesIntervalDays > 0) {
         const lastRefill = new Date(habit.lastChargeRefill).getTime();
         const intervalMs = habit.chargesIntervalDays * 24 * 60 * 60 * 1000;
@@ -238,6 +240,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
 
     actions: {
       markDone,
+      toggleDate,
       handleUseCharge,
       resetStreak,
       hardReset,
