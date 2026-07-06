@@ -500,7 +500,7 @@ export function GlobalScheduler() {
       } catch (err) {
         console.warn(
           "[GlobalScheduler] Heartbeat com servidor web falhou:",
-          err,
+          err instanceof Error ? err.message : String(err),
         );
       }
 
@@ -612,7 +612,7 @@ export function GlobalScheduler() {
       } catch (err) {
         console.warn(
           "[GlobalScheduler] Erro ao sincronizar notificações remotas:",
-          err,
+          err instanceof Error ? err.message : String(err),
         );
       }
     };

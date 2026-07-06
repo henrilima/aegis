@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trophy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Trophy, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { getRankForLevel } from "@/config/achievements.config";
 
 interface Particle {
@@ -31,9 +31,23 @@ export function LevelUpParticles() {
     null,
   );
   const [particles, setParticles] = useState<Particle[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleClose = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setLevelUpData(null);
+    setParticles([]);
+  };
 
   useEffect(() => {
     const trigger = (lvl: number) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
       setLevelUpData({ level: lvl });
 
       // Gera as partículas para a explosão
@@ -56,12 +70,11 @@ export function LevelUpParticles() {
       }
       setParticles(newParticles);
 
-      const timer = setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setLevelUpData(null);
         setParticles([]);
+        timerRef.current = null;
       }, 5000);
-
-      return () => clearTimeout(timer);
     };
 
     if (typeof window !== "undefined") {
@@ -81,6 +94,9 @@ export function LevelUpParticles() {
     window.addEventListener("aegis-level-up", handleLevelUp);
     return () => {
       window.removeEventListener("aegis-level-up", handleLevelUp);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       if (typeof window !== "undefined") {
         (
           window as unknown as { aegisTriggerLevelUp?: (lvl: number) => void }
@@ -153,9 +169,18 @@ export function LevelUpParticles() {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: -20 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative px-6 py-5 rounded-2xl border border-border bg-card/95 backdrop-blur-md flex flex-col items-center gap-4 text-center max-w-[280px]"
+        className="relative pointer-events-auto px-6 py-5 rounded-2xl border border-border bg-card/95 backdrop-blur-md flex flex-col items-center gap-4 text-center max-w-[280px]"
       >
-        <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-500">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute top-3 right-3 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+          title="Fechar"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-500 mt-2">
           <Trophy className="w-6 h-6 animate-pulse" />
         </div>
 
@@ -180,6 +205,14 @@ export function LevelUpParticles() {
         <p className="text-[11px] text-muted-foreground leading-relaxed italic px-2">
           "{rank.description}"
         </p>
+
+        <button
+          type="button"
+          onClick={handleClose}
+          className="w-full mt-1 px-4 py-2 border border-border/80 hover:bg-muted text-foreground text-xs font-bold rounded-xl transition-colors cursor-pointer"
+        >
+          Continuar
+        </button>
       </motion.div>
     </div>
   );

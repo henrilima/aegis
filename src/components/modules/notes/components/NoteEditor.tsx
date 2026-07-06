@@ -559,6 +559,9 @@ export function NoteEditor({
           nextIndex,
         );
         setSelectedSlashIndex(nextIndex);
+        document
+          .getElementById(`slash-item-${nextIndex}`)
+          ?.scrollIntoView({ block: "nearest" });
         return;
       }
       if (e.key === "ArrowUp" && items.length > 0) {
@@ -571,6 +574,9 @@ export function NoteEditor({
           nextIndex,
         );
         setSelectedSlashIndex(nextIndex);
+        document
+          .getElementById(`slash-item-${nextIndex}`)
+          ?.scrollIntoView({ block: "nearest" });
         return;
       }
       if (e.key === "Enter") {
@@ -1069,6 +1075,7 @@ export function NoteEditor({
                 return (
                   <button
                     key={item.label}
+                    id={`slash-item-${idx}`}
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault();

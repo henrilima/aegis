@@ -545,6 +545,34 @@ export default function Dashboard() {
 
                     if (id === "habits") {
                       widgetProps.habits = data.habits;
+                      widgetProps.onToggleHabit = async (habitId: number) => {
+                        if (!user) return;
+                        const habit = data.habits.find((h) => h.id === habitId);
+                        if (!habit) return;
+
+                        const y = time.getFullYear();
+                        const m = String(time.getMonth() + 1).padStart(2, "0");
+                        const d = String(time.getDate()).padStart(2, "0");
+                        const todayStr = `${y}-${m}-${d}`;
+
+                        const isCompleted =
+                          habit.completedDates?.includes(todayStr) || false;
+                        try {
+                          await invoke("habit_toggle_date", {
+                            id: habitId,
+                            date: todayStr,
+                            completed: !isCompleted,
+                          });
+                          fetchAll();
+                          toast.success(
+                            isCompleted
+                              ? "Hábito desfeito!"
+                              : "Hábito concluído!",
+                          );
+                        } catch (err) {
+                          toast.error(`Erro ao atualizar hábito: ${err}`);
+                        }
+                      };
                     }
                     if (id === "pomodoro") {
                       widgetProps.pomodoro = data.pomodoro;

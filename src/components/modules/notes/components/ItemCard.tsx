@@ -59,6 +59,7 @@ interface ItemCardProps {
   onColorChange?: (color: string) => void;
   searchQuery?: string;
   viewMode?: ViewMode;
+  isPinned?: boolean;
 }
 
 export function ItemCard({
@@ -71,11 +72,13 @@ export function ItemCard({
   onColorChange,
   searchQuery,
   viewMode = "grid",
+  isPinned: isPinnedProp,
 }: ItemCardProps) {
   const moduleColor = getModuleColor("notes");
   const theme = getColorTheme(moduleColor);
   const isFolder = item.isDir;
-  const isPinned = !isFolder && item.note?.pinned;
+  const isPinned =
+    isPinnedProp !== undefined ? isPinnedProp : !isFolder && item.note?.pinned;
 
   // Resolve a cor: pasta usa item.color, nota usa item.note.color
   const rawColor = isFolder ? item.color : item.note?.color;
@@ -130,7 +133,11 @@ export function ItemCard({
       <>
         <Item
           className="hover:bg-accent/50 cursor-pointer rounded-lg m-1"
-          onClick={isFolder ? onNavigate : onEdit}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isFolder) onNavigate();
+            else onEdit();
+          }}
         >
           {isFolder ? (
             <Folder className="w-4 h-4 mr-2" />
@@ -142,30 +149,43 @@ export function ItemCard({
 
         <Item
           className="hover:bg-accent/50 cursor-pointer rounded-lg m-1"
-          onClick={onRename}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRename();
+          }}
         >
           <Edit2 className="w-4 h-4 mr-2" /> Renomear
         </Item>
 
-        {!isFolder && (
-          <Item
-            className={cn(
-              "hover:bg-accent/50 cursor-pointer rounded-lg m-1",
-              isPinned && theme.text,
-            )}
-            onClick={onTogglePin}
-          >
-            <Pin
-              className="w-4 h-4 mr-2"
-              fill={isPinned ? "currentColor" : "none"}
-            />
-            {isPinned ? "Desfixar" : "Fixar nota"}
-          </Item>
-        )}
+        <Item
+          className={cn(
+            "hover:bg-accent/50 cursor-pointer rounded-lg m-1",
+            isPinned && theme.text,
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePin();
+          }}
+        >
+          <Pin
+            className="w-4 h-4 mr-2"
+            fill={isPinned ? "currentColor" : "none"}
+          />
+          {isFolder
+            ? isPinned
+              ? "Desfixar pasta"
+              : "Fixar pasta"
+            : isPinned
+              ? "Desfixar"
+              : "Fixar nota"}
+        </Item>
 
         {onColorChange && (
           <Sub>
-            <SubTrigger className="hover:bg-accent/50 cursor-pointer rounded-lg m-1">
+            <SubTrigger
+              className="hover:bg-accent/50 cursor-pointer rounded-lg m-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Palette className="w-4 h-4 mr-2" /> Cor
               {colorHex && (
                 <span
@@ -174,7 +194,10 @@ export function ItemCard({
                 />
               )}
             </SubTrigger>
-            <SubContent className="bg-card border-border text-foreground rounded-xl p-0">
+            <SubContent
+              className="bg-card border-border text-foreground rounded-xl p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
               {colorPickerNode}
             </SubContent>
           </Sub>
@@ -183,7 +206,10 @@ export function ItemCard({
         <div className="h-px bg-neutral-800 my-1 mx-2" />
         <Item
           className="text-red-600 dark:text-red-400 hover:bg-red-500/10 cursor-pointer rounded-lg m-1"
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
         >
           <Trash2 className="w-4 h-4 mr-2" /> Excluir
         </Item>
@@ -209,7 +235,7 @@ export function ItemCard({
               ...(colorHex ? { backgroundColor: `${colorHex}12` } : {}),
             }}
             className={cn(
-              "group relative flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent transition-all select-none cursor-pointer hover:bg-muted/30 focus:outline-none focus:ring-1 focus:ring-ring w-full text-left",
+              "group relative flex items-center gap-3 px-3 rounded-xl border border-transparent transition-all select-none cursor-pointer hover:bg-muted/30 focus:outline-none focus:ring-1 focus:ring-ring w-full text-left h-[50px]",
               isOver && cn(theme.bg, theme.border.replace("/20", "/40")),
               isDragging && "opacity-30 scale-[0.98] grayscale",
             )}
@@ -266,14 +292,8 @@ export function ItemCard({
 
             {/* Pin */}
             {isPinned && (
-              <div
-                className={cn(
-                  "p-1 rounded-md shrink-0 pointer-events-none",
-                  !colorHex && theme.solid,
-                )}
-                style={colorHex ? { backgroundColor: colorHex } : {}}
-              >
-                <Pin className="w-2.5 h-2.5 text-white" fill="currentColor" />
+              <div className="p-1 rounded-md shrink-0 pointer-events-none bg-black text-white">
+                <Pin className="w-2.5 h-2.5" fill="currentColor" />
               </div>
             )}
 
@@ -351,14 +371,8 @@ export function ItemCard({
           >
             {/* Pin badge */}
             {isPinned && (
-              <div
-                className={cn(
-                  "absolute top-2 left-2 p-1 rounded-lg",
-                  !colorHex && theme.solid,
-                )}
-                style={colorHex ? { backgroundColor: colorHex } : {}}
-              >
-                <Pin className="w-2.5 h-2.5 text-white" fill="currentColor" />
+              <div className="absolute top-2 left-2 p-1 rounded-lg bg-black text-white pointer-events-none">
+                <Pin className="w-2.5 h-2.5" fill="currentColor" />
               </div>
             )}
 
@@ -410,7 +424,7 @@ export function ItemCard({
 
           {/*  Área de conteúdo  */}
           <div
-            className="flex flex-col gap-1 px-3 py-2.5 bg-card/80 pointer-events-none"
+            className="flex flex-col justify-between gap-1 px-3 py-2.5 bg-card/80 pointer-events-none h-[82px]"
             style={
               colorHex
                 ? { borderTop: `1px solid ${colorHex}20` }

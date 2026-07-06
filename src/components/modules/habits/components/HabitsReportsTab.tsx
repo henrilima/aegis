@@ -6,9 +6,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Habit } from "../types";
@@ -19,6 +21,7 @@ interface HabitsReportsTabProps {
 }
 
 export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
+  const { now: simulatedNow } = useTime();
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
   const [periodOffset, setPeriodOffset] = useState(0);
@@ -57,7 +60,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
 
     // Gera a lista de datas do período de teste (dos últimos N dias até hoje)
     const dates: Date[] = [];
-    const today = new Date();
+    const today = new Date(simulatedNow);
     today.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < period; i++) {
@@ -80,13 +83,8 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
       const weekdays = h.weekdays
         ? h.weekdays.split(",").map(Number)
         : [1, 2, 3, 4, 5];
-      const createdDate = new Date(h.createdAt);
-      createdDate.setHours(0, 0, 0, 0);
 
       for (const d of dates) {
-        // Ignora dias anteriores à criação do hábito para não penalizar a taxa de foco
-        if (d < createdDate) continue;
-
         const wDay = d.getDay();
         const isScheduled =
           !h.frequency || h.frequency === "daily" || weekdays.includes(wDay);
@@ -110,7 +108,61 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
     return habitsWithSchedules > 0
       ? Math.round(totalAdherence / habitsWithSchedules)
       : 100;
-  }, [activePositive, period]);
+  }, [activePositive, period, simulatedNow]);
+
+  // Cálculo das Taxas de Conclusão Individuais para cada hábito
+  const individualRates = useMemo(() => {
+    const dates: Date[] = [];
+    const today = new Date(simulatedNow);
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < period; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(d);
+    }
+
+    const getFormattedDate = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
+
+    return activePositive.map((h) => {
+      let scheduledCount = 0;
+      let completedCount = 0;
+
+      const weekdays = h.weekdays
+        ? h.weekdays.split(",").map(Number)
+        : [1, 2, 3, 4, 5];
+
+      for (const d of dates) {
+        const wDay = d.getDay();
+        const isScheduled =
+          !h.frequency || h.frequency === "daily" || weekdays.includes(wDay);
+
+        if (isScheduled) {
+          scheduledCount++;
+          const formatted = getFormattedDate(d);
+          if (h.completedDates?.includes(formatted)) {
+            completedCount++;
+          }
+        }
+      }
+
+      const rate =
+        scheduledCount > 0
+          ? Math.round((completedCount / scheduledCount) * 100)
+          : 0;
+
+      return {
+        id: h.id,
+        name: h.name,
+        rate,
+      };
+    });
+  }, [activePositive, period, simulatedNow]);
 
   const statusLabel = useMemo(() => {
     if (activePositive.length === 0) return "Sem dados";
@@ -127,7 +179,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
         : period === 30
           ? "Últimos 30 dias"
           : "Últimos 100 dias";
-    const rawDateStr = new Date().toLocaleDateString("pt-BR", {
+    const rawDateStr = new Date(simulatedNow).toLocaleDateString("pt-BR", {
       month: "long",
       year: "numeric",
     });
@@ -153,6 +205,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
     activePositive.length,
     activeNegative.length,
     maxGlobalStreak,
+    simulatedNow,
   ]);
 
   const copyReport = () => {
@@ -311,6 +364,87 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
           </div>
         </div>
       </div>
+
+      {/* Taxas de Conclusão Individuais */}
+      {activePositive.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 animate-in fade-in-50 slide-in-from-bottom-2 duration-350">
+          <div className="flex items-center gap-3">
+            <div className={cn("p-2 rounded-lg", theme.bg)}>
+              <TrendingUp className={cn("w-4 h-4", theme.text)} />
+            </div>
+            <h3 className="font-bold text-foreground">
+              Desempenhos Individuais
+            </h3>
+          </div>
+
+          <div className="w-full overflow-x-auto border border-border/60 rounded-xl bg-background/25">
+            <table className="w-full border-collapse text-left text-xs min-w-[700px]">
+              <thead>
+                <tr className="border-b border-border/50 bg-background/40">
+                  <th className="py-3 px-4 font-bold text-muted-foreground w-[180px] uppercase tracking-wider text-[10px]">
+                    Nome
+                  </th>
+                  {individualRates.map((ir) => (
+                    <th
+                      key={ir.id || ir.name}
+                      className="py-3 px-4 font-semibold text-foreground text-center border-l border-border/10"
+                    >
+                      {ir.name}
+                    </th>
+                  ))}
+                  <th className="py-3 px-4 font-bold text-foreground text-center border-l border-border/30 bg-muted/15">
+                    📊 Geral
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="py-4 px-4 font-bold text-foreground bg-background/10">
+                    Taxa de conclusão
+                  </td>
+                  {individualRates.map((ir) => (
+                    <td
+                      key={ir.id || ir.name}
+                      className="py-4 px-4 text-center border-l border-border/10"
+                    >
+                      <div className="flex flex-col items-center gap-1.5 min-w-[100px]">
+                        <span className="font-extrabold text-foreground">
+                          {ir.rate}%
+                        </span>
+                        <div className="w-20 h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500",
+                              theme.solid,
+                            )}
+                            style={{ width: `${ir.rate}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                  ))}
+                  <td className="py-4 px-4 text-center border-l border-border/30 bg-muted/15">
+                    <div className="flex flex-col items-center gap-1.5 min-w-[100px]">
+                      <span className="font-extrabold text-foreground">
+                        {focusRate}%
+                      </span>
+                      <div className="w-20 h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            theme.solid,
+                          )}
+                          style={{ width: `${focusRate}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

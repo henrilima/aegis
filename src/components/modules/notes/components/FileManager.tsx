@@ -67,6 +67,18 @@ export function FileManager({
   const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState<FileSystemItem | null>(null);
 
+  const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("aegis-notes-pinned-folders");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
   // Modo de visualização: grade ou lista, persistido no localStorage
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== "undefined") {
@@ -132,11 +144,26 @@ export function FileManager({
       return norm(currentPath) === norm(itemParent);
     });
     return filtered.sort((a, b) => {
+      const aPinned = a.isDir
+        ? pinnedFolders.includes(a.path)
+        : !!a.note?.pinned;
+      const bPinned = b.isDir
+        ? pinnedFolders.includes(b.path)
+        : !!b.note?.pinned;
+
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      if (aPinned && bPinned) {
+        if (a.isDir && !b.isDir) return -1;
+        if (!a.isDir && b.isDir) return 1;
+        return a.name.localeCompare(b.name);
+      }
+
       if (a.isDir && !b.isDir) return -1;
       if (!a.isDir && b.isDir) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [items, currentPath, searchQuery]);
+  }, [items, currentPath, searchQuery, pinnedFolders]);
 
   const breadcrumbs = useMemo(() => {
     if (!currentPath) return [];
@@ -240,7 +267,23 @@ export function FileManager({
   };
 
   const handleTogglePin = async (item: FileSystemItem) => {
-    if (item.isDir || !item.note) return;
+    if (item.isDir) {
+      const isPinned = pinnedFolders.includes(item.path);
+      setPinnedFolders((prev) => {
+        const next = isPinned
+          ? prev.filter((p) => p !== item.path)
+          : [...prev, item.path];
+        localStorage.setItem(
+          "aegis-notes-pinned-folders",
+          JSON.stringify(next),
+        );
+        return next;
+      });
+      toast.success(isPinned ? "Pasta desfixada" : "Pasta fixada");
+      return;
+    }
+
+    if (!item.note) return;
     try {
       await invoke("note_update_note_pinned", {
         id: item.note.id,
@@ -425,6 +468,11 @@ export function FileManager({
                   key={item.path}
                   item={item}
                   viewMode="grid"
+                  isPinned={
+                    item.isDir
+                      ? pinnedFolders.includes(item.path)
+                      : !!item.note?.pinned
+                  }
                   onNavigate={() =>
                     item.isDir
                       ? setCurrentPath(item.path)
@@ -453,6 +501,11 @@ export function FileManager({
                   key={item.path}
                   item={item}
                   viewMode="list"
+                  isPinned={
+                    item.isDir
+                      ? pinnedFolders.includes(item.path)
+                      : !!item.note?.pinned
+                  }
                   onNavigate={() =>
                     item.isDir
                       ? setCurrentPath(item.path)

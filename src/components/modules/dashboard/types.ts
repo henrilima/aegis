@@ -9,14 +9,8 @@ export type ModColor =
   | "sky"
   | "neutral";
 
-export interface Habit {
-  id?: number;
-  userId: string;
-  name: string;
-  habitType: string;
-  lastDone: string | null;
-  currentStreak: number;
-}
+import type { Habit as RealHabit } from "@/components/modules/habits/types";
+export type Habit = RealHabit;
 
 export interface Note {
   id?: number;

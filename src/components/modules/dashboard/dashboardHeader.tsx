@@ -306,7 +306,10 @@ export function DashboardHeader({
           icon: Icon,
         });
       } catch (error) {
-        console.error("Weather fetch error:", error);
+        console.warn(
+          "[Weather] Não foi possível obter os dados do clima (wttr.in pode estar offline/limitando requisições):",
+          error,
+        );
       }
     };
 

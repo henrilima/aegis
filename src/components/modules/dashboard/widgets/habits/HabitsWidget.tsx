@@ -4,13 +4,11 @@ import { Activity, CheckCircle2, Circle, Flame } from "lucide-react";
 import type { Habit } from "@/components/modules/habits/types";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { getHabitStreak } from "../../helpers";
 import { BaseWidget } from "../BaseWidget";
 import { Ring } from "../ui";
 
 interface HabitsWidgetProps {
   habits: Habit[];
-  isToday: (iso: string) => boolean;
   time: Date;
   limit?: number;
   isEditMode?: boolean;
@@ -21,7 +19,6 @@ interface HabitsWidgetProps {
 
 export function HabitsWidget({
   habits,
-  isToday,
   time,
   limit,
   isEditMode,
@@ -32,9 +29,33 @@ export function HabitsWidget({
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
 
-  const positiveHabits = habits.filter((h) => h.habitType === "Positive");
+  const getFormattedDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const todayStr = getFormattedDate(time);
+  const todayWeekday = time.getDay();
+
+  const isScheduled = (h: Habit, weekday: number) => {
+    if (h.archived) return false;
+    if (!h.frequency || h.frequency === "daily") return true;
+    if (h.frequency === "weekdays" && h.weekdays) {
+      const list = h.weekdays.split(",").map(Number);
+      return list.includes(weekday);
+    }
+    return false;
+  };
+
+  // Filtra apenas hábitos positivos que não estão arquivados e estão agendados para hoje
+  const positiveHabits = habits.filter(
+    (h) => h.habitType === "Positive" && isScheduled(h, todayWeekday),
+  );
+
   const doneToday = positiveHabits.filter(
-    (h) => h.lastDone && isToday(h.lastDone),
+    (h) => h.completedDates?.includes(todayStr) || false,
   );
 
   const progressPct =
@@ -42,8 +63,13 @@ export function HabitsWidget({
       ? Math.round((doneToday.length / positiveHabits.length) * 100)
       : 0;
 
-  const maxStreak = positiveHabits.reduce(
-    (m, h) => Math.max(m, getHabitStreak(h, time)),
+  // Recorde histórico de todos os hábitos positivos ativos (independentemente de estarem agendados hoje)
+  const allActivePositive = habits.filter(
+    (h) => h.habitType === "Positive" && !h.archived,
+  );
+
+  const maxStreak = allActivePositive.reduce(
+    (m, h) => Math.max(m, h.maxStreak || 0),
     0,
   );
 
@@ -108,8 +134,8 @@ export function HabitsWidget({
 
       <div className="w-full space-y-2">
         {positiveHabits.slice(0, limit ?? 3).map((h) => {
-          const done = h.lastDone && isToday(h.lastDone);
-          const streak = getHabitStreak(h, time);
+          const done = h.completedDates?.includes(todayStr) || false;
+          const streak = h.currentStreak || 0;
           return (
             <button
               key={h.id}
