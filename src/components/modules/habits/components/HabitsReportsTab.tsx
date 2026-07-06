@@ -381,7 +381,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
             <table className="w-full border-collapse text-left text-xs min-w-[700px]">
               <thead>
                 <tr className="border-b border-border/50 bg-background/40">
-                  <th className="py-3 px-4 font-bold text-muted-foreground w-[180px] uppercase tracking-wider text-[10px]">
+                  <th className="py-3 px-4 font-bold text-muted-foreground w-[180px] text-xs">
                     Nome
                   </th>
                   {individualRates.map((ir) => (
