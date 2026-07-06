@@ -489,7 +489,7 @@ export function DashboardHeader({
         {simulatedBanner}
         <div
           className={cn(
-            "flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-3xl transition-all duration-300",
+            "flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-3xl transition-colors duration-300",
             dashboardCoverImage
               ? "bg-transparent border-transparent"
               : dashboardWelcomingGlass
@@ -754,7 +754,7 @@ export function DashboardHeader({
         {/* Card Hero Glassmórfico Unificado e Elegante */}
         <div
           className={cn(
-            "relative overflow-hidden rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-8 group transition-all duration-300",
+            "relative overflow-hidden rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-8 group transition-colors duration-300",
             dashboardCoverImage
               ? "border border-transparent bg-transparent backdrop-blur-none"
               : dashboardWelcomingGlass
@@ -873,7 +873,7 @@ export function DashboardHeader({
           <div className="shrink-0 relative z-10 scale-90 sm:scale-95">
             <div
               className={cn(
-                "p-5 rounded-2xl border border-border/20 backdrop-blur-md transition-all duration-300",
+                "p-5 rounded-2xl border border-border/20 backdrop-blur-md transition-colors duration-300",
                 dashboardWelcomingGlass
                   ? "bg-card/25"
                   : "bg-transparent border-transparent backdrop-blur-none",
