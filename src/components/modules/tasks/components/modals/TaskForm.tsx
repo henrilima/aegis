@@ -49,7 +49,7 @@ export function TaskForm({ task, onSave }: TaskFormProps) {
   };
 
   const inputStyle = cn(
-    "w-full bg-card border-border h-11 rounded-xl text-sm font-medium transition-all placeholder:text-neutral-700",
+    "w-full bg-card border-border h-11 rounded-xl text-sm font-medium transition-all placeholder:text-muted-foreground/50",
     theme.borderHover.replace("hover:", "focus:"),
   );
   const labelClass = "text-xs font-medium text-muted-foreground ml-0.5";
@@ -122,7 +122,7 @@ export function TaskForm({ task, onSave }: TaskFormProps) {
                     type="button"
                     onClick={() => setPriority(p.val)}
                     className={cn(
-                      "flex-1 py-2.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border uppercase",
+                      "flex-1 py-2.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border",
                       priority === p.val
                         ? cn(theme.bg, theme.border, p.color)
                         : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground",
@@ -132,7 +132,7 @@ export function TaskForm({ task, onSave }: TaskFormProps) {
                   </button>
                 ))}
               </div>
-              <p className="text-center text-[10px] font-bold text-neutral-600 uppercase">
+              <p className="text-center text-[10px] font-bold text-neutral-600 capitalize">
                 {priority === 0
                   ? "Sem prioridade definida"
                   : `Prioridade ${["", "Baixa", "Média", "Alta"][priority]}`}
@@ -144,7 +144,8 @@ export function TaskForm({ task, onSave }: TaskFormProps) {
               <ColorPicker
                 value={color}
                 onChange={setColor}
-                placeholder="Nenhuma"
+                placeholder="Padrão"
+                defaultColor={getModuleColor("tasks")}
                 className="w-full"
               />
             </div>

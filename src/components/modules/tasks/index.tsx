@@ -34,6 +34,7 @@ export default function TasksPage() {
   const { now } = useTime();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<
     number | undefined
@@ -162,11 +163,11 @@ export default function TasksPage() {
     }
   };
 
-  const priorityColors = [
-    "text-muted-foreground/40",
-    "text-emerald-500",
-    "text-amber-500",
-    "text-rose-500",
+  const priorityBadgeStyles = [
+    "",
+    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   ];
 
   const priorityLabels = ["", "Baixa", "Média", "Alta"];
@@ -174,6 +175,12 @@ export default function TasksPage() {
   const rootTasks = tasks
     .filter((t) => !t.parentId || !tasks.some((p) => p.id === t.parentId))
     .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+  const filteredRootTasks = rootTasks.filter((t) => {
+    if (filter === "pending") return !t.completed;
+    if (filter === "completed") return t.completed;
+    return true;
+  });
 
   const getSubtasks = (parentId: number) =>
     tasks
@@ -203,17 +210,19 @@ export default function TasksPage() {
       >
         <div
           className={cn(
-            "group flex items-center justify-between gap-3 p-4 bg-card border transition-all rounded-xl",
+            "group flex items-center justify-between gap-3 bg-card border border-border transition-all rounded-xl relative overflow-hidden",
             task.completed ? "opacity-60 grayscale-[0.5]" : "hover:bg-muted/30",
-            isSubtask && "ml-8",
-            !task.color && "border-border",
+            isSubtask ? "ml-8 p-3 text-xs" : "p-4 text-sm",
           )}
-          style={
-            {
-              borderColor: styles.borderColor,
-            } as React.CSSProperties
-          }
         >
+          {/* Faixa de cor lateral se definida */}
+          {task.color && (
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+              style={{ backgroundColor: styles.iconColor }}
+            />
+          )}
+
           <div className="flex items-center gap-3 flex-1 overflow-hidden">
             <button
               type="button"
@@ -222,13 +231,23 @@ export default function TasksPage() {
             >
               {task.completed ? (
                 <CheckCircle2
-                  className="w-5 h-5"
-                  style={{ color: styles.iconColor }}
+                  className={cn(
+                    "w-5 h-5",
+                    task.color ? "" : "text-red-500 dark:text-red-400",
+                  )}
+                  style={task.color ? { color: styles.iconColor } : undefined}
                 />
               ) : (
                 <Circle
-                  className="w-5 h-5 transition-colors group-hover:scale-110"
-                  style={{ color: styles.iconColorMuted }}
+                  className={cn(
+                    "w-5 h-5 transition-colors group-hover:scale-110",
+                    task.color
+                      ? ""
+                      : "text-muted-foreground/50 hover:text-red-500/80 dark:hover:text-red-400/80",
+                  )}
+                  style={
+                    task.color ? { color: styles.iconColorMuted } : undefined
+                  }
                 />
               )}
             </button>
@@ -236,7 +255,8 @@ export default function TasksPage() {
             <div className="flex flex-col gap-0.5 overflow-hidden">
               <span
                 className={cn(
-                  "text-sm font-medium transition-all truncate",
+                  "font-medium transition-all truncate",
+                  isSubtask ? "text-xs" : "text-sm",
                   task.completed && "line-through text-muted-foreground",
                 )}
               >
@@ -245,30 +265,28 @@ export default function TasksPage() {
 
               <div className="flex items-center gap-2">
                 {Number(task.priority) > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Flag
-                      className={cn(
-                        "w-3 h-3",
-                        priorityColors[task.priority ?? 0],
-                      )}
-                    />
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase">
-                      {priorityLabels[task.priority ?? 0]}
-                    </span>
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      priorityBadgeStyles[task.priority ?? 0],
+                    )}
+                  >
+                    <Flag className="w-2.5 h-2.5 shrink-0" />
+                    <span>{priorityLabels[task.priority ?? 0]}</span>
                   </div>
                 )}
                 {task.category && (
                   <div
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold capitalize border shrink-0"
                     style={{
                       backgroundColor: styles.badgeBg,
-                      border: styles.badgeBorder,
+                      borderColor: styles.badgeBorder.replace("1px solid ", ""),
                     }}
                   >
                     <Hash
                       className={cn(
                         "w-2.5 h-2.5",
-                        task.color ? "" : "text-muted-foreground",
+                        task.color ? "" : "text-muted-foreground/70",
                       )}
                       style={{
                         color: task.color ? styles.iconColor : undefined,
@@ -276,8 +294,7 @@ export default function TasksPage() {
                     />
                     <span
                       className={cn(
-                        "text-[10px] font-bold uppercase",
-                        task.color ? "" : "text-muted-foreground",
+                        task.color ? "" : "text-muted-foreground/70",
                       )}
                       style={{
                         color: task.color ? styles.iconColor : undefined,
@@ -374,8 +391,44 @@ export default function TasksPage() {
           description="Sua lista está vazia. Comece criando uma nova tarefa para se organizar."
         />
       ) : (
-        <div className="flex flex-col gap-2 pr-2">
-          {rootTasks.map((task, i) => renderTask(task, i))}
+        <div className="flex flex-col gap-4 pr-2">
+          {/* Segment Control / Filtros */}
+          <div className="flex items-center gap-1.5 p-1 bg-muted/30 border border-border/50 rounded-xl max-w-[320px] shrink-0">
+            {[
+              { id: "all", label: "Todas" },
+              { id: "pending", label: "Pendentes" },
+              { id: "completed", label: "Concluídas" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() =>
+                  setFilter(tab.id as "all" | "pending" | "completed")
+                }
+                className={cn(
+                  "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none text-center",
+                  filter === tab.id
+                    ? "bg-card text-foreground border border-border/60"
+                    : "text-muted-foreground hover:text-foreground border border-transparent",
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredRootTasks.length === 0 ? (
+            <EmptyState
+              icon={ListTodo}
+              title="Nenhuma tarefa nesta categoria"
+              description="Nenhuma tarefa corresponde ao filtro selecionado no momento."
+              className="bg-card/20 border border-border rounded-xl p-8"
+            />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredRootTasks.map((task, i) => renderTask(task, i))}
+            </div>
+          )}
         </div>
       )}
 
