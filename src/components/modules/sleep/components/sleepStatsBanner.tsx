@@ -11,7 +11,8 @@ interface SleepStatsBannerProps {
   targetMinutes: number;
   weekAvgQuality: number;
   consistency: number;
-  avgVsTarget: number;
+  sleepDebt: number;
+  layout?: "horizontal" | "vertical";
 }
 
 /**
@@ -22,7 +23,8 @@ export function SleepStatsBanner({
   targetMinutes,
   weekAvgQuality,
   consistency,
-  avgVsTarget,
+  sleepDebt,
+  layout = "horizontal",
 }: SleepStatsBannerProps) {
   const color = getModuleColor("sleep");
   const theme = getColorTheme(color);
@@ -56,42 +58,85 @@ export function SleepStatsBanner({
         "Frequência com que você registrou o sono nos últimos 7 dias. Calculado dividindo as noites dormidas pelo total de dias.",
     },
     {
-      label: "vs. Meta",
+      label: "Débito semanal",
       value:
         weekAvgDuration === 0
           ? "-"
-          : `${avgVsTarget > 0 ? "+" : ""}${Math.round(avgVsTarget)}min`,
+          : sleepDebt > 0
+            ? formatDuration(sleepDebt)
+            : "Nenhum",
       icon: Zap,
-      sub: avgVsTarget >= 0 ? "acima da meta" : "abaixo da meta",
+      sub: sleepDebt > 0 ? "sono em falta" : "meta em dia",
       colorClass:
-        avgVsTarget >= 0 ? "text-green-400" : "text-red-600 dark:text-red-400",
+        sleepDebt > 0
+          ? "text-red-500 dark:text-red-400"
+          : "text-green-500 dark:text-green-400",
       tooltip:
-        "Diferença média entre o tempo dormido e a sua meta pessoal de sono por noite.",
+        "Total acumulado de horas de sono que faltaram para atingir sua meta diária nesta semana.",
     },
   ];
 
   const renderCard = (c: (typeof cards)[0]) => {
+    if (layout === "vertical") {
+      return (
+        <div
+          key={c.label}
+          className="bg-card border border-border rounded-xl p-5 flex items-center justify-between gap-4 transition-all hover:bg-muted/10"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "p-2 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center",
+                theme.text,
+              )}
+            >
+              <c.icon className="w-4.5 h-4.5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 capitalize">
+                {c.label}
+              </span>
+              <span className="text-xs text-neutral-500 mt-0.5">{c.sub}</span>
+            </div>
+          </div>
+          <span className={`text-2xl font-bold ${c.colorClass}`}>
+            {c.value}
+          </span>
+        </div>
+      );
+    }
+
     return (
       <div
         key={c.label}
-        className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1.5"
+        className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2 transition-all hover:border-border/80"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-muted-foreground">
+          <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 capitalize">
             {c.label}
           </span>
-          <c.icon className={cn("w-3.5 h-3.5", theme.text)} />
+          <c.icon className={cn("w-4 h-4", theme.text)} />
         </div>
-        <span className={`text-2xl font-bold leading-none ${c.colorClass}`}>
+        <span
+          className={`text-3xl font-bold tracking-tight leading-none ${c.colorClass}`}
+        >
           {c.value}
         </span>
-        <span className="text-[10px] text-neutral-600">{c.sub}</span>
+        <span className="text-xs text-neutral-500 font-medium mt-0.5">
+          {c.sub}
+        </span>
       </div>
     );
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div
+      className={cn(
+        layout === "vertical"
+          ? "flex flex-col gap-4"
+          : "grid grid-cols-2 md:grid-cols-4 gap-4",
+      )}
+    >
       {cards.map((c) =>
         c.tooltip ? (
           <ToolTip key={c.label} content={c.tooltip}>

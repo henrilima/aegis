@@ -56,18 +56,18 @@ export function SleepEntryModal({
       </div>
 
       {/* Rodapé Fixo */}
-      <div className="p-6 border-t border-border shrink-0 bg-background/50 flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 p-6 border-t border-border/60 bg-muted/10 shrink-0">
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+          className="flex-1 flex items-center justify-center p-2.5 rounded-lg border border-border bg-card hover:bg-accent/50 text-muted-foreground text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
         >
           Cancelar
         </button>
         <button
           type="submit"
           form="sleep-form"
-          className="flex-2 px-4 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-all active:scale-[0.98] cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
         >
           {editEntry ? "Salvar alterações" : "Confirmar registro"}
         </button>

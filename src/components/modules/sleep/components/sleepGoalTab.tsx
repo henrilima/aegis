@@ -28,11 +28,7 @@ export function SleepGoalTab({
   const theme = getColorTheme(getModuleColor("sleep"));
 
   const inputClass = cn(
-    "flex-1 bg-background/50 border border-border rounded-xl px-4 py-2.5 text-sm font-bold text-foreground placeholder:text-neutral-700 focus:outline-none transition-all",
-    theme.borderHover.replace("hover:", "focus:").replace("500", "500/50"),
-    theme.textSub
-      .replace("text-", "focus:ring-1 focus:ring-")
-      .replace("400", "500/20"),
+    "flex-1 bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-muted-foreground/50",
   );
 
   return (
@@ -85,7 +81,7 @@ export function SleepGoalTab({
       </div>
 
       {/* Lembrete Opcional */}
-      <div className="p-5 bg-muted/30 border border-border/50 rounded-2xl flex items-center justify-between transition-all hover:bg-muted/40">
+      <div className="p-4 bg-muted/30 border border-border/50 rounded-xl flex items-center justify-between transition-all hover:bg-muted/40">
         <div>
           <p className="text-sm font-bold text-foreground">
             Notificação de Sono

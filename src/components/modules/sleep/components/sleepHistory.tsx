@@ -40,19 +40,19 @@ export function SleepHistory({
         icon={Moon}
         title="Nenhum ciclo registrado"
         description="Seu histórico de sono aparecerá aqui. Comece registrando sua última noite de descanso."
-        className="py-12 bg-card/20 border border-border rounded-xl"
+        className="py-12 bg-card border border-border rounded-xl"
       />
     );
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5">
-      <h2 className=" font-bold text-muted-foreground mb-3">{title}</h2>
-      <div className="flex flex-col gap-2">
+    <div className="bg-card border border-border rounded-xl p-6 transition-all hover:border-border/80">
+      <h2 className="text-sm font-bold text-muted-foreground mb-4">{title}</h2>
+      <div className="flex flex-col gap-3">
         {entries.map((e) => (
           <div
             key={e.id}
-            className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-accent/50/10 transition-colors"
+            className="flex items-center gap-3 py-3 border-b border-border last:border-0 hover:bg-accent/50/10 transition-colors"
           >
             {/* Indicador visual simples de meta batida (ou não) */}
             <div
@@ -66,37 +66,35 @@ export function SleepHistory({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className=" font-semibold text-foreground">
+                <span className="text-sm font-bold text-foreground">
                   {parseDate(e.date).toLocaleDateString("pt-BR", {
                     weekday: "short",
                     day: "2-digit",
                     month: "short",
                   })}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-medium">
+                <span className="text-xs text-muted-foreground/80 font-medium">
                   {e.bedtime} → {e.wakeTime}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className={cn("text-xs font-bold", theme.text)}>
+              <div className="flex items-center gap-3 mt-1">
+                <span className={cn("text-sm font-bold", theme.text)}>
                   {formatDuration(e.durationMinutes)}
                   {e.nap_minutes && e.nap_minutes > 0 ? (
-                    <span className="text-[10px] text-neutral-600 font-medium ml-1">
+                    <span className="text-[11px] text-neutral-500 font-bold ml-1">
                       (+{formatDuration(e.nap_minutes)} soneca)
                     </span>
                   ) : null}
                 </span>
                 <SleepStars quality={e.quality} />
                 <span
-                  className={`text-[11px] font-semibold ${qualityColor(e.quality)}`}
+                  className={`text-xs font-bold ${qualityColor(e.quality)}`}
                 >
                   {qualityLabel(e.quality)}
                 </span>
               </div>
               {e.note && (
-                <p className="text-[11px] text-neutral-600 truncate mt-0.5">
-                  {e.note}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{e.note}</p>
               )}
             </div>
 
@@ -108,7 +106,7 @@ export function SleepHistory({
                   onClick={() => onEdit(e)}
                   className={cn(
                     "p-2 transition-all border-r border-border active:scale-95 text-neutral-600",
-                    theme.bgHover.replace("hover:bg-", "hover:bg-"),
+                    theme.bgHover,
                     toHoverClass(theme.text),
                   )}
                 >

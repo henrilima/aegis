@@ -110,7 +110,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
   }
 
   const inputStyle =
-    "bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-neutral-700";
+    "bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-blue-500/40 transition-all placeholder:text-muted-foreground/50";
   const lc = "text-xs font-medium text-muted-foreground ml-0.5";
 
   return (
@@ -145,8 +145,12 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
                 id="ef-bedtime"
                 type="time"
                 className={inputStyle}
-                value={form.bedtime}
-                onChange={(e) => setField("bedtime", e.target.value)}
+                defaultValue={form.bedtime}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setField("bedtime", e.target.value);
+                  }
+                }}
                 required
               />
             </div>
@@ -158,8 +162,12 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
                 id="ef-wake"
                 type="time"
                 className={inputStyle}
-                value={form.wakeTime}
-                onChange={(e) => setField("wakeTime", e.target.value)}
+                defaultValue={form.wakeTime}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setField("wakeTime", e.target.value);
+                  }
+                }}
                 required
               />
             </div>
@@ -183,7 +191,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
                     setField("nap_minutes", h * 60 + m);
                   }}
                 />
-                <span className="text-[10px] font-bold text-neutral-600 uppercase">
+                <span className="text-[10px] font-bold text-neutral-600 lowercase">
                   h
                 </span>
               </div>
@@ -201,7 +209,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
                     setField("nap_minutes", h * 60 + m);
                   }}
                 />
-                <span className="text-[10px] font-bold text-neutral-600 uppercase">
+                <span className="text-[10px] font-bold text-neutral-600 lowercase">
                   m
                 </span>
               </div>
@@ -210,14 +218,14 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
 
           <div className="flex flex-col items-center justify-center p-6 bg-blue-500/5 border border-blue-500/10 rounded-xl animate-in fade-in duration-700">
             <div className="flex flex-col items-center">
-              <span className="text-[10px] text-blue-500/70 font-bold uppercase mb-1">
+              <span className="text-[10px] text-blue-500/70 font-bold capitalize mb-1">
                 Duração total
               </span>
-              <span className="text-xl font-black text-blue-400">
+              <span className="text-xl font-bold text-blue-400">
                 {formatDuration(totalDuration)}
               </span>
               {form.nap_minutes > 0 && (
-                <span className="text-[10px] text-neutral-600 font-bold mt-1 uppercase">
+                <span className="text-[10px] text-neutral-600 font-bold mt-1 capitalize">
                   ({formatDuration(nightDuration)} sono +{" "}
                   {formatDuration(form.nap_minutes)} soneca)
                 </span>
@@ -227,7 +235,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
         </div>
 
         {/* Lado Direito: Qualidade e Notas */}
-        <div className="bg-card/40 border border-border/60 rounded-xl p-5 flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <Label className={lc}>Qualidade percebida</Label>
             <div className="flex gap-1 p-1 bg-background border border-border rounded-xl">
@@ -246,7 +254,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
                 </button>
               ))}
             </div>
-            <p className="text-center text-[10px] font-bold text-neutral-600 uppercase">
+            <p className="text-center text-[10px] font-bold text-neutral-600 capitalize">
               {qualityLabel(form.quality)}
             </p>
           </div>
@@ -257,7 +265,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
             </Label>
             <Textarea
               id="ef-note"
-              className="bg-card border-border rounded-xl min-h-[105px] resize-none pt-4 text-sm font-medium text-muted-foreground focus:border-blue-600/30 placeholder:text-neutral-700 transition-all"
+              className="bg-card border-border rounded-xl min-h-[105px] resize-none pt-4 text-sm font-medium text-muted-foreground focus:border-blue-600/30 placeholder:text-muted-foreground/50 transition-all"
               placeholder="Fatores externos, sonhos, interrupções..."
               value={form.note}
               onChange={(e) => setField("note", e.target.value)}

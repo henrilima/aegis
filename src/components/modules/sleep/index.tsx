@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   BarChart3,
   Calendar,
+  Clock,
   HelpCircle,
   Moon,
   Plus,
@@ -22,14 +23,15 @@ import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { AppConfig } from "../settings/useSettingsLogic";
+import { SleepCalculator } from "./components/sleepCalculator";
 import { SleepChart } from "./components/sleepChart";
 import { SleepGoalTab } from "./components/sleepGoalTab";
 import { SleepHistory } from "./components/sleepHistory";
 import { SleepStatsBanner } from "./components/sleepStatsBanner";
-import { isoDate, rollingRange } from "./sleepUtils";
+import { calcDurationMinutes, isoDate, rollingRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
-type TabId = "semana" | "historico" | "guia";
+type TabId = "semana" | "historico" | "calculadora" | "guia";
 
 /**
  * Módulo de Sono: Monitoramento de ciclos de descanso, qualidade e metas de repouso
@@ -190,7 +192,15 @@ export default function SleepPage() {
   );
 
   const targetMinutes = (goal.targetHours || 8) * 60;
-  const avgVsTarget = weekAvgDuration - targetMinutes;
+  const _avgVsTarget = weekAvgDuration - targetMinutes;
+
+  const sleepDebt = useMemo(() => {
+    if (!weekEntries.length) return 0;
+    return weekEntries.reduce((acc, e) => {
+      const debt = targetMinutes - e.durationMinutes;
+      return acc + (debt > 0 ? debt : 0);
+    }, 0);
+  }, [weekEntries, targetMinutes]);
 
   const weekDays = useMemo(() => {
     const days: { date: string; label: string; entry?: SleepEntry }[] = [];
@@ -213,6 +223,7 @@ export default function SleepPage() {
   const SLEEP_TABS = [
     { id: "semana", label: "Visão Semanal", icon: BarChart3 },
     { id: "historico", label: "Relatórios", icon: Calendar },
+    { id: "calculadora", label: "Calculadora", icon: Clock },
     { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
@@ -285,26 +296,44 @@ export default function SleepPage() {
             targetMinutes={targetMinutes}
             weekAvgQuality={weekAvgQuality}
             consistency={consistency}
-            avgVsTarget={avgVsTarget}
+            sleepDebt={sleepDebt}
+            layout="horizontal"
           />
 
-          <SleepChart weekDays={weekDays} targetMinutes={targetMinutes} />
-
-          <SleepHistory
-            title="Detalhamento da Semana"
-            entries={weekEntries}
-            targetMinutes={targetMinutes}
-            onEdit={(e) => {
-              setEditEntry(e);
-              setShowForm(true);
-            }}
-            onDelete={(id) => setDeleteConfirm(id)}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-8 flex flex-col gap-6">
+              <SleepChart
+                weekDays={weekDays}
+                targetMinutes={targetMinutes}
+                now={simulatedNow}
+              />
+            </div>
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              <SleepHistory
+                title="Detalhamento da Semana"
+                entries={weekEntries}
+                targetMinutes={targetMinutes}
+                onEdit={(e) => {
+                  setEditEntry(e);
+                  setShowForm(true);
+                }}
+                onDelete={(id) => setDeleteConfirm(id)}
+              />
+            </div>
+          </div>
         </div>
       )}
 
       {tab === "historico" && (
-        <div className="">
+        <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-2 duration-500">
+          <SleepStatsBanner
+            weekAvgDuration={weekAvgDuration}
+            targetMinutes={targetMinutes}
+            weekAvgQuality={weekAvgQuality}
+            consistency={consistency}
+            sleepDebt={sleepDebt}
+            layout="horizontal"
+          />
           <SleepHistory
             entries={entries}
             targetMinutes={targetMinutes}
@@ -317,6 +346,25 @@ export default function SleepPage() {
         </div>
       )}
 
+      {tab === "calculadora" && (
+        <SleepCalculator
+          now={simulatedNow}
+          onQuickRegister={(bedtime, wakeTime) => {
+            setEditEntry({
+              userId: uid,
+              date: isoDate(simulatedNow),
+              bedtime,
+              wakeTime,
+              durationMinutes: calcDurationMinutes(bedtime, wakeTime),
+              quality: 4,
+              note: "Calculado via ciclos de sono",
+              nap_minutes: 0,
+            });
+            setShowForm(true);
+          }}
+        />
+      )}
+
       {tab === "guia" && <SleepGuidePanel />}
 
       {/* Configurações e Metas */}
@@ -324,18 +372,20 @@ export default function SleepPage() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         size="lg"
-        zIndex="z-60"
       >
-        <div className="p-8 border-b border-border/50 flex items-center justify-between bg-card/50 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className={cn("p-3 rounded-2xl bg-muted/50", theme.text)}>
-              <Settings className="w-6 h-6" />
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn("p-2 rounded-xl border", theme.bg, theme.border)}
+            >
+              <Settings className={cn("w-5 h-5", theme.text)} />
             </div>
             <div>
-              <h2 className="text-xl font-black text-foreground">
-                Metas de Descanso
+              <h2 className="text-base font-bold text-foreground leading-none">
+                Metas de descanso
               </h2>
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Configure seus ciclos de sono e alertas
               </p>
             </div>
@@ -343,25 +393,35 @@ export default function SleepPage() {
           <button
             type="button"
             onClick={() => setShowSettings(false)}
-            className="p-3 hover:bg-red-500/10 rounded-2xl transition-all text-muted-foreground hover:text-red-500 cursor-pointer group"
+            className="p-2 rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            aria-label="Fechar modal"
           >
-            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
-          <div className="p-7">
-            <SleepGoalTab
-              goalHours={goalHours}
-              setGoalHours={setGoalHours}
-              goalBedtime={goalBedtime}
-              setGoalBedtime={setGoalBedtime}
-              reminderEnabled={reminderEnabled}
-              setReminderEnabled={setReminderEnabled}
-              onSave={handleGoalSave}
-            />
-          </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          <SleepGoalTab
+            goalHours={goalHours}
+            setGoalHours={setGoalHours}
+            goalBedtime={goalBedtime}
+            setGoalBedtime={setGoalBedtime}
+            reminderEnabled={reminderEnabled}
+            setReminderEnabled={setReminderEnabled}
+            onSave={handleGoalSave}
+          />
         </div>
-        <div className="p-8 border-t border-border/50 shrink-0 bg-card/50">
+
+        {/* Rodapé Fixo */}
+        <div className="flex flex-col sm:flex-row gap-2 p-6 border-t border-border/60 bg-muted/10 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowSettings(false)}
+            className="flex-1 flex items-center justify-center p-2.5 rounded-lg border border-border bg-card hover:bg-accent/50 text-muted-foreground text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            Cancelar
+          </button>
           <button
             type="button"
             onClick={async () => {
@@ -369,12 +429,12 @@ export default function SleepPage() {
               setShowSettings(false);
             }}
             className={cn(
-              "w-full p-4 rounded-2xl text-xs font-bold text-white transition-all active:scale-[0.98] cursor-pointer",
+              "flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-lg text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50",
               theme.solid,
               theme.solidHover,
             )}
           >
-            Salvar metas de descanso
+            Salvar metas
           </button>
         </div>
       </ModalShell>
