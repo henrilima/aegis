@@ -269,6 +269,30 @@ impl HabitManager {
 
     pub fn add_habit(&self, habit: Habit) -> Result<(), String> {
         let conn = self.get_connection();
+        
+        // Verifica se existe um hábito arquivado com o mesmo nome para este usuário
+        let mut stmt = conn.prepare("SELECT id FROM habits WHERE user_id = ?1 AND name = ?2 AND archived = 1").map_err(|e| e.to_string())?;
+        let existing_id: Option<i32> = stmt.query_row(params![habit.user_id, habit.name], |row| row.get(0)).ok();
+
+        if let Some(id) = existing_id {
+            // Se existir, reativa (unarchive = 0) e mescla as novas configurações enviadas
+            conn.execute(
+                "UPDATE habits SET habit_type = ?1, cooldown_days = ?2, charges_amount = ?3, charges_interval_days = ?4, accumulates = ?5, goal_days = ?6, frequency = ?7, weekdays = ?8, archived = 0 WHERE id = ?9",
+                params![
+                    habit.habit_type,
+                    habit.cooldown_days,
+                    habit.charges_amount,
+                    habit.charges_interval_days.max(1),
+                    if habit.accumulates { 1 } else { 0 },
+                    habit.goal_days,
+                    habit.frequency.unwrap_or_else(|| "daily".to_string()),
+                    habit.weekdays,
+                    id
+                ]
+            ).map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+
         conn.execute(
             "INSERT INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
             params![

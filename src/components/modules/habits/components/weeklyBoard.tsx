@@ -31,7 +31,7 @@ interface HabitsWeeklyBoardProps {
   onDelete: (id: number) => void;
 }
 
-const dayHeaders = ["seg.", "ter.", "qua.", "qui.", "sex.", "sáb.", "dom."];
+const shortDayNames = ["dom.", "seg.", "ter.", "qua.", "qui.", "sex.", "sáb."];
 const fullDayNames = [
   "domingo",
   "segunda-feira",
@@ -56,15 +56,12 @@ export function HabitsWeeklyBoard({
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
 
-  // Calcula as datas dos 7 dias da semana (Segunda a Domingo) com base no offset
+  // Calcula as datas de visualização móvel: de 5 dias atrás até amanhã (hoje + 1 dia) com base no offset
   const weekDates = useMemo(() => {
     const today = new Date(simulatedNow);
-    const day = today.getDay(); // 0 = Domingo, 1 = Segunda...
-    // Se for Domingo (0), retrocede 6 dias para Segunda-feira. Se for Segunda (1), retrocede 0 dias, etc.
-    const diffToMonday = day === 0 ? -6 : 1 - day;
 
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() + diffToMonday + weekOffset * 7);
+    startOfWeek.setDate(today.getDate() - 5 + weekOffset * 7);
 
     const dates = [];
     for (let i = 0; i < 7; i++) {
@@ -90,6 +87,10 @@ export function HabitsWeeklyBoard({
     const yesterday = new Date(simulatedNow);
     yesterday.setDate(simulatedNow.getDate() - 1);
     if (dateStr === getFormattedDate(yesterday)) return "Ontem";
+
+    const tomorrow = new Date(simulatedNow);
+    tomorrow.setDate(simulatedNow.getDate() + 1);
+    if (dateStr === getFormattedDate(tomorrow)) return "Amanhã";
 
     const rawLabel = fullDayNames[date.getDay()];
     return rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1);
@@ -193,7 +194,7 @@ export function HabitsWeeklyBoard({
 
       {/* Grid de Dias da Semana */}
       <div className="grid grid-cols-7 gap-3 w-full overflow-x-auto min-w-[950px] pb-4 select-none">
-        {weekDates.map((date, index) => {
+        {weekDates.map((date) => {
           const formatted = getFormattedDate(date);
           const wDay = date.getDay(); // 0 = Domingo, 1 = Segunda...
 
@@ -232,7 +233,7 @@ export function HabitsWeeklyBoard({
             <div key={formatted} className="flex flex-col gap-2">
               {/* Header do dia superior */}
               <div className="text-center font-bold text-xs text-muted-foreground/60 uppercase">
-                {dayHeaders[index]}
+                {shortDayNames[date.getDay()]}
               </div>
 
               {/* Card do Dia */}
@@ -267,9 +268,9 @@ export function HabitsWeeklyBoard({
                         return (
                           <div
                             key={h.id}
-                            className="flex items-center justify-between gap-1.5 group/item py-0.5"
+                            className="flex items-start justify-between gap-1.5 group/item py-0.5"
                           >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex items-start gap-2 flex-1 min-w-0">
                               <button
                                 type="button"
                                 disabled={isFuture || isToggling}
@@ -277,13 +278,17 @@ export function HabitsWeeklyBoard({
                                   handleToggle(h, formatted, isCompleted)
                                 }
                                 className={cn(
-                                  "w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0",
+                                  "w-4 h-4 mt-0.5 rounded flex items-center justify-center border transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0",
                                   isCompleted
-                                    ? cn(
-                                        theme.solid,
-                                        "border-transparent text-white",
-                                      )
-                                    : "bg-background border-border hover:border-border/80",
+                                    ? h.archived
+                                      ? "bg-red-500 border-transparent text-white"
+                                      : cn(
+                                          theme.solid,
+                                          "border-transparent text-white",
+                                        )
+                                    : h.archived
+                                      ? "bg-background border-red-500/50 hover:border-red-500 text-red-500"
+                                      : "bg-background border-border hover:border-border/80",
                                 )}
                               >
                                 {isCompleted && (
@@ -295,10 +300,14 @@ export function HabitsWeeklyBoard({
                                   type="button"
                                   disabled={isFuture || isToggling}
                                   className={cn(
-                                    "text-xs font-semibold cursor-pointer select-none truncate transition-colors leading-tight focus:outline-none text-left bg-transparent border-none p-0",
+                                    "text-xs font-semibold cursor-pointer select-none transition-colors leading-tight focus:outline-none text-left bg-transparent border-none p-0",
                                     isCompleted
-                                      ? "line-through text-muted-foreground/45"
-                                      : "text-foreground",
+                                      ? h.archived
+                                        ? "line-through text-red-500/60 dark:text-red-400/60 font-medium"
+                                        : "line-through text-muted-foreground/45"
+                                      : h.archived
+                                        ? "text-red-500 dark:text-red-400 font-medium"
+                                        : "text-foreground",
                                   )}
                                   onClick={() =>
                                     handleToggle(h, formatted, isCompleted)

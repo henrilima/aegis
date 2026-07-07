@@ -15,6 +15,7 @@ import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { HabitsReportsTab } from "@/components/modules/habits/components/HabitsReportsTab";
 import { EditHabitDialog } from "@/components/modules/habits/components/modals/editDialog";
 import { HabitCreateModal } from "@/components/modules/habits/components/modals/habitCreateModal";
+import { LegacyHabitsMigrationModal } from "@/components/modules/habits/components/modals/LegacyHabitsMigrationModal";
 import { CardSkeletonGrid } from "@/components/ui/CardSkeletonGrid";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -44,6 +45,7 @@ export default function HabitsPage() {
   const [hardResetId, setHardResetId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [migrationOpen, setMigrationOpen] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -63,6 +65,21 @@ export default function HabitsPage() {
   useEffect(() => {
     fetchHabits();
   }, [fetchHabits]);
+
+  // Abre o modal de migração se houver hábitos de versões anteriores com formato incompatível
+  useEffect(() => {
+    if (habits.length > 0) {
+      const hasLegacy = habits.some(
+        (h) =>
+          h.habitType !== "Positive" &&
+          h.habitType !== "Negative" &&
+          h.habitType !== "Bad",
+      );
+      if (hasLegacy) {
+        setMigrationOpen(true);
+      }
+    }
+  }, [habits]);
 
   const handleAdd = async (
     name: string,
@@ -174,6 +191,12 @@ export default function HabitsPage() {
   const negative = habits.filter(
     (h) => (h.habitType === "Negative" || h.habitType === "Bad") && !h.archived,
   );
+  const legacyHabits = habits.filter(
+    (h) =>
+      h.habitType !== "Positive" &&
+      h.habitType !== "Negative" &&
+      h.habitType !== "Bad",
+  );
 
   if (loading)
     return (
@@ -196,7 +219,7 @@ export default function HabitsPage() {
       <ModuleHeader
         color={getModuleColor("habits")}
         title="Hábitos & Disciplina"
-        subtitle={`${habits.filter((h) => !h.archived).length} ativos · ${positive.length} hábitos · ${negative.length} vícios`}
+        subtitle={`${habits.filter((h) => !h.archived).length} ativos · ${positive.filter((h) => !h.archived).length} hábitos · ${negative.filter((h) => !h.archived).length} vícios`}
         icon={Activity}
         tabs={HABIT_TABS}
         activeTab={tab}
@@ -289,6 +312,14 @@ export default function HabitsPage() {
           {...CONFIRM_PRESETS.deleteHabit}
           onConfirm={confirmDelete}
           onCancel={() => setDeleteId(null)}
+        />
+      )}
+
+      {migrationOpen && legacyHabits.length > 0 && (
+        <LegacyHabitsMigrationModal
+          legacyHabits={legacyHabits}
+          onClose={() => setMigrationOpen(false)}
+          onRefresh={fetchHabits}
         />
       )}
     </div>
