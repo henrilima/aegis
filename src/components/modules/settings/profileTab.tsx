@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { APP_CONFIG } from "@/app.config";
 import { HEX_COLORS } from "@/colors.config";
 import { AvatarRankWrapper } from "@/components/ui/AvatarRankWrapper";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -165,15 +167,7 @@ export function ProfileTab({
   return (
     <div className="relative space-y-6 w-full animate-in fade-in duration-500 min-h-full pb-8">
       {/* Card Principal de Perfil (Showcase Centralizado) */}
-      <section
-        className="bg-linear-to-b from-white/[0.07] to-white/1 dark:from-white/5 dark:to-white/0.5 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-3xl p-8 relative overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300 hover:border-white/20 dark:hover:border-white/10 flex flex-col items-center text-center w-full"
-        style={{
-          backgroundImage: `radial-gradient(circle at 50% 0%, ${hexColor}15, transparent 55%)`,
-        }}
-      >
-        {/* Linha de brilho superior no vidro (chanfro de luz) */}
-        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
-
+      <section className="bg-card border border-border rounded-2xl p-6 flex flex-col items-center text-center w-full">
         {/* Avatar redondo destacado e centralizado */}
         <div className="relative group/avatar mb-6">
           <AvatarRankWrapper
@@ -185,7 +179,7 @@ export function ProfileTab({
           >
             <div
               className={cn(
-                "w-32 h-32 rounded-full flex items-center justify-center text-5xl font-black text-accent-foreground overflow-hidden border border-white/10 dark:border-white/5 bg-background relative",
+                "w-32 h-32 rounded-full flex items-center justify-center text-5xl font-black text-accent-foreground overflow-hidden border border-border bg-background relative",
                 !avatarSrc && theme.solid,
               )}
             >
@@ -206,7 +200,7 @@ export function ProfileTab({
             <button
               type="button"
               onClick={pickAvatar}
-              className="p-2 bg-background border border-border rounded-full hover:bg-accent transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+              className="p-2 bg-background border border-border rounded-full hover:bg-accent transition-all cursor-pointer hover:scale-105 active:scale-95"
               title="Alterar foto"
             >
               <Camera className="w-3.5 h-3.5 text-foreground" />
@@ -215,7 +209,7 @@ export function ProfileTab({
               <button
                 type="button"
                 onClick={removeAvatar}
-                className="p-2 bg-background border border-border rounded-full hover:bg-red-500/10 text-red-500 transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                className="p-2 bg-background border border-border rounded-full hover:bg-red-500/10 text-red-500 transition-all cursor-pointer hover:scale-105 active:scale-95"
                 title="Remover foto"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -224,7 +218,7 @@ export function ProfileTab({
           </div>
 
           {avatarLoading && (
-            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-full flex items-center justify-center z-30">
+            <div className="absolute inset-0 bg-background/60 rounded-full flex items-center justify-center z-30">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           )}
@@ -234,12 +228,12 @@ export function ProfileTab({
         <div className="flex flex-col items-center gap-1.5 w-full">
           {isEditingName ? (
             <div className="flex items-center gap-2 justify-center w-full max-w-xs">
-              <input
+              <Input
                 ref={nameInputRef}
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="bg-background/50 border border-border rounded-xl px-3 py-1.5 text-xl font-bold text-center focus:ring-1 focus:ring-primary focus:border-primary outline-none backdrop-blur-md w-full"
+                className="text-center font-bold text-xl h-10 bg-background"
                 onKeyDown={(e) => e.key === "Enter" && handleRename()}
               />
               <div className="flex gap-1 shrink-0">
@@ -265,14 +259,14 @@ export function ProfileTab({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2.5 justify-center group/name">
-              <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
+            <div className="relative inline-flex items-center justify-center group/name">
+              <h2 className="text-3xl font-extrabold text-foreground">
                 {initialUsername}
               </h2>
               <button
                 type="button"
                 onClick={() => setIsEditingName(true)}
-                className="p-1 opacity-0 group-hover/name:opacity-100 hover:bg-white/10 rounded-lg transition-all"
+                className="absolute left-full top-1/2 -translate-y-1/2 ml-2 p-1.5 opacity-0 group-hover/name:opacity-100 hover:bg-white/10 rounded-lg transition-all cursor-pointer"
               >
                 <Edit2 className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
               </button>
@@ -282,7 +276,7 @@ export function ProfileTab({
           <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
             <span
               className={cn(
-                "px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
+                "px-2.5 py-0.5 rounded-full text-[10px] font-bold border",
                 getRankForLevel(level).color,
               )}
             >
@@ -291,7 +285,7 @@ export function ProfileTab({
             {selectedRankTitle &&
               selectedRankTitle !== "Sem Título" &&
               selectedRankTitle !== "Sem título" && (
-                <p className="text-xs font-semibold text-primary tracking-wide px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                <p className="text-xs font-semibold text-primary px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
                   {selectedRankTitle}
                 </p>
               )}
@@ -302,11 +296,11 @@ export function ProfileTab({
         </div>
 
         {/* Badges alinhados de forma centralizada */}
-        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-4 mt-2 border-t border-white/5 w-full max-w-sm">
-          <span className="px-3 py-1 bg-white/5 dark:bg-neutral-950/20 border border-white/10 dark:border-white/5 rounded-xl text-[11px] font-bold text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-4 mt-4 border-t border-border w-full max-w-sm">
+          <span className="px-3 py-1.5 bg-muted/50 border border-border rounded-xl text-[11px] font-medium text-muted-foreground">
             Sessão local ativa
           </span>
-          <span className="px-3 py-1 bg-white/5 dark:bg-neutral-950/20 border border-white/10 dark:border-white/5 rounded-xl text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
+          <span className="px-3 py-1.5 bg-muted/50 border border-border rounded-xl text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
             Criado em {formattedDate}
           </span>
@@ -314,14 +308,7 @@ export function ProfileTab({
       </section>
 
       {/* Sistema de rank global */}
-      <section
-        className="p-6 bg-linear-to-b from-white/[0.07] to-white/1 dark:from-white/5 dark:to-white/0.5 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-2xl flex flex-col gap-5 relative overflow-hidden transition-all duration-300 hover:border-white/20 dark:hover:border-white/10"
-        style={{
-          backgroundImage: `radial-gradient(circle at 95% 50%, ${hexColor}15, transparent 40%)`,
-        }}
-      >
-        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
-
+      <section className="p-6 bg-card border border-border rounded-2xl flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <Trophy className="w-5 h-5 text-yellow-500" />
           <div className="text-left">
@@ -335,78 +322,76 @@ export function ProfileTab({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-          <div className="space-y-2 text-left">
-            <label
-              htmlFor="rank-title-select"
-              className="text-[11px] font-semibold text-muted-foreground block"
-            >
-              Título de rank selecionado
-            </label>
-            <Select
-              value={selectedRankTitle || "none"}
-              onValueChange={(val) =>
-                updateConfigField(
-                  "selectedRankTitle",
-                  val === "none" ? "" : val,
-                )
-              }
-              disabled={isConfigLoading}
-            >
-              <SelectTrigger
-                id="rank-title-select"
-                className="bg-card border-border rounded-xl h-10 text-xs w-full min-w-[220px]"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Card 1: Seleção de Título */}
+          <div className="p-5 bg-muted/20 border border-border rounded-xl flex flex-col justify-between gap-4">
+            <div className="space-y-2 text-left">
+              <Label
+                htmlFor="rank-title-select"
+                className="text-xs text-muted-foreground"
               >
-                <SelectValue placeholder="Sem Título" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                className="bg-card border-border max-h-60 overflow-y-auto min-w-[--radix-select-trigger-width]"
+                Título de rank selecionado
+              </Label>
+              <Select
+                value={selectedRankTitle || "none"}
+                onValueChange={(val) =>
+                  updateConfigField(
+                    "selectedRankTitle",
+                    val === "none" ? "" : val,
+                  )
+                }
+                disabled={isConfigLoading}
               >
-                {RANK_TITLES.map((t) => {
-                  const isUnlocked = level >= t.minLevel;
-                  const label =
-                    t.title === "Sem Título" ? (
-                      "Sem Título"
-                    ) : isUnlocked ? (
-                      t.title
-                    ) : (
-                      <span>
-                        {t.title}{" "}
-                        <span className="text-muted-foreground font-normal">
-                          (desbloqueia no nível{" "}
-                          <span className="font-bold text-foreground">
-                            {t.minLevel}
+                <SelectTrigger
+                  id="rank-title-select"
+                  className="bg-background border-border rounded-xl h-10 text-xs w-full"
+                >
+                  <SelectValue placeholder="Sem Título" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  className="bg-card border-border max-h-60 overflow-y-auto min-w-[--radix-select-trigger-width]"
+                >
+                  {RANK_TITLES.map((t) => {
+                    const isUnlocked = level >= t.minLevel;
+                    const label =
+                      t.title === "Sem Título" ? (
+                        "Sem Título"
+                      ) : isUnlocked ? (
+                        t.title
+                      ) : (
+                        <span>
+                          {t.title}{" "}
+                          <span className="text-muted-foreground font-normal">
+                            (nível {t.minLevel})
                           </span>
-                          )
                         </span>
-                      </span>
+                      );
+                    return (
+                      <SelectItem
+                        key={t.title}
+                        value={t.title === "Sem Título" ? "none" : t.title}
+                        disabled={!isUnlocked}
+                        className="text-xs"
+                      >
+                        {label}
+                      </SelectItem>
                     );
-                  return (
-                    <SelectItem
-                      key={t.title}
-                      value={t.title === "Sem Título" ? "none" : t.title}
-                      disabled={!isUnlocked}
-                      className="text-xs"
-                    >
-                      {label}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-[10px] text-muted-foreground">
-              Novos títulos são desbloqueados a cada 5 níveis. Seu nível atual é{" "}
-              {level}.
+              Novos títulos a cada 5 níveis. Nível atual: {level}.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5 w-full">
-            {/* Joia/Pedra do Rank dentro de um círculo cinza claro */}
-            <div className="w-[24px] h-[24px] rounded-full bg-[#e7e7e7] flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.15)] border border-black/5">
+          {/* Card 2: Joia e Rank Atual */}
+          <div className="p-5 bg-muted/20 border border-border rounded-xl flex flex-col items-center justify-center gap-3 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#e7e7e7] flex items-center justify-center shrink-0 border border-black/10">
               <span
                 className={cn(
-                  "w-[15px] h-[15px] block transition-all duration-300",
+                  "w-[24px] h-[24px] block transition-all duration-300",
                   RANK_BORDERS[getRankForLevel(level).name]?.gemColor,
                 )}
                 style={{
@@ -416,28 +401,28 @@ export function ProfileTab({
                 }}
               />
             </div>
-            <div className="text-left space-y-1">
-              <span className="text-[10px] font-bold text-muted-foreground block">
+            <div className="space-y-1">
+              <span className="text-[10px] font-semibold text-muted-foreground block">
                 Rank atual
               </span>
               <p className="text-sm font-bold text-foreground">
                 {getRankForLevel(level).name}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground max-w-xs leading-normal">
                 {getRankForLevel(level).description}
               </p>
             </div>
           </div>
 
-          {/* Toggles de visibilidade da borda de rank */}
-          <div className="flex flex-col gap-2 w-full">
-            <div className="flex items-center justify-between bg-white/5 px-4 py-3 rounded-xl border border-white/5">
+          {/* Card 3: Opções de Borda */}
+          <div className="p-5 bg-muted/20 border border-border rounded-xl flex flex-col justify-center gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="text-left">
                 <p className="text-xs font-medium text-foreground">
-                  Borda de rank no perfil
+                  Borda no perfil
                 </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Exibir a borda colorida do rank na foto de perfil
+                <p className="text-[10px] text-muted-foreground leading-normal">
+                  Exibir a borda na foto de perfil
                 </p>
               </div>
               <Switch
@@ -449,13 +434,13 @@ export function ProfileTab({
                 disabled={isConfigLoading}
               />
             </div>
-            <div className="flex items-center justify-between bg-white/5 px-4 py-3 rounded-xl border border-white/5">
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/50">
               <div className="text-left">
                 <p className="text-xs font-medium text-foreground">
-                  Borda de rank na sidebar
+                  Borda na sidebar
                 </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Exibir a borda colorida do rank no avatar da barra lateral
+                <p className="text-[10px] text-muted-foreground leading-normal">
+                  Exibir no avatar lateral
                 </p>
               </div>
               <Switch
@@ -472,44 +457,30 @@ export function ProfileTab({
       </section>
 
       {/* Card de Integridade dos Dados de Largura Total */}
-      <section
-        className="p-6 bg-linear-to-b from-white/[0.07] to-white/1 dark:from-white/5 dark:to-white/0.5 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-2xl flex flex-col sm:flex-row items-center gap-5 relative overflow-hidden shadow-md transition-all duration-300 hover:border-white/20 dark:hover:border-white/10"
-        style={{
-          backgroundImage: `radial-gradient(circle at 5% 50%, ${hexColor}15, transparent 40%)`,
-        }}
-      >
-        {/* Linha de brilho superior no vidro */}
-        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
-
-        {/* Escudo de Segurança Pulsante Garantido */}
-        <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
-          <div
-            className="absolute inset-0 rounded-full opacity-15 animate-pulse"
-            style={{ backgroundColor: hexColor }}
+      <section className="p-5 bg-card border border-border rounded-2xl flex flex-col sm:flex-row items-center gap-5 w-full">
+        {/* Escudo de Segurança */}
+        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted border border-border shrink-0">
+          <ShieldCheck
+            className="w-6 h-6 text-primary"
+            style={{ color: hexColor }}
           />
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 dark:bg-black/20 border border-white/10 shadow-sm relative z-10">
-            <ShieldCheck
-              className="w-5 h-5 text-foreground animate-pulse"
-              style={{ color: hexColor }}
-            />
-          </div>
         </div>
 
         {/* Texto de Status */}
-        <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left gap-1.5 w-full">
+        <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left gap-1 w-full">
           <div className="flex items-center gap-2">
             <span
               className="w-2 h-2 rounded-full animate-pulse"
               style={{ backgroundColor: hexColor }}
             />
-            <p className="text-[10px] font-extrabold tracking-widest uppercase text-muted-foreground">
+            <p className="text-xs font-semibold text-muted-foreground">
               Integridade do Cofre Aegis
             </p>
           </div>
           <p className="text-sm font-bold text-foreground">
-            Criptografia Local e Banco de Dados Protegidos
+            Criptografia local e banco de dados protegidos
           </p>
-          <p className="text-xs text-muted-foreground font-medium">
+          <p className="text-xs text-muted-foreground">
             Seu cofre está sincronizado localmente com o banco de dados nativo
             em tempo real.
           </p>
@@ -523,28 +494,24 @@ export function ProfileTab({
           label="Protocolo de Segurança"
           value={protocolCode}
           themeTextClass={theme.text}
-          hexColor={hexColor}
         />
         <InfoCard
           icon={Calendar}
           label="Data de Criação"
           value={formattedDate}
           themeTextClass={theme.text}
-          hexColor={hexColor}
         />
         <InfoCard
           icon={Cpu}
           label="Versão do Núcleo"
           value={`v${APP_CONFIG.version}-${APP_CONFIG.stage}`}
           themeTextClass={theme.text}
-          hexColor={hexColor}
         />
         <InfoCard
           icon={ShieldCheck}
           label="Status da Conta"
           value="Local-Only"
           themeTextClass={theme.text}
-          hexColor={hexColor}
         />
       </section>
     </div>
@@ -556,36 +523,21 @@ function InfoCard({
   label,
   value,
   themeTextClass,
-  hexColor,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
   themeTextClass: string;
-  hexColor: string;
 }) {
   return (
-    <div
-      className="p-5 bg-linear-to-b from-white/4 to-transparent dark:from-white/2 dark:to-transparent backdrop-blur-2xl border border-white/5 dark:border-white/3 rounded-2xl group transition-all duration-300 hover:from-white/7 dark:hover:from-white/4 hover:border-white/15 dark:hover:border-white/10 hover:-translate-y-0.5 hover:shadow-xl relative overflow-hidden cursor-default"
-      style={{
-        backgroundImage: `radial-gradient(circle at 0% 0%, ${hexColor}0d, transparent 50%)`,
-      }}
-    >
-      {/* Linha de brilho superior no vidro (acende no hover) */}
-      <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-      <Icon
-        className={cn(
-          "w-5 h-5 text-muted-foreground transition-colors mb-3 group-hover:animate-pulse",
-          themeTextClass,
-        )}
-      />
-      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-        {label}
-      </p>
-      <p className="text-sm font-black text-foreground mt-1.5 truncate">
-        {value}
-      </p>
+    <div className="p-5 bg-card border border-border rounded-2xl flex flex-col items-center text-center gap-2">
+      <Icon className={cn("w-5 h-5 text-muted-foreground", themeTextClass)} />
+      <div className="w-full">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-bold text-foreground mt-1 truncate">
+          {value}
+        </p>
+      </div>
     </div>
   );
 }

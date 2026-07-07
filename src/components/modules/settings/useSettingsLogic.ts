@@ -61,50 +61,134 @@ export interface AppConfig {
   achievementsEnabled?: boolean;
 }
 
+let globalCachedConfig: AppConfig | null = null;
+let globalSoundsCache: string[] | null = null;
+
 export function useSettingsLogic() {
   const { user, logout } = useAuth();
-  const [minimizeOnClose, setMinimizeOnClose] = useState(true);
-  const [startAtLogin, setStartAtLogin] = useState(false);
-  const [startMinimized, setStartMinimized] = useState(false);
-  const [weekStartDay, setWeekStartDay] = useState(1);
-  const [highPriorityNotifications, setHighPriorityNotifications] =
-    useState(false);
-  const [autoReadNotifications, setAutoReadNotifications] = useState(true);
-  const [showHolidays, setShowHolidays] = useState(true);
-  const [notifSleepBedtime, setNotifSleepBedtime] = useState(true);
-  const [notifSleepBedtimeTime, setNotifSleepBedtimeTime] = useState("23:00");
-  const [notifSleepMorning, setNotifSleepMorning] = useState(true);
-  const [notifSleepMorningTime, setNotifSleepMorningTime] = useState("09:00");
-  const [notifHabitUncompleted, setNotifHabitUncompleted] = useState(true);
-  const [notifHabitTime, setNotifHabitTime] = useState("22:00");
-  const [notifEventUpcoming, setNotifEventUpcoming] = useState(true);
-  const [notifEventUpcomingTime, setNotifEventUpcomingTime] = useState("08:00");
-  const [notifSleepTargetHours, setNotifSleepTargetHours] = useState(8.0);
-  const [notificationSound, setNotificationSound] = useState("Plin.mp3");
-  const [tmdbApiKey, setTmdbApiKey] = useState("");
-  const [weatherLocation, setWeatherLocation] = useState("");
-  const [showWeatherWidget, setShowWeatherWidget] = useState(true);
-  const [appZoom, setAppZoom] = useState(100);
-  const [showSidebarTrigger, setShowSidebarTrigger] = useState(true);
-  const [showFloatingTrigger, setShowFloatingTrigger] = useState(true);
-  const [dashboardClockStyle, setDashboardClockStyle] = useState("default");
-  const [dashboardClockAnimated, setDashboardClockAnimated] = useState(true);
-  const [dashboardHeaderStyle, setDashboardHeaderStyle] = useState("default");
-  const [customDataDir, setCustomDataDir] = useState("");
-  const [dashboardCoverImage, setDashboardCoverImage] = useState("");
-  const [dashboardWelcomingGlass, setDashboardWelcomingGlass] = useState(true);
-  const [dashboardCoverPositionX, setDashboardCoverPositionX] = useState(50);
-  const [dashboardCoverPositionY, setDashboardCoverPositionY] = useState(50);
-  const [dashboardShowDate, setDashboardShowDate] = useState(true);
-  const [dashboardCoverBlur, setDashboardCoverBlur] = useState(0);
-  const [dashboardCoverGrayscale, setDashboardCoverGrayscale] = useState(0);
-  const [dashboardCoverSaturation, setDashboardCoverSaturation] = useState(100);
-  const [dashboardCoverZoom, setDashboardCoverZoom] = useState(100);
-  const [dashboardCoverHeight, setDashboardCoverHeight] = useState(300);
-  const [selectedRankTitle, setSelectedRankTitle] = useState("");
-  const [showProfileRankBorder, setShowProfileRankBorder] = useState(true);
-  const [showSidebarRankBorder, setShowSidebarRankBorder] = useState(true);
-  const [isConfigLoading, setIsConfigLoading] = useState(true);
+  const [minimizeOnClose, setMinimizeOnClose] = useState(
+    () => globalCachedConfig?.minimizeOnClose ?? true,
+  );
+  const [startAtLogin, setStartAtLogin] = useState(
+    () => globalCachedConfig?.startAtLogin ?? false,
+  );
+  const [startMinimized, setStartMinimized] = useState(
+    () => globalCachedConfig?.startMinimized ?? false,
+  );
+  const [weekStartDay, setWeekStartDay] = useState(
+    () => globalCachedConfig?.weekStartDay ?? 1,
+  );
+  const [highPriorityNotifications, setHighPriorityNotifications] = useState(
+    () => globalCachedConfig?.highPriorityNotifications ?? false,
+  );
+  const [autoReadNotifications, setAutoReadNotifications] = useState(
+    () => globalCachedConfig?.autoReadNotifications ?? true,
+  );
+  const [showHolidays, setShowHolidays] = useState(
+    () => globalCachedConfig?.showHolidays ?? true,
+  );
+  const [notifSleepBedtime, setNotifSleepBedtime] = useState(
+    () => globalCachedConfig?.notifSleepBedtime ?? true,
+  );
+  const [notifSleepBedtimeTime, setNotifSleepBedtimeTime] = useState(
+    () => globalCachedConfig?.notifSleepBedtimeTime ?? "23:00",
+  );
+  const [notifSleepMorning, setNotifSleepMorning] = useState(
+    () => globalCachedConfig?.notifSleepMorning ?? true,
+  );
+  const [notifSleepMorningTime, setNotifSleepMorningTime] = useState(
+    () => globalCachedConfig?.notifSleepMorningTime ?? "09:00",
+  );
+  const [notifHabitUncompleted, setNotifHabitUncompleted] = useState(
+    () => globalCachedConfig?.notifHabitUncompleted ?? true,
+  );
+  const [notifHabitTime, setNotifHabitTime] = useState(
+    () => globalCachedConfig?.notifHabitTime ?? "22:00",
+  );
+  const [notifEventUpcoming, setNotifEventUpcoming] = useState(
+    () => globalCachedConfig?.notifEventUpcoming ?? true,
+  );
+  const [notifEventUpcomingTime, setNotifEventUpcomingTime] = useState(
+    () => globalCachedConfig?.notifEventUpcomingTime ?? "08:00",
+  );
+  const [notifSleepTargetHours, setNotifSleepTargetHours] = useState(
+    () => globalCachedConfig?.notifSleepTargetHours ?? 8.0,
+  );
+  const [notificationSound, setNotificationSound] = useState(
+    () => globalCachedConfig?.notificationSound ?? "Plin.mp3",
+  );
+  const [tmdbApiKey, setTmdbApiKey] = useState(
+    () => globalCachedConfig?.tmdbApiKey ?? "",
+  );
+  const [weatherLocation, setWeatherLocation] = useState(
+    () => globalCachedConfig?.weatherLocation ?? "",
+  );
+  const [showWeatherWidget, setShowWeatherWidget] = useState(
+    () => globalCachedConfig?.showWeatherWidget ?? true,
+  );
+  const [appZoom, setAppZoom] = useState(
+    () => globalCachedConfig?.appZoom ?? 100,
+  );
+  const [showSidebarTrigger, setShowSidebarTrigger] = useState(
+    () => globalCachedConfig?.showSidebarTrigger ?? true,
+  );
+  const [showFloatingTrigger, setShowFloatingTrigger] = useState(
+    () => globalCachedConfig?.showFloatingTrigger ?? true,
+  );
+  const [dashboardClockStyle, setDashboardClockStyle] = useState(
+    () => globalCachedConfig?.dashboardClockStyle ?? "default",
+  );
+  const [dashboardClockAnimated, setDashboardClockAnimated] = useState(
+    () => globalCachedConfig?.dashboardClockAnimated ?? true,
+  );
+  const [dashboardHeaderStyle, setDashboardHeaderStyle] = useState(
+    () => globalCachedConfig?.dashboardHeaderStyle ?? "default",
+  );
+  const [customDataDir, setCustomDataDir] = useState(
+    () => globalCachedConfig?.customDataDir ?? "",
+  );
+  const [dashboardCoverImage, setDashboardCoverImage] = useState(
+    () => globalCachedConfig?.dashboardCoverImage ?? "",
+  );
+  const [dashboardWelcomingGlass, setDashboardWelcomingGlass] = useState(
+    () => globalCachedConfig?.dashboardWelcomingGlass ?? true,
+  );
+  const [dashboardCoverPositionX, setDashboardCoverPositionX] = useState(
+    () => globalCachedConfig?.dashboardCoverPositionX ?? 50,
+  );
+  const [dashboardCoverPositionY, setDashboardCoverPositionY] = useState(
+    () => globalCachedConfig?.dashboardCoverPositionY ?? 50,
+  );
+  const [dashboardShowDate, setDashboardShowDate] = useState(
+    () => globalCachedConfig?.dashboardShowDate ?? true,
+  );
+  const [dashboardCoverBlur, setDashboardCoverBlur] = useState(
+    () => globalCachedConfig?.dashboardCoverBlur ?? 0,
+  );
+  const [dashboardCoverGrayscale, setDashboardCoverGrayscale] = useState(
+    () => globalCachedConfig?.dashboardCoverGrayscale ?? 0,
+  );
+  const [dashboardCoverSaturation, setDashboardCoverSaturation] = useState(
+    () => globalCachedConfig?.dashboardCoverSaturation ?? 100,
+  );
+  const [dashboardCoverZoom, setDashboardCoverZoom] = useState(
+    () => globalCachedConfig?.dashboardCoverZoom ?? 100,
+  );
+  const [dashboardCoverHeight, setDashboardCoverHeight] = useState(
+    () => globalCachedConfig?.dashboardCoverHeight ?? 300,
+  );
+  const [selectedRankTitle, setSelectedRankTitle] = useState(
+    () => globalCachedConfig?.selectedRankTitle ?? "",
+  );
+  const [showProfileRankBorder, setShowProfileRankBorder] = useState(
+    () => globalCachedConfig?.showProfileRankBorder ?? true,
+  );
+  const [showSidebarRankBorder, setShowSidebarRankBorder] = useState(
+    () => globalCachedConfig?.showSidebarRankBorder ?? true,
+  );
+  const [isConfigLoading, setIsConfigLoading] = useState(
+    () => !globalCachedConfig,
+  );
   const { navigate, setSettingsOpen } = useNavigation();
   const username = user?.username || "Usuário";
   const email = user?.email || "sem-email@aegis.local";
@@ -113,8 +197,13 @@ export function useSettingsLogic() {
     try {
       const [config, sounds] = await Promise.all([
         invoke<AppConfig>("global_get_app_config"),
-        listNotificationSounds().catch(() => [] as string[]),
+        globalSoundsCache
+          ? Promise.resolve(globalSoundsCache)
+          : listNotificationSounds().catch(() => [] as string[]),
       ]);
+      globalCachedConfig = config;
+      globalSoundsCache = sounds;
+
       setMinimizeOnClose(config.minimizeOnClose);
 
       try {
@@ -257,6 +346,7 @@ export function useSettingsLogic() {
       showSidebarRankBorder,
       [key]: value,
     };
+    globalCachedConfig = newConfig;
 
     try {
       await invoke("global_set_app_config", { config: newConfig });
