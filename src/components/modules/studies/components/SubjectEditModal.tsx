@@ -30,6 +30,7 @@ interface SubjectEditModalProps {
   moduleColor?: "studies" | "grades";
   onClose: () => void;
   onSave: () => void;
+  initialGroupId?: string;
 }
 
 const FORMULA_OPTIONS = [
@@ -62,9 +63,11 @@ export function SubjectEditModal({
   moduleColor = "studies",
   onClose,
   onSave,
+  initialGroupId,
 }: SubjectEditModalProps) {
   const color = getModuleColor(moduleColor);
-  const _theme = getColorTheme(color);
+  const theme = getColorTheme(color);
+  const focusBorderClass = theme.text.split(" ")[0].replace("text-", "focus:border-");
 
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +109,8 @@ export function SubjectEditModal({
         const grp = grps.find((g) => g.subjects.includes(subjectName));
         if (grp) {
           setEditSubjectGroup(String(grp.id));
+        } else if (initialGroupId) {
+          setEditSubjectGroup(initialGroupId);
         } else {
           setEditSubjectGroup("none");
         }
@@ -251,7 +256,10 @@ export function SubjectEditModal({
                 <Input
                   value={editSubjectName}
                   onChange={(e) => setEditSubjectName(e.target.value)}
-                  className="bg-card border-border hover:border-border/80 focus:border-emerald-500 rounded-xl"
+                  className={cn(
+                    "bg-card border-border hover:border-border/80 rounded-xl focus:ring-0 focus-visible:ring-0",
+                    focusBorderClass,
+                  )}
                   placeholder="Ex: Direito Constitucional..."
                 />
               </div>
@@ -261,27 +269,31 @@ export function SubjectEditModal({
                 <Label className="text-xs font-bold text-muted-foreground ml-0.5">
                   Cor Identidade
                 </Label>
-                <div className="flex flex-wrap gap-2 p-3 bg-muted/40 border border-border/50 rounded-xl">
-                  {SELECTABLE_COLORS.map((c) => (
-                    <button
-                      key={c.key}
-                      type="button"
-                      onClick={() => setEditSubjectColor(c.key)}
-                      className={cn(
-                        "w-6 h-6 rounded-full border-2 transition-all cursor-pointer hover:scale-125 flex items-center justify-center",
-                        editSubjectColor === c.key
-                          ? "border-foreground scale-110"
-                          : "border-transparent",
-                      )}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.label}
-                    >
-                      {editSubjectColor === c.key && (
-                        <Check className="w-3.5 h-3.5 text-white mix-blend-difference" />
-                      )}
-                    </button>
-                  ))}
-                </div>
+                <Select
+                  value={editSubjectColor}
+                  onValueChange={setEditSubjectColor}
+                >
+                  <SelectTrigger className="w-full bg-card border border-border rounded-xl h-11 text-xs">
+                    <SelectValue placeholder="Selecione uma cor" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {SELECTABLE_COLORS.map((c) => (
+                      <SelectItem
+                        key={c.key}
+                        value={c.key}
+                        className="text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0 border border-border/20"
+                            style={{ backgroundColor: c.hex }}
+                          />
+                          <span>{c.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Grupo de Matérias */}
@@ -326,7 +338,7 @@ export function SubjectEditModal({
             {/* Coluna Direita: Regras de Média */}
             <div className="flex flex-col gap-5 border-t md:border-t-0 md:border-l border-border/60 pt-5 md:pt-0 md:pl-6">
               <Label className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
-                <BarChart2 className="w-4 h-4 text-emerald-400" />
+                <BarChart2 className={cn("w-4 h-4", theme.text)} />
                 Configurar Cálculo da Média
               </Label>
 
@@ -344,7 +356,7 @@ export function SubjectEditModal({
                       className={cn(
                         "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer",
                         editSubjectPassingGrade === v
-                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                          ? cn(theme.bg, theme.border, theme.text)
                           : "bg-card border-border text-muted-foreground hover:bg-accent/40",
                       )}
                     >
@@ -356,7 +368,10 @@ export function SubjectEditModal({
                     min="0"
                     max="10"
                     step="0.1"
-                    className="w-16 text-center bg-card border border-border rounded-lg text-xs font-bold focus:outline-none focus:border-emerald-500"
+                    className={cn(
+                      "w-16 text-center bg-card border border-border rounded-lg text-xs font-bold focus:outline-none focus:ring-0 focus-visible:ring-0",
+                      focusBorderClass,
+                    )}
                     value={editSubjectPassingGrade}
                     onChange={(e) =>
                       setEditSubjectPassingGrade(
@@ -383,14 +398,14 @@ export function SubjectEditModal({
                         className={cn(
                           "w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-center gap-1",
                           isSelected
-                            ? "bg-emerald-500/10 border-emerald-500 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                            ? cn(theme.bg, theme.border, theme.text)
                             : "bg-card border-border hover:bg-accent/30",
                         )}
                       >
                         <p
                           className={cn(
                             "text-xs font-bold transition-colors",
-                            isSelected ? "text-emerald-500" : "text-foreground",
+                            isSelected ? theme.text.split(" ")[0] : "text-foreground",
                           )}
                         >
                           {opt.label}
@@ -442,7 +457,11 @@ export function SubjectEditModal({
           type="button"
           disabled={isSaving || loading}
           onClick={handleSaveComplete}
-          className="flex-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs transition-all hover:bg-emerald-500 cursor-pointer disabled:opacity-50"
+          className={cn(
+            "flex-2 px-4 py-2.5 rounded-xl text-white font-bold text-xs transition-all cursor-pointer disabled:opacity-50",
+            theme.solid,
+            theme.solidHover,
+          )}
         >
           {isSaving
             ? "Salvando..."

@@ -11,12 +11,12 @@ import { ModalShell } from "@/components/ui/ModalShell";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { MateriasTab } from "../studies/components/materiasTab";
 import { SubjectEditModal } from "../studies/components/SubjectEditModal";
 import { GradesGuidePanel } from "./components/GradesInfoModal";
 import { GradeForm } from "./components/gradeForm";
 import { GradesHistory } from "./components/gradesHistory";
 import { GradesOverview } from "./components/gradesOverview";
-import { GradesSubjects } from "./components/gradesSubjects";
 import type {
   GradesTabId,
   StudyGrade,
@@ -217,18 +217,17 @@ export function GradesModal({
                 />
               )}
               {tab === "materias" && (
-                <GradesSubjects
+                <MateriasTab
+                  studySubjects={allSubjects}
+                  userId={uid}
+                  onRefresh={load}
+                  moduleMode="grades"
                   grades={grades}
-                  formulas={formulas}
-                  groups={groups}
-                  allSubjects={allSubjects}
-                  onConfigFormula={(s) => setFormulaSubject(s)}
                   onEditGrade={(g) => {
                     setEditGrade(g);
                     setShowForm(true);
                   }}
                   onDeleteGrade={setDeleteConfirm}
-                  userId={uid}
                 />
               )}
               {tab === "historico" && (
