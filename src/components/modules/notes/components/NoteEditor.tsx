@@ -48,6 +48,24 @@ interface NoteEditorProps {
   onDelete: (id: number) => Promise<void>;
 }
 
+// Auxiliar para converter formatação inline (negrito, itálico, tachado, código e links)
+function formatInline(text: string, isEditMode: boolean): string {
+  let formatted = text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.*?)__/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/_(.*?)_/g, "<em>$1</em>")
+    .replace(/~~(.*?)~~/g, "<del>$1</del>")
+    .replace(/`(.*?)`/g, "<code>$1</code>");
+  if (!isEditMode) {
+    formatted = formatted.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" target="_blank" class="text-primary underline hover:opacity-80">$1</a>',
+    );
+  }
+  return formatted;
+}
+
 // Converte Markdown cru para HTML limpo
 function markdownToHtml(md: string, isEditMode = false): string {
   if (!md || !md.trim()) return "<p><br></p>";
@@ -79,19 +97,38 @@ function markdownToHtml(md: string, isEditMode = false): string {
     }
 
     if (line.startsWith("# ")) {
-      html += `<h1>${line.substring(2)}</h1>`;
+      html += `<h1>${formatInline(line.substring(2), isEditMode)}</h1>`;
     } else if (line.startsWith("## ")) {
-      html += `<h2>${line.substring(3)}</h2>`;
+      html += `<h2>${formatInline(line.substring(3), isEditMode)}</h2>`;
     } else if (line.startsWith("### ")) {
-      html += `<h3>${line.substring(4)}</h3>`;
+      html += `<h3>${formatInline(line.substring(4), isEditMode)}</h3>`;
     } else if (line.startsWith("#### ")) {
-      html += `<h4>${line.substring(5)}</h4>`;
+      html += `<h4>${formatInline(line.substring(5), isEditMode)}</h4>`;
     } else if (line.startsWith("> ")) {
       if (!inQuote) {
         html += "<blockquote>";
         inQuote = true;
       }
-      html += `<p>${line.substring(2)}</p>`;
+      const innerLine = line.substring(2);
+      if (innerLine.startsWith("# ")) {
+        html += `<h1>${formatInline(innerLine.substring(2), isEditMode)}</h1>`;
+      } else if (innerLine.startsWith("## ")) {
+        html += `<h2>${formatInline(innerLine.substring(3), isEditMode)}</h2>`;
+      } else if (innerLine.startsWith("### ")) {
+        html += `<h3>${formatInline(innerLine.substring(4), isEditMode)}</h3>`;
+      } else if (innerLine.startsWith("#### ")) {
+        html += `<h4>${formatInline(innerLine.substring(5), isEditMode)}</h4>`;
+      } else if (innerLine.startsWith("- ") || innerLine.startsWith("* ")) {
+        html += `<ul><li>${formatInline(innerLine.substring(2), isEditMode)}</li></ul>`;
+      } else if (/^\d+\.\s+/.test(innerLine)) {
+        const match = innerLine.match(/^\d+\.\s+/);
+        const content = innerLine.substring(match ? match[0].length : 0);
+        html += `<ol><li>${formatInline(content, isEditMode)}</li></ol>`;
+      } else if (innerLine.trim() === "") {
+        html += "<p><br></p>";
+      } else {
+        html += `<p>${formatInline(innerLine, isEditMode)}</p>`;
+      }
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       if (!inList || listType !== "ul") {
         if (inList) html += `</${listType}>`;
@@ -99,7 +136,7 @@ function markdownToHtml(md: string, isEditMode = false): string {
         inList = true;
         listType = "ul";
       }
-      html += `<li>${line.substring(2)}</li>`;
+      html += `<li>${formatInline(line.substring(2), isEditMode)}</li>`;
     } else if (/^\d+\.\s+/.test(line)) {
       if (!inList || listType !== "ol") {
         if (inList) html += `</${listType}>`;
@@ -109,26 +146,14 @@ function markdownToHtml(md: string, isEditMode = false): string {
       }
       const match = line.match(/^\d+\.\s+/);
       const content = line.substring(match ? match[0].length : 0);
-      html += `<li>${content}</li>`;
+      html += `<li>${formatInline(content, isEditMode)}</li>`;
     } else if (line.trim() === "---") {
       html += "<hr>";
     } else {
       if (line.trim() === "") {
         html += "<p><br></p>";
       } else {
-        // Converte negrito, italico inline no HTML inicial
-        let formatted = line
-          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\*(.*?)\*/g, "<em>$1</em>")
-          .replace(/~~(.*?)~~/g, "<del>$1</del>")
-          .replace(/`(.*?)`/g, "<code>$1</code>");
-        if (!isEditMode) {
-          formatted = formatted.replace(
-            /\[([^\]]+)\]\(([^)]+)\)/g,
-            '<a href="$2" target="_blank" class="text-primary underline hover:opacity-80">$1</a>',
-          );
-        }
-        html += `<p>${formatted}</p>`;
+        html += `<p>${formatInline(line, isEditMode)}</p>`;
       }
     }
   }
@@ -345,7 +370,13 @@ export function NoteEditor({
       }
     }
 
-    setTitle(note.title);
+    if (
+      isDifferentNote ||
+      (typeof document !== "undefined" &&
+        document.activeElement !== titleInputRef.current)
+    ) {
+      setTitle(note.title);
+    }
     setNoteColor(note.color || "");
     setPinned(note.pinned);
   }, [note, editorMode]);
@@ -534,6 +565,48 @@ export function NoteEditor({
     }
 
     triggerChange();
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData("text/html");
+    const text = e.clipboardData.getData("text/plain");
+
+    if (html) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        // Remove scripts e estilos colados para segurança e integridade visual
+        const scripts = Array.from(doc.body.getElementsByTagName("script"));
+        for (const s of scripts) s.remove();
+        const styles = Array.from(doc.body.getElementsByTagName("style"));
+        for (const s of styles) s.remove();
+
+        // Limpa atributos de estilo, classe e cores de todos os elementos para herdar os do editor
+        const allElements = Array.from(doc.body.getElementsByTagName("*"));
+        for (const el of allElements) {
+          el.removeAttribute("style");
+          el.removeAttribute("class");
+          el.removeAttribute("color");
+          el.removeAttribute("bgcolor");
+        }
+
+        // Insere o HTML limpo na posição atual do cursor
+        const cleanHtml = doc.body.innerHTML;
+        document.execCommand("insertHTML", false, cleanHtml);
+        triggerChange();
+      } catch (err) {
+        console.error("Erro ao processar HTML colado:", err);
+        if (text) {
+          document.execCommand("insertText", false, text);
+          triggerChange();
+        }
+      }
+    } else if (text) {
+      document.execCommand("insertText", false, text);
+      triggerChange();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1035,6 +1108,7 @@ export function NoteEditor({
             suppressContentEditableWarning
             onInput={handleInput}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             onSelect={handleSelectionChange}
             onMouseUp={handleSelectionChange}
             className={cn(

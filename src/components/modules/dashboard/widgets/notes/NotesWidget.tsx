@@ -31,6 +31,10 @@ export function NotesWidget({
 
   const regularNotes = notes.filter((n) => !n.pinned);
   const pinnedNotes = notes.filter((n) => n.pinned);
+  const displayedNotes = [
+    ...pinnedNotes,
+    ...regularNotes.slice(0, Math.max(0, 3 - pinnedNotes.length)),
+  ];
 
   return (
     <>
@@ -95,43 +99,40 @@ export function NotesWidget({
                 </span>
               </div>
             )}
-            {pinnedNotes
-              .concat(regularNotes)
-              .slice(0, 3)
-              .map((n) => (
-                <div
-                  key={n.id}
-                  className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4 group/note cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div
-                      className={cn(
-                        "shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30",
-                        theme.text,
-                      )}
-                    >
-                      <StickyNote className="w-4 h-4" />
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-sm font-bold text-foreground truncate group-hover/note:text-foreground transition-colors">
-                        {n.title}
-                      </span>
-                      <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                        {n.pinned ? "Nota fixada" : "Nota rápida"}
-                      </span>
-                    </div>
+            {displayedNotes.map((n) => (
+              <div
+                key={n.id}
+                className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4 group/note cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30",
+                      theme.text,
+                    )}
+                  >
+                    <StickyNote className="w-4 h-4" />
                   </div>
-
-                  {n.pinned && (
-                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[50px] text-left">
-                      <Pin className={cn("w-3.5 h-3.5", theme.text)} />
-                      <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
-                        Fixada
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-sm font-bold text-foreground truncate group-hover/note:text-foreground transition-colors">
+                      {n.title}
+                    </span>
+                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                      {n.pinned ? "Nota fixada" : "Nota rápida"}
+                    </span>
+                  </div>
                 </div>
-              ))}
+
+                {n.pinned && (
+                  <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[50px] text-left">
+                    <Pin className={cn("w-3.5 h-3.5", theme.text)} />
+                    <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                      Fixada
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
             {notes.length === 0 && (
               <p className="text-xs text-muted-foreground italic">
                 Nenhuma nota registrada

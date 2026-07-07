@@ -26,8 +26,6 @@ import { NoteEditor } from "./components/NoteEditor";
 import { NotesInfoModal } from "./components/NotesInfoModal";
 import type { Note } from "./types";
 
-const MAX_PINS = 3;
-
 export default function NotesPage() {
   const { user } = useAuth();
   const { now: simulatedNow } = useTime();
@@ -193,7 +191,7 @@ export default function NotesPage() {
       <ModuleHeader
         color={getModuleColor("notes")}
         title="Anotações"
-        subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length}/${MAX_PINS} fixadas`}
+        subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length} fixadas`}
         icon={StickyNote}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -214,7 +212,7 @@ export default function NotesPage() {
           },
           {
             id: "folder-new",
-            label: "Pasta",
+            label: "Nova Pasta",
             icon: FolderPlus,
             tooltip: "Nova Pasta",
             onClick: () => setIsFolderModalOpen(true),

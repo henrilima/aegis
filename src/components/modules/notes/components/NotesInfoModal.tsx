@@ -50,7 +50,10 @@ export function NotesInfoModal({ show, onClose }: NotesInfoModalProps) {
           simples:
         </p>
         <StatRow label="Suporte a Markdown" value="Títulos, listas e links" />
-        <StatRow label="Fixação de Notas" value="Até 3 notas fixas no topo" />
+        <StatRow
+          label="Fixação de Notas"
+          value="Fixe notas importantes no topo"
+        />
       </InfoSection>
 
       <ProTip title="Poder da Pesquisa">
