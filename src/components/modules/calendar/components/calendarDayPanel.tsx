@@ -49,7 +49,7 @@ export function CalendarDayPanel({
   });
 
   return (
-    <div className="flex flex-col h-full animate-in slide-in-from-right-10 duration-500">
+    <div className="bg-card border border-border rounded-xl flex flex-col h-full animate-in slide-in-from-right-10 duration-500 overflow-hidden">
       {/* Header do Painel */}
       <div className="p-6 border-b border-border">
         <div className="flex items-start justify-between mb-2">
@@ -70,7 +70,7 @@ export function CalendarDayPanel({
         <h2 className="text-xl font-bold text-foreground capitalize">
           {displayDate}
         </h2>
-        <p className="text-xs font-bold text-muted-foreground mt-1 uppercase">
+        <p className="text-xs font-bold text-muted-foreground mt-1">
           {dayEvents.length === 0
             ? "Nenhum compromisso registrado"
             : dayEvents.length === 1

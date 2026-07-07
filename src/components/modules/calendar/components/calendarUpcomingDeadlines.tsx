@@ -18,7 +18,11 @@ export function CalendarUpcomingDeadlines({
 }: CalendarUpcomingDeadlinesProps) {
   const deadlines = events
     .filter((e) => e.eventType === "deadline" && daysUntil(e.date, time) >= 0)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.time || "00:00").localeCompare(b.time || "00:00");
+    })
     .slice(0, 5);
 
   if (deadlines.length === 0) return null;

@@ -233,7 +233,7 @@ export default function CalendarPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Calendário Principal */}
-        <div className="lg:col-span-2 bg-card/40 border border-border rounded-2xl overflow-hidden backdrop-blur-sm">
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl overflow-hidden">
           <CalendarGrid
             month={month}
             year={year}
@@ -254,6 +254,7 @@ export default function CalendarPage() {
               setShowForm(true);
             }}
             onEventDrop={handleEventDrop}
+            now={simulatedNow}
           />
         </div>
 

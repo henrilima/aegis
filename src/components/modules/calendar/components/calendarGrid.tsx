@@ -18,7 +18,8 @@ interface CalendarGridProps {
   selectedDate: string | null;
   onDayClick: (date: string) => void;
   onDayDoubleClick: (date: string) => void;
-  onEventDrop?: (eventId: number, date: string) => void; // Callback executado ao arrastar e soltar um evento
+  onEventDrop?: (eventId: number, date: string) => void;
+  now: Date;
 }
 
 export function CalendarGrid({
@@ -29,6 +30,7 @@ export function CalendarGrid({
   onDayClick,
   onDayDoubleClick,
   onEventDrop,
+  now,
 }: CalendarGridProps) {
   const color = getModuleColor("calendar");
   const themeStyles = getColorTheme(color);
@@ -77,7 +79,7 @@ export function CalendarGrid({
     return cells;
   }, [month, year]);
 
-  const today = formatDateLocal(new Date());
+  const today = formatDateLocal(now);
 
   return (
     <div className="w-full select-none">
@@ -85,7 +87,7 @@ export function CalendarGrid({
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="py-3 text-[10px] font-black text-muted-foreground uppercase text-center bg-card/50"
+            className="py-3 text-[10px] font-black text-muted-foreground text-center bg-card/50"
           >
             {d}
           </div>
@@ -228,6 +230,11 @@ export function CalendarGrid({
                           borderColor: `${color}20`,
                         }}
                       >
+                        {ev.time && (
+                          <span className="mr-1 opacity-75 font-mono text-[8px]">
+                            {ev.time}
+                          </span>
+                        )}
                         {ev.title}
                       </div>
                     );
@@ -255,6 +262,11 @@ export function CalendarGrid({
                           borderColor: `${resolveColor(ev.color || "green")}15`,
                         }}
                       >
+                        {ev.time && (
+                          <span className="mr-1 opacity-75 font-mono text-[8px]">
+                            {ev.time}
+                          </span>
+                        )}
                         {ev.title}
                       </div>
                     ))}

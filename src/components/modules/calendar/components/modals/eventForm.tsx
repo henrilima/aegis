@@ -53,7 +53,7 @@ export function EventForm({ userId, initial, onSave }: EventFormProps) {
   const isDeadline = form.eventType === "deadline";
   const lc = "text-xs font-medium text-muted-foreground ml-0.5";
   const inputStyle =
-    "w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-green-500/40 transition-all placeholder:text-neutral-700";
+    "w-full bg-card border-border h-11 rounded-xl text-sm font-medium focus:border-green-500/40 transition-all placeholder:text-muted-foreground/50";
 
   return (
     <form
@@ -118,7 +118,7 @@ export function EventForm({ userId, initial, onSave }: EventFormProps) {
             <Textarea
               id="ef-desc"
               disabled={initial?.isHoliday}
-              className="bg-card border-border rounded-xl min-h-[120px] resize-none text-sm font-medium text-muted-foreground focus:border-green-600/30 placeholder:text-neutral-700 transition-all"
+              className="bg-card border-border rounded-xl min-h-[120px] resize-none text-sm font-medium text-muted-foreground focus:border-green-600/30 placeholder:text-muted-foreground/50 transition-all"
               placeholder="Notas, links ou detalhes relevantes..."
               value={form.description ?? ""}
               onChange={(e) => set("description", e.target.value)}

@@ -85,8 +85,8 @@ export function CalendarHeader({
         ]}
       />
 
-      <div className="flex items-center justify-between bg-card/30 border border-border/50 rounded-2xl p-2 shrink-0">
-        <div className="flex items-center gap-1.5 bg-background/50 border border-border/40 rounded-xl p-1">
+      <div className="flex items-center justify-between bg-card border border-border rounded-xl p-2 shrink-0">
+        <div className="flex items-center gap-1.5 bg-background border border-border/60 rounded-xl p-1">
           <Button
             type="button"
             variant="ghost"
@@ -96,7 +96,7 @@ export function CalendarHeader({
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <div className="px-4 flex items-center justify-center min-w-[140px]">
-            <span className="text-xs font-black text-foreground uppercase">
+            <span className="text-xs font-black text-foreground capitalize">
               {label}
             </span>
           </div>
