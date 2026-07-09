@@ -142,7 +142,7 @@ export function HabitsWidget({
               type="button"
               tabIndex={isInteractive && !done ? 0 : undefined}
               className={cn(
-                "flex w-full items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4 outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
+                "flex w-full items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
                 isInteractive && !done && "cursor-pointer",
               )}
               onClick={(e) => {
@@ -166,27 +166,20 @@ export function HabitsWidget({
                 }
               }}
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={cn(
-                    "shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-teal-500",
-                    isInteractive &&
-                      !done &&
-                      "transition-transform hover:scale-105 active:scale-95",
-                  )}
-                >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="shrink-0 transition-transform active:scale-90">
                   {done ? (
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className={cn("w-5 h-5", theme.text)} />
                   ) : (
                     <Circle
                       className={cn(
-                        "w-4 h-4 text-zinc-500",
+                        "w-5 h-5 text-muted-foreground/50",
                         isInteractive && "hover:text-foreground",
                       )}
                     />
                   )}
                 </div>
-                <div className="flex flex-col min-w-0">
+                <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
                   <span
                     className={cn(
                       "text-sm font-bold text-foreground truncate",
@@ -195,32 +188,35 @@ export function HabitsWidget({
                   >
                     {h.name}
                   </span>
-                  <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                  <span className="text-[10px] font-bold text-muted-foreground">
                     {done ? "Concluído hoje" : "Pendente"}
                   </span>
                 </div>
               </div>
 
-              <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
-                <span
+              <div className="shrink-0 flex items-center">
+                <div
                   className={cn(
-                    "block text-xs font-bold leading-none",
-                    done ? theme.text : "text-zinc-650 dark:text-zinc-500",
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                    done
+                      ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20"
+                      : "bg-muted/40 text-muted-foreground border-border/40",
                   )}
                 >
-                  {streak}d
-                </span>
-                <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
-                  Sequência
-                </span>
+                  <Flame className="w-3 h-3 shrink-0" />
+                  <span>{streak}d</span>
+                </div>
               </div>
             </button>
           );
         })}
         {positiveHabits.length === 0 && (
-          <p className="text-xs text-neutral-600 italic">
-            Nenhum hábito positivo ativo
-          </p>
+          <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+            <Flame className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+            <p className="text-[11px] font-medium text-muted-foreground/60">
+              Nenhum hábito positivo ativo
+            </p>
+          </div>
         )}
       </div>
     </BaseWidget>

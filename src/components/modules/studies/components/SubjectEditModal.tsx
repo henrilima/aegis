@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { BarChart2, Check, X } from "lucide-react";
+import { BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { resolveColor, SELECTABLE_COLORS } from "@/colors.config";
@@ -67,7 +67,9 @@ export function SubjectEditModal({
 }: SubjectEditModalProps) {
   const color = getModuleColor(moduleColor);
   const theme = getColorTheme(color);
-  const focusBorderClass = theme.text.split(" ")[0].replace("text-", "focus:border-");
+  const focusBorderClass = theme.text
+    .split(" ")[0]
+    .replace("text-", "focus:border-");
 
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +135,7 @@ export function SubjectEditModal({
       .finally(() => {
         setLoading(false);
       });
-  }, [userId, subjectName, isOpen]);
+  }, [userId, subjectName, isOpen, initialGroupId]);
 
   const handleSaveComplete = async () => {
     const trimmedName = editSubjectName.trim();
@@ -278,11 +280,7 @@ export function SubjectEditModal({
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {SELECTABLE_COLORS.map((c) => (
-                      <SelectItem
-                        key={c.key}
-                        value={c.key}
-                        className="text-xs"
-                      >
+                      <SelectItem key={c.key} value={c.key} className="text-xs">
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full shrink-0 border border-border/20"
@@ -405,7 +403,9 @@ export function SubjectEditModal({
                         <p
                           className={cn(
                             "text-xs font-bold transition-colors",
-                            isSelected ? theme.text.split(" ")[0] : "text-foreground",
+                            isSelected
+                              ? theme.text.split(" ")[0]
+                              : "text-foreground",
                           )}
                         >
                           {opt.label}

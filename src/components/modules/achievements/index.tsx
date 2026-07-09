@@ -12,10 +12,18 @@ import {
 } from "lucide-react";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   getRankForLevel,
   getXPForLevel,
   RANKS,
 } from "@/config/achievements.config";
+import { PET_BACKGROUNDS } from "@/config/pets.config";
 import { cn } from "@/lib/utils";
 // Helpers e Hook do Módulo
 import {
@@ -29,6 +37,7 @@ import {
 import { AchievementsGrid } from "./components/AchievementsGrid";
 import { CategoryMedalsCard } from "./components/CategoryMedalsCard";
 import { DailyChallengesList } from "./components/DailyChallengesList";
+import { ParticleSelector } from "./components/ParticleSelector";
 import { PetDisplay } from "./components/PetDisplay";
 // Subcomponentes
 import { PetSelector } from "./components/PetSelector";
@@ -44,6 +53,10 @@ export default function AchievementsModule() {
     progress,
     selectedPet,
     handleSelectPet,
+    selectedParticle,
+    handleSelectParticle,
+    selectedBgMode,
+    handleSelectBgMode,
     activeTab,
     setActiveTab,
     xpHistory,
@@ -230,6 +243,8 @@ export default function AchievementsModule() {
               <div className="lg:col-span-1">
                 <PetDisplay
                   selectedPet={selectedPet}
+                  selectedParticle={selectedParticle}
+                  selectedBgMode={selectedBgMode}
                   treeLevel={progress.treeLevel}
                   treeXp={progress.treeXp}
                   last3DaysCompletedCount={progress.last3DaysCompletedCount}
@@ -324,6 +339,8 @@ export default function AchievementsModule() {
             <div className="flex flex-col gap-6 lg:col-span-1">
               <PetDisplay
                 selectedPet={selectedPet}
+                selectedParticle={selectedParticle}
+                selectedBgMode={selectedBgMode}
                 treeLevel={progress.treeLevel}
                 treeXp={progress.treeXp}
                 last3DaysCompletedCount={progress.last3DaysCompletedCount}
@@ -340,6 +357,45 @@ export default function AchievementsModule() {
                 onSelectPet={handleSelectPet}
                 userLevel={progress.level}
               />
+
+              <ParticleSelector
+                selectedParticle={selectedParticle}
+                onSelectParticle={handleSelectParticle}
+                userLevel={progress.level}
+              />
+
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    Período do Dia
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                    Selecione o cenário ou defina para alternar automaticamente.
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl border border-border/70 bg-card/30">
+                  <Select
+                    value={selectedBgMode}
+                    onValueChange={(val) =>
+                      handleSelectBgMode(
+                        val as "cyclic" | "day" | "afternoon" | "night",
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-[240px] bg-card border-border/50">
+                      <SelectValue placeholder="Selecione o período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PET_BACKGROUNDS.map((bg) => (
+                        <SelectItem key={bg.id} value={bg.id}>
+                          {bg.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
               {/* Guia do Mascote Aegis */}
               <div className="flex flex-col gap-4">

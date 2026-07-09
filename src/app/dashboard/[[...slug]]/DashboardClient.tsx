@@ -6,57 +6,58 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Loading from "@/components/global/Loading";
+import ModuleLoading from "@/components/global/ModuleLoading";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 
 const Achievements = dynamic(
   () => import("@/components/modules/achievements"),
-  { loading: () => <Loading /> },
+  { loading: () => <ModuleLoading moduleName="Conquistas" /> },
 );
 const Alarms = dynamic(() => import("@/components/modules/alarms"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Alarmes" />,
 });
 const Calendar = dynamic(() => import("@/components/modules/calendar"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Calendário" />,
 });
 const Dashboard = dynamic(() => import("@/components/modules/dashboard"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Dashboard" />,
 });
 const Dictionary = dynamic(() => import("@/components/modules/dictionary"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Dicionário" />,
 });
 const Flashcards = dynamic(() => import("@/components/modules/flashcards"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Flashcards" />,
 });
 const Habits = dynamic(() => import("@/components/modules/habits"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Hábitos" />,
 });
 const Movies = dynamic(() => import("@/components/modules/movies"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Filmes" />,
 });
 const Notes = dynamic(() => import("@/components/modules/notes"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Anotações" />,
 });
 const Passwords = dynamic(() => import("@/components/modules/passwords"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Cofre de Senhas" />,
 });
 const Pomodoro = dynamic(() => import("@/components/modules/pomodoro"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Pomodoro" />,
 });
 const Reading = dynamic(() => import("@/components/modules/reading"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Leitura" />,
 });
 const Sleep = dynamic(() => import("@/components/modules/sleep"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Sono" />,
 });
 const Statistics = dynamic(() => import("@/components/modules/statistics"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Estatísticas" />,
 });
 const Studies = dynamic(() => import("@/components/modules/studies"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Estudos" />,
 });
 const Tasks = dynamic(() => import("@/components/modules/tasks"), {
-  loading: () => <Loading />,
+  loading: () => <ModuleLoading moduleName="Tarefas" />,
 });
 
 export default function DashboardClient() {

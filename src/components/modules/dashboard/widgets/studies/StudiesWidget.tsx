@@ -123,47 +123,54 @@ export function EstudosWidget({
             {sessions.slice(0, 3).map((s, i) => (
               <div
                 key={s.id ?? i}
-                className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
+                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-violet-500">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-bold text-foreground truncate">
-                      {s.subject}
-                    </span>
-                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5 truncate max-w-[110px]">
-                      {s.topic || "Sessão de estudo"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
-                  <span
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
                     className={cn(
-                      "block text-xs font-bold leading-none",
+                      "shrink-0 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20",
                       theme.text,
                     )}
                   >
-                    {formatHours(s.hours)}
-                  </span>
-                  {(s.questionsNew ?? 0) + (s.questionsReview ?? 0) > 0 ? (
-                    <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
-                      {(s.questionsNew ?? 0) + (s.questionsReview ?? 0)} Qs
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
+                    <span className="text-sm font-bold text-foreground truncate">
+                      {s.subject}
                     </span>
-                  ) : (
-                    <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
-                      Foco
-                    </span>
-                  )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[120px]">
+                        {s.topic || "Sessão de estudo"}
+                      </span>
+                      {(s.questionsNew ?? 0) + (s.questionsReview ?? 0) > 0 && (
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          · {(s.questionsNew ?? 0) + (s.questionsReview ?? 0)}{" "}
+                          questões
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center">
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+                    )}
+                  >
+                    <span>{formatHours(s.hours)}</span>
+                  </div>
                 </div>
               </div>
             ))}
             {sessions.length === 0 && (
-              <p className="text-xs text-neutral-600 italic">
-                Nenhuma sessão registrada
-              </p>
+              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+                <BookOpen className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+                <p className="text-[11px] font-medium text-muted-foreground/60">
+                  Nenhuma sessão registrada
+                </p>
+              </div>
             )}
           </div>
         </div>

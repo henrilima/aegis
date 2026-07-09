@@ -2,9 +2,8 @@
 
 import { Pin, Plus, StickyNote } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
-import { NoteCreateModal } from "@/components/modules/notes/components/modals/noteCreateModal";
 import { Button } from "@/components/ui/button";
+import { useNavigation } from "@/context/NavigationContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Note } from "../../types";
@@ -20,14 +19,13 @@ interface NotesWidgetProps {
 
 export function NotesWidget({
   notes,
-  onCreateNote,
   isEditMode,
   isInteractive,
   onToggleInteractive,
 }: NotesWidgetProps) {
   const color = getModuleColor("notes");
   const theme = getColorTheme(color);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { navigate } = useNavigation();
 
   const regularNotes = notes.filter((n) => !n.pinned);
   const pinnedNotes = notes.filter((n) => n.pinned);
@@ -37,120 +35,133 @@ export function NotesWidget({
   ];
 
   return (
-    <>
-      <BaseWidget
-        title="Anotações"
-        icon={StickyNote}
-        color={color}
-        route="notes"
-        isEditMode={isEditMode}
-        isInteractive={isInteractive}
-        onToggleInteractive={onToggleInteractive}
-      >
-        <div className="flex flex-col gap-[4cqw] @sm:gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-[8cqw] @sm:gap-10">
-              <div className="text-left">
-                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
-                  {notes.length}
-                </p>
-                <p className="text-[10px] font-bold text-muted-foreground mt-1">
-                  Total
-                </p>
-              </div>
-              <div className="text-left">
-                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
-                  {pinnedNotes.length}
-                </p>
-                <p className="text-[10px] font-bold text-muted-foreground mt-1">
-                  Fixadas
-                </p>
-              </div>
+    <BaseWidget
+      title="Anotações"
+      icon={StickyNote}
+      color={color}
+      route="notes"
+      isEditMode={isEditMode}
+      isInteractive={isInteractive}
+      onToggleInteractive={onToggleInteractive}
+    >
+      <div className="flex flex-col gap-[4cqw] @sm:gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-[8cqw] @sm:gap-10">
+            <div className="text-left">
+              <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
+                {notes.length}
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-1">
+                Total
+              </p>
             </div>
-
-            {isInteractive && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  setIsModalOpen(true);
-                }}
-                className={cn(
-                  "h-7 px-2.5 text-xs text-white font-bold rounded-lg border-none gap-1",
-                  theme.solid,
-                  theme.solidHover,
-                )}
-              >
-                <Plus className="w-3 h-3" />
-                <span className="hidden @sm:inline">Nota rápida</span>
-              </Button>
-            )}
+            <div className="text-left">
+              <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
+                {pinnedNotes.length}
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-1">
+                Fixadas
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            {pinnedNotes.length > 0 && (
-              <div className="flex items-center gap-1 mb-1 text-left">
-                <Pin className={cn("w-2.5 h-2.5 opacity-60", theme.text)} />
-                <span
-                  className={cn("text-[10px] font-bold opacity-60", theme.text)}
-                >
-                  Fixadas
-                </span>
-              </div>
-            )}
-            {displayedNotes.map((n) => (
-              <div
-                key={n.id}
-                className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4 group/note cursor-pointer text-left"
+          {isInteractive && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                navigate("notes", "?action=new");
+              }}
+              className={cn(
+                "h-7 px-2.5 text-xs text-white font-bold rounded-lg border-none gap-1",
+                theme.solid,
+                theme.solidHover,
+              )}
+            >
+              <Plus className="w-3 h-3" />
+              <span className="hidden @sm:inline">Nota rápida</span>
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          {pinnedNotes.length > 0 && (
+            <div className="flex items-center gap-1 mb-1 text-left">
+              <Pin className={cn("w-2.5 h-2.5 opacity-60", theme.text)} />
+              <span
+                className={cn("text-[10px] font-bold opacity-60", theme.text)}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                Fixadas
+              </span>
+            </div>
+          )}
+          {displayedNotes.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              tabIndex={isInteractive ? 0 : undefined}
+              onClick={(e) => {
+                if (isInteractive) {
+                  e.stopPropagation();
+                  navigate("notes", `?noteId=${n.id}`);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (isInteractive && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  navigate("notes", `?noteId=${n.id}`);
+                }
+              }}
+              className={cn(
+                "flex w-full items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 group/note text-left outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
+                isInteractive && "cursor-pointer",
+              )}
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div
+                  className={cn(
+                    "shrink-0 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20",
+                    theme.text,
+                  )}
+                >
+                  <StickyNote className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                  <span className="text-sm font-bold text-foreground truncate group-hover/note:text-foreground transition-colors">
+                    {n.title}
+                  </span>
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    {n.pinned ? "Nota fixada" : "Nota rápida"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center">
+                {n.pinned && (
                   <div
                     className={cn(
-                      "shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30",
-                      theme.text,
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
                     )}
                   >
-                    <StickyNote className="w-4 h-4" />
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-bold text-foreground truncate group-hover/note:text-foreground transition-colors">
-                      {n.title}
-                    </span>
-                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                      {n.pinned ? "Nota fixada" : "Nota rápida"}
-                    </span>
-                  </div>
-                </div>
-
-                {n.pinned && (
-                  <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[50px] text-left">
-                    <Pin className={cn("w-3.5 h-3.5", theme.text)} />
-                    <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
-                      Fixada
-                    </span>
+                    <Pin className="w-3 h-3 shrink-0" />
+                    <span>Fixada</span>
                   </div>
                 )}
               </div>
-            ))}
-            {notes.length === 0 && (
-              <p className="text-xs text-muted-foreground italic">
+            </button>
+          ))}
+          {notes.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+              <StickyNote className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+              <p className="text-[11px] font-medium text-muted-foreground/60">
                 Nenhuma nota registrada
               </p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      </BaseWidget>
-
-      {isModalOpen && (
-        <NoteCreateModal
-          onAdd={(title, content) => {
-            onCreateNote(title, content);
-            setIsModalOpen(false);
-          }}
-          onClose={() => setIsModalOpen(false)}
-        />
-      )}
-    </>
+      </div>
+    </BaseWidget>
   );
 }

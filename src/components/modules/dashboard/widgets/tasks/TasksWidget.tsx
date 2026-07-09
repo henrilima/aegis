@@ -1,6 +1,14 @@
 "use client";
 
-import { CheckCircle2, Circle, ListTodo, Plus, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  Flag,
+  Hash,
+  ListTodo,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { resolveTaskStyles } from "@/colors.config";
 import { TaskCreateModal } from "@/components/modules/tasks/components/modals/TaskCreateModal";
@@ -26,6 +34,15 @@ interface TasksWidgetProps {
   onToggleInteractive?: () => void;
 }
 
+const priorityBadgeStyles = [
+  "",
+  "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+  "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+];
+
+const priorityLabels = ["", "Baixa", "Média", "Alta"];
+
 export function TasksWidget({
   tasks,
   onToggleTask,
@@ -45,6 +62,14 @@ export function TasksWidget({
       !t.completed && (!t.parentId || !tasks.some((p) => p.id === t.parentId)),
   );
 
+  const rootTasks = tasks.filter(
+    (t) => !t.parentId || !tasks.some((p) => p.id === t.parentId),
+  );
+  const totalCount = rootTasks.length;
+  const completedCount = rootTasks.filter((t) => t.completed).length;
+  const progressPct =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
     <>
       <BaseWidget
@@ -56,38 +81,60 @@ export function TasksWidget({
         isInteractive={isInteractive}
         onToggleInteractive={onToggleInteractive}
       >
-        <div className="flex flex-col gap-[4cqw] @sm:gap-4">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-[4cqw] @sm:gap-4">
+        <div className="flex flex-col gap-3">
+          {/* Header de progresso / ações */}
+          <div className="flex flex-col gap-2.5 mb-1.5">
+            <div className="flex items-center justify-between">
               <div className="text-left">
-                <p className="text-2xl @sm:text-3xl font-bold text-foreground leading-none">
-                  {pendingTasks.length}
-                </p>
-                <p className="text-[10px] font-bold text-muted-foreground mt-1">
-                  Pendentes
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold text-foreground leading-none">
+                    {pendingTasks.length}
+                  </span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    pendentes
+                  </span>
+                </div>
+                <p className="text-[10px] font-bold text-muted-foreground mt-0.5">
+                  {totalCount > 0
+                    ? `${completedCount} de ${totalCount} concluídas (${progressPct}%)`
+                    : "Sem tarefas cadastradas"}
                 </p>
               </div>
-            </div>{" "}
-            {isInteractive && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  setIsModalOpen(true);
-                }}
-                className={cn(
-                  "h-7 px-2.5 text-xs font-bold rounded-lg border-none gap-1 active:scale-95 transition-all text-white",
-                  theme.solid,
-                  theme.solidHover,
-                )}
-              >
-                <Plus className="w-3 h-3" />
-                <span className="hidden @sm:inline">Nova tarefa</span>
-              </Button>
+
+              {isInteractive && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setIsModalOpen(true);
+                  }}
+                  className={cn(
+                    "h-7 px-2.5 text-xs font-bold rounded-lg border-none gap-1 active:scale-95 transition-all text-white",
+                    theme.solid,
+                    theme.solidHover,
+                  )}
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Nova tarefa</span>
+                </Button>
+              )}
+            </div>
+
+            {totalCount > 0 && (
+              <div className="w-full bg-muted/40 h-1 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full transition-all duration-500 rounded-full",
+                    theme.solid,
+                  )}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
             )}
           </div>
 
+          {/* Lista de tarefas */}
           <div className="space-y-2">
             {pendingTasks
               .sort((a, b) => (b.priority || 0) - (a.priority || 0))
@@ -98,14 +145,22 @@ export function TasksWidget({
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4 group w-full cursor-default text-left focus:outline-none"
-                    style={
-                      {
-                        borderColor: styles.borderColor || undefined,
-                      } as React.CSSProperties
-                    }
+                    className={cn(
+                      "group flex items-center justify-between gap-3 bg-card border border-border transition-all rounded-xl relative overflow-hidden p-3 text-sm cursor-default text-left focus:outline-none",
+                      task.completed
+                        ? "opacity-60 grayscale-[0.5]"
+                        : "hover:bg-muted/30",
+                    )}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {/* Faixa de cor lateral se definida */}
+                    {task.color && (
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+                        style={{ backgroundColor: styles.iconColor }}
+                      />
+                    )}
+
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pl-1">
                       {isInteractive ? (
                         <button
                           type="button"
@@ -113,112 +168,155 @@ export function TasksWidget({
                             e.stopPropagation();
                             onToggleTask?.(task);
                           }}
-                          className={cn(
-                            "shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 transition-all active:scale-95",
-                            task.completed
-                              ? "opacity-60"
-                              : "hover:bg-neutral-300 dark:hover:bg-neutral-900/60",
-                          )}
-                          style={
-                            {
-                              borderColor: styles.borderColor || undefined,
-                            } as React.CSSProperties
-                          }
+                          className="shrink-0 transition-transform active:scale-90"
                         >
                           {task.completed ? (
                             <CheckCircle2
-                              className="w-4 h-4"
-                              style={{ color: styles.iconColor }}
+                              className={cn(
+                                "w-4.5 h-4.5",
+                                task.color
+                                  ? ""
+                                  : "text-red-500 dark:text-red-400",
+                              )}
+                              style={
+                                task.color
+                                  ? { color: styles.iconColor }
+                                  : undefined
+                              }
                             />
                           ) : (
                             <Circle
-                              className="w-4 h-4 transition-colors text-zinc-650 dark:text-zinc-500 hover:text-foreground"
-                              style={{ color: styles.iconColorMuted }}
+                              className={cn(
+                                "w-4.5 h-4.5 transition-colors group-hover:scale-110",
+                                task.color
+                                  ? ""
+                                  : "text-muted-foreground/50 hover:text-red-500/80 dark:hover:text-red-400/80",
+                              )}
+                              style={
+                                task.color
+                                  ? { color: styles.iconColorMuted }
+                                  : undefined
+                              }
                             />
                           )}
                         </button>
                       ) : (
-                        <div
-                          className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 opacity-60"
-                          style={
-                            {
-                              borderColor: styles.borderColor || undefined,
-                            } as React.CSSProperties
-                          }
-                        >
+                        <div className="shrink-0 opacity-60">
                           {task.completed ? (
                             <CheckCircle2
-                              className="w-4 h-4"
-                              style={{ color: styles.iconColor }}
+                              className={cn(
+                                "w-4.5 h-4.5",
+                                task.color
+                                  ? ""
+                                  : "text-red-500 dark:text-red-400",
+                              )}
+                              style={
+                                task.color
+                                  ? { color: styles.iconColor }
+                                  : undefined
+                              }
                             />
                           ) : (
                             <Circle
-                              className="w-4 h-4"
-                              style={{ color: styles.iconColorMuted }}
+                              className={cn(
+                                "w-4.5 h-4.5",
+                                task.color ? "" : "text-muted-foreground/50",
+                              )}
+                              style={
+                                task.color
+                                  ? { color: styles.iconColorMuted }
+                                  : undefined
+                              }
                             />
                           )}
                         </div>
                       )}
 
-                      <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                         <span
                           className={cn(
-                            "text-sm font-bold text-foreground truncate",
+                            "font-medium transition-all truncate text-sm text-foreground",
                             task.completed &&
-                              "text-muted-foreground/60 line-through",
+                              "line-through text-muted-foreground/60",
                           )}
                         >
                           {task.title}
                         </span>
-                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                          {task.category ||
-                            (task.completed ? "Concluída" : "Tarefa pendente")}
-                        </span>
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {Number(task.priority) > 0 && (
+                            <div
+                              className={cn(
+                                "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-bold capitalize shrink-0",
+                                priorityBadgeStyles[task.priority ?? 0],
+                              )}
+                            >
+                              <Flag className="w-2.5 h-2.5 shrink-0" />
+                              <span>{priorityLabels[task.priority ?? 0]}</span>
+                            </div>
+                          )}
+                          {task.category && (
+                            <div
+                              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold capitalize border shrink-0"
+                              style={{
+                                backgroundColor: styles.badgeBg,
+                                borderColor: styles.badgeBorder.replace(
+                                  "1px solid ",
+                                  "",
+                                ),
+                              }}
+                            >
+                              <Hash
+                                className={cn(
+                                  "w-2.5 h-2.5",
+                                  task.color ? "" : "text-muted-foreground/70",
+                                )}
+                                style={{
+                                  color: task.color
+                                    ? styles.iconColor
+                                    : undefined,
+                                }}
+                              />
+                              <span
+                                className={cn(
+                                  task.color ? "" : "text-muted-foreground/70",
+                                )}
+                                style={{
+                                  color: task.color
+                                    ? styles.iconColor
+                                    : undefined,
+                                }}
+                              >
+                                {task.category}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2">
-                      {task.priority !== undefined && task.priority > 0 && (
-                        <div
-                          className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[48px] text-left"
-                          style={
-                            {
-                              borderColor: styles.borderColor || undefined,
-                            } as React.CSSProperties
-                          }
-                        >
-                          <span
-                            className="block text-xs font-bold leading-none"
-                            style={{ color: styles.iconColor }}
-                          >
-                            P{task.priority}
-                          </span>
-                          <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
-                            Prioridade
-                          </span>
-                        </div>
-                      )}
-
-                      {isInteractive && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteTask?.(task);
-                          }}
-                          className="p-1.5 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-md shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {isInteractive && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteTask?.(task);
+                        }}
+                        className="p-1.5 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-md shrink-0 self-center"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
             {pendingTasks.length === 0 && (
-              <p className="text-xs text-muted-foreground italic">
-                Nenhuma tarefa pendente
-              </p>
+              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+                <CheckCircle2 className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+                <p className="text-[11px] font-medium text-muted-foreground/60">
+                  Todas as tarefas concluídas!
+                </p>
+              </div>
             )}
           </div>
         </div>

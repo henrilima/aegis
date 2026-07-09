@@ -7,6 +7,7 @@ import {
   COMPLETED_TODAY_PHRASES,
   GENERAL_MOTIVATIONAL_PHRASES,
   getPetPhrases,
+  PARTICLES_CONFIG,
 } from "@/config/pets.config";
 import { useTime } from "@/context/TimeContext";
 import { formatDateLocal } from "@/lib/utils";
@@ -15,13 +16,15 @@ import { formatDateLocal } from "@/lib/utils";
 // day (06h–12h), afternoon (12h–19h), night (19h–06h)
 function getTimePeriod(now: Date): "day" | "afternoon" | "night" {
   const hour = now.getHours();
-  if (hour >= 6 && hour < 12) return "day";
+  if (hour >= 6 && hour < 16) return "day";
   if (hour >= 12 && hour < 19) return "afternoon";
   return "night";
 }
 
 interface PetDisplayProps {
   selectedPet: string;
+  selectedParticle?: string;
+  selectedBgMode?: "cyclic" | "day" | "afternoon" | "night";
   treeLevel: number;
   treeXp: number;
   last3DaysCompletedCount: number;
@@ -32,8 +35,21 @@ interface PetDisplayProps {
 
 const DISPLAY_SIZE = 96;
 
+interface ParticleInstance {
+  id: number;
+  x: number; // posição inicial X (% da largura)
+  y: number; // posição inicial Y (% da altura, a partir do fundo)
+  delay: number;
+  duration: number;
+  scale: number;
+  angle: number;
+  image?: string;
+}
+
 export function PetDisplay({
   selectedPet,
+  selectedParticle,
+  selectedBgMode,
   treeLevel,
   treeXp,
   last3DaysCompletedCount,
@@ -48,7 +64,12 @@ export function PetDisplay({
   const [tempName, setTempName] = useState<string>("");
 
   // Período do dia para selecionar o fundo correto; atualiza automaticamente quando simulatedNow muda
-  const timePeriod = useMemo(() => getTimePeriod(now), [now]);
+  const timePeriod = useMemo(() => {
+    if (selectedBgMode && selectedBgMode !== "cyclic") {
+      return selectedBgMode;
+    }
+    return getTimePeriod(now);
+  }, [now, selectedBgMode]);
 
   // Estado do balão de fala ao clicar no pet
   const [speechText, setSpeechText] = useState<string | null>(null);
@@ -98,6 +119,245 @@ export function PetDisplay({
     (daysSinceLastCompletion !== null && daysSinceLastCompletion >= 4) ||
     (treeLevel === 1 && treeXp === 0);
 
+  const [particles, setParticles] = useState<ParticleInstance[]>([]);
+
+  useEffect(() => {
+    if (!selectedParticle || selectedParticle === "none" || isDead) {
+      setParticles([]);
+      return;
+    }
+
+    const config = PARTICLES_CONFIG[selectedParticle];
+    if (!config) {
+      setParticles([]);
+      return;
+    }
+
+    const count =
+      selectedParticle === "undertale"
+        ? 7
+        : selectedParticle === "hearts"
+          ? 6
+          : 12;
+    const newParticles: ParticleInstance[] = [];
+    const isUndertale = selectedParticle === "undertale";
+
+    for (let i = 0; i < count; i++) {
+      let image: string | undefined;
+      if (config.type === "image" && config.images) {
+        if (isUndertale) {
+          image = config.images[i % config.images.length];
+        } else {
+          image =
+            config.images[Math.floor(Math.random() * config.images.length)];
+        }
+      }
+
+      // Posicionamento base das partículas
+      let x = Math.random() * 80 + 10;
+      let y = Math.random() * 60 + 10;
+
+      if (selectedParticle === "hearts") {
+        // Centraliza horizontalmente ao redor do pet de forma mais espalhada (35% a 65%)
+        x = Math.random() * 30 + 35;
+        // Começa perto do pet verticalmente com mais espalhamento (10% a 40%)
+        y = Math.random() * 30 + 10;
+      } else if (isUndertale) {
+        // Almas começam centralizadas no topo do cenário horizontalmente (em torno de 50%)
+        // Com 7 almas e espaçamento de 2.2%, elas cobrem de 43.4% a 56.6%
+        x = 50 + (i - 3) * 2.2;
+        y = 83; // Perto do topo (83% bottom)
+      }
+
+      const p: ParticleInstance = {
+        id: i,
+        x,
+        y,
+        delay: isUndertale ? 0 : Math.random() * 4,
+        duration: isUndertale ? 8 : Math.random() * 3 + 3,
+        scale: isUndertale ? 1 : Math.random() * 0.4 + 0.8,
+        angle: Math.random() * 360,
+        image,
+      };
+
+      newParticles.push(p);
+    }
+
+    setParticles(newParticles);
+  }, [selectedParticle, isDead]);
+
+  // Refs para elementos DOM das almas de Undertale (animação via rAF)
+  const soulRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const soulAnimRef = useRef<number | null>(null);
+
+  // Animação JS das almas de Undertale: topo → descida → órbita ao redor do pet → subida imediata → espera no topo
+  useEffect(() => {
+    if (selectedParticle !== "undertale" || particles.length === 0) {
+      if (soulAnimRef.current !== null) {
+        cancelAnimationFrame(soulAnimRef.current);
+        soulAnimRef.current = null;
+      }
+      return;
+    }
+
+    // Configuração de tempos (em milissegundos)
+    const DESCEND_MS = 1200; // Tempo de descida suave do topo até o pet
+    const ORBIT_MS = 2800; // Tempo de órbita completa (360 graus) ao redor do pet
+    const ACTIVE_DOWN_MS = DESCEND_MS + ORBIT_MS; // 4000ms de descida e rotação ativa
+
+    // Stagger de descida: 1/7 do tempo ativo
+    const STAGGER_DOWN_MS = ACTIVE_DOWN_MS / 7;
+    const ASCENT_MS = 1600; // Tempo de subida suave de volta ao topo
+
+    // A última subida (i=6) termina aos (6 * 571.4) + 4000 + 1600 = 9028.5ms.
+    // Mantemos uma pausa coletiva no topo de ~4 segundos antes de reiniciar o ciclo:
+    const CYCLE_MS = 13000; // Duração de 1 ciclo completo (13 segundos)
+
+    const CX = 50; // Centro horizontal do pet
+    const CY = 18; // Centro vertical do pet (mais baixo para descer mais no Y)
+    const RX = 13; // Raio horizontal da órbita
+    const RY = 12; // Raio vertical da órbita
+    const angleStart = Math.PI / 2; // Começa no ponto superior da elipse (para descer do topo direto para o topo do pet)
+    const startTime = performance.now();
+
+    // Funções de easing para suavidade
+    const easeOut = (t: number) => 1 - (1 - t) ** 3;
+    const _easeIn = (t: number) => t * t * t;
+
+    const animate = (now: number) => {
+      const elapsed = (now - startTime) % CYCLE_MS;
+
+      particles.forEach((p, i) => {
+        const el = soulRefs.current[i];
+        if (!el) return;
+
+        const startDown = i * STAGGER_DOWN_MS;
+        const endDown = startDown + ACTIVE_DOWN_MS;
+        const startUp = endDown; // Sobe imediatamente ao fim da descida/órbita
+        const endUp = startUp + ASCENT_MS;
+
+        let x = p.x;
+        let y = p.y;
+        let opacity = 0.6;
+
+        if (elapsed < startDown) {
+          // 1. Aguardando no topo antes de descer
+          x = p.x;
+          y = p.y;
+          opacity = 0.6;
+        } else if (elapsed <= endDown) {
+          // 2. Descida e Órbita ativa
+          const lp = (elapsed - startDown) / ACTIVE_DOWN_MS; // Progresso da fase (0..1)
+          const descendLimit = DESCEND_MS / ACTIVE_DOWN_MS; // Ponto de divisão entre descida e órbita
+
+          if (lp < descendLimit) {
+            // Descida linear: do topo até o início da órbita (CX, CY + RY)
+            const prog = lp / descendLimit;
+            const targetX = CX;
+            const targetY = CY + RY;
+            x = p.x + (targetX - p.x) * prog;
+            y = p.y + (targetY - p.y) * prog;
+            opacity = 0.6 + 0.4 * prog;
+          } else {
+            // Órbita: 360 graus ao redor do pet
+            const orbitProg = (lp - descendLimit) / (1 - descendLimit);
+            const angle = angleStart + orbitProg * 2 * Math.PI;
+            x = CX + RX * Math.cos(angle);
+            y = CY + RY * Math.sin(angle);
+            opacity = 1.0;
+          }
+        } else if (elapsed <= endUp) {
+          // 3. Subida ativa (easeOut): sobe direto e desacelera apenas quando chega no topo
+          const lp = (elapsed - startUp) / ASCENT_MS; // Progresso local (0..1)
+          const prog = easeOut(lp);
+          const startX = CX;
+          const startY = CY + RY;
+          x = startX + (p.x - startX) * prog;
+          y = startY + (p.y - startY) * prog;
+          opacity = 1.0 - 0.4 * prog;
+        } else {
+          // 4. Aguardando no topo após subir até o fim do ciclo global
+          x = p.x;
+          y = p.y;
+          opacity = 0.6;
+        }
+
+        el.style.left = `${x}%`;
+        el.style.bottom = `${y}%`;
+        el.style.opacity = `${opacity}`;
+      });
+
+      soulAnimRef.current = requestAnimationFrame(animate);
+    };
+
+    soulAnimRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (soulAnimRef.current !== null) {
+        cancelAnimationFrame(soulAnimRef.current);
+        soulAnimRef.current = null;
+      }
+    };
+  }, [selectedParticle, particles]);
+
+  const renderParticleElement = (p: ParticleInstance) => {
+    if (selectedParticle === "undertale" && p.image) {
+      return (
+        <img
+          src={p.image}
+          alt="Soul"
+          className="w-4 h-4 object-contain select-none pointer-events-none"
+          style={{ imageRendering: "pixelated" }}
+        />
+      );
+    }
+
+    const colorMap: Record<string, string> = {
+      hearts: "text-red-500 fill-red-500",
+      stars: "text-yellow-400 fill-yellow-400",
+    };
+
+    const color = colorMap[selectedParticle || ""] || "text-foreground";
+
+    if (selectedParticle === "hearts") {
+      return (
+        <svg
+          className={`w-3.5 h-3.5 ${color}`}
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+        </svg>
+      );
+    }
+
+    if (selectedParticle === "stars") {
+      return (
+        <svg
+          className={`w-3.5 h-3.5 ${color}`}
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        </svg>
+      );
+    }
+
+    return null;
+  };
+
+  const getAnimationClass = () => {
+    if (selectedParticle === "hearts") {
+      return "animate-particle-rise";
+    }
+    if (selectedParticle === "stars") {
+      return "animate-particle-twinkle";
+    }
+    // Almas Undertale são animadas por JS via requestAnimationFrame
+    return "";
+  };
+
   const [activeAnimation, setActiveAnimation] = useState<
     "Idle" | "Walk" | "Attack"
   >("Idle");
@@ -140,6 +400,8 @@ export function PetDisplay({
 
   useEffect(() => {
     if (isDead) return;
+
+    setActiveAnimation("Walk");
 
     // Se concluiu todas as tarefas, o pet tende a descansar feliz (Idle),
     // mas ainda sim alterna esporadicamente para Walk ou Attack
@@ -205,16 +467,28 @@ export function PetDisplay({
 
       const state = overrideState ?? activeAnimation;
       const petPhrases = getPetPhrases(selectedPet, state) || [];
-      const pool = [...petPhrases];
+      const motivationalPhrases = allCompleted
+        ? COMPLETED_TODAY_PHRASES
+        : GENERAL_MOTIVATIONAL_PHRASES;
 
-      if (allCompleted) {
-        pool.push(...COMPLETED_TODAY_PHRASES);
-      } else {
-        pool.push(...GENERAL_MOTIVATIONAL_PHRASES);
+      if (petPhrases.length === 0 && motivationalPhrases.length === 0)
+        return "";
+      if (petPhrases.length === 0) {
+        return motivationalPhrases[
+          Math.floor(Math.random() * motivationalPhrases.length)
+        ];
+      }
+      if (motivationalPhrases.length === 0) {
+        return petPhrases[Math.floor(Math.random() * petPhrases.length)];
       }
 
-      if (pool.length === 0) return "";
-      return pool[Math.floor(Math.random() * pool.length)];
+      const choosePet = Math.random() < 0.5;
+      if (choosePet) {
+        return petPhrases[Math.floor(Math.random() * petPhrases.length)];
+      }
+      return motivationalPhrases[
+        Math.floor(Math.random() * motivationalPhrases.length)
+      ];
     },
     [selectedPet, activeAnimation, isDead, allCompleted],
   );
@@ -372,21 +646,28 @@ export function PetDisplay({
       rato_azul: "Rato Azul",
       passaro: "Pássaro",
       pombo: "Pombo",
+      slime: "Slime",
     };
     return names[selectedPet] || "Mascote";
   }, [selectedPet]);
 
   // Retorna a quantidade de frames do spritesheet do pet e animação correspondente
   const frameCount = useMemo(() => {
-    if (animationState === "Idle") return 4;
+    if (animationState === "Idle") {
+      if (selectedPet === "slime") return 6;
+      return 4;
+    }
     if (animationState === "Attack") return 4;
     if (animationState === "Walk") {
       if (selectedPet === "rato_marrom" || selectedPet === "rato_azul")
         return 4;
+      if (selectedPet === "slime") return 8;
       return 6;
     }
+
     if (animationState === "Death") {
       if (selectedPet === "rato_azul") return 2;
+      if (selectedPet === "slime") return 10;
       return 4;
     }
     return 4;
@@ -494,7 +775,7 @@ export function PetDisplay({
       )}
 
       {/* Renderizador do Mascote Pixel-Art com interatividade de clique */}
-      <div className="relative flex items-end justify-center h-48 w-full pb-8 select-none overflow-hidden rounded-xl border border-border/40 bg-muted/5">
+      <div className="relative flex items-end justify-center h-48 w-full pb-8 select-none overflow-hidden rounded-xl border border-border/40 bg-muted/5 @container[size]">
         {/* Imagem de Fundo (pets/backgorunds/pets-background-default-day.jpg) */}
         <div
           ref={bgRef}
@@ -511,6 +792,42 @@ export function PetDisplay({
               "filter, opacity, brightness, contrast, saturate",
           }}
         />
+
+        {/* Camada de Partículas do Mascote */}
+        {particles.map((p, idx) => {
+          const isUndertale = selectedParticle === "undertale";
+          return (
+            <div
+              key={p.id}
+              // Almas Undertale: ref para animação JS via rAF (sem CSS animation)
+              ref={
+                isUndertale
+                  ? (el) => {
+                      soulRefs.current[idx] = el;
+                    }
+                  : undefined
+              }
+              className={`absolute pointer-events-none select-none ${
+                isUndertale ? "" : getAnimationClass()
+              }`}
+              style={
+                {
+                  "--p-duration": `${p.duration}s`,
+                  "--drift": `${Math.sin(p.id) * 8}px`,
+                  "--drift-end": `${Math.cos(p.id) * 12}px`,
+                  "--rot": `${p.angle}deg`,
+                  left: `${p.x}%`,
+                  bottom: `${p.y}%`,
+                  animationDelay: isUndertale ? undefined : `${p.delay}s`,
+                  transform: isUndertale ? undefined : `scale(${p.scale})`,
+                  zIndex: 5,
+                } as React.CSSProperties
+              }
+            >
+              {renderParticleElement(p)}
+            </div>
+          );
+        })}
 
         {/* Balão de fala pixel-art exibido ao clicar no pet */}
         {speechText && (

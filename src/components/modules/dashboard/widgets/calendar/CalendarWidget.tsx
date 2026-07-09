@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { AlertCircle, CalendarDays, Flag, Plus } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { EventModal } from "@/components/modules/calendar/components/modals/calendarModals";
 import { Button } from "@/components/ui/button";
@@ -121,9 +121,12 @@ export function CalendarWidget({
                 <div className="h-10 bg-muted rounded-xl w-full" />
               </div>
             ) : items.length === 0 ? (
-              <p className="text-[3cqw] @sm:text-xs text-neutral-600 italic py-2">
-                Nada agendado para as próximas semanas
-              </p>
+              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+                <CalendarDays className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+                <p className="text-[11px] font-medium text-muted-foreground/60">
+                  Nada agendado para as próximas semanas
+                </p>
+              </div>
             ) : (
               items.map((ev) => {
                 const isDeadline = ev.eventType === "deadline";
@@ -132,76 +135,57 @@ export function CalendarWidget({
                   isDeadline && ev.deadlineCategory
                     ? DEADLINE_COLORS[ev.deadlineCategory as DeadlineCategory]
                     : null;
-
                 return (
                   <div
                     key={ev.id}
-                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
+                    className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
+                      <span className="text-sm font-bold text-foreground truncate">
+                        {ev.title}
+                      </span>
                       {ev.isHoliday ? (
-                        <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-zinc-600 dark:text-zinc-450">
-                          <Flag className="w-4 h-4" />
-                        </div>
-                      ) : isDeadline ? (
-                        <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-amber-600 dark:text-amber-500">
-                          <AlertCircle className="w-4 h-4" />
-                        </div>
-                      ) : (
-                        <div
-                          className={cn(
-                            "shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30",
-                            theme.text,
-                          )}
-                        >
-                          <CalendarDays className="w-4 h-4" />
-                        </div>
-                      )}
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-bold text-foreground truncate">
-                          {ev.title}
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          Feriado nacional
                         </span>
-                        {ev.isHoliday ? (
-                          <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-500/80 mt-0.5">
-                            Feriado Nacional
-                          </span>
-                        ) : isDeadline && ev.deadlineCategory ? (
-                          <span
-                            className="text-[10px] font-bold mt-0.5 opacity-95"
-                            style={{ color: deadlineColor ?? "#d97706" }}
-                          >
-                            {
-                              DEADLINE_LABELS[
-                                ev.deadlineCategory as DeadlineCategory
-                              ]
-                            }
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                            {ev.time || "Dia todo"}
-                          </span>
-                        )}
-                      </div>
+                      ) : isDeadline && ev.deadlineCategory ? (
+                        <span
+                          className="text-[10px] font-bold opacity-95"
+                          style={{ color: deadlineColor ?? "#d97706" }}
+                        >
+                          {
+                            DEADLINE_LABELS[
+                              ev.deadlineCategory as DeadlineCategory
+                            ]
+                          }
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          {ev.time || "Dia todo"}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
-                      <span
+                    <div className="shrink-0 flex items-center gap-2">
+                      <div
                         className={cn(
-                          "block text-xs font-bold leading-none",
-                          ev.isHoliday
-                            ? "text-zinc-600 dark:text-zinc-400"
-                            : isDeadline
-                              ? "text-amber-700 dark:text-amber-400"
-                              : theme.text,
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                          days === 0
+                            ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                            : days === 1
+                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                              : "bg-muted/40 text-muted-foreground border-border/40",
                         )}
                       >
-                        {days === 0
-                          ? "Hoje"
-                          : days === 1
-                            ? "Amanhã"
-                            : `${days}d`}
-                      </span>
-                      <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
+                        <span>
+                          {days === 0
+                            ? "Hoje"
+                            : days === 1
+                              ? "Amanhã"
+                              : `${days}d`}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-muted-foreground min-w-[42px] text-right">
                         {new Date(`${ev.date}T12:00:00`).toLocaleDateString(
                           "pt-BR",
                           {

@@ -16,6 +16,7 @@ export const PETS_LIST = [
   { id: "rato_azul", name: "Rato Azul", size: 32, frames: 4 },
   { id: "passaro", name: "Pássaro", size: 32, frames: 4 },
   { id: "pombo", name: "Pombo", size: 32, frames: 4 },
+  { id: "slime", name: "Slime", size: 32, frames: 8 },
 ].sort((a, b) => petOrder.indexOf(a.id) - petOrder.indexOf(b.id));
 
 interface PetSelectorProps {
@@ -135,20 +136,6 @@ export function PetSelector({
               </button>
             );
           })}
-        </div>
-
-        {/* Mensagem informativa de rodapé */}
-        <div className="mt-4 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-2.5">
-          <Lock className="w-4 h-4 text-amber-500/80 shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Mascotes adicionais são liberados automaticamente conforme você
-            evolui seu{" "}
-            <strong className="text-foreground font-semibold">
-              Nível Global
-            </strong>
-            . Continue concluindo suas tarefas, estudos e rotinas de sono para
-            subir de nível e desbloquear novos companheiros!
-          </p>
         </div>
       </div>
     </div>

@@ -154,8 +154,8 @@ export function PomodoroWidget({
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-800 border border-border">
-                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border">
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
                   <span className="text-[10px] font-bold text-muted-foreground">
                     Parado
                   </span>

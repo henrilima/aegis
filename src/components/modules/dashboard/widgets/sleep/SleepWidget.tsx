@@ -130,65 +130,67 @@ export function SonoWidget({
           )}
 
           <div className="space-y-[1.5cqw] @sm:space-y-1.5 mt-1">
+            {" "}
             {recentSleep.slice(0, 3).map((e, i) => (
               <div
                 key={e.id ?? i}
-                className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
+                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="shrink-0 p-2 rounded-xl bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 text-cyan-500">
-                    <Moon className="w-4 h-4" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-bold text-foreground truncate">
-                      Registro de Sono
-                    </span>
-                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                      {formatDateShort(e.date)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
-                  <span
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
                     className={cn(
-                      "block text-xs font-bold leading-none",
+                      "shrink-0 p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20",
                       theme.text,
                     )}
                   >
-                    {formatDurationMin(e.durationMinutes)}
-                  </span>
-                  <div className="flex items-center gap-0.5 mt-1">
-                    <Star
-                      className={cn(
-                        "w-2.5 h-2.5 fill-current",
-                        e.quality >= 4
-                          ? "text-emerald-600 dark:text-emerald-500"
-                          : e.quality >= 3
-                            ? "text-amber-600 dark:text-amber-500"
-                            : "text-rose-500 dark:text-rose-450",
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "text-[9px] font-semibold",
-                        e.quality >= 4
-                          ? "text-emerald-600 dark:text-emerald-500"
-                          : e.quality >= 3
-                            ? "text-amber-600 dark:text-amber-500"
-                            : "text-rose-500 dark:text-rose-450",
-                      )}
-                    >
-                      {e.quality}/5 Q.
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
+                    <span className="text-sm font-bold text-foreground truncate">
+                      Registro de sono
                     </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        {formatDateShort(e.date)}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        <Star
+                          className={cn(
+                            "w-2.5 h-2.5 fill-current",
+                            e.quality >= 4
+                              ? "text-emerald-500"
+                              : e.quality >= 3
+                                ? "text-amber-500"
+                                : "text-rose-500",
+                          )}
+                        />
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          {e.quality}/5
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center">
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+                    )}
+                  >
+                    <span>{formatDurationMin(e.durationMinutes)}</span>
                   </div>
                 </div>
               </div>
             ))}
             {recentSleep.length === 0 && (
-              <p className="text-xs text-neutral-600 italic">
-                Sem registros recentes
-              </p>
+              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+                <Moon className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+                <p className="text-[11px] font-medium text-muted-foreground/60">
+                  Sem registros recentes
+                </p>
+              </div>
             )}
           </div>
         </div>

@@ -41,10 +41,10 @@ export function MoviesWidget({
       onToggleInteractive={onToggleInteractive}
     >
       {!hasData ? (
-        <div className="flex flex-col items-start justify-center h-full py-6">
-          <Film className="w-8 h-8 text-muted-foreground/20 mb-2" />
-          <p className="text-xs text-muted-foreground">
-            Nenhum filme adicionado.
+        <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+          <Film className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+          <p className="text-[11px] font-medium text-muted-foreground/60">
+            Nenhum filme adicionado
           </p>
         </div>
       ) : (
@@ -58,10 +58,10 @@ export function MoviesWidget({
                 {recentWatched.map((movie) => (
                   <div
                     key={movie.id}
-                    className="flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-neutral-200/60 dark:border-border/40 bg-neutral-100 dark:bg-neutral-900/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/20 hover:border-neutral-300/60 dark:hover:border-border/60 transition-all gap-4"
+                    className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-10 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-900/40 border border-neutral-300/40 dark:border-border/30 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-10 rounded-lg overflow-hidden bg-muted border border-border/40 shrink-0">
                         {movie.thumbnail ? (
                           <img
                             src={movie.thumbnail}
@@ -74,30 +74,24 @@ export function MoviesWidget({
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
                         <span className="text-sm font-bold text-foreground truncate">
                           {movie.title}
                         </span>
-                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
-                          Filme Assistido
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          Filme assistido
                         </span>
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-900/30 border border-neutral-300/40 dark:border-border/30 min-w-[72px] text-left">
-                      <div className="flex items-center gap-0.5">
-                        <Star className="w-3 h-3 text-rose-600 dark:text-rose-500 fill-rose-600 dark:fill-rose-500" />
-                        <span className="text-xs font-bold leading-none text-rose-600 dark:text-rose-450">
-                          {movie.stars}
-                        </span>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
+                        <Star className="w-2.5 h-2.5 fill-current text-rose-500" />
+                        <span>{movie.stars}</span>
                       </div>
-                      {movie.isFavorite ? (
-                        <span className="text-[9px] font-semibold text-rose-600 dark:text-rose-500 block mt-1">
+                      {movie.isFavorite && (
+                        <span className="text-xs font-semibold text-rose-500">
                           Favorito
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 block mt-1">
-                          Avaliado
                         </span>
                       )}
                     </div>

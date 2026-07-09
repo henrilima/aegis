@@ -1,7 +1,7 @@
 /** * Configurações estáticas do projeto Aegis. */
 export const APP_CONFIG = {
   name: "Aegis",
-  version: "3.5.0",
+  version: "3.6.0",
   codename: "chroma",
   stage: "stable",
   get versionLabel() {

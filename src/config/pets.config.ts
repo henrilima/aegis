@@ -16,7 +16,7 @@ export interface PetConfig {
   name: string;
   minLevel: number;
   rankName: string;
-  type: "dog" | "cat" | "rat" | "bird";
+  type: "dog" | "cat" | "rat" | "bird" | "slime";
   basePhrases: PetPhrases;
   phraseOverrides?: PetPhrases;
 }
@@ -77,6 +77,21 @@ const BASE_BIRD: PetPhrases = {
   Death: ["piu", "*plop*", "*caiu como um tijolo alado*", "piiu"],
 };
 
+const BASE_SLIME: PetPhrases = {
+  Idle: ["*escorrega*", "*poin oin oin oin*", "Eu não sou uma poça d'água!"],
+  Walk: [
+    "*salta desajeitadamente*",
+    "*derrete um pouco*",
+    "*tropeça*",
+    "Eu não sou um slime malvado!",
+  ],
+  Death: [
+    "*se desfaz lentamente*",
+    "*seca até virar pó*",
+    "*vira uma poça d'água*",
+  ],
+};
+
 export const PETS_CONFIG: Record<string, PetConfig> = {
   doberman: {
     petId: "doberman",
@@ -125,11 +140,19 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
       Idle: ["Mrrrow... As sombras me acolhem.", "*olhos brilhando no escuro*"],
     },
   },
+  slime: {
+    petId: "slime",
+    name: "Slime",
+    minLevel: 20,
+    rankName: "Ouro",
+    type: "slime",
+    basePhrases: BASE_SLIME,
+  },
   rato_marrom: {
     petId: "rato_marrom",
     name: "Rato Marrom",
-    minLevel: 20,
-    rankName: "Ouro",
+    minLevel: 25,
+    rankName: "Platina",
     type: "rat",
     basePhrases: BASE_RAT,
     phraseOverrides: {
@@ -142,8 +165,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
   rato_azul: {
     petId: "rato_azul",
     name: "Rato Azul",
-    minLevel: 25,
-    rankName: "Platina",
+    minLevel: 30,
+    rankName: "Esmeralda",
     type: "rat",
     basePhrases: BASE_RAT,
     phraseOverrides: {
@@ -153,8 +176,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
   passaro: {
     petId: "passaro",
     name: "Pássaro",
-    minLevel: 30,
-    rankName: "Esmeralda",
+    minLevel: 35,
+    rankName: "Diamante",
     type: "bird",
     basePhrases: BASE_BIRD,
     phraseOverrides: {
@@ -164,8 +187,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
   pombo: {
     petId: "pombo",
     name: "Pombo",
-    minLevel: 35,
-    rankName: "Diamante",
+    minLevel: 40,
+    rankName: "Titânio",
     type: "bird",
     basePhrases: BASE_BIRD,
     phraseOverrides: {
@@ -223,4 +246,91 @@ export const COMPLETED_TODAY_PHRASES = [
   "Você fez o seu melhor hoje. Estou muito orgulhoso!",
   "Missão cumprida! Seu esforço de hoje valeu muito a pena.",
   "Tudo feito! Hora de repor as energias para amanhã.",
+];
+
+export interface PetParticleConfig {
+  id: string;
+  name: string;
+  description: string;
+  minLevel: number;
+  rankName: string;
+  type: "image" | "css";
+  images?: string[];
+  emoji?: string;
+}
+
+export const PARTICLES_CONFIG: Record<string, PetParticleConfig> = {
+  none: {
+    id: "none",
+    name: "Nenhum",
+    description: "Sem efeitos visuais ao redor do mascote.",
+    minLevel: 1,
+    rankName: "Ferro",
+    type: "css",
+  },
+  hearts: {
+    id: "hearts",
+    name: "Corações",
+    description: "Pequenos corações flutuantes que demonstram afeto.",
+    minLevel: 10,
+    rankName: "Bronze",
+    type: "css",
+    emoji: "❤️",
+  },
+  stars: {
+    id: "stars",
+    name: "Estrelas Cintilantes",
+    description: "Estrelas brilhantes que piscam ao redor do seu pet.",
+    minLevel: 15,
+    rankName: "Prata",
+    type: "css",
+    emoji: "⭐",
+  },
+  undertale: {
+    id: "undertale",
+    name: "Almas (Undertale)",
+    description: "As 7 almas humanas de Undertale flutuando com determinação.",
+    minLevel: 20,
+    rankName: "Ouro",
+    type: "image",
+    images: [
+      "/pets/particles/undertale/Red_SOUL_sprite.webp",
+      "/pets/particles/undertale/Light_Blue_SOUL_sprite.webp",
+      "/pets/particles/undertale/Orange_SOUL_sprite.webp",
+      "/pets/particles/undertale/Blue_SOUL_sprite.webp",
+      "/pets/particles/undertale/Purple_SOUL_sprite.webp",
+      "/pets/particles/undertale/Green_SOUL_sprite.webp",
+      "/pets/particles/undertale/Yellow_SOUL_sprite_Shooter_Mode.webp",
+    ],
+    emoji: "❤️",
+  },
+};
+
+export interface PetBackgroundConfig {
+  id: "cyclic" | "day" | "afternoon" | "night";
+  name: string;
+  description: string;
+}
+
+export const PET_BACKGROUNDS: PetBackgroundConfig[] = [
+  {
+    id: "cyclic",
+    name: "Cíclico",
+    description: "Muda automaticamente com a hora do dia.",
+  },
+  {
+    id: "day",
+    name: "Dia",
+    description: "Mantém o cenário no período do dia.",
+  },
+  {
+    id: "afternoon",
+    name: "Tarde",
+    description: "Mantém o cenário no entardecer.",
+  },
+  {
+    id: "night",
+    name: "Noite",
+    description: "Mantém o cenário no período noturno.",
+  },
 ];

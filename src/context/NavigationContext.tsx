@@ -66,7 +66,7 @@ const SUB_MODULES = new Set<AppRoute>(["pomodoro", "dictionary"]);
 interface NavigationContextType {
   route: AppRoute;
   previousRoute: AppRoute | null;
-  navigate: (route: AppRoute) => void;
+  navigate: (route: AppRoute, searchParams?: string) => void;
   isSettingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
 }
@@ -86,7 +86,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [route, backTarget]);
 
   const navigate = useCallback(
-    (newRoute: AppRoute) => {
+    (newRoute: AppRoute, searchParams?: string) => {
       if (!VALID_ROUTES.has(newRoute)) return;
 
       setBackTarget(() => {
@@ -99,8 +99,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return "dashboard";
       });
 
-      const url =
+      let url =
         newRoute === "dashboard" ? "/dashboard" : `/dashboard/${newRoute}`;
+      if (searchParams) {
+        url += searchParams.startsWith("?") ? searchParams : `?${searchParams}`;
+      }
       try {
         window.history.pushState(null, "", url);
       } catch {}
@@ -149,9 +152,15 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   // Escuta evento global para mudar de rota/módulo
   useEffect(() => {
     const handleNavigate = (e: Event) => {
-      const customEvent = e as CustomEvent<AppRoute>;
+      const customEvent = e as CustomEvent<
+        AppRoute | { route: AppRoute; searchParams?: string }
+      >;
       if (customEvent.detail) {
-        navigate(customEvent.detail);
+        if (typeof customEvent.detail === "string") {
+          navigate(customEvent.detail);
+        } else {
+          navigate(customEvent.detail.route, customEvent.detail.searchParams);
+        }
       }
     };
     window.addEventListener("aegis-navigate", handleNavigate);

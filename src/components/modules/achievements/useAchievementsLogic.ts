@@ -33,6 +33,10 @@ export function useAchievementsLogic() {
   const [stats, setStats] = useState<RealtimeGlobalStats | null>(null);
   const [progress, setProgress] = useState<UserProgressState | null>(null);
   const [selectedPet, setSelectedPet] = useState<string>("doberman");
+  const [selectedParticle, setSelectedParticle] = useState<string>("none");
+  const [selectedBgMode, setSelectedBgMode] = useState<
+    "cyclic" | "day" | "afternoon" | "night"
+  >("cyclic");
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [xpHistory, setXpHistory] = useState<XPHistoryEntry[]>([]);
   const [isPetActive, setIsPetActive] = useState<boolean>(() => {
@@ -83,12 +87,34 @@ export function useAchievementsLogic() {
       if (saved) {
         setSelectedPet(saved);
       }
+      const savedParticle = localStorage.getItem("aegis_selected_pet_particle");
+      if (savedParticle) {
+        setSelectedParticle(savedParticle);
+      }
+      const savedBg = localStorage.getItem(
+        "aegis_selected_pet_background_mode",
+      );
+      if (savedBg) {
+        setSelectedBgMode(savedBg as "cyclic" | "day" | "afternoon" | "night");
+      }
     }
   }, []);
 
   const handleSelectPet = (petId: string) => {
     setSelectedPet(petId);
     localStorage.setItem("aegis_selected_pet", petId);
+  };
+
+  const handleSelectParticle = (particleId: string) => {
+    setSelectedParticle(particleId);
+    localStorage.setItem("aegis_selected_pet_particle", particleId);
+  };
+
+  const handleSelectBgMode = (
+    bgMode: "cyclic" | "day" | "afternoon" | "night",
+  ) => {
+    setSelectedBgMode(bgMode);
+    localStorage.setItem("aegis_selected_pet_background_mode", bgMode);
   };
 
   // Carregar dados gerais e estado do usuário
@@ -449,6 +475,10 @@ export function useAchievementsLogic() {
     selectedPet,
     setSelectedPet,
     handleSelectPet,
+    selectedParticle,
+    handleSelectParticle,
+    selectedBgMode,
+    handleSelectBgMode,
     activeTab,
     setActiveTab,
     xpHistory,

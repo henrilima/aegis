@@ -444,4 +444,93 @@ button,
       background-position-x: -1000px;
     }
   }
+
+  @keyframes particle-rise-fade {
+    0% {
+      transform: translateY(0) translateX(0) scale(0);
+      opacity: 0;
+    }
+    10% {
+      transform: translateY(-5px) translateX(var(--drift, 2px)) scale(1);
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(-40px) translateX(var(--drift-end, -5px)) scale(0.6);
+      opacity: 0;
+    }
+  }
+
+  @keyframes particle-twinkle {
+    0%,
+    100% {
+      transform: scale(0.5) rotate(0deg);
+      opacity: 0.55;
+    }
+    50% {
+      transform: scale(1.1) rotate(180deg);
+      opacity: 1;
+    }
+  }
+
+  /* Animação das almas de Undertale:
+     Cada alma parte do topo, desce até o pet, orbita ao redor dele
+     e volta ao topo. Usa calc() com variáveis numéricas * 1cqw/1cqh
+     para translações relativas ao container sem depender do tamanho do elemento. */
+  @keyframes undertale-orbit {
+    /* Repouso no topo */
+    0%,
+    8% {
+      transform: translate(0cqw, 0cqh) scale(0.85);
+      opacity: 0.7;
+    }
+    /* Descida até o 1º ponto de órbita */
+    28% {
+      transform: translate(calc(var(--dx0) * 1cqw), calc(var(--dy0) * 1cqh))
+        scale(1);
+      opacity: 1;
+    }
+    /* Continua a órbita — 90° */
+    41% {
+      transform: translate(calc(var(--dx1) * 1cqw), calc(var(--dy1) * 1cqh))
+        scale(1);
+      opacity: 1;
+    }
+    /* Continua a órbita — 180° */
+    54% {
+      transform: translate(calc(var(--dx2) * 1cqw), calc(var(--dy2) * 1cqh))
+        scale(1);
+      opacity: 1;
+    }
+    /* Continua a órbita — 270° */
+    67% {
+      transform: translate(calc(var(--dx3) * 1cqw), calc(var(--dy3) * 1cqh))
+        scale(1);
+      opacity: 1;
+    }
+    /* Volta ao 1º ponto (fecha a órbita) */
+    76% {
+      transform: translate(calc(var(--dx0) * 1cqw), calc(var(--dy0) * 1cqh))
+        scale(1);
+      opacity: 1;
+    }
+    /* Retorno ao topo */
+    92%,
+    100% {
+      transform: translate(0cqw, 0cqh) scale(0.85);
+      opacity: 0.7;
+    }
+  }
+
+  .animate-particle-rise {
+    animation: particle-rise-fade var(--p-duration, 4s) linear infinite;
+  }
+  .animate-particle-twinkle {
+    animation: particle-twinkle var(--p-duration, 3s) ease-in-out infinite;
+  }
+  .animate-undertale-orbit {
+    animation: undertale-orbit var(--p-duration, 8s) ease-in-out infinite;
+  }
 }

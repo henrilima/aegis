@@ -114,46 +114,48 @@ export function AlarmsWidget({
               </Button>
             )}
           </div>
-
-          <div className="space-y-[2cqw] @sm:space-y-2">
+          <div className="space-y-2">
             {nextAlarm ? (
-              <div className="p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 transition-all text-left animate-pulse-subtle flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30 text-rose-500">
+              <div className="p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 text-left flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "shrink-0 p-2 rounded-xl bg-rose-500/10 border border-rose-500/20",
+                      theme.text,
+                    )}
+                  >
                     <Clock className="w-4 h-4" />
                   </div>
-                  <div className="flex flex-col min-w-0">
+                  <div className="flex flex-col min-w-0 flex-1 gap-0.5">
                     <span className="text-sm font-bold text-foreground truncate">
                       {nextAlarm.title}
                     </span>
-                    <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                    <span className="text-[10px] font-bold text-muted-foreground">
                       Próximo alerta
                     </span>
                   </div>
                 </div>
-                <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
-                  <span
-                    className={cn(
-                      "block text-xs font-bold leading-none",
-                      theme.text,
-                    )}
-                  >
-                    {nextAlarmSummary?.shortLabel}
-                  </span>
-                  <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                <div className="shrink-0 flex items-center gap-2">
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
+                    <span>{nextAlarmSummary?.shortLabel}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground min-w-[42px] text-right">
                     {nextAlarmSummary?.label.startsWith("Hoje")
                       ? "Hoje"
-                      : "Amanha"}
+                      : "Amanhã"}
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-neutral-600 italic px-1">
-                Nenhum alarme ativo no momento
-              </p>
+              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
+                <AlarmClock className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
+                <p className="text-[11px] font-medium text-muted-foreground/60">
+                  Nenhum alarme ativo no momento
+                </p>
+              </div>
             )}
 
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-2 space-y-2">
               {alarms
                 .filter((a) => a.id !== nextAlarm?.id)
                 .slice(0, limit ?? 2)
@@ -161,36 +163,40 @@ export function AlarmsWidget({
                   <div
                     key={`a-key${a.id}`}
                     className={cn(
-                      "flex items-center justify-between p-[2.5cqw] @sm:p-2.5 rounded-xl border border-border/40 bg-neutral-900/10 hover:bg-neutral-900/20 hover:border-border/60 transition-all gap-4 text-left",
+                      "flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 text-left",
                       !a.enabled && "opacity-50",
                     )}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="shrink-0 p-2 rounded-xl bg-neutral-900/40 border border-border/30 text-rose-400">
+                      <div className="shrink-0 p-2 rounded-xl bg-muted/40 border border-border/40 text-muted-foreground">
                         <Bell className="w-4 h-4" />
                       </div>
-                      <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
                         <span className="text-sm font-bold text-foreground truncate">
                           {a.title}
                         </span>
-                        <span className="text-[10px] font-bold text-zinc-500/80 mt-0.5">
+                        <span className="text-[10px] font-bold text-muted-foreground">
                           {a.enabled ? "Alarme ativo" : "Desativado"}
                         </span>
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex flex-col items-start justify-center px-3 py-1.5 rounded-xl bg-neutral-900/30 border border-border/30 min-w-[72px] text-left">
-                      <span
+                    <div className="shrink-0 flex items-center gap-2">
+                      <div
                         className={cn(
-                          "block text-xs font-bold leading-none",
-                          a.enabled ? theme.text : "text-zinc-500",
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                          a.enabled
+                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                            : "bg-muted/40 text-muted-foreground border-border/40",
                         )}
                       >
-                        {a.alarmType === "fixed"
-                          ? a.time
-                          : `${a.intervalMinutes}m`}
-                      </span>
-                      <span className="text-[9px] font-semibold text-neutral-500 block mt-1">
+                        <span>
+                          {a.alarmType === "fixed"
+                            ? a.time
+                            : `${a.intervalMinutes}m`}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-muted-foreground min-w-[42px] text-right">
                         {a.alarmType === "fixed" ? "Horário" : "Intervalo"}
                       </span>
                     </div>

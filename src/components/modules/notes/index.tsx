@@ -59,45 +59,68 @@ export default function NotesPage() {
     fetchNotes();
   }, [fetchNotes]);
 
-  const handleNoteClick = (note: Note, edit = false) => {
+  const handleNoteClick = useCallback((note: Note, edit = false) => {
     setEditMode(edit);
     setExpandedNote(note);
-  };
+  }, []);
 
-  const handleCreateEmptyNote = async (path?: string) => {
-    if (!uid) return;
-    try {
-      const targetPath = path !== undefined ? path : currentPath;
-      const newId = await invoke<number>("note_add_note", {
-        note: {
+  const handleCreateEmptyNote = useCallback(
+    async (path?: string) => {
+      if (!uid) return;
+      try {
+        const targetPath = path !== undefined ? path : currentPath;
+        const newId = await invoke<number>("note_add_note", {
+          note: {
+            userId: uid,
+            title: "",
+            content: "",
+            createdAt: simulatedNow.toISOString(),
+            pinned: false,
+            path: targetPath || undefined,
+          },
+        });
+
+        setRefreshTrigger((prev) => prev + 1);
+        await fetchNotes();
+
+        const newNote: Note = {
+          id: newId,
           userId: uid,
           title: "",
           content: "",
           createdAt: simulatedNow.toISOString(),
           pinned: false,
           path: targetPath || undefined,
-        },
-      });
+        };
+        setExpandedNote(newNote);
+        setEditMode(true);
+        toast.success("Nova nota criada!");
+      } catch (err) {
+        toast.error(typeof err === "string" ? err : "Falha ao criar nota");
+      }
+    },
+    [uid, currentPath, simulatedNow, fetchNotes],
+  );
 
-      setRefreshTrigger((prev) => prev + 1);
-      await fetchNotes();
+  useEffect(() => {
+    if (loading) return;
 
-      const newNote: Note = {
-        id: newId,
-        userId: uid,
-        title: "",
-        content: "",
-        createdAt: simulatedNow.toISOString(),
-        pinned: false,
-        path: targetPath || undefined,
-      };
-      setExpandedNote(newNote);
-      setEditMode(true);
-      toast.success("Nova nota criada!");
-    } catch (err) {
-      toast.error(typeof err === "string" ? err : "Falha ao criar nota");
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+    const noteId = params.get("noteId");
+
+    if (action === "new") {
+      window.history.replaceState(null, "", "/dashboard/notes");
+      handleCreateEmptyNote();
+    } else if (noteId && notes.length > 0) {
+      const nid = Number(noteId);
+      const note = notes.find((n) => n.id === nid);
+      if (note) {
+        window.history.replaceState(null, "", "/dashboard/notes");
+        handleNoteClick(note, false);
+      }
     }
-  };
+  }, [loading, notes, handleCreateEmptyNote, handleNoteClick]);
 
   const handleUpdate = useCallback(
     async (note: Note) => {
