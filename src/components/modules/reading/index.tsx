@@ -288,6 +288,21 @@ export default function ReadingPage() {
               setIsSessionModalOpen(true);
             }}
             onConfigGoals={() => setIsGoalsModalOpen(true)}
+            onNewBook={() => {
+              setSelectedBook(undefined);
+              setIsBookModalOpen(true);
+            }}
+            onStartBook={async (book) => {
+              try {
+                await invoke("reading_upsert_book", {
+                  book: { ...book, status: "Reading", userId: uid },
+                });
+                toast.success(`Iniciou a leitura de "${book.title}"!`);
+                fetchData();
+              } catch {
+                toast.error("Erro ao iniciar leitura");
+              }
+            }}
           />
         )}
         {activeTab === "library" && (

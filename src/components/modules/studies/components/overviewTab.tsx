@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudyGrade } from "../../grades/types";
@@ -106,6 +107,7 @@ export function OverviewTab({
       icon: Clock,
       sub: `Meta: ${monthlyTargetHours ? formatHours(monthlyTargetHours) : "-"}`,
       progress: goalProgress(monthStats.hours, "monthly_hours"),
+      tooltip: "Tempo total dedicado aos estudos no mês atual.",
     },
     {
       label: "Páginas (Mês)",
@@ -113,6 +115,7 @@ export function OverviewTab({
       icon: BookOpen,
       sub: `Meta: ${monthlyTargetPages || "-"}`,
       progress: goalProgress(monthStats.pages, "monthly_pages"),
+      tooltip: "Total de páginas lidas em materiais de estudo no mês.",
     },
     {
       label: "Questões (Mês)",
@@ -120,6 +123,7 @@ export function OverviewTab({
       icon: CheckCircle,
       sub: `Meta: ${monthlyTargetQuestions || "-"}`,
       progress: goalProgress(monthStats.questions, "monthly_questions"),
+      tooltip: "Total de questões respondidas (estudo e revisão) no mês.",
     },
     {
       label: "Acerto Mensal",
@@ -130,6 +134,7 @@ export function OverviewTab({
         monthStats.correctNew + monthStats.correctReview,
         monthStats.questionsNew + monthStats.questionsReview,
       ),
+      tooltip: "Porcentagem de acertos em questões respondidas no mês.",
     },
   ];
 
@@ -167,143 +172,111 @@ export function OverviewTab({
   ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-2xl border border-border bg-card/40 backdrop-blur-xl p-8 flex flex-col md:flex-row items-center gap-8",
-          theme.border.split(" ")[0].replace("/20", ""),
-        )}
-      >
-        <div className="flex flex-col gap-2 text-center md:text-left flex-1">
-          <h2 className="text-2xl font-black text-foreground">Foco Mensal</h2>
-          <p className="text-sm text-muted-foreground font-medium max-w-md">
-            Seu desempenho global baseado nas metas mensais de horas, questões e
-            leitura.
-          </p>
-          <div className="flex items-center gap-4 mt-2 justify-center md:justify-start">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground">
-                Status Atual
-              </span>
-              <span
-                className={cn(
-                  "text-sm font-bold",
-                  !hasRecords
-                    ? "text-muted-foreground"
-                    : monthlyFocus >= 80
-                      ? "text-emerald-500"
-                      : monthlyFocus >= 50
-                        ? theme.text
-                        : "text-amber-500",
-                )}
-              >
-                {!hasRecords
-                  ? "Sem registros"
+    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* 1. Cabeçalho Dinâmico (Hero) */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card border border-border p-6 rounded-2xl">
+        <div className="space-y-1">
+          <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 capitalize">
+            Status de Foco
+          </span>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-foreground">
+              Foco Mensal de Estudos
+            </h2>
+            <span
+              className={cn(
+                "px-2.5 py-0.5 rounded-full text-xs font-bold border",
+                !hasRecords
+                  ? "bg-muted/10 text-muted-foreground border-border"
                   : monthlyFocus >= 80
-                    ? "Excelente"
+                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                     : monthlyFocus >= 50
-                      ? "Produtivo"
-                      : "Em recuperação"}
-              </span>
-            </div>
-            <div className="w-px h-8 bg-border" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground">
-                Acerto Mensal
-              </span>
-              <span className="text-sm font-bold text-foreground">
-                {hitRate(
-                  monthStats.correctNew + monthStats.correctReview,
-                  monthStats.questionsNew + monthStats.questionsReview,
-                )}
-                %
-              </span>
-            </div>
+                      ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                      : "bg-amber-500/10 text-amber-500 border-amber-500/20",
+              )}
+            >
+              {!hasRecords
+                ? "Sem registros"
+                : monthlyFocus >= 80
+                  ? "Excelente"
+                  : monthlyFocus >= 50
+                    ? "Produtivo"
+                    : "Em recuperação"}
+            </span>
           </div>
         </div>
-
-        <div className="relative shrink-0 flex items-center justify-center w-32 h-32">
-          <svg className="w-full h-full transform -rotate-90">
-            <title>Progresso Mensal de Estudos</title>
-            <circle
-              cx="64"
-              cy="64"
-              r="58"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="8"
-              className="text-muted/10"
-            />
-            <circle
-              cx="64"
-              cy="64"
-              r="58"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="8"
-              strokeDasharray={364.4}
-              strokeDashoffset={364.4 - (364.4 * monthlyFocus) / 100}
-              strokeLinecap="round"
-              className={cn("transition-all duration-1000", theme.text)}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-black text-foreground">
+        <div className="w-full md:w-80 space-y-1.5">
+          <div className="flex justify-between text-xs font-bold">
+            <span className="text-neutral-500 dark:text-neutral-400">
+              Progresso Geral
+            </span>
+            <span className={cn("font-extrabold", theme.text)}>
               {monthlyFocus}%
             </span>
-            <span className="text-[8px] font-bold text-muted-foreground">
-              Mês
-            </span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-1000",
+                theme.solid,
+              )}
+              style={{ width: `${monthlyFocus}%` }}
+            />
           </div>
         </div>
       </div>
 
+      {/* 2. Cards de KPIs com visual premium */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statCards.map((c) => (
-          <div
-            key={c.label}
-            className="group bg-card/60 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col gap-3 transition-all hover:translate-y-[-2px]"
-          >
-            <div className="flex items-center justify-between">
-              <div className={cn("p-2 rounded-xl bg-muted/50", theme.text)}>
-                <c.icon className="w-4 h-4" />
+        {statCards.map((c) => {
+          const cardEl = (
+            <div
+              key={c.label}
+              className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2 transition-all hover:border-border/80"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 capitalize">
+                  {c.label}
+                </span>
+                <c.icon className={cn("w-4 h-4", theme.text)} />
               </div>
-              <span className="text-[9px] font-bold text-muted-foreground">
-                {c.label}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-black text-foreground">
+              <span className="text-3xl font-bold text-foreground leading-none tabular-nums">
                 {c.value}
               </span>
-              <span
-                className={cn("text-[10px] font-bold mt-0.5", theme.textSub)}
-              >
+              <span className="text-xs text-neutral-500 font-medium mt-0.5">
                 {c.sub}
               </span>
+              <div className="h-1 bg-muted rounded-full overflow-hidden mt-2">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    theme.solid,
+                  )}
+                  style={{ width: `${c.progress}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all duration-500",
-                  theme.solid,
-                )}
-                style={{ width: `${c.progress}%` }}
-              />
-            </div>
-          </div>
-        ))}
+          );
+
+          return c.tooltip ? (
+            <ToolTip key={c.label} content={c.tooltip}>
+              {cardEl}
+            </ToolTip>
+          ) : (
+            cardEl
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Target className={cn("w-4 h-4", theme.text)} />
-              <h3 className="text-sm font-bold text-foreground">
-                Progresso das Metas
-              </h3>
-            </div>
+      {/* 3. Painel de Metas & Notas de Simulados */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Lado esquerdo: Progresso detalhado das metas (8 colunas) */}
+        <div className="lg:col-span-8 flex flex-col gap-4 bg-card border border-border rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className={cn("w-4 h-4", theme.text)} />
+            <h3 className="text-sm font-bold text-foreground">
+              Progresso das Metas de Estudo
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -315,12 +288,12 @@ export function OverviewTab({
               return (
                 <div key={type} className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-muted-foreground uppercase">
+                    <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400 capitalize">
                       {GOAL_LABELS[type as keyof typeof GOAL_LABELS]}
                     </span>
-                    <span className="text-[11px] font-black text-foreground">
+                    <span className="text-xs font-bold text-foreground tabular-nums">
                       {fmt(current)}{" "}
-                      <span className="text-muted-foreground/40 mx-1">/</span>{" "}
+                      <span className="text-muted-foreground/40 mx-0.5">/</span>{" "}
                       {target ? fmt(target) : "-"}
                     </span>
                   </div>
@@ -333,10 +306,10 @@ export function OverviewTab({
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center text-[10px]">
                     <span
                       className={cn(
-                        "text-[9px] font-bold",
+                        "font-bold",
                         target
                           ? pct >= 100
                             ? "text-emerald-500"
@@ -344,10 +317,25 @@ export function OverviewTab({
                           : "text-muted-foreground/40",
                       )}
                     >
-                      {target ? `${pct}% concluído` : "Sem meta"}
+                      {target ? `${pct}% concluído` : "Sem meta cadastrada"}
                     </span>
-                    {pct >= 100 && (
-                      <CheckCircle className="w-2.5 h-2.5 text-emerald-500" />
+                    {target > 0 && (
+                      <span
+                        className={cn(
+                          "px-1.5 py-0.2 rounded font-semibold text-[8px] border",
+                          pct >= 100
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            : pct >= 50
+                              ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                              : "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                        )}
+                      >
+                        {pct >= 100
+                          ? "Meta Batida"
+                          : pct >= 50
+                            ? "No Caminho"
+                            : "Atrasado"}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -356,53 +344,81 @@ export function OverviewTab({
           </div>
         </div>
 
-        <div className="flex flex-col gap-6 lg:col-span-1">
+        {/* Lado direito: Notas & Domínio por Matéria (4 colunas) */}
+        <div className="flex flex-col gap-6 lg:col-span-4">
+          {/* Notas & Simulados com círculo de aproveitamento médio */}
           <button
             type="button"
             onClick={onOpenGrades}
-            className="w-full text-left flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6 transition-all duration-300 hover:bg-card/65 hover:border-emerald-500/50 cursor-pointer group"
+            className="w-full text-left flex flex-col gap-4 bg-card border border-border rounded-2xl p-6 transition-all duration-300 hover:bg-muted/10 hover:border-emerald-500/50 cursor-pointer group"
           >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
+                <Award className="w-4 h-4 text-emerald-500" />
                 <h3 className="text-sm font-bold text-foreground">
                   Notas & Simulados
                 </h3>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform duration-300" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
 
             {gradesStats ? (
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-foreground tabular-nums">
+              <div className="flex items-center gap-4 w-full">
+                {/* Indicador circular simplificado */}
+                <div className="relative shrink-0 flex items-center justify-center w-16 h-16">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <title>Aproveitamento Médio</title>
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      fill="transparent"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      className="text-muted/10"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      fill="transparent"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      strokeDasharray={175.9}
+                      strokeDashoffset={175.9 - (175.9 * gradesStats.avg) / 10}
+                      strokeLinecap="round"
+                      className="text-emerald-500 transition-all duration-1000"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-xs font-bold text-foreground">
                     {gradesStats.avg}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    /10 média geral
-                  </span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-1 border-t border-border/30 pt-3 w-full">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                      Avaliações
-                    </span>
-                    <span className="text-sm font-extrabold text-foreground">
-                      {gradesStats.total} registradas
-                    </span>
-                  </div>
-
-                  {gradesStats.hasQuestions && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                        Acertos
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-xs text-neutral-500 font-medium">
+                    Média Geral Aproveitamento
+                  </span>
+                  <div className="flex gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 capitalize">
+                        Avaliações
                       </span>
-                      <span className="text-sm font-extrabold text-emerald-400">
-                        {gradesStats.hitRate}% acerto
+                      <span className="text-xs font-bold text-foreground">
+                        {gradesStats.total} feitas
                       </span>
                     </div>
-                  )}
+                    {gradesStats.hasQuestions && (
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 capitalize">
+                          Acertos
+                        </span>
+                        <span className="text-xs font-bold text-emerald-500">
+                          {gradesStats.hitRate}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -415,7 +431,8 @@ export function OverviewTab({
             )}
           </button>
 
-          <div className="flex flex-col gap-4 bg-card/40 backdrop-blur-sm border border-border rounded-2xl p-6 w-full">
+          {/* Domínio por Matéria com proficiências de cores */}
+          <div className="flex flex-col gap-4 bg-card border border-border rounded-2xl p-6 w-full">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className={cn("w-4 h-4", theme.text)} />
               <h3 className="text-sm font-bold text-foreground">
@@ -434,49 +451,38 @@ export function OverviewTab({
               <div className="flex flex-col gap-4">
                 {Object.entries(subjectMap)
                   .sort((a, b) => b[1].hours - a[1].hours)
-                  .slice(0, 5)
+                  .slice(0, 4)
                   .map(([subj, d]) => {
                     const totalQ = d.qNew + d.qRev;
                     const totalC = d.cNew + d.cRev;
                     const rate = hitRate(totalC, totalQ);
                     return (
-                      <div key={subj} className="flex flex-col gap-1.5 group">
+                      <div key={subj} className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
                             {subj}
                           </span>
                           <span
                             className={cn(
-                              "text-[10px] font-black",
+                              "px-1.5 py-0.2 rounded text-[9px] font-bold border",
                               rate >= 70
-                                ? "text-emerald-500"
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                                 : rate >= 50
-                                  ? "text-amber-500"
-                                  : "text-rose-500",
+                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                  : "bg-rose-500/10 text-rose-500 border-rose-500/20",
                             )}
                           >
-                            {rate}% acerto
+                            {rate >= 70
+                              ? "Excelente"
+                              : rate >= 50
+                                ? "Bom"
+                                : "Revisar"}
                           </span>
                         </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-500",
-                              rate >= 70
-                                ? "bg-emerald-500"
-                                : rate >= 50
-                                  ? "bg-amber-500"
-                                  : "bg-rose-500",
-                            )}
-                            style={{ width: `${rate}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between items-center opacity-60">
-                          <span className="text-[9px] font-medium uppercaseer">
-                            {formatHours(d.hours)} dedicadas
-                          </span>
-                          <span className="text-[9px] font-medium">
-                            {totalQ} questões
+                        <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium">
+                          <span>{formatHours(d.hours)} dedicadas</span>
+                          <span className="tabular-nums">
+                            {rate}% acerto ({totalQ} q)
                           </span>
                         </div>
                       </div>

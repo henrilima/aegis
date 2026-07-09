@@ -148,7 +148,7 @@ export function HistoryTab({
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="flex flex-col gap-2"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           {sessions.map((s) => {
             const totalQ = s.questionsNew + s.questionsReview;
