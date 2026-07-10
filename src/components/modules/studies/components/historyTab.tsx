@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { resolveColor } from "@/config/colors.config";
 import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudySession } from "../types";
@@ -48,8 +49,11 @@ const itemVariants = {
   },
 };
 
+import type { SubjectGroup } from "@/components/modules/grades/types";
+
 interface HistoryTabProps {
   sessions: StudySession[];
+  groups: SubjectGroup[];
   search: string;
   onSearchChange: (val: string) => void;
   filterMonth: string;
@@ -65,6 +69,7 @@ interface HistoryTabProps {
 
 export function HistoryTab({
   sessions,
+  groups,
   search,
   onSearchChange,
   filterMonth,
@@ -154,6 +159,11 @@ export function HistoryTab({
             const totalQ = s.questionsNew + s.questionsReview;
             const totalC = s.correctNew + s.correctReview;
             const hRate = hitRate(totalC, totalQ);
+            const subjectGroup = groups.find((g) =>
+              g.subjects
+                .map((sub) => sub.toLowerCase())
+                .includes(s.subject.toLowerCase()),
+            );
 
             return (
               <motion.div
@@ -169,9 +179,25 @@ export function HistoryTab({
                   <div className="flex-1 min-w-0 flex flex-col gap-3">
                     {/* Linha Superior: Materia e Data */}
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex flex-col min-w-0">
-                        <h3 className="text-base font-bold text-foreground truncate">
-                          {s.subject}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <h3 className="text-base font-bold text-foreground flex items-center gap-2 flex-wrap min-w-0">
+                          <span className="truncate">{s.subject}</span>
+                          {subjectGroup?.color &&
+                            (() => {
+                              const hex = resolveColor(subjectGroup.color);
+                              return (
+                                <span
+                                  className="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shrink-0"
+                                  style={{
+                                    color: hex,
+                                    background: `${hex}18`,
+                                    border: `1px solid ${hex}45`,
+                                  }}
+                                >
+                                  {subjectGroup.name}
+                                </span>
+                              );
+                            })()}
                         </h3>
                         {/* Conteúdo estudado — exibido apenas quando preenchido */}
                         {s.topic && (
@@ -250,6 +276,24 @@ export function HistoryTab({
                         </div>
                       )}
                     </div>
+
+                    {/* Tags */}
+                    {s.tags && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.tags
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter(Boolean)
+                          .map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-1.5 py-0.2 rounded bg-muted text-[9px] font-bold text-neutral-400 border border-border/40"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                      </div>
+                    )}
 
                     {/* Nota */}
                     {s.note && (

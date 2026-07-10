@@ -45,6 +45,7 @@ export function SessionForm({
     custom_metric_value: initial?.custom_metric_value ?? 0,
     focusScore: initial?.focusScore ?? 0,
     topic: initial?.topic ?? "",
+    tags: initial?.tags ?? "",
   });
 
   const [activeModes, setActiveModes] = useState<
@@ -66,6 +67,32 @@ export function SessionForm({
   function setField(k: string, v: string | number) {
     setForm((f) => ({ ...f, [k]: v }));
   }
+
+  const handleToggleTag = (tag: string) => {
+    const currentTags = form.tags
+      ? form.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [];
+    let nextTags: string[];
+    if (currentTags.includes(tag)) {
+      nextTags = currentTags.filter((t) => t !== tag);
+    } else {
+      nextTags = [...currentTags, tag];
+    }
+    setField("tags", nextTags.join(", "));
+  };
+
+  const isTagActive = (tag: string) => {
+    const currentTags = form.tags
+      ? form.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [];
+    return currentTags.includes(tag);
+  };
 
   function toggleMode(mode: "questions" | "pages" | "custom") {
     setActiveModes((prev) =>
@@ -235,7 +262,7 @@ export function SessionForm({
             <Textarea
               id="sf-note"
               className={cn(
-                "bg-card border-border rounded-xl min-h-[140px] resize-none pt-4 text-sm font-medium text-muted-foreground placeholder:text-neutral-700 transition-all",
+                "bg-card border-border rounded-xl min-h-[100px] resize-none pt-4 text-sm font-medium text-muted-foreground placeholder:text-neutral-700 transition-all",
                 theme.borderHover.replace("hover:", "focus:"),
               )}
               placeholder="Notas sobre o aprendizado, dificuldades ou revisões futuras..."
@@ -244,38 +271,45 @@ export function SessionForm({
             />
           </div>
 
-          {/* Seletor de Foco e Energia */}
-          <div className="flex flex-col gap-3">
-            <Label className={lc}>Foco e Energia</Label>
-            <div className="flex gap-1 p-1 bg-background border border-border rounded-xl">
-              {[0, 1, 2, 3, 4, 5].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setField("focusScore", s)}
-                  className={cn(
-                    `flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border`,
-                    form.focusScore === s
-                      ? cn(theme.bg, theme.border, theme.text)
-                      : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sf-tags" className={lc}>
+              Tags / Marcadores
+            </Label>
+            <Input
+              id="sf-tags"
+              type="text"
+              className={inputStyle}
+              placeholder="Ex: revisão, teoria, exercícios"
+              value={form.tags || ""}
+              onChange={(e) => setField("tags", e.target.value)}
+            />
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {[
+                "revisão",
+                "teoria",
+                "exercícios",
+                "simulado",
+                "lei seca",
+                "resumo",
+              ].map((tag) => {
+                const active = isTagActive(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleToggleTag(tag)}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer",
+                      active
+                        ? cn(theme.bg, theme.border, theme.text)
+                        : "bg-card border-border text-neutral-600 hover:border-neutral-500",
+                    )}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-center text-[10px] font-bold text-neutral-600 uppercase">
-              {form.focusScore !== undefined
-                ? [
-                    "Totalmente Improdutivo",
-                    "Exausto / Sem Foco",
-                    "Cansado / Distraído",
-                    "Razoável",
-                    "Bom Foco",
-                    "Concentração Total",
-                  ][form.focusScore]
-                : "Não avaliado"}
-            </p>
           </div>
         </div>
 
@@ -460,6 +494,40 @@ export function SessionForm({
                 </div>
               </>
             )}
+          </div>
+
+          {/* Seletor de Foco e Energia */}
+          <div className="flex flex-col gap-3">
+            <Label className={lc}>Foco e Energia</Label>
+            <div className="flex gap-1 p-1 bg-background border border-border rounded-xl">
+              {[0, 1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setField("focusScore", s)}
+                  className={cn(
+                    `flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border`,
+                    form.focusScore === s
+                      ? cn(theme.bg, theme.border, theme.text)
+                      : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-[10px] font-bold text-neutral-600 uppercase">
+              {form.focusScore !== undefined
+                ? [
+                    "Totalmente Improdutivo",
+                    "Exausto / Sem Foco",
+                    "Cansado / Distraído",
+                    "Razoável",
+                    "Bom Foco",
+                    "Concentração Total",
+                  ][form.focusScore]
+                : "Não avaliado"}
+            </p>
           </div>
         </div>
       </div>
