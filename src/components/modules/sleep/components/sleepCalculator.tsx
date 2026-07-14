@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Clock, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -263,17 +263,14 @@ export function SleepCalculator({
             value="dormir-agora"
             className="mt-5 flex flex-col gap-5"
           >
-            <div className="p-4 bg-muted/10 border border-border/60 rounded-xl flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2.5">
-                <Clock className="w-5 h-5 text-cyan-500" />
-                <div>
-                  <span className="text-xs font-bold text-foreground">
-                    Horário de deitar considerado
-                  </span>
-                  <p className="text-[10px] text-muted-foreground">
-                    Hora atual simulada (inclui 15m para adormecer)
-                  </p>
-                </div>
+            <div className="py-2 border-b border-border/60 flex items-center justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold text-foreground">
+                  Horário de deitar considerado
+                </span>
+                <p className="text-[10px] text-muted-foreground">
+                  Hora atual simulada (inclui 15m para adormecer)
+                </p>
               </div>
               <span className="text-sm font-bold text-cyan-500">
                 {String(now.getHours()).padStart(2, "0")}:
@@ -344,14 +341,9 @@ export function SleepCalculator({
         </Tabs>
       </div>
 
-      {/* Sleep Hygiene Tips / Extra Feature */}
-      <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-cyan-500" />
-          <h3 className="text-xs font-bold text-foreground capitalize">
-            Dicas de higiene do sono
-          </h3>
-        </div>
+      {/* Dicas de higiene do sono */}
+      <div className="flex flex-col gap-3 pt-2 border-t border-border/60">
+        <h3 className="text-xs font-bold text-foreground">Dicas de higiene do sono</h3>
         <ul className="text-[11px] text-muted-foreground space-y-2 leading-relaxed">
           <li className="flex gap-2">
             <span className="text-cyan-500 font-bold">•</span>

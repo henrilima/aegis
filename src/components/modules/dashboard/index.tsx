@@ -286,6 +286,7 @@ export default function Dashboard() {
     avgQuality,
     goalSleepMin,
     sleepPct,
+    sleepDebt,
     weekPages,
     goalWeekPages,
   } = derived;
@@ -727,6 +728,7 @@ export default function Dashboard() {
                       widgetProps.avgQuality = avgQuality;
                       widgetProps.goalSleepMin = goalSleepMin;
                       widgetProps.sleepPct = sleepPct;
+                      widgetProps.sleepDebt = sleepDebt;
                       widgetProps.onAddSleep = async (entry: SleepEntry) => {
                         try {
                           const entryData = {

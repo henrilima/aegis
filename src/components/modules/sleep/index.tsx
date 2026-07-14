@@ -25,13 +25,14 @@ import { getModuleColor } from "@/modules.config";
 import type { AppConfig } from "../settings/useSettingsLogic";
 import { SleepCalculator } from "./components/sleepCalculator";
 import { SleepChart } from "./components/sleepChart";
+import { SleepDrowsiness } from "./components/sleepDrowsiness";
 import { SleepGoalTab } from "./components/sleepGoalTab";
 import { SleepHistory } from "./components/sleepHistory";
 import { SleepStatsBanner } from "./components/sleepStatsBanner";
 import { calcDurationMinutes, isoDate, rollingRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
-type TabId = "semana" | "historico" | "calculadora" | "guia";
+type TabId = "semana" | "historico" | "calculadora" | "sonolencia" | "guia";
 
 /**
  * Módulo de Sono: Monitoramento de ciclos de descanso, qualidade e metas de repouso
@@ -224,6 +225,7 @@ export default function SleepPage() {
     { id: "semana", label: "Visão Semanal", icon: BarChart3 },
     { id: "historico", label: "Relatórios", icon: Calendar },
     { id: "calculadora", label: "Calculadora", icon: Clock },
+    { id: "sonolencia", label: "Sonolência", icon: Moon },
     { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
@@ -366,6 +368,12 @@ export default function SleepPage() {
       )}
 
       {tab === "guia" && <SleepGuidePanel />}
+
+      {tab === "sonolencia" && (
+        <div className="animate-in slide-in-from-bottom-2 duration-500">
+          <SleepDrowsiness entries={entries} now={simulatedNow} />
+        </div>
+      )}
 
       {/* Configurações e Metas */}
       <ModalShell

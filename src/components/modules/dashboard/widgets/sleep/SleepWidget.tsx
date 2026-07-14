@@ -17,6 +17,7 @@ interface SonoWidgetProps {
   avgQuality: number;
   goalSleepMin: number | null;
   sleepPct: number;
+  sleepDebt?: number;
   onAddSleep?: (entry: SleepEntry) => void;
   isEditMode?: boolean;
   isInteractive?: boolean;
@@ -29,6 +30,7 @@ export function SonoWidget({
   avgQuality,
   goalSleepMin,
   sleepPct,
+  sleepDebt = 0,
   onAddSleep,
   isEditMode,
   isInteractive,
@@ -126,6 +128,18 @@ export function SonoWidget({
                   style={{ width: `${sleepPct}%` }}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Alerta de débito acumulado */}
+          {sleepDebt > 60 && avgSleepMin > 0 && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-rose-500/8 border border-rose-500/20">
+              <span className="text-[10px] font-bold text-rose-500 dark:text-rose-400">
+                Débito semanal
+              </span>
+              <span className="text-[10px] font-bold text-rose-500 dark:text-rose-400">
+                {formatDurationMin(sleepDebt)}
+              </span>
             </div>
           )}
 

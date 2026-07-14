@@ -358,6 +358,11 @@ export function useDashboardData() {
   const goalSleepMin = (data.sleepGoal?.targetHours || 8) * 60;
   const sleepPct =
     goalSleepMin > 0 ? Math.round((avgSleepMin / goalSleepMin) * 100) : 0;
+  // Débito acumulado: soma de minutos faltantes em cada noite da semana
+  const sleepDebt = recentSleep.reduce((acc, s) => {
+    const deficit = goalSleepMin - s.durationMinutes;
+    return acc + (deficit > 0 ? deficit : 0);
+  }, 0);
 
   const weekReadingSessions = data.readingSessions.filter(
     (s) => s.date >= weekStart,
@@ -465,6 +470,7 @@ export function useDashboardData() {
       avgQuality,
       goalSleepMin,
       sleepPct,
+      sleepDebt,
       weekPages,
       goalWeekPages,
     },
