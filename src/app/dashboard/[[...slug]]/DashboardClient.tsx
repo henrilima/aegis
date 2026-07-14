@@ -4,9 +4,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Loading from "@/components/global/Loading";
 import ModuleLoading from "@/components/global/ModuleLoading";
+import { FloatingPomodoroWidget } from "@/components/modules/pomodoro/FloatingPomodoroWidget";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 
@@ -64,6 +65,15 @@ export default function DashboardClient() {
   const router = useRouter();
   const { route } = useNavigation();
   const { user, loading, isAuthenticated } = useAuth();
+  const [isWidget, setIsWidget] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.__TAURI_INTERNALS__) {
+      import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+        setIsWidget(getCurrentWindow().label === "pomo-widget");
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -82,8 +92,27 @@ export default function DashboardClient() {
     }
   }, [isAuthenticated, user?.id]);
 
+  if (isWidget && (loading || !user)) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-card p-4 select-none">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-6 h-6 rounded-lg border border-border bg-card flex items-center justify-center">
+            <div className="w-3.5 h-3.5 border-2 border-muted-foreground/60 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <span className="text-[9px] font-bold text-foreground">
+            Carregando...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   if (loading || !user) {
     return <Loading />;
+  }
+
+  if (isWidget) {
+    return <FloatingPomodoroWidget />;
   }
 
   const renderContent = () => {

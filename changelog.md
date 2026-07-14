@@ -20,6 +20,10 @@
   - O ícone selecionado brilha com a cor do tema configurado para o baralho;
   - O ícone escolhido é renderizado no card de visualização como marca d'água no canto inferior direito;
   - A seleção de ícones é persistida em banco de dados SQLite via backend em Rust.
+- **Módulo Pomodoro — Widget Flutuante**: Possibilidade de destacar o temporizador Pomodoro em uma janela secundária nativa.
+  - Janela flutuante sempre no topo (`always-on-top`) e redimensionável livremente;
+  - Exibe contagem regressiva, tipo de ciclo ativo ("Foco" ou "Pausa") e controles de Iniciar, Pausar e Parar;
+  - Sincronização em tempo real de estado do cronômetro entre as janelas do sistema via eventos Tauri.
 
 ### Ajustes e Estabilidade
 - **Módulo de Sono — Calculadora**: Simplificação visual da aba de Calculadora de Ciclos removendo ícones decorativos desnecessários e eliminando o padrão de card dentro de card nas dicas de higiene do sono.

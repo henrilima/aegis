@@ -471,7 +471,7 @@ export default function FlashcardsPage() {
                         {/* Ícone marca d'água no background */}
                         <DeckIcon
                           className={cn(
-                            "absolute -bottom-6 -right-6 w-24 h-24 opacity-[0.15] dark:opacity-[0.24] transition-all duration-500 group-hover:scale-110 group-hover:opacity-[0.22] dark:group-hover:opacity-[0.32] rotate-[12deg]",
+                            "absolute -bottom-6 -right-6 w-24 h-24 opacity-[0.15] dark:opacity-[0.24] transition-all duration-500 group-hover:scale-110 group-hover:opacity-[0.22] dark:group-hover:opacity-[0.32] rotate-12",
                             mDeck.text,
                           )}
                         />

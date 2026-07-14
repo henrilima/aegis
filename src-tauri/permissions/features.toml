@@ -28,7 +28,8 @@ commands.allow = [
     "pomodoro_save_pomodoro_state",
     "pomodoro_record_pomodoro_session",
     "pomodoro_get_pomodoro_history",
-    "pomodoro_clear_pomodoro_history"
+    "pomodoro_clear_pomodoro_history",
+    "pomodoro_open_widget"
 ]
 
 [[permission]]

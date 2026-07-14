@@ -1,6 +1,7 @@
 "use client";
 
-import { Pause, Play, Square, Timer } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { ExternalLink, Pause, Play, Square, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme, HEX_COLORS, type ThemeColorKey } from "@/lib/utils";
@@ -131,6 +132,17 @@ export function PomodoroWidget({
                 className="p-2 rounded-xl bg-muted text-muted-foreground hover:bg-muted/80 disabled:opacity-30 transition-all"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  invoke("pomodoro_open_widget").catch(console.error);
+                }}
+                className="p-2 rounded-xl bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
+                title="Destacar Widget"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (

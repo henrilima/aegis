@@ -180,7 +180,7 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
 
           {/* Pontos interativos */}
           {points.map((p) => (
-            <g key={p.day} className="group/node cursor-pointer">
+            <g key={p.label} className="group/node cursor-pointer">
               <circle
                 cx={p.x}
                 cy={p.y}

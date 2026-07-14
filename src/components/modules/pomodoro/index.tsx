@@ -1,5 +1,6 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import { Pause, Play, Square, Timer } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,14 @@ export default function PomodoroPage() {
   const color = getModuleColor("pomodoro");
   const theme = getColorTheme(color);
   const [showInfo, setShowInfo] = useState(false);
+
+  const handleDetach = async () => {
+    try {
+      await invoke("pomodoro_open_widget");
+    } catch (err) {
+      console.error("Erro ao destacar widget:", err);
+    }
+  };
 
   if (loading)
     return (
@@ -37,6 +46,7 @@ export default function PomodoroPage() {
           cyclesCompleted={state?.cyclesCompleted || 0}
           isWork={isWork}
           onInfoOpen={() => setShowInfo(true)}
+          onDetach={handleDetach}
         />
 
         <PomodoroInfoModal show={showInfo} onClose={() => setShowInfo(false)} />

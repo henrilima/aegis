@@ -1298,7 +1298,7 @@ pub fn run() {
             // Pomodoro
             pomodoro::pomodoro_get_pomodoro_state, pomodoro::pomodoro_save_pomodoro_state, 
             pomodoro::pomodoro_record_pomodoro_session, pomodoro::pomodoro_get_pomodoro_history, 
-            pomodoro::pomodoro_clear_pomodoro_history,
+            pomodoro::pomodoro_clear_pomodoro_history, pomodoro::pomodoro_open_widget,
 
             // Alarms
             alarms::alarm_list_alarms, alarms::alarm_add_alarm, alarms::alarm_update_alarm, 

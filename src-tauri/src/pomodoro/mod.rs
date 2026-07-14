@@ -271,3 +271,31 @@ pub async fn pomodoro_get_pomodoro_history(state: tauri::State<'_, crate::AppSta
 pub async fn pomodoro_clear_pomodoro_history(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<(), String> {
     state.pomo.clear_history(&user_id)
 }
+
+#[tauri::command]
+pub async fn pomodoro_open_widget(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    
+    if let Some(window) = app.get_webview_window("pomo-widget") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    let win_builder = tauri::WebviewWindowBuilder::new(
+        &app,
+        "pomo-widget",
+        tauri::WebviewUrl::App("index.html".into())
+    )
+    .title("Aegis Pomodoro")
+    .inner_size(240.0, 180.0)
+    .min_inner_size(120.0, 100.0)
+    .max_inner_size(320.0, 260.0)
+    .resizable(true)
+    .always_on_top(true)
+    .decorations(false);
+
+    let _window = win_builder.build().map_err(|e| e.to_string())?;
+    Ok(())
+}
