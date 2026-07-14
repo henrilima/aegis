@@ -87,16 +87,14 @@ const MoviesWidget = dynamic(
   },
 );
 const DictionaryWidget = dynamic(
-  () =>
-    import("./dictionary/DictionaryWidget").then((m) => m.DictionaryWidget),
+  () => import("./dictionary/DictionaryWidget").then((m) => m.DictionaryWidget),
   {
     loading: WidgetSkeleton,
     ssr: false,
   },
 );
 const FlashcardsWidget = dynamic(
-  () =>
-    import("./flashcards/FlashcardsWidget").then((m) => m.FlashcardsWidget),
+  () => import("./flashcards/FlashcardsWidget").then((m) => m.FlashcardsWidget),
   {
     loading: WidgetSkeleton,
     ssr: false,

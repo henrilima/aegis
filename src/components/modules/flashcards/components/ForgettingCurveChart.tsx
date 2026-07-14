@@ -32,7 +32,7 @@ function calculateRetention(t: number, S: number): number {
 }
 
 export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
-  const theme = getColorTheme("cyan");
+  const _theme = getColorTheme("cyan");
 
   const allCards = useMemo(() => {
     return decks.flatMap((d) =>
@@ -40,17 +40,17 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
         ...c,
         deckName: d.name,
         deckColor: d.color,
-      }))
+      })),
     );
   }, [decks]);
 
   // Projeta a curva de retenção global média nos próximos 7 dias (0 a 7)
   const projectionData = useMemo(() => {
     if (allCards.length === 0) return [];
-    
+
     return Array.from({ length: 8 }).map((_, dayIndex) => {
       let totalRetention = 0;
-      
+
       allCards.forEach((card) => {
         const S = getMemoryStability(card);
         const daysSince = getDaysSince(card.lastReviewed);
@@ -90,9 +90,12 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
     return (
       <div className="bg-card border border-border rounded-xl p-6 text-center flex flex-col items-center justify-center min-h-[300px]">
         <Brain className="w-8 h-8 text-neutral-500 mb-3" />
-        <p className="text-sm font-bold text-foreground">Sem dados de retenção</p>
+        <p className="text-sm font-bold text-foreground">
+          Sem dados de retenção
+        </p>
         <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-          Adicione cartões aos seus baralhos para começar a ver a projeção da curva de esquecimento.
+          Adicione cartões aos seus baralhos para começar a ver a projeção da
+          curva de esquecimento.
         </p>
       </div>
     );
@@ -133,7 +136,11 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
 
       {/* Gráfico SVG minimalista e flat */}
       <div className="w-full relative">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full h-auto overflow-visible"
+        >
+          <title>Curva de Esquecimento de Ebbinghaus</title>
           {/* Linhas de Grade de fundo */}
           {[0, 25, 50, 75, 100].map((level) => {
             const y = height - padding - (level / 100) * chartHeight;
@@ -172,8 +179,8 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
           />
 
           {/* Pontos interativos */}
-          {points.map((p, idx) => (
-            <g key={idx} className="group/node cursor-pointer">
+          {points.map((p) => (
+            <g key={p.day} className="group/node cursor-pointer">
               <circle
                 cx={p.x}
                 cy={p.y}
@@ -208,20 +215,24 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
       <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/20 border border-border/50">
         <Info className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
         <p className="text-[10px] text-muted-foreground leading-normal">
-          A curva projeta como a estabilidade da sua memória (com base nas revisões bem-sucedidas) decai ao longo do tempo. 
-          Revisar cartões antes de atingirem 50% de retenção garante melhor memorização no longo prazo.
+          A curva projeta como a estabilidade da sua memória (com base nas
+          revisões bem-sucedidas) decai ao longo do tempo. Revisar cartões antes
+          de atingirem 50% de retenção garante melhor memorização no longo
+          prazo.
         </p>
       </div>
 
       {/* Cartões que precisam de revisão urgente */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-muted-foreground">Prioridade de Revisão</span>
+          <span className="text-xs font-bold text-muted-foreground">
+            Prioridade de Revisão
+          </span>
           <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
         </div>
         <div className="flex flex-col gap-2">
           {urgentCards.map((card) => {
-            const mDeck = getColorTheme(card.deckColor || "cyan");
+            const _mDeck = getColorTheme(card.deckColor || "cyan");
             return (
               <div
                 key={card.id}
@@ -245,8 +256,8 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
                       card.retention < 30
                         ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
                         : card.retention < 60
-                        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                        : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                          ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                          : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
                     )}
                   >
                     {card.retention}%

@@ -14,11 +14,10 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
-import { getSystemIcon } from "@/components/global/IconSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getSystemIcon } from "@/components/global/IconSelect";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { EmptyState } from "@/components/ui/EmptyState";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,9 +25,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
-import { HEX_COLORS } from "@/colors.config";
 import { getModuleColor } from "@/modules.config";
 import { CardListModal } from "./CardListModal";
 import { FlashcardsGuidePanel } from "./components/FlashcardsInfoModal";
@@ -187,7 +186,9 @@ export default function FlashcardsPage() {
   }, [decks]);
 
   // Estado do dropdown ativo para ações do baralho
-  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+  const [_activeDropdownId, setActiveDropdownId] = useState<number | null>(
+    null,
+  );
 
   const fetchDecks = useCallback(async () => {
     if (!user?.id) return;
@@ -471,7 +472,7 @@ export default function FlashcardsPage() {
                         <DeckIcon
                           className={cn(
                             "absolute -bottom-6 -right-6 w-24 h-24 opacity-[0.15] dark:opacity-[0.24] transition-all duration-500 group-hover:scale-110 group-hover:opacity-[0.22] dark:group-hover:opacity-[0.32] rotate-[12deg]",
-                            mDeck.text
+                            mDeck.text,
                           )}
                         />
                       </div>
@@ -528,7 +529,8 @@ export default function FlashcardsPage() {
                                 }}
                                 className={cn(
                                   "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors hover:bg-muted/50",
-                                  totalCards === 0 && "opacity-40 cursor-not-allowed text-muted-foreground"
+                                  totalCards === 0 &&
+                                    "opacity-40 cursor-not-allowed text-muted-foreground",
                                 )}
                               >
                                 <Play className="w-3.5 h-3.5 text-muted-foreground" />

@@ -47,7 +47,10 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
 
   const avgWakeHour = useMemo(() => {
     if (!recent.length) return 7; // padrão: 7h
-    const sum = recent.reduce((acc, e) => acc + timeToDecimalHours(e.wakeTime), 0);
+    const sum = recent.reduce(
+      (acc, e) => acc + timeToDecimalHours(e.wakeTime),
+      0,
+    );
     return sum / recent.length;
   }, [recent]);
 
@@ -106,7 +109,8 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
     });
 
     // 4. Pressão de sono pré-dormir: ~2h antes da hora de deitar
-    const preSleepStart = avgBedHour < 12 ? avgBedHour + 24 - 2 : avgBedHour - 2;
+    const preSleepStart =
+      avgBedHour < 12 ? avgBedHour + 24 - 2 : avgBedHour - 2;
     const preSleepEnd = avgBedHour < 12 ? avgBedHour + 24 : avgBedHour;
     windows.push({
       startHour: preSleepStart % 24,
@@ -127,7 +131,8 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
     const upcoming = drowsinessWindows
       .map((w) => {
         const start = w.startHour;
-        const diff = start > currentHour ? start - currentHour : start + 24 - currentHour;
+        const diff =
+          start > currentHour ? start - currentHour : start + 24 - currentHour;
         return { ...w, hoursUntil: diff };
       })
       .filter((w) => w.hoursUntil > 0 && w.hoursUntil < 6)
@@ -137,14 +142,16 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
 
   // Janela atual (se estiver dentro)
   const currentWindow = useMemo(() => {
-    return drowsinessWindows.find((w) => {
-      const start = w.startHour;
-      let end = w.endHour;
-      // Normaliza para comparação
-      if (end < start) end += 24;
-      const cur = currentHour < start ? currentHour + 24 : currentHour;
-      return cur >= start && cur < end;
-    }) ?? null;
+    return (
+      drowsinessWindows.find((w) => {
+        const start = w.startHour;
+        let end = w.endHour;
+        // Normaliza para comparação
+        if (end < start) end += 24;
+        const cur = currentHour < start ? currentHour + 24 : currentHour;
+        return cur >= start && cur < end;
+      }) ?? null
+    );
   }, [drowsinessWindows, currentHour]);
 
   const hasData = recent.length >= 3;
@@ -153,18 +160,24 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       {/* Cabeçalho */}
       <div>
-        <h2 className="text-base font-bold text-foreground">Janelas de Energia</h2>
+        <h2 className="text-base font-bold text-foreground">
+          Janelas de Energia
+        </h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Estimativas baseadas nos seus {recent.length} registros mais recentes de sono.
+          Estimativas baseadas nos seus {recent.length} registros mais recentes
+          de sono.
         </p>
       </div>
 
       {!hasData && (
         <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
           <Moon className="w-6 h-6 text-muted-foreground/30 mb-2 stroke-[1.5]" />
-          <p className="text-sm font-bold text-foreground">Dados insuficientes</p>
+          <p className="text-sm font-bold text-foreground">
+            Dados insuficientes
+          </p>
           <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-            Registre pelo menos 3 noites de sono para gerar estimativas personalizadas de sonolência.
+            Registre pelo menos 3 noites de sono para gerar estimativas
+            personalizadas de sonolência.
           </p>
         </div>
       )}
@@ -174,16 +187,28 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
           {/* Resumo do ritmo */}
           <div className="grid grid-cols-3 gap-3">
             <div className="flex flex-col gap-0.5 p-4 bg-card border border-border rounded-xl">
-              <span className="text-[10px] font-bold text-muted-foreground">Acordar (média)</span>
-              <span className={cn("text-xl font-bold", theme.text)}>{formatDecimalHour(avgWakeHour)}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">
+                Acordar (média)
+              </span>
+              <span className={cn("text-xl font-bold", theme.text)}>
+                {formatDecimalHour(avgWakeHour)}
+              </span>
             </div>
             <div className="flex flex-col gap-0.5 p-4 bg-card border border-border rounded-xl">
-              <span className="text-[10px] font-bold text-muted-foreground">Sono médio</span>
-              <span className={cn("text-xl font-bold", theme.text)}>{avgSleepHours.toFixed(1)}h</span>
+              <span className="text-[10px] font-bold text-muted-foreground">
+                Sono médio
+              </span>
+              <span className={cn("text-xl font-bold", theme.text)}>
+                {avgSleepHours.toFixed(1)}h
+              </span>
             </div>
             <div className="flex flex-col gap-0.5 p-4 bg-card border border-border rounded-xl">
-              <span className="text-[10px] font-bold text-muted-foreground">Deitar (média)</span>
-              <span className={cn("text-xl font-bold", theme.text)}>{formatDecimalHour(avgBedHour)}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">
+                Deitar (média)
+              </span>
+              <span className={cn("text-xl font-bold", theme.text)}>
+                {formatDecimalHour(avgBedHour)}
+              </span>
             </div>
           </div>
 
@@ -221,14 +246,17 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
 
           {/* Linha do tempo */}
           <div className="flex flex-col gap-3">
-            <span className="text-xs font-bold text-muted-foreground">Linha do tempo do dia</span>
+            <span className="text-xs font-bold text-muted-foreground">
+              Linha do tempo do dia
+            </span>
 
             {/* Barra de 24h */}
             <div className="relative h-8 bg-muted/30 rounded-full border border-border/50 overflow-hidden">
               {/* Janelas coloridas */}
               {drowsinessWindows.map((w) => {
                 const startPct = (w.startHour / 24) * 100;
-                const widthPct = ((w.endHour - w.startHour + 24) % 24 / 24) * 100;
+                const widthPct =
+                  (((w.endHour - w.startHour + 24) % 24) / 24) * 100;
                 return (
                   <div
                     key={w.label}
@@ -284,12 +312,17 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-foreground">{w.label}</span>
+                    <span className="text-xs font-bold text-foreground">
+                      {w.label}
+                    </span>
                     <span className="text-[10px] text-muted-foreground font-medium">
-                      {formatDecimalHour(w.startHour)} – {formatDecimalHour(w.endHour)}
+                      {formatDecimalHour(w.startHour)} –{" "}
+                      {formatDecimalHour(w.endHour)}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{w.description}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                    {w.description}
+                  </p>
                 </div>
                 {w.type === "alerta" ? (
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
@@ -301,7 +334,8 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
           </div>
 
           <p className="text-[10px] text-muted-foreground text-center pb-2">
-            Estimativas baseadas no ritmo circadiano e nos seus padrões históricos de sono. Resultados individuais podem variar.
+            Estimativas baseadas no ritmo circadiano e nos seus padrões
+            históricos de sono. Resultados individuais podem variar.
           </p>
         </>
       )}

@@ -191,15 +191,30 @@ export function ReportsTab({ decks }: ReportsTabProps) {
 
   const modeTheme = {
     daily: {
-      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      active: cn(
+        moduleTheme.bg,
+        moduleTheme.text,
+        "border",
+        moduleTheme.border,
+      ),
       accent: moduleTheme.text,
     },
     weekly: {
-      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      active: cn(
+        moduleTheme.bg,
+        moduleTheme.text,
+        "border",
+        moduleTheme.border,
+      ),
       accent: moduleTheme.text,
     },
     monthly: {
-      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      active: cn(
+        moduleTheme.bg,
+        moduleTheme.text,
+        "border",
+        moduleTheme.border,
+      ),
       accent: moduleTheme.text,
     },
   };
@@ -285,7 +300,6 @@ export function ReportsTab({ decks }: ReportsTabProps) {
           periodStats={periodStats}
           periodTitle={periodTitle}
           periodRange={periodRange}
-          reportMode={reportMode}
         />
       </div>
 
@@ -554,7 +568,12 @@ export function ReportsTab({ decks }: ReportsTabProps) {
               >
                 <div className="flex justify-between items-center gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", mDeck.solid)} />
+                    <div
+                      className={cn(
+                        "w-2.5 h-2.5 rounded-full shrink-0",
+                        mDeck.solid,
+                      )}
+                    />
                     <span className="text-sm font-bold text-foreground truncate">
                       {deck.name}
                     </span>

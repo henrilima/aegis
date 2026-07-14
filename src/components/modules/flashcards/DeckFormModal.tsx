@@ -5,14 +5,19 @@ import { useCallback, useEffect, useState } from "react";
 import { ColorPicker } from "@/components/global/ColorPicker";
 import { IconSelect } from "@/components/global/IconSelect";
 import { ModalShell } from "@/components/ui/ModalShell";
-import { cn, getColorTheme } from "@/lib/utils";
+import { getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { FlashcardDeck } from "./types";
 
 interface DeckFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (deck: { name: string; description: string; color: string; icon?: string }) => void;
+  onSave: (deck: {
+    name: string;
+    description: string;
+    color: string;
+    icon?: string;
+  }) => void;
   deck?: FlashcardDeck;
 }
 

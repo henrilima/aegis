@@ -1,18 +1,96 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import {
+  Activity,
+  AlarmClock,
+  AlertCircle,
+  Archive,
+  Atom,
+  Award,
+  Bell,
+  Book,
+  Bookmark,
   // Ícones de Lucide
-  BookOpen, Brain, Award, Flame, Clock, Star, Languages, Calculator, Compass, Atom, Code2, Palette, Music, Heart,
-  AlarmClock, Bell, Calendar, CheckSquare, Target, Trophy, Dumbbell, Shield, User, Users, Coffee, Gamepad2, Laptop,
-  Briefcase, GraduationCap, MapPin, Search, ChevronDown, Check, Activity, Book, Bookmark, FileText, Folder,
-  Image, Link, Lock, Mail, MessageSquare, Phone, Settings, ShoppingBag, Trash, Video,
-  School, Library, Globe, Pencil, PenTool, Ruler, Landmark, History,
-  Hourglass, Timer, ListTodo, Clipboard, FolderOpen, Inbox, Archive, Pin,
-  Database, HardDrive, Cpu, Wifi, Send, Layout, Key, Eye, Sun, Moon,
-  Film, Camera, Tv, Headphones, Smile, Gift, DollarSign, CreditCard, PiggyBank,
-  TrendingUp, Lightbulb, HelpCircle, AlertCircle, Info
+  BookOpen,
+  Brain,
+  Briefcase,
+  Calculator,
+  Calendar,
+  Camera,
+  CheckSquare,
+  ChevronDown,
+  Clipboard,
+  Clock,
+  Code2,
+  Coffee,
+  Compass,
+  Cpu,
+  CreditCard,
+  Database,
+  DollarSign,
+  Dumbbell,
+  Eye,
+  FileText,
+  Film,
+  Flame,
+  Folder,
+  FolderOpen,
+  Gamepad2,
+  Gift,
+  Globe,
+  GraduationCap,
+  HardDrive,
+  Headphones,
+  Heart,
+  HelpCircle,
+  History,
+  Hourglass,
+  Image,
+  Inbox,
+  Info,
+  Key,
+  Landmark,
+  Languages,
+  Laptop,
+  Layout,
+  Library,
+  Lightbulb,
+  Link,
+  ListTodo,
+  Lock,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Moon,
+  Music,
+  Palette,
+  Pencil,
+  PenTool,
+  Phone,
+  PiggyBank,
+  Pin,
+  Ruler,
+  School,
+  Search,
+  Send,
+  Settings,
+  Shield,
+  ShoppingBag,
+  Smile,
+  Star,
+  Sun,
+  Target,
+  Timer,
+  Trash,
+  TrendingUp,
+  Trophy,
+  Tv,
+  User,
+  Users,
+  Video,
+  Wifi,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { cn, getColorTheme } from "@/lib/utils";
 
 // Lista centralizada e exportada de ícones disponíveis em todo o sistema (85 ícones)
@@ -140,7 +218,10 @@ export function IconSelect({ value, onChange, color }: IconSelectProps) {
   // Fecha o popover ao clicar fora
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -160,7 +241,7 @@ export function IconSelect({ value, onChange, color }: IconSelectProps) {
 
   // Filtra os ícones com base na pesquisa
   const filteredIcons = Object.entries(ALL_ICONS).filter(([_, data]) =>
-    data.label.toLowerCase().includes(search.toLowerCase())
+    data.label.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -171,16 +252,23 @@ export function IconSelect({ value, onChange, color }: IconSelectProps) {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "w-full h-11 px-4 flex items-center justify-between bg-card border border-border rounded-xl text-sm text-foreground hover:border-border/80 transition-all cursor-pointer relative z-10",
-          isOpen && "border-blue-500/30"
+          isOpen && "border-blue-500/30",
         )}
       >
         <div className="flex items-center gap-2.5">
-          <div className={cn("p-1.5 rounded-lg border", m.bg, m.border, m.text)}>
+          <div
+            className={cn("p-1.5 rounded-lg border", m.bg, m.border, m.text)}
+          >
             <SelectedIcon className="w-4 h-4" />
           </div>
           <span className="font-medium">{selectedData.label}</span>
         </div>
-        <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 text-muted-foreground transition-transform duration-200",
+            isOpen && "rotate-180",
+          )}
+        />
       </button>
 
       {/* Popover/Dropdown de Busca */}
@@ -224,7 +312,7 @@ export function IconSelect({ value, onChange, color }: IconSelectProps) {
                       "w-9 h-9 flex items-center justify-center rounded-lg border transition-all cursor-pointer",
                       isSelected
                         ? `${m.bg} ${m.text} ${m.border}`
-                        : "bg-card border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        : "bg-card border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40",
                     )}
                   >
                     <IconOption className="w-4 h-4" />

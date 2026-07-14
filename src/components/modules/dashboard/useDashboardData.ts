@@ -265,7 +265,9 @@ export function useDashboardData() {
           );
           setData((prev) => ({ ...prev, flashcardDecks: decksWithCards }));
         })
-        .catch(() => { /* baralhos não disponíveis, mantém vazio */ });
+        .catch(() => {
+          /* baralhos não disponíveis, mantém vazio */
+        });
 
       setData((prev) => ({
         ...prev,

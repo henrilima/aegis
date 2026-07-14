@@ -1,7 +1,10 @@
 "use client";
 
 import { Brain } from "lucide-react";
-import type { Flashcard, FlashcardDeck } from "@/components/modules/flashcards/types";
+import type {
+  Flashcard,
+  FlashcardDeck,
+} from "@/components/modules/flashcards/types";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { BaseWidget } from "../BaseWidget";
@@ -21,11 +24,14 @@ interface FlashcardsWidgetProps {
 function isCardDue(card: Flashcard): boolean {
   if (!card.lastReviewed) return true;
   const diffDays = Math.floor(
-    Math.abs(new Date().getTime() - new Date(card.lastReviewed).getTime()) /
+    Math.abs(Date.now() - new Date(card.lastReviewed).getTime()) /
       (1000 * 60 * 60 * 24),
   );
   const dueDays = Math.round(
-    1 + card.successCount * 2 * (card.successCount / Math.max(1, card.reviewCount)),
+    1 +
+      card.successCount *
+        2 *
+        (card.successCount / Math.max(1, card.reviewCount)),
   );
   return diffDays >= dueDays;
 }
@@ -113,7 +119,7 @@ export function FlashcardsWidget({
             {decksWithDue.slice(0, 3).map((deck) => {
               const due = deck.cards.filter(isCardDue).length;
               const total = deck.cards.length;
-              const pct = total > 0 ? Math.round((due / total) * 100) : 0;
+              const _pct = total > 0 ? Math.round((due / total) * 100) : 0;
 
               // Cor personalizada do baralho
               const deckColor = getColorTheme(deck.color || color);
@@ -142,9 +148,7 @@ export function FlashcardsWidget({
                         : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
                     )}
                   >
-                    <span>
-                      {due > 0 ? `${due} pendentes` : "Em dia"}
-                    </span>
+                    <span>{due > 0 ? `${due} pendentes` : "Em dia"}</span>
                   </div>
                 </div>
               );

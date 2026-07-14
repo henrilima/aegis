@@ -14,11 +14,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-
+import { HEX_COLORS } from "@/colors.config";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { HEX_COLORS } from "@/colors.config";
 import type { ReadingBook, ReadingGoal, ReadingSession } from "../types";
 import { formatMinutes, isoDate } from "../utils";
 import { ReadingReportCanvas } from "./ReadingReportCanvas";
@@ -132,17 +131,32 @@ export function ReportsTab({ sessions, books, goals = [] }: ReportsTabProps) {
 
   const modeTheme = {
     daily: {
-      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      active: cn(
+        moduleTheme.bg,
+        moduleTheme.text,
+        "border",
+        moduleTheme.border,
+      ),
       accent: moduleTheme.text,
       color: HEX_COLORS[color as keyof typeof HEX_COLORS] || "#2dd4bf",
     },
     weekly: {
-      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      active: cn(
+        moduleTheme.bg,
+        moduleTheme.text,
+        "border",
+        moduleTheme.border,
+      ),
       accent: moduleTheme.text,
       color: HEX_COLORS[color as keyof typeof HEX_COLORS] || "#818cf8",
     },
     monthly: {
-      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      active: cn(
+        moduleTheme.bg,
+        moduleTheme.text,
+        "border",
+        moduleTheme.border,
+      ),
       accent: moduleTheme.text,
       color: HEX_COLORS[color as keyof typeof HEX_COLORS] || "#fb923c",
     },

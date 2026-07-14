@@ -55,14 +55,12 @@ interface FlashcardsTextReportProps {
   periodStats: PeriodStats;
   periodTitle: string;
   periodRange: string;
-  reportMode: "daily" | "weekly" | "monthly";
 }
 
 export function FlashcardsTextReport({
   periodStats,
   periodTitle,
   periodRange,
-  reportMode,
 }: FlashcardsTextReportProps) {
   const theme = getColorTheme(getModuleColor("flashcards"));
   const text = generateFlashcardReport({

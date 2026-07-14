@@ -343,7 +343,9 @@ export function SleepCalculator({
 
       {/* Dicas de higiene do sono */}
       <div className="flex flex-col gap-3 pt-2 border-t border-border/60">
-        <h3 className="text-xs font-bold text-foreground">Dicas de higiene do sono</h3>
+        <h3 className="text-xs font-bold text-foreground">
+          Dicas de higiene do sono
+        </h3>
         <ul className="text-[11px] text-muted-foreground space-y-2 leading-relaxed">
           <li className="flex gap-2">
             <span className="text-cyan-500 font-bold">•</span>
