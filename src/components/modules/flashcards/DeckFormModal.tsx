@@ -3,15 +3,16 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ColorPicker } from "@/components/global/ColorPicker";
+import { IconSelect } from "@/components/global/IconSelect";
 import { ModalShell } from "@/components/ui/ModalShell";
-import { getColorTheme } from "@/lib/utils";
+import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { FlashcardDeck } from "./types";
 
 interface DeckFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (deck: { name: string; description: string; color: string }) => void;
+  onSave: (deck: { name: string; description: string; color: string; icon?: string }) => void;
   deck?: FlashcardDeck;
 }
 
@@ -25,6 +26,7 @@ export function DeckFormModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("");
+  const [icon, setIcon] = useState("book");
 
   const m = getColorTheme(color || defaultColor);
 
@@ -32,6 +34,7 @@ export function DeckFormModal({
     setName("");
     setDescription("");
     setColor("");
+    setIcon("book");
   }, []);
 
   useEffect(() => {
@@ -39,6 +42,7 @@ export function DeckFormModal({
       setName(deck.name);
       setDescription(deck.description);
       setColor(deck.color || "");
+      setIcon(deck.icon || "book");
     } else {
       resetData();
     }
@@ -47,7 +51,7 @@ export function DeckFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name, description, color });
+    onSave({ name, description, color, icon });
     resetData();
     onClose();
   };
@@ -126,6 +130,17 @@ export function DeckFormModal({
             value={color}
             onChange={(c) => setColor(c)}
             defaultColor={defaultColor}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold text-muted-foreground">
+            Ícone do baralho
+          </span>
+          <IconSelect
+            value={icon}
+            onChange={(val) => setIcon(val)}
+            color={color || defaultColor}
           />
         </div>
 

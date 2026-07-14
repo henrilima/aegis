@@ -3,6 +3,7 @@
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
 
 interface PeriodStats {
   decksCount: number;
@@ -57,19 +58,13 @@ interface FlashcardsTextReportProps {
   reportMode: "daily" | "weekly" | "monthly";
 }
 
-const MODE_COLOR: Record<string, string> = {
-  daily: "blue",
-  weekly: "indigo",
-  monthly: "emerald",
-};
-
 export function FlashcardsTextReport({
   periodStats,
   periodTitle,
   periodRange,
   reportMode,
 }: FlashcardsTextReportProps) {
-  const theme = getColorTheme(MODE_COLOR[reportMode] || "blue");
+  const theme = getColorTheme(getModuleColor("flashcards"));
   const text = generateFlashcardReport({
     periodStats,
     periodTitle,

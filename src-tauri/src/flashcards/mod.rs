@@ -12,6 +12,8 @@ pub struct FlashcardDeck {
     pub description: String,
     pub color: String,
     pub created_at: String,
+    #[serde(default)]
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -57,6 +59,9 @@ impl FlashcardManager {
             [],
         ).ok();
 
+        // Adiciona a coluna icon silenciosamente caso a tabela já exista e não a possua
+        conn.execute("ALTER TABLE flashcard_decks ADD COLUMN icon TEXT", []).ok();
+
         conn.execute(
             "CREATE TABLE IF NOT EXISTS flashcards (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,9 +87,10 @@ impl FlashcardManager {
 
     pub fn list_decks(&self, user_id: &str) -> Vec<FlashcardDeck> {
         let conn = self.get_connection();
-        let mut stmt = conn.prepare("SELECT id, user_id, name, description, color, created_at FROM flashcard_decks WHERE user_id = ?1 ORDER BY created_at DESC").unwrap();
+        let mut stmt = conn.prepare("SELECT id, user_id, name, description, color, created_at, icon FROM flashcard_decks WHERE user_id = ?1 ORDER BY created_at DESC").unwrap();
         
         let rows = stmt.query_map(params![user_id], |row| {
+            let icon_val: Option<String> = row.get(6).ok();
             Ok(FlashcardDeck {
                 id: Some(row.get(0)?),
                 user_id: row.get(1)?,
@@ -92,6 +98,7 @@ impl FlashcardManager {
                 description: row.get(3)?,
                 color: row.get(4)?,
                 created_at: row.get(5)?,
+                icon: icon_val,
             })
         }).unwrap();
 
@@ -101,8 +108,8 @@ impl FlashcardManager {
     pub fn add_deck(&self, deck: FlashcardDeck) -> Result<i32, String> {
         let conn = self.get_connection();
         conn.execute(
-            "INSERT INTO flashcard_decks (user_id, name, description, color, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![deck.user_id, deck.name, deck.description, deck.color, deck.created_at],
+            "INSERT INTO flashcard_decks (user_id, name, description, color, created_at, icon) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![deck.user_id, deck.name, deck.description, deck.color, deck.created_at, deck.icon],
         ).map_err(|e| e.to_string())?;
         
         let id = conn.last_insert_rowid() as i32;
@@ -112,8 +119,8 @@ impl FlashcardManager {
     pub fn update_deck(&self, deck: FlashcardDeck) -> Result<(), String> {
         let conn = self.get_connection();
         conn.execute(
-            "UPDATE flashcard_decks SET name = ?1, description = ?2, color = ?3 WHERE id = ?4",
-            params![deck.name, deck.description, deck.color, deck.id],
+            "UPDATE flashcard_decks SET name = ?1, description = ?2, color = ?3, icon = ?4 WHERE id = ?5",
+            params![deck.name, deck.description, deck.color, deck.icon, deck.id],
         ).map_err(|e| e.to_string())?;
         Ok(())
     }

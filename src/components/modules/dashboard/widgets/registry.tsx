@@ -87,7 +87,16 @@ const MoviesWidget = dynamic(
   },
 );
 const DictionaryWidget = dynamic(
-  () => import("./dictionary/DictionaryWidget").then((m) => m.DictionaryWidget),
+  () =>
+    import("./dictionary/DictionaryWidget").then((m) => m.DictionaryWidget),
+  {
+    loading: WidgetSkeleton,
+    ssr: false,
+  },
+);
+const FlashcardsWidget = dynamic(
+  () =>
+    import("./flashcards/FlashcardsWidget").then((m) => m.FlashcardsWidget),
   {
     loading: WidgetSkeleton,
     ssr: false,
@@ -108,6 +117,7 @@ export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   reading: ReadingWidget,
   movies: MoviesWidget,
   dictionary: DictionaryWidget,
+  flashcards: FlashcardsWidget,
 };
 
 export const WIDGET_METADATA = [
@@ -146,5 +156,10 @@ export const WIDGET_METADATA = [
     id: "dictionary",
     name: "Dicionário",
     description: "Glossário pessoal e busca rápida",
+  },
+  {
+    id: "flashcards",
+    name: "Flashcards",
+    description: "Cartões pendentes e taxa de acerto",
   },
 ];

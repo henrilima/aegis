@@ -16,9 +16,11 @@ import {
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
 import type { Flashcard, FlashcardDeck } from "../types";
 import { FlashcardsReportCanvas } from "./FlashcardsReportCanvas";
 import { FlashcardsTextReport } from "./FlashcardsTextReport";
+import { ForgettingCurveChart } from "./ForgettingCurveChart";
 
 interface RichDeck extends FlashcardDeck {
   cards: Flashcard[];
@@ -184,25 +186,24 @@ export function ReportsTab({ decks }: ReportsTabProps) {
     );
   }
 
+  const color = getModuleColor("flashcards");
+  const moduleTheme = getColorTheme(color);
+
   const modeTheme = {
     daily: {
-      active: "bg-blue-600/20 text-blue-400 border border-blue-600/30",
-      accent: "text-blue-400",
-      color: "blue",
+      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      accent: moduleTheme.text,
     },
     weekly: {
-      active: "bg-indigo-600/20 text-indigo-400 border border-indigo-600/30",
-      accent: "text-indigo-400",
-      color: "indigo",
+      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      accent: moduleTheme.text,
     },
     monthly: {
-      active: "bg-emerald-600/20 text-emerald-400 border border-emerald-600/30",
-      accent: "text-emerald-400",
-      color: "emerald",
+      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      accent: moduleTheme.text,
     },
   };
   const theme = modeTheme[reportMode];
-  const moduleTheme = getColorTheme(modeTheme[reportMode].color);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -489,6 +490,9 @@ export function ReportsTab({ decks }: ReportsTabProps) {
         </div>
       </div>
 
+      {/* Curva de Esquecimento Visual */}
+      <ForgettingCurveChart decks={decks} />
+
       {/* Decks Accuracy & Reviews distribution */}
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-3 mb-8">
@@ -545,13 +549,16 @@ export function ReportsTab({ decks }: ReportsTabProps) {
               <div
                 key={deck.id}
                 className={cn(
-                  "flex flex-col gap-4 bg-background/40 border border-border/50 rounded-xl p-5 hover:bg-card/50 transition-all border-b-2 hover:border-b-blue-500",
+                  "flex flex-col gap-4 bg-background/40 border border-border/50 rounded-xl p-5 hover:bg-card/50 transition-all",
                 )}
               >
-                <div className="flex justify-between items-end">
-                  <span className="text-sm font-bold text-foreground truncate max-w-[70%]">
-                    {deck.name}
-                  </span>
+                <div className="flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", mDeck.solid)} />
+                    <span className="text-sm font-bold text-foreground truncate">
+                      {deck.name}
+                    </span>
+                  </div>
                   <span
                     className={cn("text-xs font-semibold shrink-0", mDeck.text)}
                   >

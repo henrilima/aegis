@@ -860,11 +860,15 @@ export default function Dashboard() {
                     if (id === "dictionary") {
                       widgetProps.words = data.dictionaryWords;
                     }
+                    if (id === "flashcards") {
+                      widgetProps.decks = data.flashcardDecks;
+                    }
 
                     const isNonInteractive = [
                       "movies",
                       "statistics",
                       "dictionary",
+                      "flashcards",
                     ].includes(id);
                     const isInteractive = isNonInteractive
                       ? false

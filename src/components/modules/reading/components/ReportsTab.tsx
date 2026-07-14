@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { HEX_COLORS } from "@/colors.config";
 import type { ReadingBook, ReadingGoal, ReadingSession } from "../types";
 import { formatMinutes, isoDate } from "../utils";
 import { ReadingReportCanvas } from "./ReadingReportCanvas";
@@ -131,22 +132,19 @@ export function ReportsTab({ sessions, books, goals = [] }: ReportsTabProps) {
 
   const modeTheme = {
     daily: {
-      active:
-        "bg-teal-600/20 text-teal-600 dark:text-teal-400 border border-teal-600/30",
-      accent: "text-teal-600 dark:text-teal-400",
-      color: "#2dd4bf", // teal-400
+      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      accent: moduleTheme.text,
+      color: HEX_COLORS[color as keyof typeof HEX_COLORS] || "#2dd4bf",
     },
     weekly: {
-      active:
-        "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-600/30",
-      accent: "text-indigo-600 dark:text-indigo-400",
-      color: "#818cf8", // indigo-400
+      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      accent: moduleTheme.text,
+      color: HEX_COLORS[color as keyof typeof HEX_COLORS] || "#818cf8",
     },
     monthly: {
-      active:
-        "bg-orange-600/20 text-orange-600 dark:text-orange-400 border border-orange-600/30",
-      accent: "text-orange-600 dark:text-orange-400",
-      color: "#fb923c", // orange-400
+      active: cn(moduleTheme.bg, moduleTheme.text, "border", moduleTheme.border),
+      accent: moduleTheme.text,
+      color: HEX_COLORS[color as keyof typeof HEX_COLORS] || "#fb923c",
     },
   };
   const theme = modeTheme[reportMode];

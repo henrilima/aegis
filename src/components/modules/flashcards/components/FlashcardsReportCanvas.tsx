@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HEX_COLORS } from "@/colors.config";
 import { cn, getColorTheme } from "@/lib/utils";
+import { getModuleColor } from "@/modules.config";
 
 interface PeriodStats {
   decksCount: number;
@@ -29,14 +30,10 @@ export function FlashcardsReportCanvas({
   periodRange,
   reportMode,
 }: FlashcardsReportCanvasProps) {
-  const modeAccentColor = {
-    daily: "blue",
-    weekly: "indigo",
-    monthly: "emerald",
-  }[reportMode];
+  const moduleColor = getModuleColor("flashcards");
   const accentHex =
-    HEX_COLORS[modeAccentColor as keyof typeof HEX_COLORS] || "#3b82f6";
-  const theme = getColorTheme(modeAccentColor);
+    HEX_COLORS[moduleColor as keyof typeof HEX_COLORS] || "#3b82f6";
+  const theme = getColorTheme(moduleColor);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fileName, setFileName] = useState("");
 

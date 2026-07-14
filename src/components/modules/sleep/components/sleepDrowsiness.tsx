@@ -138,7 +138,7 @@ export function SleepDrowsiness({ entries, now }: SleepDrowsinessProps) {
   // Janela atual (se estiver dentro)
   const currentWindow = useMemo(() => {
     return drowsinessWindows.find((w) => {
-      let start = w.startHour;
+      const start = w.startHour;
       let end = w.endHour;
       // Normaliza para comparação
       if (end < start) end += 24;

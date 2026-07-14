@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 
 import type { GlossaryWord } from "../dictionary/types";
+import type { Flashcard, FlashcardDeck } from "../flashcards/types";
 import type { Movie } from "../movies/types";
 import type {
   ReadingBook,
@@ -58,6 +59,7 @@ export interface DashboardData {
   passwords: PasswordEntry[];
   vaultExists: boolean | null;
   alarms: AppAlarm[];
+  flashcardDecks: (FlashcardDeck & { cards: Flashcard[] })[];
 
   statsSummary: PerformanceSummary | null;
   weekStartDay: number;
@@ -81,6 +83,7 @@ const INITIAL_DATA: DashboardData = {
   passwords: [],
   vaultExists: null,
   alarms: [],
+  flashcardDecks: [],
 
   statsSummary: null,
   weekStartDay: 1,
@@ -247,6 +250,22 @@ export function useDashboardData() {
         invoke<Movie[]>("movies_list", { userId: uid }),
         invoke<GlossaryWord[]>("dictionary_list", { userId: uid }),
       ]);
+
+      // Busca baralhos de flashcards e cartões em paralelo (separado do allSettled principal por ser hierárquico)
+      invoke<FlashcardDeck[]>("flashcards_list_decks", { userId: uid })
+        .then(async (fetchedDecks) => {
+          const decksWithCards = await Promise.all(
+            fetchedDecks.map(async (deck) => {
+              if (!deck.id) return { ...deck, cards: [] };
+              const cards = await invoke<Flashcard[]>("flashcards_list_cards", {
+                deckId: deck.id,
+              });
+              return { ...deck, cards };
+            }),
+          );
+          setData((prev) => ({ ...prev, flashcardDecks: decksWithCards }));
+        })
+        .catch(() => { /* baralhos não disponíveis, mantém vazio */ });
 
       setData((prev) => ({
         ...prev,

@@ -14,12 +14,21 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
+import { getSystemIcon } from "@/components/global/IconSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
+import { HEX_COLORS } from "@/colors.config";
 import { getModuleColor } from "@/modules.config";
 import { CardListModal } from "./CardListModal";
 import { FlashcardsGuidePanel } from "./components/FlashcardsInfoModal";
@@ -224,6 +233,7 @@ export default function FlashcardsPage() {
     name: string;
     description: string;
     color: string;
+    icon?: string;
   }) => {
     if (!user?.id) return;
     try {
@@ -234,6 +244,7 @@ export default function FlashcardsPage() {
           name: deckData.name,
           description: deckData.description,
           color: deckData.color,
+          icon: deckData.icon,
         };
         await invoke("flashcards_update_deck", { deck: updated });
       } else {
@@ -244,6 +255,7 @@ export default function FlashcardsPage() {
           description: deckData.description,
           color: deckData.color,
           createdAt: new Date().toISOString(),
+          icon: deckData.icon,
         };
         await invoke("flashcards_add_deck", { deck: newDeck });
       }
@@ -435,129 +447,133 @@ export default function FlashcardsPage() {
                       ? Math.round((totalSuccess / totalReviews) * 100)
                       : 0;
 
+                  // Calcula revisões pendentes específicas para este baralho
+                  const dueCardsCount = deck.cards.filter(isCardDue).length;
+                  const DeckIcon = getSystemIcon(deck.icon);
+
                   return (
                     <motion.div
                       key={deck.id}
                       variants={itemVariants}
                       whileHover={{
                         y: -4,
-                        boxShadow: "0 12px 30px -10px rgba(0,0,0,0.3)",
                       }}
                       transition={{
                         type: "spring",
                         stiffness: 300,
                         damping: 20,
                       }}
-                      className="relative rounded-2xl border border-border bg-card/30 hover:border-border/80 hover:bg-card/45 p-6 flex flex-col gap-4 transition-all duration-300 group"
+                      className="relative rounded-2xl border border-border bg-card hover:border-border/80 p-6 flex flex-col gap-4 transition-all duration-300 group"
                     >
-                      {/* Barra indicadora de destaque à esquerda */}
-                      <div
-                        className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-lg ${mDeck.solid}`}
-                      />
+                      {/* Container de background com overflow-hidden para cortar o ícone */}
+                      <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                        {/* Ícone marca d'água no background */}
+                        <DeckIcon
+                          className={cn(
+                            "absolute -bottom-6 -right-6 w-24 h-24 opacity-[0.15] dark:opacity-[0.24] transition-all duration-500 group-hover:scale-110 group-hover:opacity-[0.22] dark:group-hover:opacity-[0.32] rotate-[12deg]",
+                            mDeck.text
+                          )}
+                        />
+                      </div>
 
                       {/* Título do baralho e dropdown de ações */}
-                      <div className="flex justify-between items-start pl-2">
-                        <div className="min-w-0">
-                          <h3
-                            className={cn(
-                              "font-bold text-base text-foreground truncate transition-colors",
-                              getGroupHoverTextClass(
-                                deck.color || getModuleColor("flashcards"),
-                              ),
+                      <div className="flex justify-between items-start relative z-10">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3
+                              className={cn(
+                                "font-bold text-base text-foreground truncate transition-colors",
+                                getGroupHoverTextClass(
+                                  deck.color || getModuleColor("flashcards"),
+                                ),
+                              )}
+                            >
+                              {deck.name}
+                            </h3>
+                            {dueCardsCount > 0 && (
+                              <span
+                                className={cn(
+                                  "px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0",
+                                  mDeck.bg,
+                                  mDeck.text,
+                                )}
+                              >
+                                {dueCardsCount} hoje
+                              </span>
                             )}
-                          >
-                            {deck.name}
-                          </h3>
+                          </div>
                           <p className="text-xs text-neutral-600 font-medium line-clamp-2 mt-1 min-h-[32px] leading-relaxed">
                             {deck.description || "Sem descrição disponível."}
                           </p>
                         </div>
 
-                        <div
-                          className="relative shrink-0 ml-2"
-                          data-dropdown-container
-                        >
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (deck.id) {
-                                setActiveDropdownId(
-                                  activeDropdownId === deck.id ? null : deck.id,
-                                );
-                              }
-                            }}
-                            className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-
-                          {activeDropdownId === deck.id && (
-                            <div className="absolute right-0 top-8 w-44 bg-card border border-border rounded-xl z-20 p-1.5 animate-in fade-in duration-150">
+                        <div className="shrink-0 ml-2 relative z-20">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-44 bg-card border border-border rounded-xl p-1.5 text-foreground z-50">
+                              <DropdownMenuItem
                                 disabled={totalCards === 0}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setActiveDropdownId(null);
                                   setSelectedDeckForStudy(deck);
                                   setIsStudyOpen(true);
                                 }}
-                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-semibold cursor-pointer ${
-                                  totalCards === 0
-                                    ? "opacity-40 cursor-not-allowed text-muted-foreground"
-                                    : "hover:bg-muted/50 text-foreground"
-                                }`}
+                                className={cn(
+                                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors hover:bg-muted/50",
+                                  totalCards === 0 && "opacity-40 cursor-not-allowed text-muted-foreground"
+                                )}
                               >
                                 <Play className="w-3.5 h-3.5 text-muted-foreground" />
                                 Estudar
-                              </button>
-                              <button
-                                type="button"
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setActiveDropdownId(null);
                                   setSelectedDeckForCards(deck);
                                   setIsCardListOpen(true);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors text-xs font-semibold text-foreground cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors hover:bg-muted/50 text-foreground"
                               >
                                 <Settings className="w-3.5 h-3.5 text-muted-foreground" />
                                 Gerenciar cartões
-                              </button>
-                              <div className="h-px bg-border/40 my-1 mx-1" />
-                              <button
-                                type="button"
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-border/40 my-1 mx-1" />
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setActiveDropdownId(null);
                                   setSelectedDeckForEdit(deck);
                                   setIsDeckFormOpen(true);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors text-xs font-semibold text-foreground cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors hover:bg-muted/50 text-foreground"
                               >
                                 <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
                                 Editar baralho
-                              </button>
-                              <button
-                                type="button"
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setActiveDropdownId(null);
                                   setDeckToDelete(deck);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-500 transition-colors text-xs font-semibold cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors text-red-400 hover:text-red-500 hover:bg-red-500/10"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                                 Excluir
-                              </button>
-                            </div>
-                          )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
                       {/* Deck Stats */}
-                      <div className="grid grid-cols-2 gap-3 bg-card/10 border border-border/40 rounded-xl p-3 pl-5">
+                      <div className="grid grid-cols-2 gap-3 bg-background/50 border border-border/50 rounded-xl p-3 relative z-10">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-bold text-muted-foreground">
                             Cartões
@@ -579,7 +595,7 @@ export default function FlashcardsPage() {
                       </div>
 
                       {/* Deck CTA Actions */}
-                      <div className="flex gap-2.5 mt-auto pl-2">
+                      <div className="flex gap-2.5 mt-auto relative z-10">
                         <button
                           type="button"
                           onClick={() => {

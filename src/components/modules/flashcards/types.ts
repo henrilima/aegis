@@ -5,6 +5,7 @@ export interface FlashcardDeck {
   description: string;
   color: string;
   createdAt: string;
+  icon?: string | null;
 }
 
 export interface Flashcard {
