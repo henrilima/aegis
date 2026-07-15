@@ -279,3 +279,13 @@ commands.allow = [
     "global_get_custom_icon_path",
     "global_update_shortcut_icon"
 ]
+
+[[permission]]
+identifier = "automation-management"
+description = "Permissões de gerenciamento de automações e regras de gatilho"
+commands.allow = [
+    "automation_list_rules",
+    "automation_add_rule",
+    "automation_delete_rule",
+    "automation_toggle_rule"
+]

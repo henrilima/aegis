@@ -273,6 +273,7 @@ impl SleepManager {
 
 #[tauri::command]
 pub async fn sono_upsert_entry(
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     entry: SleepEntry,
 ) -> Result<i64, String> {
@@ -290,6 +291,7 @@ pub async fn sono_upsert_entry(
                 Some(&inserted_id.to_string()),
             );
         }
+        let _ = crate::automation::evaluate_rules(&state, &app_handle, &entry.user_id);
     }
     res
 }

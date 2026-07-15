@@ -159,6 +159,16 @@ impl TaskManager {
         Ok(())
     }
 
+    pub fn get_user_id_for_task(&self, id: i32) -> Result<String, String> {
+        let conn = self.get_connection();
+        let user_id: String = conn.query_row(
+            "SELECT user_id FROM tasks WHERE id = ?1",
+            params![id],
+            |row| row.get(0),
+        ).map_err(|e| e.to_string())?;
+        Ok(user_id)
+    }
+
     pub fn delete_task(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
         // Delete subtasks first
@@ -244,6 +254,7 @@ pub async fn tasks_upsert(
 
 #[tauri::command]
 pub async fn tasks_toggle(
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     id: i32,
     completed: bool,
@@ -254,7 +265,13 @@ pub async fn tasks_toggle(
         .with_timezone(&chrono::Local)
         .format("%Y-%m-%d")
         .to_string();
-    state.tasks.toggle_task(id, completed, Some(today))
+    let res = state.tasks.toggle_task(id, completed, Some(today));
+    if res.is_ok() && completed {
+        if let Ok(user_id) = state.tasks.get_user_id_for_task(id) {
+            let _ = crate::automation::evaluate_rules(&state, &app_handle, &user_id);
+        }
+    }
+    res
 }
 
 #[tauri::command]

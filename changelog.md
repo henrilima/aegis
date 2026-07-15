@@ -1,6 +1,14 @@
 # Aegis
 
 ### Novidades
+- **Regras de Automação entre Módulos**: Nova aba de automações no menu de configurações que permite interligar os módulos do aplicativo sem código.
+  - Gatilhos suportados: Sessão de estudos registrada, registro de sono diário, ciclos de Pomodoro finalizados e tarefas concluídas hoje;
+  - Operadores lógicos suportados: Maior que (`>`), maior ou igual (`>=`), menor que (`<`), menor ou igual (`<=`) e igual (`=`);
+  - Ações suportadas: Marcar um hábito específico como feito automaticamente e criar tarefas de apoio (ex: descanso);
+  - Prevenção nativa contra execuções duplicadas no mesmo dia;
+  - Interface visual baseada em sentence-builder estruturado e com seletores Radix/Shadcn premium;
+  - Envio de notificações in-app instantâneas a cada disparo automático bem-sucedido;
+  - Integração total com o sistema de backup local e exportação/importação raw JSON.
 - **Módulo de Sono — Aba de Sonolência**: Nova aba que analisa os padrões históricos de sono e estima as janelas de energia e sonolência ao longo do dia com base no ritmo circadiano individual do usuário.
   - Calcula médias de horário de acordar, deitar e duração dos últimos 14 registros;
   - Exibe 4 janelas do ciclo diário: pico matinal, vale circadiano, pico vespertino e pressão de sono pré-dormir;

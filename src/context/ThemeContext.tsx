@@ -1,3 +1,4 @@
+// src/context/ThemeContext.tsx
 "use client";
 
 import { load } from "@tauri-apps/plugin-store";
@@ -20,6 +21,10 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export interface ThemeProviderProps {
+  children: React.ReactNode;
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ChromaticThemeId>(FALLBACK_THEME);
@@ -84,8 +89,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // Garante que o localStorage e o Store fiquem sincronizados
         localStorage.setItem("aegis-chromatic-theme", finalTheme);
+        localStorage.setItem("aegis-preferred-theme", finalTheme); // Inicializa a preferência
         localStorage.setItem("aegis-accent-color", savedAccent);
-        localStorage.setItem("aegis-app-mode", savedAppMode);
+        localStorage.setItem("aegis-accent-color-preferred", savedAccent); // Inicializa a preferência
 
         await store.set("theme", finalTheme);
         await store.set("accent-color", savedAccent);
@@ -96,6 +102,84 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
 
     loadSavedThemes();
+  }, []);
+
+  // Ouvintes de eventos Tauri para automação de alteração temporária de temas
+  useEffect(() => {
+    let unlistenChange: (() => void) | null = null;
+    let unlistenRestore: (() => void) | null = null;
+
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<string>("change-theme", (event) => {
+        let newTheme = event.payload;
+        let newAccent: ThemeColorKey | null = null;
+
+        if (newTheme.includes(":")) {
+          const parts = newTheme.split(":");
+          newTheme = parts[0];
+          newAccent = parts[1] as ThemeColorKey;
+        }
+
+        const typedTheme = newTheme as ChromaticThemeId;
+        if (VALID_THEME_IDS.has(typedTheme)) {
+          setThemeState(typedTheme);
+          localStorage.setItem("aegis-chromatic-theme", typedTheme);
+          
+          if (newAccent) {
+            setAccentColorState(newAccent);
+            localStorage.setItem("aegis-accent-color", newAccent);
+          }
+
+          if (typedTheme === "light") {
+            document.documentElement.classList.remove("dark");
+          } else {
+            document.documentElement.classList.add("dark");
+          }
+
+          if (typedTheme === "default") {
+            document.documentElement.removeAttribute("data-theme");
+          } else {
+            document.documentElement.setAttribute("data-theme", typedTheme);
+          }
+        }
+      }).then((fn) => {
+        unlistenChange = fn;
+      });
+
+      listen("restore-default-theme", () => {
+        const preferredTheme =
+          (localStorage.getItem("aegis-preferred-theme") as ChromaticThemeId | null) ||
+          FALLBACK_THEME;
+        const preferredAccent =
+          (localStorage.getItem("aegis-accent-color-preferred") as ThemeColorKey | null) ||
+          "blue";
+
+        setThemeState(preferredTheme);
+        localStorage.setItem("aegis-chromatic-theme", preferredTheme);
+
+        setAccentColorState(preferredAccent);
+        localStorage.setItem("aegis-accent-color", preferredAccent);
+
+        if (preferredTheme === "light") {
+          document.documentElement.classList.remove("dark");
+        } else {
+          document.documentElement.classList.add("dark");
+        }
+
+        if (preferredTheme === "default") {
+          document.documentElement.removeAttribute("data-theme");
+        } else {
+          document.documentElement.setAttribute("data-theme", preferredTheme);
+        }
+      }).then((fn) => {
+        unlistenRestore = fn;
+      });
+    });
+
+    return () => {
+      if (unlistenChange) unlistenChange();
+      if (unlistenRestore) unlistenRestore();
+    };
   }, []);
 
   const setAppMode = (mode: "default" | "no_sidebar" | "portal") => {
@@ -111,6 +195,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: ChromaticThemeId) => {
     setThemeState(newTheme);
     localStorage.setItem("aegis-chromatic-theme", newTheme);
+    localStorage.setItem("aegis-preferred-theme", newTheme); // Salva a preferência definitiva do usuário
     load("aegis-theme-settings.json", { defaults: {}, autoSave: true }).then(
       (store) => {
         store.set("theme", newTheme);
@@ -134,6 +219,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setAccentColor = (color: ThemeColorKey) => {
     setAccentColorState(color);
     localStorage.setItem("aegis-accent-color", color);
+    localStorage.setItem("aegis-accent-color-preferred", color); // Salva o destaque preferido definitivo
     load("aegis-theme-settings.json", { defaults: {}, autoSave: true }).then(
       (store) => {
         store.set("accent-color", color);

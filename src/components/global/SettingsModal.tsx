@@ -3,6 +3,7 @@
 import {
   Bell,
   Code2,
+  Cpu,
   Database,
   HardDriveDownload,
   HeartPulse,
@@ -31,6 +32,7 @@ import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 import { AboutTab } from "../modules/settings/aboutTab";
+import { AutomationsTab } from "../modules/settings/automationsTab";
 import { BackupTab } from "../modules/settings/backupTab";
 import { DangerTab } from "../modules/settings/dangerTab";
 import { DataTab } from "../modules/settings/dataTab";
@@ -72,6 +74,7 @@ const GROUPS: { label: string; items: SettingsItem[] }[] = [
       { id: "system", label: "Geral", icon: Monitor },
       { id: "modules", label: "Módulos", icon: LayoutGrid },
       { id: "integrations", label: "Integrações", icon: Puzzle },
+      { id: "automations", label: "Automações", icon: Cpu },
     ],
   },
   {
@@ -142,6 +145,11 @@ const TAB_DEFS: Record<
   integrations: {
     title: "Integrações",
     description: "Conecte serviços externos para enriquecer seus dados.",
+  },
+  automations: {
+    title: "Regras de automação",
+    description:
+      "Crie gatilhos automáticos sem código para interligar os módulos do Aegis.",
   },
   developer: {
     title: "Área Restrita",
@@ -246,6 +254,8 @@ export function SettingsModal() {
         return <ModulesTab />;
       case "integrations":
         return <IntegrationsTab />;
+      case "automations":
+        return <AutomationsTab />;
       case "developer":
         return <DeveloperTab handleInternalCommand={handleInternalCommand} />;
       case "system-health":

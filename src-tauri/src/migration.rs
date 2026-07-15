@@ -56,6 +56,8 @@ pub struct UserFullBackup {
     pub study_subject_groups: Vec<crate::studies::SubjectGroup>,
     #[serde(default)]
     pub study_subject_formulas: Vec<crate::studies::SubjectFormula>,
+    #[serde(default)]
+    pub automation_rules: Vec<crate::automation::AutomationRule>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -144,6 +146,7 @@ pub async fn global_export_user_package(
         study_subjects: state.studies.list_subjects(&user_id),
         study_subject_groups: state.studies.list_subject_groups(&user_id),
         study_subject_formulas: state.studies.list_subject_formulas(&user_id),
+        automation_rules: state.automation.list_rules(&user_id),
     };
 
     let json = serde_json::to_vec(&backup).map_err(|e| e.to_string())?;
@@ -229,6 +232,7 @@ pub async fn global_export_raw_user_json(
         study_subjects: state.studies.list_subjects(&user_id),
         study_subject_groups: state.studies.list_subject_groups(&user_id),
         study_subject_formulas: state.studies.list_subject_formulas(&user_id),
+        automation_rules: state.automation.list_rules(&user_id),
     };
 
     // Serializa e gera o JSON formatado e legível
@@ -461,6 +465,11 @@ pub async fn global_import_raw_user_json(
         formula.id = None;
         let _ = state.studies.upsert_subject_formula(formula);
     }
+    for mut rule in backup.automation_rules {
+        rule.user_id = target_user_id.clone();
+        rule.id = None;
+        let _ = state.automation.add_rule(rule);
+    }
 
     Ok(())
 }
@@ -680,6 +689,11 @@ pub async fn global_import_user_package(
         formula.user_id = target_user_id.clone();
         formula.id = None;
         let _ = state.studies.upsert_subject_formula(formula);
+    }
+    for mut rule in backup.automation_rules {
+        rule.user_id = target_user_id.clone();
+        rule.id = None;
+        let _ = state.automation.add_rule(rule);
     }
 
     Ok(())

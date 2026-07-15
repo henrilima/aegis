@@ -789,6 +789,7 @@ impl StudiesManager {
 
 #[tauri::command]
 pub async fn estudos_add_session(
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     session: StudySession,
 ) -> Result<i64, String> {
@@ -802,6 +803,7 @@ pub async fn estudos_add_session(
             Some("study_sessions"),
             Some(&inserted_id.to_string()),
         );
+        let _ = crate::automation::evaluate_rules(&state, &app_handle, &session.user_id);
     }
     res
 }
@@ -822,7 +824,9 @@ pub async fn estudos_delete_session(
 ) -> Result<(), String> {
     let result = state.studies.delete_session(id, &user_id);
     if result.is_ok() {
-        let _ = state.stats.delete_xp_for_ref(&user_id, "study_sessions", &id.to_string());
+        let _ = state
+            .stats
+            .delete_xp_for_ref(&user_id, "study_sessions", &id.to_string());
     }
     result
 }

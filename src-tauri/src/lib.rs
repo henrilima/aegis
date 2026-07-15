@@ -43,6 +43,7 @@ mod notifications;
 mod dictionary;
 mod movies;
 mod flashcards;
+mod automation;
 
 use passwords::PasswordManager;
 use pomodoro::PomodoroManager;
@@ -57,6 +58,7 @@ use statistics::StatisticsManager;
 use reading::ReadingManager;
 use tasks::TaskManager;
 use notifications::NotificationsManager;
+use automation::AutomationManager;
 
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_notification::NotificationExt;
@@ -92,6 +94,7 @@ pub struct AppState {
     dictionary: dictionary::DictionaryManager,
     movies: movies::MovieManager,
     flashcards: flashcards::FlashcardManager,
+    automation: AutomationManager,
 }
 
 #[tauri::command]
@@ -971,6 +974,7 @@ pub fn run() {
             let dictionary = dictionary::DictionaryManager::new(app.handle());
             let movies = movies::MovieManager::new(app.handle());
             let flashcards = flashcards::FlashcardManager::new(app.handle());
+            let automation = AutomationManager::new(app.handle());
 
             let app_handle = app.handle().clone();
             let pm_clone = PasswordManager::new(app.handle());
@@ -1134,6 +1138,11 @@ pub fn run() {
                                             }
                                         }
                                         
+                                        // Avaliação periódica das Regras de Automação (a cada mudança de minuto)
+                                        if let Some(state) = app_handle.try_state::<crate::AppState>() {
+                                            let _ = crate::automation::evaluate_rules(&state, &app_handle, uid);
+                                        }
+
                                         // Controle de Sono (Existente)
                                         let goal = sleep_clone.get_goal(uid, &app_handle);
                                         if goal.reminder_enabled && goal.target_bedtime == now_str {
@@ -1190,7 +1199,7 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies, flashcards });
+            app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies, flashcards, automation });
 
             //  Startup Data Summary 
             {
@@ -1331,6 +1340,10 @@ pub fn run() {
             // Sleep
             sleep::sono_upsert_entry, sleep::sono_delete_entry, sleep::sono_list_entries, 
             sleep::sono_upsert_goal, sleep::sono_get_goal, sleep::sono_export_csv, sleep::sono_import_csv,
+
+            // Automation
+            automation::automation_list_rules, automation::automation_add_rule, 
+            automation::automation_delete_rule, automation::automation_toggle_rule,
 
             // Calendar
             calendar::calendar_add_event, calendar::calendar_update_event, calendar::sync_br_holidays, 

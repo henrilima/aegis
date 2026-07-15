@@ -258,8 +258,16 @@ pub async fn pomodoro_save_pomodoro_state(state: tauri::State<'_, crate::AppStat
 }
 
 #[tauri::command]
-pub async fn pomodoro_record_pomodoro_session(state: tauri::State<'_, crate::AppState>, session: PomodoroHistory) -> Result<(), String> {
-    state.pomo.record_session(session)
+pub async fn pomodoro_record_pomodoro_session(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    session: PomodoroHistory,
+) -> Result<(), String> {
+    let res = state.pomo.record_session(session.clone());
+    if res.is_ok() {
+        let _ = crate::automation::evaluate_rules(&state, &app_handle, &session.user_id);
+    }
+    res
 }
 
 #[tauri::command]
