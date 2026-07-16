@@ -20,7 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { motion } from "framer-motion";
 import { GripVertical, Move, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { AlarmFormState } from "@/components/modules/alarms/hooks/useAlarmsLogic";
 import { DashboardConfigModal } from "@/components/modules/dashboard/components/modals/DashboardConfigModal";
@@ -206,6 +206,17 @@ function SortableWidgetItem({
   );
 }
 
+const isVideoUrl = (url: string | undefined): boolean => {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  return (
+    lowerUrl.includes(".mp4") ||
+    lowerUrl.includes(".webm") ||
+    lowerUrl.includes(".ogg") ||
+    lowerUrl.startsWith("data:video/")
+  );
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { now: time, isSimulated } = useTime();
@@ -240,6 +251,52 @@ export default function Dashboard() {
 
   const [isVisualEditMode, setIsVisualEditMode] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const visibilityHandlerRef = useRef<(() => void) | null>(null);
+
+  const videoRefCallback = useCallback((video: HTMLVideoElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    if (visibilityHandlerRef.current) {
+      document.removeEventListener(
+        "visibilitychange",
+        visibilityHandlerRef.current,
+      );
+      visibilityHandlerRef.current = null;
+    }
+
+    if (!video) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.05 },
+    );
+    observer.observe(video);
+    observerRef.current = observer;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        video.pause();
+      } else {
+        const rect = video.getBoundingClientRect();
+        const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+        if (inViewport) {
+          video.play().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    visibilityHandlerRef.current = handleVisibility;
+  }, []);
 
   // Sensors do @dnd-kit — requer 8px de movimento antes de iniciar o drag
   const sensors = useSensors(
@@ -311,16 +368,35 @@ export default function Dashboard() {
             className="absolute -top-6 md:-top-10 -left-6 md:-left-10 -right-6 md:-right-10 overflow-hidden pointer-events-none z-0"
             style={{ height: `${dashboardCoverHeight}px` }}
           >
-            <img
-              src={dashboardCoverImage}
-              alt="Dashboard Cover"
-              className="w-full h-full object-cover"
-              style={{
-                objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
-                filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
-                transform: `scale(${dashboardCoverZoom / 100})`,
-              }}
-            />
+            {isVideoUrl(dashboardCoverImage) ? (
+              <video
+                ref={videoRefCallback}
+                src={dashboardCoverImage}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className="w-full h-full object-cover"
+                style={{
+                  willChange: "transform",
+                  objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
+                  filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
+                  transform: `scale(${dashboardCoverZoom / 100}) translate3d(0,0,0)`,
+                }}
+              />
+            ) : (
+              <img
+                src={dashboardCoverImage}
+                alt="Dashboard Cover"
+                className="w-full h-full object-cover"
+                style={{
+                  objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
+                  filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
+                  transform: `scale(${dashboardCoverZoom / 100})`,
+                }}
+              />
+            )}
             <div className="absolute inset-0 bg-linear-to-b from-background/25 to-background" />
           </div>
         )}
@@ -410,16 +486,35 @@ export default function Dashboard() {
           className="absolute -top-6 md:-top-10 -left-6 md:-left-10 -right-6 md:-right-10 overflow-hidden pointer-events-none z-0"
           style={{ height: `${dashboardCoverHeight}px` }}
         >
-          <img
-            src={dashboardCoverImage}
-            alt="Dashboard Cover"
-            className="w-full h-full object-cover"
-            style={{
-              objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
-              filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
-              transform: `scale(${dashboardCoverZoom / 100})`,
-            }}
-          />
+          {isVideoUrl(dashboardCoverImage) ? (
+            <video
+              ref={videoRefCallback}
+              src={dashboardCoverImage}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              className="w-full h-full object-cover"
+              style={{
+                willChange: "transform",
+                objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
+                filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
+                transform: `scale(${dashboardCoverZoom / 100}) translate3d(0,0,0)`,
+              }}
+            />
+          ) : (
+            <img
+              src={dashboardCoverImage}
+              alt="Dashboard Cover"
+              className="w-full h-full object-cover"
+              style={{
+                objectPosition: `${dashboardCoverPositionX}% ${dashboardCoverPositionY}%`,
+                filter: `blur(${dashboardCoverBlur}px) grayscale(${dashboardCoverGrayscale}%) saturate(${dashboardCoverSaturation}%)`,
+                transform: `scale(${dashboardCoverZoom / 100})`,
+              }}
+            />
+          )}
           <div className="absolute inset-0 bg-linear-to-b from-background/25 to-background" />
         </div>
       )}

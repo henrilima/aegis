@@ -838,6 +838,48 @@ async fn global_delete_avatar(state: State<'_, AppState>, user_id: String) -> Re
     state.pm.delete_avatar(&user_id)
 }
 
+#[tauri::command]
+async fn global_save_dashboard_cover(app_handle: tauri::AppHandle, source_path: String) -> Result<String, String> {
+    use tauri::Manager;
+    let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    let covers_dir = app_data_dir.join("covers");
+    
+    // Se já existir a pasta/capa anterior, vamos removê-la para evitar conflitos de extensão/acumulação
+    if covers_dir.exists() {
+        let _ = std::fs::remove_dir_all(&covers_dir);
+    }
+    std::fs::create_dir_all(&covers_dir).map_err(|e| format!("Falha ao criar diretório de capas: {}", e))?;
+    
+    let src_path = std::path::Path::new(&source_path);
+    if !src_path.exists() {
+        return Err("O arquivo de origem selecionado não existe.".to_string());
+    }
+    
+    let extension = src_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("mp4");
+        
+    let filename = format!("dashboard_cover.{}", extension);
+    let dest_path = covers_dir.join(&filename);
+    
+    std::fs::copy(src_path, &dest_path).map_err(|e| format!("Falha ao copiar o arquivo de capa: {}", e))?;
+    
+    Ok(dest_path.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+async fn global_delete_dashboard_cover(app_handle: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    let covers_dir = app_data_dir.join("covers");
+    if covers_dir.exists() {
+        std::fs::remove_dir_all(&covers_dir).map_err(|e| format!("Falha ao remover capas: {}", e))?;
+    }
+    Ok(())
+}
+
+
 
 
 
@@ -1292,6 +1334,7 @@ pub fn run() {
             global_set_custom_icon, global_has_custom_icon, global_get_custom_icon_path, global_update_shortcut_icon,
             global_get_app_version, global_read_changelog, global_get_log_path, global_read_app_logs, global_capture_screenshot,
             global_save_avatar, global_get_avatar, global_delete_avatar, global_check_dnd_status, global_check_github_update, 
+            global_save_dashboard_cover, global_delete_dashboard_cover,
             global_open_app_data_folder, global_pre_update_backup, 
             global_export_user_package, global_import_user_package, global_export_full_system_bundle, global_import_full_system_bundle,
             global_export_raw_user_json, global_import_raw_user_json,

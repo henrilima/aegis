@@ -1,3 +1,4 @@
+// src/components/modules/pomodoro/FloatingPomodoroWidget.tsx
 "use client";
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -57,12 +58,12 @@ export function FloatingPomodoroWidget() {
 
   // Define quebras de responsividade baseadas no tamanho da janela
   const isTinyHeight = windowSize.height < 110;
-  const isTinyWidth = windowSize.width < 165;
-  const isMicro = windowSize.width < 135 || windowSize.height < 90;
+  const isTinyWidth = windowSize.width < 185; // Aumentado ligeiramente para comportar a barra lateral
+  const isMicro = windowSize.width < 145 || windowSize.height < 90;
 
   // Condição para layout horizontal: muito largo e pouco alto
   const isWideAndShort =
-    windowSize.width > windowSize.height * 1.5 && windowSize.height < 130;
+    windowSize.width > windowSize.height * 1.4 && windowSize.height < 130;
 
   // Tamanho do texto do temporizador dinâmico
   let timerTextClass = "text-5xl";
@@ -73,179 +74,191 @@ export function FloatingPomodoroWidget() {
   }
 
   return (
-    <div
-      data-tauri-drag-region
-      className="w-screen h-screen flex flex-col items-center justify-between bg-card text-foreground font-sans select-none p-3 relative overflow-hidden"
-    >
-      {/* Botão de Fechar discreto no canto superior direito */}
-      <button
-        onClick={handleClose}
-        className="absolute top-2.5 right-2.5 p-1 rounded-lg text-muted-foreground hover:bg-muted/80 transition-colors z-50 cursor-pointer"
-        title="Fechar Widget"
-        type="button"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
-
-      {/* Barra de arraste (drag region) */}
+    <div className="w-screen h-screen flex flex-row bg-card text-foreground font-sans select-none relative overflow-hidden">
+      {/* Barra de arraste (drag region) na lateral esquerda */}
       <div
         data-tauri-drag-region
-        className="w-full flex justify-center py-1 cursor-grab active:cursor-grabbing hover:bg-neutral-800/10 rounded-t-lg shrink-0 pr-8"
+        className="h-full w-5 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:bg-neutral-800/10 border-r border-border/30 bg-background/15 shrink-0 gap-1.5"
+        title="Arraste para mover"
       >
         <div
           data-tauri-drag-region
-          className="w-8 h-1 bg-muted-foreground/30 rounded-full"
+          className="w-1.5 h-1.5 bg-muted-foreground/45 rounded-full"
+        />
+        <div
+          data-tauri-drag-region
+          className="w-1.5 h-1.5 bg-muted-foreground/45 rounded-full"
+        />
+        <div
+          data-tauri-drag-region
+          className="w-1.5 h-1.5 bg-muted-foreground/45 rounded-full"
         />
       </div>
 
-      {isWideAndShort ? (
-        /* Layout Horizontal: Timer à esquerda e Botões à direita */
-        <div
-          data-tauri-drag-region
-          className="flex-1 flex items-center justify-between w-full px-2 gap-4"
+      {/* Conteúdo principal */}
+      <div
+        data-tauri-drag-region
+        className="flex-1 h-full flex flex-col items-center justify-between p-3 relative overflow-hidden"
+      >
+        {/* Botão de Fechar discreto no canto superior direito */}
+        <button
+          onClick={handleClose}
+          className="absolute top-2 right-2 p-1 rounded-lg text-muted-foreground hover:bg-muted/80 transition-colors z-50 cursor-pointer border-none bg-transparent"
+          title="Fechar Widget"
+          type="button"
         >
+          <X className="w-3.5 h-3.5" />
+        </button>
+
+        {isWideAndShort ? (
+          /* Layout Horizontal: Timer à esquerda e Botões à direita */
           <div
             data-tauri-drag-region
-            className="flex flex-col items-start gap-0.5 justify-center"
+            className="flex-1 flex items-center justify-between w-full px-1.5 gap-4"
           >
-            {/* Tipo de Ciclo em formato super compacto */}
-            <span
-              className={cn(
-                "font-bold tracking-wide uppercase text-[7px]",
-                isWork ? theme.text : "text-muted-foreground",
-              )}
+            <div
+              data-tauri-drag-region
+              className="flex flex-col items-start gap-0.5 justify-center"
             >
-              {isWork ? "Foco" : "Pausa"}
-            </span>
-            <span
-              className={cn(
-                "font-black font-outfit tabular-nums transition-all leading-none",
-                timerTextClass,
-                isWork ? theme.text : "text-muted-foreground",
-              )}
-            >
-              {formattedTime}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={actions.toggleTimer}
-              className={cn(
-                "flex items-center justify-center transition-all rounded-lg font-outfit text-white w-8 h-8 p-0",
-                isWork
-                  ? cn(theme.solid, theme.solidHover)
-                  : "bg-primary/20 hover:bg-primary/30 text-foreground",
-              )}
-              type="button"
-              title={state?.isRunning ? "Pausar" : "Iniciar"}
-            >
-              {state?.isRunning ? (
-                <Pause className="fill-current w-4 h-4" />
-              ) : (
-                <Play className="fill-current w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={actions.stopTimer}
-              disabled={!state?.isRunning && state?.cyclesCompleted === 0}
-              className="flex items-center justify-center border border-border bg-muted/30 hover:bg-muted/80 text-muted-foreground disabled:opacity-30 rounded-lg transition-all font-bold w-8 h-8 p-0"
-              type="button"
-              title="Parar"
-            >
-              <Square className="fill-current w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      ) : (
-        /* Layout Vertical Tradicional */
-        <>
-          {/* Tipo de Ciclo */}
-          {!isTinyHeight && (
-            <div className="pt-1 flex flex-col items-center gap-1">
+              {/* Tipo de Ciclo em formato super compacto */}
               <span
                 className={cn(
-                  "font-bold px-3 py-1 rounded-full border tracking-wide uppercase",
-                  isTinyWidth ? "text-[8px] px-2 py-0.5" : "text-[9px]",
-                  isWork
-                    ? cn(theme.bg, theme.border, theme.text)
-                    : "bg-muted border-border text-muted-foreground",
+                  "font-bold tracking-wide uppercase text-[7px]",
+                  isWork ? theme.text : "text-muted-foreground",
                 )}
               >
                 {isWork ? "Foco" : "Pausa"}
               </span>
-            </div>
-          )}
-
-          {/* Temporizador */}
-          <div
-            data-tauri-drag-region
-            className="flex-1 flex items-center justify-center w-full"
-          >
-            <span
-              data-tauri-drag-region
-              className={cn(
-                "font-black font-outfit tabular-nums transition-all leading-none",
-                timerTextClass,
-                isWork ? theme.text : "text-muted-foreground",
-              )}
-            >
-              {formattedTime}
-            </span>
-          </div>
-
-          {/* Controles do Widget */}
-          <div className="w-full flex justify-center gap-1.5 pb-1">
-            <button
-              onClick={actions.toggleTimer}
-              className={cn(
-                "flex items-center justify-center transition-all rounded-lg font-outfit text-white",
-                isWork
-                  ? cn(theme.solid, theme.solidHover)
-                  : "bg-primary/20 hover:bg-primary/30 text-foreground",
-                isTinyWidth ? "w-8 h-8 p-0" : "w-24 h-8 text-xs font-black",
-              )}
-              type="button"
-              title={state?.isRunning ? "Pausar" : "Iniciar"}
-            >
-              {state?.isRunning ? (
-                <Pause
-                  className={cn(
-                    "fill-current",
-                    isTinyWidth ? "w-4 h-4" : "w-3.5 h-3.5 mr-1.5",
-                  )}
-                />
-              ) : (
-                <Play
-                  className={cn(
-                    "fill-current",
-                    isTinyWidth ? "w-4 h-4" : "w-3.5 h-3.5 mr-1.5",
-                  )}
-                />
-              )}
-              {!isTinyWidth && (state?.isRunning ? "Pausar" : "Iniciar")}
-            </button>
-            <button
-              onClick={actions.stopTimer}
-              disabled={!state?.isRunning && state?.cyclesCompleted === 0}
-              className={cn(
-                "flex items-center justify-center border border-border bg-muted/30 hover:bg-muted/80 text-muted-foreground disabled:opacity-30 rounded-lg transition-all font-bold",
-                isTinyWidth ? "w-8 h-8 p-0" : "w-20 h-8 text-xs",
-              )}
-              type="button"
-              title="Parar"
-            >
-              <Square
+              <span
                 className={cn(
-                  "fill-current",
-                  isTinyWidth ? "w-3.5 h-3.5" : "w-3 h-3 mr-1.5",
+                  "font-black font-outfit tabular-nums transition-all leading-none",
+                  timerTextClass,
+                  isWork ? theme.text : "text-muted-foreground",
                 )}
-              />
-              {!isTinyWidth && "Parar"}
-            </button>
+              >
+                {formattedTime}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 pr-6">
+              <button
+                onClick={actions.toggleTimer}
+                className={cn(
+                  "flex items-center justify-center transition-all rounded-lg font-outfit text-white w-8 h-8 p-0 border-none cursor-pointer",
+                  isWork
+                    ? cn(theme.solid, theme.solidHover)
+                    : "bg-primary/20 hover:bg-primary/30 text-foreground",
+                )}
+                type="button"
+                title={state?.isRunning ? "Pausar" : "Iniciar"}
+              >
+                {state?.isRunning ? (
+                  <Pause className="fill-current w-4 h-4" />
+                ) : (
+                  <Play className="fill-current w-4 h-4" />
+                )}
+              </button>
+              <button
+                onClick={actions.stopTimer}
+                disabled={!state?.isRunning && state?.cyclesCompleted === 0}
+                className="flex items-center justify-center border border-border bg-muted/30 hover:bg-muted/80 text-muted-foreground disabled:opacity-30 rounded-lg transition-all font-bold w-8 h-8 p-0 cursor-pointer"
+                type="button"
+                title="Parar"
+              >
+                <Square className="fill-current w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-        </>
-      )}
+        ) : (
+          /* Layout Vertical Tradicional */
+          <>
+            {/* Tipo de Ciclo */}
+            {!isTinyHeight && (
+              <div className="pt-0.5 flex flex-col items-center gap-1">
+                <span
+                  className={cn(
+                    "font-bold px-3 py-1 rounded-full border tracking-wide uppercase",
+                    isTinyWidth ? "text-[8px] px-2 py-0.5" : "text-[9px]",
+                    isWork
+                      ? cn(theme.bg, theme.border, theme.text)
+                      : "bg-muted border-border text-muted-foreground",
+                  )}
+                >
+                  {isWork ? "Foco" : "Pausa"}
+                </span>
+              </div>
+            )}
+
+            {/* Temporizador */}
+            <div
+              data-tauri-drag-region
+              className="flex-1 flex items-center justify-center w-full"
+            >
+              <span
+                data-tauri-drag-region
+                className={cn(
+                  "font-black font-outfit tabular-nums transition-all leading-none",
+                  timerTextClass,
+                  isWork ? theme.text : "text-muted-foreground",
+                )}
+              >
+                {formattedTime}
+              </span>
+            </div>
+
+            {/* Controles do Widget */}
+            <div className="w-full flex justify-center gap-1.5 pb-0.5">
+              <button
+                onClick={actions.toggleTimer}
+                className={cn(
+                  "flex items-center justify-center transition-all rounded-lg font-outfit text-white border-none cursor-pointer",
+                  isWork
+                    ? cn(theme.solid, theme.solidHover)
+                    : "bg-primary/20 hover:bg-primary/30 text-foreground",
+                  isTinyWidth ? "w-8 h-8 p-0" : "w-24 h-8 text-xs font-black",
+                )}
+                type="button"
+                title={state?.isRunning ? "Pausar" : "Iniciar"}
+              >
+                {state?.isRunning ? (
+                  <Pause
+                    className={cn(
+                      "fill-current",
+                      isTinyWidth ? "w-4 h-4" : "w-3.5 h-3.5 mr-1.5",
+                    )}
+                  />
+                ) : (
+                  <Play
+                    className={cn(
+                      "fill-current",
+                      isTinyWidth ? "w-4 h-4" : "w-3.5 h-3.5 mr-1.5",
+                    )}
+                  />
+                )}
+                {!isTinyWidth && (state?.isRunning ? "Pausar" : "Iniciar")}
+              </button>
+              <button
+                onClick={actions.stopTimer}
+                disabled={!state?.isRunning && state?.cyclesCompleted === 0}
+                className={cn(
+                  "flex items-center justify-center border border-border bg-muted/30 hover:bg-muted/80 text-muted-foreground disabled:opacity-30 rounded-lg transition-all font-bold cursor-pointer",
+                  isTinyWidth ? "w-8 h-8 p-0" : "w-20 h-8 text-xs",
+                )}
+                type="button"
+                title="Parar"
+              >
+                <Square
+                  className={cn(
+                    "fill-current",
+                    isTinyWidth ? "w-3.5 h-3.5" : "w-3 h-3 mr-1.5",
+                  )}
+                />
+                {!isTinyWidth && "Parar"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

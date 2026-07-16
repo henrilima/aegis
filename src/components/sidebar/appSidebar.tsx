@@ -10,6 +10,7 @@ import {
   Book,
   BookOpen,
   CalendarDays,
+  ExternalLink,
   FileText,
   Film,
   Home,
@@ -20,6 +21,7 @@ import {
   Moon,
   Settings,
   Shield,
+  Timer,
   Trophy,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -163,8 +165,13 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
   const [level, setLevel] = useState<number>(1);
   const [selectedTitle, setSelectedTitle] = useState<string>("");
   const [showSidebarRankBorder, setShowSidebarRankBorder] = useState(true);
+  const [isPomodoroActive, setIsPomodoroActive] = useState(false);
 
   const prevLevelRef = useRef<number | null>(null);
+
+  const pomoTheme = useMemo(() => {
+    return getColorTheme(getModuleColor("pomodoro"));
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -230,6 +237,38 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
         loadRankAndConfig,
       );
       window.removeEventListener("aegis-config-changed", loadRankAndConfig);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === "undefined") return;
+
+    const checkPomodoro = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const state = await invoke<{ isRunning: boolean }>(
+          "pomodoro_get_pomodoro_state",
+          {
+            userId: String(user.id),
+          },
+        );
+        setIsPomodoroActive(state.isRunning);
+      } catch {}
+    };
+
+    checkPomodoro();
+
+    let unlisten: (() => void) | null = null;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen("pomo-tick", () => {
+        checkPomodoro();
+      }).then((fn) => {
+        unlisten = fn;
+      });
+    });
+
+    return () => {
+      if (unlisten) unlisten();
     };
   }, [user?.id]);
 
@@ -570,36 +609,66 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
 
       <div className="px-4 py-3 border-t border-sidebar-border flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${themeStyles.bg} border ${themeStyles.border}`}
-          >
-            <Shield
-              className={`w-3.5 h-3.5 ${themeStyles.text}`}
-              strokeWidth={2.5}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleVersionClick}
-            className="text-[11px] text-neutral-600 font-medium cursor-pointer select-none hover:text-foreground transition-colors bg-transparent border-none p-0 m-0"
-          >
-            {updateAvailable ? (
+          {isPomodoroActive ? (
+            <>
               <div
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${themeStyles.border} ${themeStyles.bg} bg-opacity-50`}
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${pomoTheme.bg} border ${pomoTheme.border}`}
               >
-                <div
-                  className={`w-1.5 h-1.5 rounded-full ${themeStyles.solid} opacity-80`}
+                <Timer
+                  className={`w-3.5 h-3.5 ${pomoTheme.text}`}
+                  strokeWidth={2.5}
                 />
-                <span
-                  className={`text-[10px] font-bold ${themeStyles.text} opacity-90`}
-                >
-                  Nova versão disponível!
-                </span>
               </div>
-            ) : (
-              "Aegis - Proteção Local"
-            )}
-          </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const { invoke } = await import("@tauri-apps/api/core");
+                    await invoke("pomodoro_open_widget");
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                className="text-xs font-bold text-neutral-600 hover:text-foreground transition-colors bg-transparent border-none p-0 m-0 flex items-center gap-1.5 cursor-pointer select-none"
+              >
+                <span>Foco Ativo</span>
+                <ExternalLink className="w-3 h-3 text-muted-foreground" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${themeStyles.bg} border ${themeStyles.border}`}
+              >
+                <Shield
+                  className={`w-3.5 h-3.5 ${themeStyles.text}`}
+                  strokeWidth={2.5}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleVersionClick}
+                className="text-[11px] text-neutral-600 font-medium cursor-pointer select-none hover:text-foreground transition-colors bg-transparent border-none p-0 m-0"
+              >
+                {updateAvailable ? (
+                  <div
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${themeStyles.border} ${themeStyles.bg} bg-opacity-50`}
+                  >
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${themeStyles.solid} opacity-80`}
+                    />
+                    <span
+                      className={`text-[10px] font-bold ${themeStyles.text} opacity-90`}
+                    >
+                      Nova versão disponível!
+                    </span>
+                  </div>
+                ) : (
+                  "Aegis v3.6.0"
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">

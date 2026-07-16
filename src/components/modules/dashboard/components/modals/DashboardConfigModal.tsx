@@ -1,5 +1,7 @@
 "use client";
 
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   Check,
   Clock,
@@ -12,7 +14,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { resolveColor } from "@/colors.config";
 import { WIDGET_METADATA } from "@/components/modules/dashboard/widgets/registry";
 import { useSettingsLogic } from "@/components/modules/settings/useSettingsLogic";
@@ -35,6 +37,17 @@ interface DashboardConfigModalProps {
   onStartVisualEdit: () => void;
 }
 
+const isVideoUrl = (url: string | undefined): boolean => {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  return (
+    lowerUrl.includes(".mp4") ||
+    lowerUrl.includes(".webm") ||
+    lowerUrl.includes(".ogg") ||
+    lowerUrl.startsWith("data:video/")
+  );
+};
+
 export function DashboardConfigModal({
   activeWidgetIds,
   onToggle,
@@ -50,7 +63,7 @@ export function DashboardConfigModal({
   >("relogio");
   const [internalActiveIds, setInternalActiveIds] =
     useState<string[]>(activeWidgetIds);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [coverInputMode, setCoverInputMode] = useState<"url" | "file">("url");
 
   // Lógica de configurações estéticas globais (relógio e cabeçalho)
@@ -139,21 +152,28 @@ export function DashboardConfigModal({
     onToggle(id);
   };
 
-  const handleFileUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) updateConfigField("dashboardCoverImage", result);
-      };
-      reader.readAsDataURL(file);
-      // Reseta para que o mesmo arquivo possa ser selecionado novamente
-      e.target.value = "";
-    },
-    [updateConfigField],
-  );
+  const handleSelectLocalFile = useCallback(async () => {
+    try {
+      const path = await openDialog({
+        multiple: false,
+        filters: [
+          {
+            name: "Capa do Dashboard",
+            extensions: ["png", "jpg", "jpeg", "webp", "mp4", "webm"],
+          },
+        ],
+      });
+      if (!path || typeof path !== "string") return;
+
+      const savedPath = await invoke<string>("global_save_dashboard_cover", {
+        sourcePath: path,
+      });
+      const localUrl = convertFileSrc(savedPath);
+      updateConfigField("dashboardCoverImage", localUrl);
+    } catch (err) {
+      console.error("Erro ao selecionar arquivo de capa:", err);
+    }
+  }, [updateConfigField]);
 
   const inactiveWidgets = WIDGET_METADATA.filter(
     (w) => !internalActiveIds.includes(w.id),
@@ -656,16 +676,32 @@ export function DashboardConfigModal({
                             className="relative rounded-2xl overflow-hidden border border-border/40 w-full bg-accent/5"
                             style={{ aspectRatio: `1400 / ${localHeight}` }}
                           >
-                            <img
-                              src={dashboardCoverImage}
-                              alt="Preview da capa"
-                              className="w-full h-full object-cover transition-all"
-                              style={{
-                                objectPosition: `${localPosX}% ${localPosY}%`,
-                                filter: `blur(${localBlur}px) grayscale(${localGrayscale}%) saturate(${localSaturation}%)`,
-                                transform: `scale(${localZoom / 100})`,
-                              }}
-                            />
+                            {isVideoUrl(dashboardCoverImage) ? (
+                              <video
+                                src={dashboardCoverImage}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover transition-all"
+                                style={{
+                                  objectPosition: `${localPosX}% ${localPosY}%`,
+                                  filter: `blur(${localBlur}px) grayscale(${localGrayscale}%) saturate(${localSaturation}%)`,
+                                  transform: `scale(${localZoom / 100})`,
+                                }}
+                              />
+                            ) : (
+                              <img
+                                src={dashboardCoverImage}
+                                alt="Preview da capa"
+                                className="w-full h-full object-cover transition-all"
+                                style={{
+                                  objectPosition: `${localPosX}% ${localPosY}%`,
+                                  filter: `blur(${localBlur}px) grayscale(${localGrayscale}%) saturate(${localSaturation}%)`,
+                                  transform: `scale(${localZoom / 100})`,
+                                }}
+                              />
+                            )}
                             <button
                               type="button"
                               onClick={() => setShowRemoveConfirm(true)}
@@ -846,14 +882,6 @@ export function DashboardConfigModal({
                     <div className="space-y-6">
                       {/* Configurações de Capa */}
                       <div className="space-y-4">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                        />
-
                         <div className="space-y-1">
                           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                             <Image className="w-4 h-4 text-muted-foreground" />
@@ -888,14 +916,15 @@ export function DashboardConfigModal({
                         {coverInputMode === "file" ? (
                           <button
                             type="button"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={handleSelectLocalFile}
                             className="flex items-center gap-2 w-full px-4 py-3 rounded-xl border-2 border-dashed border-border hover:border-foreground/30 bg-accent/5 hover:bg-accent/10 transition-all text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             <Upload className="w-4 h-4 shrink-0" />
                             <span>
-                              {dashboardCoverImage?.startsWith("data:")
+                              {dashboardCoverImage &&
+                              !dashboardCoverImage.startsWith("http")
                                 ? "Substituir arquivo…"
-                                : "Escolher imagem (PNG, JPG, WebP)"}
+                                : "Escolher arquivo (Imagens, MP4)"}
                             </span>
                           </button>
                         ) : (
@@ -1299,7 +1328,12 @@ export function DashboardConfigModal({
                 confirmLabel="Remover"
                 cancelLabel="Cancelar"
                 variant="danger"
-                onConfirm={() => {
+                onConfirm={async () => {
+                  try {
+                    await invoke("global_delete_dashboard_cover");
+                  } catch (err) {
+                    console.error("Erro ao deletar arquivo de capa:", err);
+                  }
                   updateConfigField("dashboardCoverImage", "");
                   setShowRemoveConfirm(false);
                 }}
