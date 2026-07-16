@@ -1,6 +1,11 @@
 # Aegis
 
 ### Novidades
+- **Dashboard — Capa em Vídeo MP4/WebM**: Suporte a vídeos animados locais no formato MP4 ou WebM como capa da dashboard, copiados automaticamente para o diretório local do app.
+  - Implementação de um Callback Ref dinâmico para inicialização e limpeza;
+  - Otimização com `IntersectionObserver` que pausa a reprodução do vídeo quando a capa está fora do viewport (scroll);
+  - Otimização com `Document Visibility API` que pausa o vídeo se o aplicativo perder foco ou for minimizado, reduzindo o consumo de CPU/GPU a zero em segundo plano;
+  - Substituição da seleção de arquivos baseada em Base64 por diálogo nativo de sistema via Tauri Dialog.
 - **Regras de Automação entre Módulos**: Nova aba de automações no menu de configurações que permite interligar os módulos do aplicativo sem código.
   - Gatilhos suportados: Sessão de estudos registrada, registro de sono diário, ciclos de Pomodoro finalizados e tarefas concluídas hoje;
   - Operadores lógicos suportados: Maior que (`>`), maior ou igual (`>=`), menor que (`<`), menor ou igual (`<=`) e igual (`=`);
