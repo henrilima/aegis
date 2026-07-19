@@ -31,13 +31,14 @@ export function StudyInfoModal({ show, onClose }: StudyInfoModalProps) {
   );
 }
 
-export function StudyGuidePanel() {
+export function StudyGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color="violet"
       icon={GraduationCap}
       title="Guia do Módulo de Estudos"
       subtitle="Como gerenciar seu desempenho acadêmico"
+      onBack={onBack}
     >
       <StudyGuideContent />
     </ModuleGuideContainer>

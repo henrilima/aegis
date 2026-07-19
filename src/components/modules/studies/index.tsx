@@ -4,8 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   BookOpen,
   Calendar,
+  Clock,
   Copy,
-  Flame,
   HelpCircle,
   Layers,
   LayoutDashboard,
@@ -31,10 +31,10 @@ import { MateriasTab } from "./components/materiasTab";
 import { MetasTab } from "./components/metasTab";
 import { OverviewTab } from "./components/overviewTab";
 import { RelatorioTab } from "./components/reportTab";
+import { ScheduleTab } from "./components/scheduleTab";
 import { SessionModal } from "./components/studiesModals";
 import { GOAL_LABELS } from "./goalPanel";
-import { StudiesHeatmap } from "./heatmap";
-import type { StudyGoal, StudySession, TabId } from "./types";
+import type { StudyGoal, StudySchedule, StudySession, TabId } from "./types";
 import {
   computeStats,
   computeSubjectMap,
@@ -42,6 +42,26 @@ import {
   startOfMonth,
   startOfWeek,
 } from "./utils";
+
+interface Habit {
+  id?: number;
+  name: string;
+  habitType: string;
+  archived?: boolean;
+}
+
+interface AutomationRule {
+  id?: number;
+  userId: string;
+  name: string;
+  triggerType: string;
+  triggerOperator: string;
+  triggerValue: number;
+  actionType: string;
+  actionTargetId: string;
+  actionTargetName?: string;
+  active: boolean;
+}
 
 /**
  * Módulo de Estudos: Gerencia sessões de estudo, metas e análise de performance
@@ -54,6 +74,7 @@ export default function StudiesPage() {
   const [goals, setGoals] = useState<StudyGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabId>("visao-geral");
+  const [preGuideTab, setPreGuideTab] = useState<TabId>("visao-geral");
   const [showForm, setShowForm] = useState(false);
   const [editSession, setEditSession] = useState<StudySession | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
@@ -67,6 +88,23 @@ export default function StudiesPage() {
   const [filterSubject, setFilterSubject] = useState("all");
   const [grades, setGrades] = useState<StudyGrade[]>([]);
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [linkedHabitId, setLinkedHabitId] = useState<string>("none");
+  const [schedules, setSchedules] = useState<StudySchedule[]>([]);
+  const [showSaturday, setShowSaturday] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("studies_show_saturday");
+      return stored !== "false";
+    }
+    return true;
+  });
+  const [showSunday, setShowSunday] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("studies_show_sunday");
+      return stored !== "false";
+    }
+    return true;
+  });
 
   useEffect(() => {
     const handleOpenGrades = () => setShowGrades(true);
@@ -140,9 +178,57 @@ export default function StudiesPage() {
 
     try {
       await handleGoalSave(updates);
+
+      // Salva vínculo com o hábito de estudos via automação
+      const rulesList = await invoke<AutomationRule[]>(
+        "automation_list_rules",
+        {
+          userId: uid,
+        },
+      );
+      const studyHabitRule = rulesList.find(
+        (r) =>
+          r.triggerType === "study_hours" &&
+          r.actionType === "mark_habit" &&
+          r.triggerValue === 0.01,
+      );
+
+      if (linkedHabitId === "none") {
+        if (studyHabitRule?.id) {
+          await invoke("automation_delete_rule", { id: studyHabitRule.id });
+        }
+      } else {
+        const targetHabit = habits.find((h) => String(h.id) === linkedHabitId);
+        const habitName = targetHabit ? targetHabit.name : "Hábito de Estudos";
+
+        if (studyHabitRule) {
+          const updatedRule = {
+            ...studyHabitRule,
+            actionTargetId: linkedHabitId,
+            actionTargetName: habitName,
+            active: true,
+          };
+          await invoke("automation_add_rule", { rule: updatedRule });
+        } else {
+          const newRule = {
+            userId: uid,
+            name: "Estudo automático",
+            triggerType: "study_hours",
+            triggerOperator: ">=",
+            triggerValue: 0.01,
+            actionType: "mark_habit",
+            actionTargetId: linkedHabitId,
+            actionTargetName: habitName,
+            active: true,
+          };
+          await invoke("automation_add_rule", { rule: newRule });
+        }
+      }
+
       toast.success("Todas as metas foram atualizadas!");
       setShowSettings(false);
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Erro ao salvar metas");
     } finally {
       setIsSavingGoals(false);
@@ -162,6 +248,9 @@ export default function StudiesPage() {
         invoke<SubjectMeta[]>("subjects_list", { userId: uid }),
         invoke<StudyGrade[]>("grades_list", { userId: uid }),
         invoke<SubjectGroup[]>("subject_groups_list", { userId: uid }),
+        invoke<Habit[]>("habit_list_habits", { userId: uid }),
+        invoke<AutomationRule[]>("automation_list_rules", { userId: uid }),
+        invoke<StudySchedule[]>("estudos_list_schedules", { userId: uid }),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -184,6 +273,28 @@ export default function StudiesPage() {
 
       if (results[4].status === "fulfilled") {
         setGroups(results[4].value);
+      }
+
+      if (results[5].status === "fulfilled") {
+        setHabits(results[5].value);
+      }
+
+      if (results[6].status === "fulfilled") {
+        const rules = results[6].value;
+        const studyHabitRule = rules.find(
+          (r) =>
+            r.triggerType === "study_hours" &&
+            r.actionType === "mark_habit" &&
+            r.triggerValue === 0.01 &&
+            r.active,
+        );
+        setLinkedHabitId(
+          studyHabitRule ? studyHabitRule.actionTargetId : "none",
+        );
+      }
+
+      if (results[7].status === "fulfilled") {
+        setSchedules(results[7].value);
       }
 
       const config = await invoke<{ weekStartDay: number }>(
@@ -326,10 +437,9 @@ export default function StudiesPage() {
   const STUDIES_TABS = [
     { id: "visao-geral", label: "Visão Geral", icon: LayoutDashboard },
     { id: "materias", label: "Matérias", icon: Layers },
+    { id: "horarios", label: "Horários", icon: Clock },
     { id: "historico", label: "Histórico", icon: Calendar },
-    { id: "heatmap", label: "Constância", icon: Flame },
     { id: "relatorio", label: "Relatório", icon: Copy },
-    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   if (showGrades) {
@@ -349,13 +459,21 @@ export default function StudiesPage() {
     <div className="w-full flex flex-col gap-6 pb-10">
       <ModuleHeader
         color={getModuleColor("studies")}
-        title="Estudos & Desempenho"
+        title="Estudos e desempenho"
         subtitle="Centro de comando acadêmico"
         icon={BookOpen}
         tabs={STUDIES_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
         integrations={["dictionary", "pomodoro", "grades"]}
+        onTitleClick={() => {
+          if (tab !== "guia") {
+            setPreGuideTab(tab);
+            setTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Estudos"
         actions={[
           {
             id: "settings",
@@ -413,6 +531,18 @@ export default function StudiesPage() {
         />
       )}
 
+      {tab === "horarios" && (
+        <ScheduleTab
+          schedules={schedules}
+          existingSubjects={existingSubjects}
+          subjectMetas={subjectMetas}
+          onRefresh={load}
+          userId={uid}
+          showSaturday={showSaturday}
+          showSunday={showSunday}
+        />
+      )}
+
       {tab === "historico" && (
         <HistoryTab
           sessions={filteredSessions}
@@ -433,8 +563,6 @@ export default function StudiesPage() {
         />
       )}
 
-      {tab === "heatmap" && <StudiesHeatmap sessions={sessions} />}
-
       {tab === "relatorio" && (
         <RelatorioTab
           sessions={sessions}
@@ -444,7 +572,7 @@ export default function StudiesPage() {
         />
       )}
 
-      {tab === "guia" && <StudyGuidePanel />}
+      {tab === "guia" && <StudyGuidePanel onBack={() => setTab(preGuideTab)} />}
 
       {tab === "materias" && (
         <MateriasTab
@@ -458,7 +586,7 @@ export default function StudiesPage() {
       <ModalShell
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        size="lg"
+        size="2xl"
         zIndex="z-60"
       >
         <div className="p-8 border-b border-border/50 flex items-center justify-between bg-card/50">
@@ -467,8 +595,8 @@ export default function StudiesPage() {
               <Settings className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-foreground">
-                Metas e Preferências
+              <h2 className="text-xl font-bold text-foreground">
+                Metas e preferências
               </h2>
               <p className="text-xs text-muted-foreground font-medium">
                 Configure seu ambiente de estudos
@@ -496,6 +624,19 @@ export default function StudiesPage() {
                   config: { ...config, weekStartDay: val },
                 });
                 toast.success("Início da semana atualizado!");
+              }}
+              habits={habits}
+              linkedHabitId={linkedHabitId}
+              onLinkedHabitChange={setLinkedHabitId}
+              showSaturday={showSaturday}
+              onShowSaturdayChange={(val) => {
+                setShowSaturday(val);
+                localStorage.setItem("studies_show_saturday", String(val));
+              }}
+              showSunday={showSunday}
+              onShowSundayChange={(val) => {
+                setShowSunday(val);
+                localStorage.setItem("studies_show_sunday", String(val));
               }}
             />
           </div>

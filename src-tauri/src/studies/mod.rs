@@ -89,6 +89,20 @@ pub struct SubjectFormula {
     pub custom_formula: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StudySchedule {
+    pub id: Option<i64>,
+    pub user_id: String,
+    pub subject: String,
+    pub day_of_week: i32,
+    pub start_time: String,
+    pub end_time: String,
+    pub location: Option<String>,
+    pub teacher: Option<String>,
+    pub created_at: Option<String>,
+}
+
 pub struct StudiesManager {
     db_path: PathBuf,
 }
@@ -165,6 +179,17 @@ impl StudiesManager {
                 passing_grade     REAL NOT NULL DEFAULT 7.0,
                 custom_formula    TEXT,
                 UNIQUE(user_id, subject)
+            );
+            CREATE TABLE IF NOT EXISTS study_schedules (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id      TEXT NOT NULL,
+                subject      TEXT NOT NULL,
+                day_of_week  INTEGER NOT NULL,
+                start_time   TEXT NOT NULL,
+                end_time     TEXT NOT NULL,
+                location     TEXT,
+                teacher      TEXT,
+                created_at   TEXT NOT NULL DEFAULT (datetime('now'))
             );",
         );
 
@@ -785,6 +810,84 @@ impl StudiesManager {
         .filter_map(|r| r.ok())
         .collect()
     }
+
+    // Adiciona ou edita um horário de aula
+    pub fn add_schedule(&self, s: StudySchedule) -> Result<i64, String> {
+        let conn = self.conn();
+        if let Some(id) = s.id {
+            conn.execute(
+                "UPDATE study_schedules
+                 SET subject=?1, day_of_week=?2, start_time=?3, end_time=?4, location=?5, teacher=?6
+                 WHERE id=?7 AND user_id=?8",
+                params![
+                    s.subject,
+                    s.day_of_week,
+                    s.start_time,
+                    s.end_time,
+                    s.location,
+                    s.teacher,
+                    id,
+                    s.user_id
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(id)
+        } else {
+            conn.execute(
+                "INSERT INTO study_schedules (user_id, subject, day_of_week, start_time, end_time, location, teacher)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    s.user_id,
+                    s.subject,
+                    s.day_of_week,
+                    s.start_time,
+                    s.end_time,
+                    s.location,
+                    s.teacher
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(conn.last_insert_rowid())
+        }
+    }
+
+    // Deleta um horário de aula
+    pub fn delete_schedule(&self, id: i64, user_id: &str) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "DELETE FROM study_schedules WHERE id=?1 AND user_id=?2",
+            params![id, user_id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    // Lista todas as aulas semanais cadastradas
+    pub fn list_schedules(&self, user_id: &str) -> Vec<StudySchedule> {
+        let conn = self.conn();
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, subject, day_of_week, start_time, end_time, location, teacher, created_at 
+                 FROM study_schedules WHERE user_id=?1 ORDER BY day_of_week, start_time",
+            )
+            .unwrap();
+        stmt.query_map(params![user_id], |row| {
+            Ok(StudySchedule {
+                id: Some(row.get(0)?),
+                user_id: user_id.to_string(),
+                subject: row.get(1)?,
+                day_of_week: row.get(2)?,
+                start_time: row.get(3)?,
+                end_time: row.get(4)?,
+                location: row.get(5)?,
+                teacher: row.get(6)?,
+                created_at: Some(row.get(7)?),
+            })
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect()
+    }
 }
 
 #[tauri::command]
@@ -874,6 +977,31 @@ pub async fn estudos_import_csv(
     file_path: String,
 ) -> Result<usize, String> {
     state.studies.import_csv(&user_id, &file_path)
+}
+
+#[tauri::command]
+pub async fn estudos_add_schedule(
+    state: tauri::State<'_, crate::AppState>,
+    schedule: StudySchedule,
+) -> Result<i64, String> {
+    state.studies.add_schedule(schedule)
+}
+
+#[tauri::command]
+pub async fn estudos_delete_schedule(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+) -> Result<(), String> {
+    state.studies.delete_schedule(id, &user_id)
+}
+
+#[tauri::command]
+pub async fn estudos_list_schedules(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<StudySchedule>, String> {
+    Ok(state.studies.list_schedules(&user_id))
 }
 
 // --- COMANDOS TAURI PARA SIMULADOS & NOTAS ---

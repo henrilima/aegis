@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, getColorTheme, HEX_COLORS, type ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { StudiesHeatmap } from "../heatmap";
 import type { StudySession, StudyStats, SubjectData } from "../types";
 import {
   computeStats,
@@ -241,7 +242,10 @@ export function RelatorioTab({
   }
 
   return (
-    <div className="flex flex-col gap-6 ">
+    <div className="flex flex-col gap-6">
+      {/* Constância de Estudos Anual */}
+      <StudiesHeatmap sessions={sessions} />
+
       {/* Controles de Período */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-card/50 p-2 rounded-xl border border-border">
         <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">

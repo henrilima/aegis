@@ -43,13 +43,26 @@ export interface DayStats {
   sessions: StudySession[];
 }
 
+export interface StudySchedule {
+  id?: number;
+  userId: string;
+  subject: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  teacher?: string;
+  createdAt?: string;
+}
+
 export type TabId =
   | "visao-geral"
   | "historico"
   | "relatorio"
   | "heatmap"
   | "guia"
-  | "materias";
+  | "materias"
+  | "horarios";
 
 export interface StudyStats {
   hours: number;
