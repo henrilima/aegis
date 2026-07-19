@@ -30,6 +30,19 @@ pub struct Habit {
     pub archived: Option<bool>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SoberLog {
+    pub id: Option<i32>,
+    pub habit_id: i32,
+    pub log_type: String, // "pledge", "review", "relapse"
+    pub timestamp: String,
+    pub log_date: String, // YYYY-MM-DD
+    pub difficulty: Option<String>,
+    pub trigger_type: Option<String>,
+    pub notes: Option<String>,
+}
+
 pub struct HabitManager {
     db_path: PathBuf,
 }
@@ -80,6 +93,22 @@ impl HabitManager {
             [],
         ).ok();
 
+        // Tabela para controle de sobriedade e recaídas (estilo I Am Sober)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS habit_sober_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                habit_id INTEGER NOT NULL,
+                log_type TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                log_date TEXT NOT NULL,
+                difficulty TEXT,
+                trigger_type TEXT,
+                notes TEXT,
+                FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE
+            )",
+            [],
+        ).ok();
+
         // Remove índice único que impedia hábitos com mesmo nome (proteção de duplo-clique deve ser no frontend)
         conn.execute("DROP INDEX IF EXISTS idx_habits_user_name", []).ok();
 
@@ -98,6 +127,7 @@ impl HabitManager {
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN frequency TEXT NOT NULL DEFAULT 'daily'", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN weekdays TEXT", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN archived INTEGER DEFAULT 0", []);
+
 
         Self { db_path }
     }
@@ -195,7 +225,13 @@ impl HabitManager {
     fn load_completed_dates(&self, conn: &Connection, habit_id: i32, now: DateTime<Utc>) -> Vec<String> {
         let now_local = now.with_timezone(&chrono::Local);
         let start_date = (now_local.date_naive() - chrono::Duration::days(120)).format("%Y-%m-%d").to_string();
-        let mut stmt = match conn.prepare("SELECT completed_date FROM habit_logs WHERE habit_id = ?1 AND completed_date >= ?2 ORDER BY completed_date DESC") {
+        let mut stmt = match conn.prepare("
+            SELECT completed_date 
+            FROM habit_logs 
+            WHERE habit_id = ?1 
+              AND completed_date >= ?2 
+            ORDER BY completed_date DESC
+        ") {
             Ok(s) => s,
             Err(_) => return vec![],
         };
@@ -388,7 +424,12 @@ impl HabitManager {
         }
 
         // 1. Carrega todas as datas concluídas em ordem crescente (mais antigas primeiro)
-        let mut stmt = conn.prepare("SELECT completed_date FROM habit_logs WHERE habit_id = ?1 ORDER BY completed_date ASC")
+        let mut stmt = conn.prepare("
+            SELECT completed_date 
+            FROM habit_logs 
+            WHERE habit_id = ?1
+            ORDER BY completed_date ASC
+        ")
             .map_err(|e| e.to_string())?;
         let rows = stmt.query_map(params![habit_id], |row| row.get::<_, String>(0))
             .map_err(|e| e.to_string())?;
@@ -488,11 +529,10 @@ impl HabitManager {
 
     pub fn toggle_date(&self, id: i32, date: &str, completed: bool, now: DateTime<Utc>) -> Result<(), String> {
         let conn = self.get_connection();
-        let _habit = self.get_habit_by_id(&conn, id)?;
 
         if completed {
             conn.execute(
-                "INSERT OR IGNORE INTO habit_logs (habit_id, completed_date) VALUES (?1, ?2)",
+                "INSERT OR IGNORE INTO habit_logs (habit_id, completed_date, value) VALUES (?1, ?2, 1.0)",
                 params![id, date],
             ).map_err(|e| e.to_string())?;
 
@@ -545,6 +585,7 @@ impl HabitManager {
         let conn = self.get_connection();
         // Deleta os logs de hábitos para reset total
         let _ = conn.execute("DELETE FROM habit_logs WHERE habit_id = ?1", params![id]);
+        let _ = conn.execute("DELETE FROM habit_sober_logs WHERE habit_id = ?1", params![id]);
         conn.execute(
             "UPDATE habits SET last_slip = ?1, last_done = NULL, max_streak = 0, current_streak = 0, charges_used = 0, current_charges = charges_amount, last_charge_refill = ?1 WHERE id = ?2",
             params![timestamp, id],
@@ -607,6 +648,90 @@ impl HabitManager {
             let _ = conn.execute("DELETE FROM habit_logs WHERE habit_id = ?1", params![id]);
             conn.execute("DELETE FROM habits WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
         }
+        Ok(())
+    }
+
+    pub fn add_sober_log(&self, log: SoberLog) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "INSERT INTO habit_sober_logs (habit_id, log_type, timestamp, log_date, difficulty, trigger_type, notes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                log.habit_id,
+                log.log_type,
+                log.timestamp,
+                log.log_date,
+                log.difficulty,
+                log.trigger_type,
+                log.notes,
+            ],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn list_sober_logs(&self, habit_id: i32) -> Result<Vec<SoberLog>, String> {
+        let conn = self.get_connection();
+        let mut stmt = conn.prepare(
+            "SELECT id, habit_id, log_type, timestamp, log_date, difficulty, trigger_type, notes FROM habit_sober_logs WHERE habit_id = ?1 ORDER BY timestamp DESC"
+        ).map_err(|e| e.to_string())?;
+        
+        let rows = stmt.query_map(params![habit_id], |row| {
+            Ok(SoberLog {
+                id: Some(row.get(0)?),
+                habit_id: row.get(1)?,
+                log_type: row.get(2)?,
+                timestamp: row.get(3)?,
+                log_date: row.get(4)?,
+                difficulty: row.get(5)?,
+                trigger_type: row.get(6)?,
+                notes: row.get(7)?,
+            })
+        }).map_err(|e| e.to_string())?;
+
+        let mut logs = Vec::new();
+        for r in rows {
+            if let Ok(l) = r {
+                logs.push(l);
+            }
+        }
+        Ok(logs)
+    }
+
+    pub fn reset_with_trigger(&self, id: i32, timestamp: &str, trigger_type: &str, notes: &str, now: DateTime<Utc>) -> Result<(), String> {
+        let conn = self.get_connection();
+        let habit = self.get_habit_by_id(&conn, id)?;
+        let synced_habit = self.sync_habit_logic(&conn, habit, now);
+
+        let effective_now = if !timestamp.is_empty() {
+            DateTime::parse_from_rfc3339(timestamp)
+                .map(|dt| dt.with_timezone(&Utc))
+                .unwrap_or(now)
+        } else {
+            now
+        };
+
+        let is_pos = Self::is_positive(&synced_habit.habit_type);
+        let now_iso = effective_now.to_rfc3339();
+        let log_date = effective_now.with_timezone(&chrono::Local).format("%Y-%m-%d").to_string();
+        let new_charges_used = if is_pos { synced_habit.charges_used } else { synced_habit.charges_used + 1 };
+
+        // 1. Atualiza a data do deslize na tabela principal
+        conn.execute(
+            "UPDATE habits SET last_slip = ?1, last_done = ?2, charges_used = ?3, current_streak = 0 WHERE id = ?4",
+            params![now_iso, None::<String>, new_charges_used, id],
+        ).map_err(|e| e.to_string())?;
+
+        // 2. Insere o log de recaída na tabela de logs de sobriedade
+        conn.execute(
+            "INSERT INTO habit_sober_logs (habit_id, log_type, timestamp, log_date, difficulty, trigger_type, notes) VALUES (?1, 'relapse', ?2, ?3, NULL, ?4, ?5)",
+            params![
+                id,
+                now_iso,
+                log_date,
+                if trigger_type.is_empty() { None } else { Some(trigger_type) },
+                if notes.is_empty() { None } else { Some(notes) },
+            ],
+        ).map_err(|e| e.to_string())?;
+        
         Ok(())
     }
 
@@ -692,6 +817,8 @@ pub async fn habit_toggle_date(
     state.habit.toggle_date(id, &date, completed, now)
 }
 
+
+
 #[tauri::command]
 pub async fn habit_mark_habit_done(
     state: tauri::State<'_, crate::AppState>, 
@@ -740,6 +867,28 @@ pub async fn habit_hard_reset_habit(state: tauri::State<'_, crate::AppState>, id
 #[tauri::command]
 pub async fn habit_delete_habit(state: tauri::State<'_, crate::AppState>, id: i32, _user_id: Option<String>) -> Result<(), String> {
     state.habit.delete_habit(id)
+}
+
+#[tauri::command]
+pub async fn habit_add_sober_log(state: tauri::State<'_, crate::AppState>, log: SoberLog) -> Result<(), String> {
+    state.habit.add_sober_log(log)
+}
+
+#[tauri::command]
+pub async fn habit_list_sober_logs(state: tauri::State<'_, crate::AppState>, habit_id: i32) -> Result<Vec<SoberLog>, String> {
+    state.habit.list_sober_logs(habit_id)
+}
+
+#[tauri::command]
+pub async fn habit_reset_with_trigger(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    timestamp: String,
+    trigger_type: String,
+    notes: String,
+) -> Result<(), String> {
+    let now = state.config.get_now();
+    state.habit.reset_with_trigger(id, &timestamp, &trigger_type, &notes, now)
 }
 
 #[tauri::command]

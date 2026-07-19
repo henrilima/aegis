@@ -33,13 +33,14 @@ export function HabitsInfoModal({ show, onClose }: HabitsInfoModalProps) {
   );
 }
 
-export function HabitsGuidePanel() {
+export function HabitsGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color={getModuleColor("habits")}
       icon={TrendingUp}
       title="Hábitos & Disciplina"
       subtitle="Guia para construção de rotina e autocontrole"
+      onBack={onBack}
     >
       <HabitsGuideContent />
     </ModuleGuideContainer>

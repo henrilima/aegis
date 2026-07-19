@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  AlertTriangle,
+  ArrowRight,
   Edit2,
   Flame,
   RotateCcw,
@@ -9,6 +9,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
@@ -22,6 +23,7 @@ interface HabitCardProps {
   onOpenResetDialog: (id: number) => void;
   onOpenHardResetDialog: (id: number) => void;
   onDelete: (id: number) => void;
+  onOpenSoberDetail?: (habit: Habit) => void;
 }
 
 /**
@@ -31,20 +33,13 @@ export function HabitCard({
   habit,
   onRefresh,
   onEdit,
-  onOpenResetDialog,
+  onOpenResetDialog: _onOpenResetDialog,
   onOpenHardResetDialog,
   onDelete,
+  onOpenSoberDetail,
 }: HabitCardProps) {
-  const {
-    name,
-    diaAtual,
-    recorde,
-    currentCharges,
-    maxCharges,
-    totalContagem,
-    isActionPending,
-    actions,
-  } = useHabitLogic(habit, onRefresh);
+  const { name, diaAtual, recorde, currentCharges, maxCharges, totalContagem } =
+    useHabitLogic(habit, onRefresh);
 
   const color = getModuleColor("habits");
   const _theme = getColorTheme(color);
@@ -54,8 +49,49 @@ export function HabitCard({
 
   const hasCharges = maxCharges > 0;
 
+  const [timeStr, setTimeStr] = useState("");
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const lastSlipTime = new Date(habit.lastSlip).getTime();
+      const nowTime = Date.now();
+      const diff = nowTime - lastSlipTime;
+
+      if (diff <= 0) {
+        setTimeStr("00d 00h 00m");
+        return;
+      }
+
+      const min = Math.floor((diff / (1000 * 60)) % 60);
+      const hr = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const day = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      const dStr = String(day).padStart(2, "0");
+      const hStr = String(hr).padStart(2, "0");
+      const mStr = String(min).padStart(2, "0");
+
+      setTimeStr(`${dStr}d ${hStr}h ${mStr}m`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000);
+    return () => clearInterval(interval);
+  }, [habit.lastSlip]);
+
   return (
-    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-border hover:bg-accent/50/20 transition-all group relative shadow-none">
+    // biome-ignore lint/a11y/useSemanticElements: O card contém outros botões clicáveis internamente
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpenSoberDetail?.(habit)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpenSoberDetail?.(habit);
+        }
+      }}
+      className="w-full text-left bg-card border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-red-500/20 transition-all group relative cursor-pointer select-none shadow-none"
+    >
       {/* Cabeçalho do Card */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3">
@@ -119,6 +155,16 @@ export function HabitCard({
           )
         : null}
 
+      {/* Painel do Cronômetro Simplificado */}
+      <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3.5 flex flex-col items-center justify-center text-center gap-1 select-none">
+        <span className="text-[9px] uppercase font-bold text-red-500/80 tracking-wider">
+          Tempo de Abstinência
+        </span>
+        <span className="text-xl font-bold font-mono text-foreground tabular-nums leading-none">
+          {timeStr || "00d 00h 00m"}
+        </span>
+      </div>
+
       {/* Grid de Estatísticas */}
       <div className="grid grid-cols-3 gap-2">
         <StatBadge
@@ -153,37 +199,18 @@ export function HabitCard({
         />
       </div>
 
-      {/* Seção de Ações e Detalhes do Vício */}
+      {/* Rodapé / Link de Gerenciamento de Sobriedade */}
       <div className="flex flex-col gap-3 mt-auto">
         <div className="flex items-center justify-between px-0.5">
           <p className="text-[10px] text-neutral-600 font-medium">
-            Deslizes:{" "}
+            Deslizes Totais:{" "}
             <span className="text-muted-foreground">{totalContagem}</span>
           </p>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            onClick={() => habit.id && onOpenResetDialog(habit.id)}
-            disabled={isActionPending}
-            className="w-full py-3 rounded-xl border border-red-500/30 text-red-600 dark:text-red-500 text-sm font-medium hover:bg-red-500/10 bg-red-500/5 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />{" "}
-            {isActionPending ? "Processando..." : "Registrar falha"}
-          </button>
-
-          {currentCharges > 0 && (
-            <button
-              type="button"
-              onClick={() => habit.id && actions.handleUseCharge()}
-              disabled={isActionPending}
-              className="w-full py-2 rounded-xl text-orange-600 dark:text-orange-500 text-xs font-medium hover:bg-orange-500/10 bg-orange-500/5 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Zap className="w-3 h-3" />{" "}
-              {isActionPending ? "Processando..." : "Usar carga protetora"}
-            </button>
-          )}
+        <div className="w-full text-center py-2.5 rounded-xl border border-red-500/20 text-red-500 text-xs font-bold bg-red-500/5 group-hover:bg-red-500/10 transition-all flex items-center justify-center gap-2">
+          <span>Acessar Diário & Pactos</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
     </div>
@@ -228,7 +255,7 @@ function IconBtn({
   danger,
   children,
 }: {
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
   title: string;
   danger?: boolean;
   children: React.ReactNode;
@@ -237,7 +264,10 @@ function IconBtn({
     <ToolTip content={title}>
       <button
         type="button"
-        onClick={onClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(e);
+        }}
         className={`p-1.5 rounded-lg transition-all cursor-pointer border border-transparent ${
           danger
             ? "text-neutral-700 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"

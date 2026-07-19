@@ -64,13 +64,13 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
     if (!name.trim()) return;
     onAdd(
       name.trim(),
-      type === "Positive" ? 1 : cooldown,
+      type === "Negative" ? cooldown : 1,
       type,
-      type === "Positive" ? 0 : chargesAmount,
-      type === "Positive" ? 1 : chargesInterval,
+      type === "Negative" ? chargesAmount : 0,
+      type === "Negative" ? chargesInterval : 1,
       goalDays,
       frequency,
-      type === "Positive" ? weekdays.join(",") : "",
+      type !== "Negative" ? weekdays.join(",") : "",
     );
   };
 
@@ -180,7 +180,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
 
             {/* Coluna Direita: Lógica Adicional */}
             <div className="flex flex-col gap-6">
-              {type === "Positive" ? (
+              {type !== "Negative" ? (
                 <>
                   {/* Frequência */}
                   <div className="space-y-1.5">

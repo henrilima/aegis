@@ -132,7 +132,7 @@ export function EditHabitDialog({
 
             {/* Coluna Direita */}
             <div className="flex flex-col gap-6">
-              {habit.habitType === "Positive" ? (
+              {habit.habitType !== "Negative" && habit.habitType !== "Bad" ? (
                 <>
                   {/* Frequência */}
                   <div className="space-y-1.5">

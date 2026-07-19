@@ -66,6 +66,13 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
   const currentCharges = habit.currentCharges;
   const maxCharges = habit.chargesAmount;
 
+  const todayStr = useMemo(() => {
+    const y = simulatedNow.getFullYear();
+    const m = String(simulatedNow.getMonth() + 1).padStart(2, "0");
+    const d = String(simulatedNow.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [simulatedNow]);
+
   const markDone = useCallback(async () => {
     if (isActionPending) return;
     try {
@@ -237,6 +244,7 @@ export function useHabitLogic(habit: Habit, onRefresh?: () => void) {
     currentCharges,
     maxCharges,
     isActionPending,
+    todayStr,
 
     actions: {
       markDone,

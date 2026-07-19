@@ -52,7 +52,6 @@ export function HabitsWeeklyBoard({
   const { now: simulatedNow } = useTime();
   const [weekOffset, setWeekOffset] = useState(0);
   const [isToggling, setIsToggling] = useState(false);
-
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
 
@@ -316,7 +315,7 @@ export function HabitsWeeklyBoard({
                                   {h.name}
                                 </button>
                                 {h.goalDays && h.goalDays > 0 ? (
-                                  <span className="text-[9px] text-muted-foreground/50 font-bold leading-none mt-0.5">
+                                  <span className="text-[9px] text-muted-foreground/50 font-bold leading-none mt-1">
                                     Meta: {h.completedDates?.length || 0}/
                                     {h.goalDays}d
                                   </span>

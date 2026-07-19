@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { getModuleColor } from "@/modules.config";
 import { HabitsGuidePanel } from "./components/HabitsInfoModal";
+import { SoberDetailPanel } from "./components/SoberDetailPanel";
 import { HabitsWeeklyBoard } from "./components/weeklyBoard";
 import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
@@ -38,9 +39,11 @@ export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabId>("positive");
+  const [preGuideTab, setPreGuideTab] = useState<TabId>("positive");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [soberDetailHabit, setSoberDetailHabit] = useState<Habit | null>(null);
   const [resetId, setResetId] = useState<number | null>(null);
   const [hardResetId, setHardResetId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -51,12 +54,14 @@ export default function HabitsPage() {
 
   // Busca lista de hábitos do usuário
   const fetchHabits = useCallback(async () => {
-    if (!uid) return;
+    if (!uid) return [];
     try {
       const res = await invoke<Habit[]>("habit_list_habits", { userId: uid });
       setHabits(res);
+      return res;
     } catch {
       toast.error("Erro ao sincronizar hábitos");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -81,7 +86,7 @@ export default function HabitsPage() {
     }
   }, [habits]);
 
-  const handleAdd = async (
+  const handleAddHabit = async (
     name: string,
     cooldown: number,
     type: "Positive" | "Negative",
@@ -205,13 +210,29 @@ export default function HabitsPage() {
       </div>
     );
 
+  if (soberDetailHabit) {
+    return (
+      <SoberDetailPanel
+        habit={soberDetailHabit}
+        onClose={() => setSoberDetailHabit(null)}
+        onRefresh={async () => {
+          const fresh = await fetchHabits();
+          const updated = fresh.find((h) => h.id === soberDetailHabit.id);
+          if (updated) {
+            setSoberDetailHabit(updated);
+          }
+        }}
+        now={simulatedNow}
+      />
+    );
+  }
+
   const _currentList = tab === "positive" ? positive : negative;
 
   const HABIT_TABS = [
     { id: "positive", label: "Hábitos Diários", icon: Zap },
     { id: "negative", label: "Controle de Vício", icon: ShieldOff },
     { id: "report", label: "Relatório", icon: ImageIcon },
-    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   return (
@@ -224,6 +245,14 @@ export default function HabitsPage() {
         tabs={HABIT_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
+        onTitleClick={() => {
+          if (tab !== "guia") {
+            setPreGuideTab(tab);
+            setTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Hábitos"
         actions={[
           {
             id: "add",
@@ -238,7 +267,7 @@ export default function HabitsPage() {
 
       {/* Listagem / Relatório */}
       {tab === "guia" ? (
-        <HabitsGuidePanel />
+        <HabitsGuidePanel onBack={() => setTab(preGuideTab)} />
       ) : tab === "report" ? (
         <HabitsReportsTab habits={habits} />
       ) : tab === "positive" ? (
@@ -256,7 +285,7 @@ export default function HabitsPage() {
           description="Cadastre um controle de vício (controle de danos) para monitorar sua sobriedade."
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {negative.map((h, i) => (
             <div
               key={h.id}
@@ -270,6 +299,7 @@ export default function HabitsPage() {
                 onOpenResetDialog={setResetId}
                 onOpenHardResetDialog={setHardResetId}
                 onDelete={setDeleteId}
+                onOpenSoberDetail={setSoberDetailHabit}
               />
             </div>
           ))}
@@ -279,7 +309,7 @@ export default function HabitsPage() {
       {/* Modais */}
       {createOpen && (
         <HabitCreateModal
-          onAdd={handleAdd}
+          onAdd={handleAddHabit}
           onClose={() => setCreateOpen(false)}
         />
       )}

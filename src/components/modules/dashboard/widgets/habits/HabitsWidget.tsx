@@ -211,10 +211,13 @@ export function HabitsWidget({
           );
         })}
         {positiveHabits.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-            <Flame className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-            <p className="text-[11px] font-medium text-muted-foreground/60">
-              Nenhum hábito positivo ativo
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-xs text-neutral-600 font-bold">
+              Sem Hábitos Ativos
+            </p>
+            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+              Cadastre hábitos saudáveis para acompanhar sua consistência
+              diária.
             </p>
           </div>
         )}

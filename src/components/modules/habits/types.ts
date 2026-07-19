@@ -21,3 +21,19 @@ export interface Habit {
   completedDates?: string[];
   archived?: boolean;
 }
+
+export interface SoberLog {
+  id?: number;
+  habitId: number;
+  logType: "pledge" | "review" | "relapse";
+  timestamp: string;
+  logDate: string;
+  difficulty?: "Fácil" | "Médio" | "Difícil";
+  triggerType?:
+    | "Estresse"
+    | "Ansiedade"
+    | "Tédio"
+    | "Influência Social"
+    | "Cansaço";
+  notes?: string;
+}
