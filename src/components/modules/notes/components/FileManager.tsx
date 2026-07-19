@@ -80,13 +80,16 @@ export function FileManager({
   });
 
   // Modo de visualização: grade ou lista, persistido no localStorage
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(VIEW_MODE_KEY);
-      if (saved === "list" || saved === "grid") return saved;
+      if (saved === "list" || saved === "grid") {
+        setViewMode(saved);
+      }
     }
-    return "grid";
-  });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

@@ -23,7 +23,7 @@ const FileManager = lazy(() =>
 );
 
 import { NoteEditor } from "./components/NoteEditor";
-import { NotesInfoModal } from "./components/NotesInfoModal";
+import { NotesGuidePanel } from "./components/NotesInfoModal";
 import type { Note } from "./types";
 
 export default function NotesPage() {
@@ -209,6 +209,24 @@ export default function NotesPage() {
     );
   }
 
+  if (showInfo) {
+    return (
+      <div className="w-full flex flex-col gap-6 text-foreground">
+        <ModuleHeader
+          color={getModuleColor("notes")}
+          title="Anotações"
+          subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length} fixadas`}
+          icon={StickyNote}
+          onTitleClick={() => setShowInfo(true)}
+          titleHoverIcon={HelpCircle}
+          titleTooltip="Visualizar Guia de Anotações"
+          actions={[]}
+        />
+        <NotesGuidePanel onBack={() => setShowInfo(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-6  text-foreground">
       <ModuleHeader
@@ -216,6 +234,9 @@ export default function NotesPage() {
         title="Anotações"
         subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length} fixadas`}
         icon={StickyNote}
+        onTitleClick={() => setShowInfo(true)}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Anotações"
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Buscar notas..."
@@ -226,12 +247,6 @@ export default function NotesPage() {
             icon: FolderOpen,
             tooltip: "Abrir pasta de notas",
             onClick: () => invoke("note_open_notes_folder"),
-          },
-          {
-            id: "info",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
           },
           {
             id: "folder-new",
@@ -252,8 +267,6 @@ export default function NotesPage() {
           },
         ]}
       />
-
-      <NotesInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
       {expandedNote && (
         <NoteExpandModal

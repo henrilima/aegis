@@ -1,6 +1,7 @@
 "use client";
 
 import { Edit3, FolderOpen } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -8,7 +9,7 @@ import {
   ProTip,
   StatRow,
 } from "@/components/global/ModuleInfoParts";
-
+import type { ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface NotesInfoModalProps {
@@ -26,6 +27,28 @@ export function NotesInfoModal({ show, onClose }: NotesInfoModalProps) {
       subtitle="Organize suas ideias e conhecimentos com Markdown"
       closeLabel="Entendido, mãos à obra!"
     >
+      <NotesGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function NotesGuidePanel({ onBack }: { onBack?: () => void }) {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("notes") as ThemeColorKey}
+      icon={FolderOpen}
+      title="Guia de Anotações"
+      subtitle="Organize suas ideias e conhecimentos com Markdown"
+      onBack={onBack}
+    >
+      <NotesGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function NotesGuideContent() {
+  return (
+    <>
       <InfoSection icon={FolderOpen} title="Estrutura de Arquivos">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Mantenha suas notas organizadas em pastas. Você pode mover itens
@@ -61,6 +84,6 @@ export function NotesInfoModal({ show, onClose }: NotesInfoModalProps) {
         <span className="text-foreground font-medium">qualquer pasta</span>. O
         Aegis busca no título e no conteúdo para você nunca perder uma ideia.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }
