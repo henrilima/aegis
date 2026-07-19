@@ -1,6 +1,24 @@
 # Aegis
 
 ### Novidades
+- **Módulo de Sono — Diário de Sonhos e Fatores de Qualidade**: 
+  - Nova aba de Diário de Sonhos com formulário integrado de registro e timeline visual simplificada e limpa para listagem de relatos (lúcido, comum, pesadelo) sem ícones ou elementos visuais decorativos desnecessários. Inclui isolamento de estado na data selecionada para evitar reinicializações durante o ticking do relógio;
+  - Checklist integrado para registro de fatores de qualidade de sono ao acordar (caffeine, screens, alcohol, exercise), exibidos como badges coloridos e sutis no histórico de noites.
+- **Módulo de Leitura — Fichamento de Livros e Estimativa Dinâmica**:
+  - Nova aba de resenha com cálculo dinâmico da velocidade de leitura (PPM), tempo restante e estimativa precisa de data de conclusão da obra;
+  - Aba de anotações e citações com referências de capítulo e página dispostas em uma timeline vertical limpa.
+- **Módulo de Estudos — Unificação de Constância e Relatório**: Integração da grade anual de constância (Heatmap) diretamente na aba de Relatórios, reduzindo a complexidade do módulo e consolidando a análise de desempenho e regularidade.
+- **Módulo de Hábitos — Controle de Vícios e Sobriedade (estilo I Am Sober)**: Novo painel detalhado de sobriedade integrado aos hábitos do tipo "Controle de Vício".
+  - **Cronômetro de Abstinência Ativo**: Contador dinâmico atualizado a cada segundo mostrando dias, horas, minutos e segundos desde o último deslize;
+  - **Pacto Matinal e Revisão Noturna**: Formulário diário de pacto para firmar o compromisso pela manhã e revisão noturna para avaliar o nível de dificuldade (Fácil, Médio, Difícil) com diário pessoal de sentimentos;
+  - **Registro de Recaídas com Gatilhos**: Formulário inteligente ao registrar uma falha, permitindo registrar o gatilho emocional (Estresse, Ansiedade, Tédio, Influência Social, Cansaço) e anotações do ocorrido;
+  - **Mapeamento de Vulnerabilidades**: Gráficos e indicadores integrados exibindo o percentual de gatilhos mais frequentes para auxiliar no autoconhecimento;
+  - **Histórico e Linha do Tempo**: Visualização cronológica de todas as atividades, incluindo pactos firmados, diários noturnos e registros de recaídas.
+- **Módulo de Sono — Melhorias na Calculadora de Ciclos**: Redesenho completo da aba de calculadora com um layout colorido premium de alto contraste e classificação automática da qualidade de sono ao registrar.
+  - Grade de sugestões estilizada com bordas coloridas dinâmicas e gradientes suaves para cada tipo de ciclo (Sobrevivência, Razoável, Recomendado, Excelente);
+  - Ícones semânticos específicos (AlertTriangle, Battery, Moon, Sparkles) para cada nível de recuperação;
+  - Tabs list com realce visual neon e fundo integrado nas cores do módulo de sono;
+  - Associação automática da qualidade de sono sugerida (Ex: qualidade 1 para ciclo de sobrevivência de 3 ciclos, qualidade 5 para ciclo excelente de 6 ciclos) ao realizar o registro rápido.
 - **Dashboard — Capa em Vídeo MP4/WebM**: Suporte a vídeos animados locais no formato MP4 ou WebM como capa da dashboard, copiados automaticamente para o diretório local do app.
   - Implementação de um Callback Ref dinâmico para inicialização e limpeza;
   - Otimização com `IntersectionObserver` que pausa a reprodução do vídeo quando a capa está fora do viewport (scroll);
