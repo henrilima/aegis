@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTime } from "@/context/TimeContext";
-import { formatDateLocal } from "@/lib/utils";
+import { cn, formatDateLocal } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { CalendarEvent, DeadlineCategory } from "../../types";
 import { DEADLINE_COLORS, DEADLINE_LABELS } from "../../types";
@@ -35,6 +35,8 @@ export function EventForm({ userId, initial, onSave }: EventFormProps) {
     eventType: initial?.eventType ?? "event",
     deadlineCategory: initial?.deadlineCategory,
     color: initial?.color ?? "",
+    recurrence: initial?.recurrence ?? "none",
+    recurrenceExceptions: initial?.recurrenceExceptions ?? "",
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -196,6 +198,31 @@ export function EventForm({ userId, initial, onSave }: EventFormProps) {
               />
             </div>
           )}
+
+          <div className="space-y-1.5 pt-2 border-t border-border/40">
+            <Label htmlFor="ef-recurrence" className={lc}>
+              Repetição
+            </Label>
+            <select
+              id="ef-recurrence"
+              disabled={initial?.isHoliday}
+              value={form.recurrence || "none"}
+              onChange={(e) =>
+                set(
+                  "recurrence",
+                  e.target.value as "none" | "weekly" | "monthly",
+                )
+              }
+              className={cn(
+                inputStyle,
+                "w-full bg-card border border-border rounded-xl text-xs font-semibold px-3 outline-none cursor-pointer",
+              )}
+            >
+              <option value="none">Não se repete</option>
+              <option value="weekly">Semanalmente</option>
+              <option value="monthly">Mensalmente</option>
+            </select>
+          </div>
         </div>
       </div>
     </form>

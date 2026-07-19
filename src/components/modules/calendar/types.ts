@@ -20,6 +20,8 @@ export interface CalendarEvent {
   deadlineCategory?: DeadlineCategory;
   color?: string;
   isHoliday?: boolean;
+  recurrence?: "none" | "weekly" | "monthly";
+  recurrenceExceptions?: string;
   createdAt?: string;
 }
 
@@ -69,4 +71,61 @@ export function formatDaysUntil(days: number): string {
   if (days === 0) return "Hoje!";
   if (days === 1) return "Amanhã!";
   return `Faltam ${days} dias`;
+}
+
+export function isEventRecurringOnDate(
+  event: CalendarEvent,
+  dateStr: string,
+): boolean {
+  if (event.date > dateStr) return false;
+  if (event.date === dateStr) return true;
+  if (!event.recurrence || event.recurrence === "none") return false;
+
+  if (event.recurrenceExceptions) {
+    const exceptions = event.recurrenceExceptions
+      .split(",")
+      .map((s) => s.trim());
+    if (exceptions.includes(dateStr)) return false;
+  }
+
+  const [ey, em, ed] = event.date.split("-").map(Number);
+  const [ty, tm, td] = dateStr.split("-").map(Number);
+  const eventDate = new Date(ey, em - 1, ed);
+  const targetDate = new Date(ty, tm - 1, td);
+
+  if (event.recurrence === "weekly") {
+    return eventDate.getDay() === targetDate.getDay();
+  }
+
+  if (event.recurrence === "monthly") {
+    return eventDate.getDate() === targetDate.getDate();
+  }
+
+  return false;
+}
+
+export function getWeekStart(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  date.setDate(date.getDate() - day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function getWeekLabel(weekStart: Date): string {
+  const start = new Date(weekStart);
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+
+  const startDay = start.getDate();
+  const startMonth = start
+    .toLocaleDateString("pt-BR", { month: "short" })
+    .replace(".", "");
+  const endDay = end.getDate();
+  const endMonth = end
+    .toLocaleDateString("pt-BR", { month: "short" })
+    .replace(".", "");
+  const endYear = end.getFullYear();
+
+  return `${startDay} ${startMonth} - ${endDay} ${endMonth}, ${endYear}`;
 }

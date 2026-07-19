@@ -7,7 +7,7 @@ import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { formatDateLocal, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { CalendarEvent, DeadlineCategory } from "../types";
-import { DEADLINE_COLORS } from "../types";
+import { DEADLINE_COLORS, isEventRecurringOnDate } from "../types";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -95,7 +95,9 @@ export function CalendarGrid({
       </div>
       <div className="grid grid-cols-7 bg-card/10">
         {cells.map((cell) => {
-          const dayEvents = events.filter((e) => e.date === cell.date);
+          const dayEvents = events.filter((e) =>
+            isEventRecurringOnDate(e, cell.date),
+          );
           const isSelected = selectedDate === cell.date;
           const isCellToday = cell.date === today;
           const isSunday = new Date(`${cell.date}T12:00:00`).getDay() === 0;

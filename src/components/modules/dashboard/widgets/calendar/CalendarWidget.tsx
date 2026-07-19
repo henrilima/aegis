@@ -121,10 +121,12 @@ export function CalendarWidget({
                 <div className="h-10 bg-muted rounded-xl w-full" />
               </div>
             ) : items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-                <CalendarDays className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-                <p className="text-[11px] font-medium text-muted-foreground/60">
-                  Nada agendado para as próximas semanas
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <p className="text-xs text-neutral-600 font-bold">
+                  Sem Compromissos
+                </p>
+                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                  Não há eventos ou prazos agendados para as próximas semanas.
                 </p>
               </div>
             ) : (

@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarDays, Flag, Globe } from "lucide-react";
+import { CalendarDays, Flag } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -8,7 +9,7 @@ import {
   ProTip,
   StatRow,
 } from "@/components/global/ModuleInfoParts";
-import { getColorTheme } from "@/lib/utils";
+import type { ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface CalendarInfoModalProps {
@@ -17,8 +18,6 @@ interface CalendarInfoModalProps {
 }
 
 export function CalendarInfoModal({ show, onClose }: CalendarInfoModalProps) {
-  const _theme = getColorTheme(getModuleColor("calendar"));
-
   return (
     <ModuleInfoModal
       show={show}
@@ -28,6 +27,28 @@ export function CalendarInfoModal({ show, onClose }: CalendarInfoModalProps) {
       subtitle="Sua central de tempo e compromissos"
       closeLabel="Entendido, vamos planejar!"
     >
+      <CalendarGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function CalendarGuidePanel({ onBack }: { onBack?: () => void }) {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("calendar") as ThemeColorKey}
+      icon={CalendarDays}
+      title="Agenda & Eventos"
+      subtitle="Sua central de tempo e compromissos"
+      onBack={onBack}
+    >
+      <CalendarGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function CalendarGuideContent() {
+  return (
+    <>
       <InfoSection icon={CalendarDays} title="Gestão de Compromissos">
         <p className="text-sm text-muted-foreground leading-relaxed">
           O Calendário do Aegis permite que você visualize seu tempo de forma
@@ -48,41 +69,26 @@ export function CalendarInfoModal({ show, onClose }: CalendarInfoModalProps) {
               desc: "Veja todos os detalhes ao selecionar um dia",
             },
             {
-              label: "Navegação Rápida",
-              desc: "Botão 'Hoje' para retorno instantâneo",
+              label: "Arraste de Datas",
+              desc: "Remarque datas arrastando elementos no grid",
             },
           ]}
         />
       </InfoSection>
 
-      <InfoSection icon={Globe} title="Feriados Nacionais (BR)">
+      <InfoSection icon={Flag} title="Priorização Semanal">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Mantenha sua agenda atualizada com os feriados oficiais do Brasil de
-          forma automática:
+          Identifique eventos importantes através do nível de prioridade (Alta,
+          Média, Baixa) com codificação por cores.
         </p>
-        <StatRow
-          label="Sincronização"
-          value="Busca feriados do ano atual via API"
-        />
-        <StatRow
-          label="Filtro Visual"
-          value="Oculte ou exiba feriados no grid"
-        />
+        <StatRow label="Altas" value="Identificação visual vermelha" />
+        <StatRow label="Prazos" value="Integração ativa com Lista de Tarefas" />
       </InfoSection>
 
-      <InfoSection icon={Flag} title="Integração de Deadlines">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          O painel lateral de{" "}
-          <span className="text-foreground font-medium">Próximos Prazos</span>{" "}
-          monitora suas tarefas e sessões de leitura pendentes, garantindo que
-          nada passe despercebido.
-        </p>
-      </InfoSection>
-
-      <ProTip title="Atalho de Criação">
-        Você pode criar um evento rapidamente clicando duas vezes em qualquer
-        espaço vazio do grid do calendário.
+      <ProTip title="Clique e Segure">
+        Você pode selecionar vários dias ou arrastar eventos existentes para
+        replanejar sua semana de forma intuitiva no modo mensal.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

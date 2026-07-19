@@ -20,6 +20,8 @@ pub struct CalendarEvent {
     pub deadline_category: Option<String>, // "prova" | "trabalho" | "simulado"
     pub color: Option<String>,
     pub is_holiday: Option<bool>,
+    pub recurrence: Option<String>,
+    pub recurrence_exceptions: Option<String>,
     pub created_at: Option<String>,
 }
 
@@ -55,12 +57,17 @@ impl CalendarManager {
                 deadline_category  TEXT,
                 color              TEXT,
                 is_holiday         BOOLEAN DEFAULT 0,
+                recurrence         TEXT DEFAULT 'none',
+                recurrence_exceptions TEXT,
                 created_at         TEXT NOT NULL DEFAULT (datetime('now'))
             );",
         ).ok();
 
         // Migração: Garante que is_holiday existe para DBs antigos
         let _ = conn.execute("ALTER TABLE calendar_events ADD COLUMN is_holiday BOOLEAN DEFAULT 0", []);
+        // Migração: Garante que recorrência existe para DBs antigos
+        let _ = conn.execute("ALTER TABLE calendar_events ADD COLUMN recurrence TEXT DEFAULT 'none'", []);
+        let _ = conn.execute("ALTER TABLE calendar_events ADD COLUMN recurrence_exceptions TEXT", []);
 
         // Migração: Atualiza cor dos feriados antigos de rosa para verde
         let _ = conn.execute("UPDATE calendar_events SET color='#22c55e' WHERE is_holiday=1 AND color='#ec4899'", []);
@@ -79,11 +86,13 @@ impl CalendarManager {
         let conn = self.conn();
         conn.execute(
             "INSERT INTO calendar_events
-             (user_id, title, description, date, time, event_type, deadline_category, color, is_holiday)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+             (user_id, title, description, date, time, event_type, deadline_category, color, is_holiday, recurrence, recurrence_exceptions)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
             params![
                 ev.user_id, ev.title, ev.description, ev.date, ev.time,
-                ev.event_type, ev.deadline_category, ev.color, ev.is_holiday.unwrap_or(false)
+                ev.event_type, ev.deadline_category, ev.color, ev.is_holiday.unwrap_or(false),
+                ev.recurrence.unwrap_or_else(|| "none".to_string()),
+                ev.recurrence_exceptions
             ],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
@@ -95,7 +104,8 @@ impl CalendarManager {
         conn.execute(
             "UPDATE calendar_events SET
              title=?2, description=?3, date=?4, time=?5,
-             event_type=?6, deadline_category=?7, color=?8, is_holiday=?9
+             event_type=?6, deadline_category=?7, color=?8, is_holiday=?9,
+             recurrence=?11, recurrence_exceptions=?12
              WHERE id=?1 AND user_id=?10",
             params![
                 id,
@@ -107,7 +117,9 @@ impl CalendarManager {
                 ev.deadline_category,
                 ev.color,
                 ev.is_holiday.unwrap_or(false),
-                ev.user_id
+                ev.user_id,
+                ev.recurrence.unwrap_or_else(|| "none".to_string()),
+                ev.recurrence_exceptions
             ],
         ).map_err(|e| e.to_string())?;
         Ok(())
@@ -125,7 +137,7 @@ impl CalendarManager {
     pub fn list_events(&self, user_id: &str) -> Vec<CalendarEvent> {
         let conn = self.conn();
         let mut stmt = conn.prepare(
-            "SELECT id, title, description, date, time, event_type, deadline_category, color, is_holiday, created_at
+            "SELECT id, title, description, date, time, event_type, deadline_category, color, is_holiday, recurrence, recurrence_exceptions, created_at
              FROM calendar_events WHERE user_id=?1
              ORDER BY date ASC, time ASC"
         ).unwrap();
@@ -142,7 +154,9 @@ impl CalendarManager {
                 deadline_category: row.get(6)?,
                 color: row.get(7)?,
                 is_holiday: Some(row.get::<_, i32>(8)? != 0),
-                created_at: row.get(9)?,
+                recurrence: row.get(9)?,
+                recurrence_exceptions: row.get(10)?,
+                created_at: row.get(11)?,
             })
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
@@ -151,7 +165,7 @@ impl CalendarManager {
         let conn = self.conn();
         let today_simple = now.format("%Y-%m-%d").to_string();
         let mut stmt = conn.prepare(
-            "SELECT id, title, description, date, time, event_type, deadline_category, color, is_holiday, created_at
+            "SELECT id, title, description, date, time, event_type, deadline_category, color, is_holiday, recurrence, recurrence_exceptions, created_at
              FROM calendar_events
              WHERE user_id=?1 AND event_type='deadline' AND date >= ?2
              ORDER BY date ASC"
@@ -169,7 +183,9 @@ impl CalendarManager {
                 deadline_category: row.get(6)?,
                 color: row.get(7)?,
                 is_holiday: Some(row.get::<_, i32>(8)? != 0),
-                created_at: row.get(9)?,
+                recurrence: row.get(9)?,
+                recurrence_exceptions: row.get(10)?,
+                created_at: row.get(11)?,
             })
         }).unwrap().filter_map(|r| r.ok()).collect()
     }

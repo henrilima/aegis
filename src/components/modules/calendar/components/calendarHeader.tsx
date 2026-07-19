@@ -24,7 +24,10 @@ interface CalendarHeaderProps {
   onSyncHolidays: () => void;
   showHolidays: boolean;
   onToggleHolidays: () => void;
-  onShowInfo: () => void;
+  onTitleClick?: () => void;
+  viewMode?: "month" | "week";
+  onViewModeChange?: (mode: "month" | "week") => void;
+  weekLabel?: string;
 }
 
 /**
@@ -40,14 +43,20 @@ export function CalendarHeader({
   onSyncHolidays,
   showHolidays,
   onToggleHolidays,
-  onShowInfo,
+  onTitleClick,
+  viewMode = "month",
+  onViewModeChange,
+  weekLabel,
 }: CalendarHeaderProps) {
   const color = getModuleColor("calendar");
   const theme = getColorTheme(color);
-  const label = new Date(year, month).toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  const label =
+    viewMode === "week" && weekLabel
+      ? weekLabel
+      : new Date(year, month).toLocaleDateString("pt-BR", {
+          month: "long",
+          year: "numeric",
+        });
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,6 +65,9 @@ export function CalendarHeader({
         title="Calendário"
         subtitle="Gestão de eventos e feriados"
         icon={CalendarDays}
+        onTitleClick={onTitleClick}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Agenda"
         actions={[
           {
             id: "sync",
@@ -69,11 +81,6 @@ export function CalendarHeader({
             icon: Milestone,
             onClick: onToggleHolidays,
             tooltip: showHolidays ? "Ocultar Feriados" : "Mostrar Feriados",
-          },
-          {
-            id: "info",
-            icon: HelpCircle,
-            onClick: onShowInfo,
           },
           {
             id: "new",
@@ -110,20 +117,50 @@ export function CalendarHeader({
           </Button>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onToday}
-          className={cn(
-            "px-4 h-9 rounded-xl border font-bold text-xs transition-all active:scale-95",
-            theme.bg,
-            theme.text,
-            theme.border,
-            theme.bgHover,
-          )}
-        >
-          Hoje
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Alternador de Visualização */}
+          <div className="flex items-center gap-1 bg-background border border-border/60 rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => onViewModeChange?.("month")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none",
+                viewMode === "month"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/40",
+              )}
+            >
+              Mês
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewModeChange?.("week")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none",
+                viewMode === "week"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/40",
+              )}
+            >
+              Semana
+            </button>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onToday}
+            className={cn(
+              "px-4 h-9 rounded-xl border font-bold text-xs transition-all active:scale-95",
+              theme.bg,
+              theme.text,
+              theme.border,
+              theme.bgHover,
+            )}
+          >
+            Hoje
+          </Button>
+        </div>
       </div>
     </div>
   );
