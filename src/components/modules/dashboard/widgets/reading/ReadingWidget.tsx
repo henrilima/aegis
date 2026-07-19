@@ -239,10 +239,13 @@ export function ReadingWidget({
                   </div>
                 ))}
               {recentSessions.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-                  <BookOpen className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-                  <p className="text-[11px] font-medium text-muted-foreground/60">
-                    Nenhuma sessão registrada
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <p className="text-xs text-neutral-600 font-bold">
+                    Sem Leituras
+                  </p>
+                  <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                    Registre suas sessões de leitura para acompanhar suas metas
+                    literárias.
                   </p>
                 </div>
               )}

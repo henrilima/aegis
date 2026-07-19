@@ -39,6 +39,7 @@ export type TabId =
   | "overview"
   | "library"
   | "history"
+  | "notes"
   | "goals"
   | "reports"
   | "guia";
@@ -49,4 +50,15 @@ export interface ReadingStats {
   booksCompleted: number;
   booksReading: number;
   sessionsCount: number;
+}
+
+export interface ReadingNote {
+  id?: number;
+  userId: string;
+  bookId: number;
+  pageNumber?: number;
+  chapter?: string;
+  content: string;
+  isQuote: boolean;
+  createdAt?: string;
 }

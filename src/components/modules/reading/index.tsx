@@ -3,6 +3,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
   BarChart3,
+  Bookmark,
   BookOpen,
   HelpCircle,
   HistoryIcon,
@@ -25,6 +26,7 @@ import { BookModal } from "./components/BookModal";
 import { GoalsModal } from "./components/GoalsModal";
 import { HistoryTab } from "./components/HistoryTab";
 import { LibraryTab } from "./components/LibraryTab";
+import { NotesTab } from "./components/NotesTab";
 import { OverviewTab } from "./components/OverviewTab";
 import { ReadingGuidePanel } from "./components/ReadingInfoModal";
 import { ReportsTab } from "./components/ReportsTab";
@@ -38,6 +40,7 @@ export default function ReadingPage() {
   const [goals, setGoals] = useState<ReadingGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [preGuideTab, setPreGuideTab] = useState<TabId>("overview");
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
@@ -239,8 +242,8 @@ export default function ReadingPage() {
     { id: "overview", label: "Visão Geral", icon: LayoutDashboard },
     { id: "history", label: "Histórico", icon: HistoryIcon },
     { id: "library", label: "Biblioteca", icon: Library },
+    { id: "notes", label: "Fichamentos", icon: Bookmark },
     { id: "reports", label: "Relatórios", icon: BarChart3 },
-    { id: "guia", label: "Guia", icon: HelpCircle },
   ];
 
   return (
@@ -253,6 +256,14 @@ export default function ReadingPage() {
         tabs={READING_TABS}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as TabId)}
+        onTitleClick={() => {
+          if (activeTab !== "guia") {
+            setPreGuideTab(activeTab);
+            setActiveTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Leitura"
         integrations={["dictionary"]}
         actions={[
           {
@@ -329,10 +340,13 @@ export default function ReadingPage() {
             }}
           />
         )}
+        {activeTab === "notes" && <NotesTab books={books} />}
         {activeTab === "reports" && (
           <ReportsTab sessions={sessions} books={books} goals={goals} />
         )}
-        {activeTab === "guia" && <ReadingGuidePanel />}
+        {activeTab === "guia" && (
+          <ReadingGuidePanel onBack={() => setActiveTab(preGuideTab)} />
+        )}
       </div>
 
       <BookModal

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
@@ -207,303 +208,296 @@ export function SessionModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm ">
-      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn("p-2 rounded-xl border", theme.bg, theme.border)}
-            >
-              <BookOpen className={cn("w-4 h-4", theme.text)} />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground leading-none">
-                {editSession ? "Editar sessão" : "Registrar leitura"}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Sincronize seu progresso literário
-              </p>
-            </div>
+    <ModalShell isOpen={show} onClose={onClose} size="xl" zIndex="z-[100]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-xl border", theme.bg, theme.border)}>
+            <BookOpen className={cn("w-4 h-4", theme.text)} />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2.5 hover:bg-muted/50 rounded-xl transition-all text-neutral-600 hover:text-foreground"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div>
+            <h2 className="text-base font-bold text-foreground leading-none">
+              {editSession ? "Editar sessão" : "Registrar leitura"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Sincronize seu progresso literário
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-2.5 hover:bg-muted/50 rounded-xl transition-all text-neutral-600 hover:text-foreground"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        <div className="flex-1 p-8 grid grid-cols-2 gap-8 overflow-y-auto custom-scrollbar">
-          <div className="space-y-5">
-            <div>
-              <Label className={labelClass}>
-                Obra <span className={requiredClass}>*</span>
-              </Label>
-              {editSession ? (
-                <div
-                  className={cn(
-                    inputClass,
-                    "h-12 flex items-center gap-3 border border-border/60 rounded-xl px-4 opacity-60 cursor-not-allowed select-none",
-                  )}
-                >
-                  <BookOpen className="w-4 h-4 text-neutral-600 shrink-0" />
-                  <span className="text-sm font-medium text-muted-foreground truncate">
-                    {selectedBook?.title || "Livro da sessão"}
-                  </span>
-                  <span className="ml-auto text-[10px] font-medium text-neutral-700">
-                    bloqueado
-                  </span>
-                </div>
-              ) : (
-                <BookSelect
-                  books={books}
-                  value={formData.bookId}
-                  onChange={(id) => set("bookId", id)}
-                />
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className={labelClass}>
-                  Data <span className={requiredClass}>*</span>
-                </Label>
-                <Input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => set("date", e.target.value)}
-                  className={cn(inputClass, "h-12 w-full")}
-                />
-              </div>
-              <div className="flex flex-col">
-                <Label className={labelClass}>
-                  Duração <span className={requiredClass}>*</span>
-                </Label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.duration_hours || ""}
-                      onChange={(e) =>
-                        set("duration_hours", parseInt(e.target.value, 10) || 0)
-                      }
-                      className={cn(inputClass, "h-12 pr-6 text-center")}
-                      placeholder="0"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600 pointer-events-none">
-                      h
-                    </span>
-                  </div>
-                  <div className="relative flex-1">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={formData.durationMinutes || ""}
-                      onChange={(e) =>
-                        set(
-                          "durationMinutes",
-                          parseInt(e.target.value, 10) || 0,
-                        )
-                      }
-                      className={cn(inputClass, "h-12 pr-8 text-center")}
-                      placeholder="0"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600 pointer-events-none">
-                      min
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className={labelClass}>Anotações</Label>
-              <Textarea
-                value={formData.note || ""}
-                onChange={(e) => set("note", e.target.value)}
+      <div className="flex-1 p-8 grid grid-cols-2 gap-8 overflow-y-auto custom-scrollbar">
+        <div className="space-y-5">
+          <div>
+            <Label className={labelClass}>
+              Obra <span className={requiredClass}>*</span>
+            </Label>
+            {editSession ? (
+              <div
                 className={cn(
-                  "bg-card border-border/60 rounded-xl p-4 text-sm font-medium text-muted-foreground placeholder:text-neutral-700 resize-none h-36 transition-all",
-                  theme.borderHover.replace(
-                    "hover:",
-                    "focus-visible:ring-1 focus-visible:ring-",
-                  ),
+                  inputClass,
+                  "h-12 flex items-center gap-3 border border-border/60 rounded-xl px-4 opacity-60 cursor-not-allowed select-none",
                 )}
-                placeholder="Reflexões sobre esta sessão (opcional)..."
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label className={labelClass}>Nível de foco</Label>
-                <span className={cn("text-xs font-semibold", theme.text)}>
-                  {focusLabels[formData.focus ?? 0]}
+              >
+                <BookOpen className="w-4 h-4 text-neutral-600 shrink-0" />
+                <span className="text-sm font-medium text-muted-foreground truncate">
+                  {selectedBook?.title || "Livro da sessão"}
+                </span>
+                <span className="ml-auto text-[10px] font-medium text-neutral-700">
+                  bloqueado
                 </span>
               </div>
-              <div className="grid grid-cols-6 gap-1.5 bg-card p-1.5 rounded-xl border border-border/50">
-                {[0, 1, 2, 3, 4, 5].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => set("focus", num)}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                      formData.focus === num
-                        ? cn(theme.solid, "text-white")
-                        : "text-muted-foreground hover:bg-muted/50",
-                    )}
-                  >
-                    {num}
-                  </button>
-                ))}
+            ) : (
+              <BookSelect
+                books={books}
+                value={formData.bookId}
+                onChange={(id) => set("bookId", id)}
+              />
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className={labelClass}>
+                Data <span className={requiredClass}>*</span>
+              </Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => set("date", e.target.value)}
+                className={cn(inputClass, "h-12 w-full")}
+              />
+            </div>
+            <div className="flex flex-col">
+              <Label className={labelClass}>
+                Duração <span className={requiredClass}>*</span>
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.duration_hours || ""}
+                    onChange={(e) =>
+                      set("duration_hours", parseInt(e.target.value, 10) || 0)
+                    }
+                    className={cn(inputClass, "h-12 pr-6 text-center")}
+                    placeholder="0"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600 pointer-events-none">
+                    h
+                  </span>
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={formData.durationMinutes || ""}
+                    onChange={(e) =>
+                      set("durationMinutes", parseInt(e.target.value, 10) || 0)
+                    }
+                    className={cn(inputClass, "h-12 pr-8 text-center")}
+                    placeholder="0"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-neutral-600 pointer-events-none">
+                    min
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-5">
-            <Label className={labelClass}>Métricas da sessão</Label>
-            <div className="bg-card border border-border/60 rounded-xl p-6 flex flex-col flex-1 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    Ritmo
-                  </span>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-4xl font-black text-foreground tabular-nums">
-                      {pagesPerMinute}
-                    </span>
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      pág / min
-                    </span>
-                  </div>
-                </div>
-                <div
+          <div className="space-y-2">
+            <Label className={labelClass}>Anotações</Label>
+            <Textarea
+              value={formData.note || ""}
+              onChange={(e) => set("note", e.target.value)}
+              className={cn(
+                "bg-card border-border/60 rounded-xl p-4 text-sm font-medium text-muted-foreground placeholder:text-neutral-700 resize-none h-36 transition-all",
+                theme.borderHover.replace(
+                  "hover:",
+                  "focus-visible:ring-1 focus-visible:ring-",
+                ),
+              )}
+              placeholder="Reflexões sobre esta sessão (opcional)..."
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <Label className={labelClass}>Nível de foco</Label>
+              <span className={cn("text-xs font-semibold", theme.text)}>
+                {focusLabels[formData.focus ?? 0]}
+              </span>
+            </div>
+            <div className="grid grid-cols-6 gap-1.5 bg-card p-1.5 rounded-xl border border-border/50">
+              {[0, 1, 2, 3, 4, 5].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => set("focus", num)}
                   className={cn(
-                    "px-3 py-1 rounded-full text-xs font-semibold border",
-                    theme.bg,
-                    theme.text,
-                    theme.border,
+                    "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    formData.focus === num
+                      ? cn(theme.solid, "text-white")
+                      : "text-muted-foreground hover:bg-muted/50",
                   )}
                 >
-                  {editSession ? "Edição" : "Nova"}
-                </div>
-              </div>
-
-              <div className="space-y-6 flex-1">
-                <div className="space-y-2">
-                  <Label className={labelClass}>
-                    Página de parada <span className={requiredClass}>*</span>
-                  </Label>
-                  <div className="relative group/field">
-                    <Bookmark
-                      className={cn(
-                        "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-700 transition-colors pointer-events-none",
-                        `group-hover/field:${theme.text}`,
-                      )}
-                    />
-                    <Input
-                      type="number"
-                      min={startPage}
-                      value={formData.pagesRead || ""}
-                      onChange={(e) =>
-                        set("pagesRead", parseInt(e.target.value, 10) || 0)
-                      }
-                      className={cn(
-                        inputClass,
-                        "h-14 pl-12 bg-background border-border text-lg tabular-nums font-black",
-                      )}
-                      placeholder={String(startPage)}
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end opacity-60 pointer-events-none">
-                      <span className="text-[10px] font-bold uppercase text-neutral-500">
-                        Início
-                      </span>
-                      <span className="text-xs font-black text-foreground tabular-nums">
-                        {startPage}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedBook ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <h4 className="text-sm font-bold text-foreground truncate max-w-[180px]">
-                          {selectedBook.title}
-                        </h4>
-                        <p className="text-xs text-neutral-600 font-medium">
-                          {selectedBook.author}
-                        </p>
-                      </div>
-                      <span className={cn("text-base font-black", theme.text)}>
-                        {Math.round(
-                          (selectedBook.currentPage / selectedBook.totalPages) *
-                            100,
-                        )}
-                        %
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-border/30">
-                        <div
-                          className={cn(
-                            "h-full transition-all duration-1000",
-                            theme.solid,
-                          )}
-                          style={{
-                            width: `${Math.min(100, (selectedBook.currentPage / selectedBook.totalPages) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs font-medium text-neutral-600">
-                        <span>{selectedBook.currentPage} pág.</span>
-                        <span>{selectedBook.totalPages} pág.</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-8 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-border rounded-2xl">
-                    <BookOpen className="w-6 h-6 text-muted-foreground mb-2" />
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      Selecione um livro
-                    </span>
-                  </div>
-                )}
-              </div>
+                  {num}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-background/50">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <Button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSave}
-            className={cn(
-              "flex-2 h-11 rounded-xl text-white font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed",
-              theme.solid,
-              theme.solidHover,
-            )}
-          >
-            {isSaving
-              ? "Salvando..."
-              : editSession
-                ? "Salvar alterações"
-                : "Confirmar registro"}
-          </Button>
+        <div className="flex flex-col gap-5">
+          <Label className={labelClass}>Métricas da sessão</Label>
+          <div className="flex flex-col flex-1 relative gap-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Ritmo
+                </span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-black text-foreground tabular-nums">
+                    {pagesPerMinute}
+                  </span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    pág / min
+                  </span>
+                </div>
+              </div>
+              <div
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-semibold border",
+                  theme.bg,
+                  theme.text,
+                  theme.border,
+                )}
+              >
+                {editSession ? "Edição" : "Nova"}
+              </div>
+            </div>
+
+            <div className="space-y-6 flex-1">
+              <div className="space-y-2">
+                <Label className={labelClass}>
+                  Página de parada <span className={requiredClass}>*</span>
+                </Label>
+                <div className="relative group/field">
+                  <Bookmark
+                    className={cn(
+                      "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-700 transition-colors pointer-events-none",
+                      `group-hover/field:${theme.text}`,
+                    )}
+                  />
+                  <Input
+                    type="number"
+                    min={startPage}
+                    value={formData.pagesRead || ""}
+                    onChange={(e) =>
+                      set("pagesRead", parseInt(e.target.value, 10) || 0)
+                    }
+                    className={cn(
+                      inputClass,
+                      "h-14 pl-12 bg-background border-border text-lg tabular-nums font-black",
+                    )}
+                    placeholder={String(startPage)}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-end opacity-60 pointer-events-none">
+                    <span className="text-[10px] font-bold uppercase text-neutral-500">
+                      Início
+                    </span>
+                    <span className="text-xs font-black text-foreground tabular-nums">
+                      {startPage}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedBook ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground truncate max-w-[180px]">
+                        {selectedBook.title}
+                      </h4>
+                      <p className="text-xs text-neutral-600 font-medium">
+                        {selectedBook.author}
+                      </p>
+                    </div>
+                    <span className={cn("text-base font-black", theme.text)}>
+                      {Math.round(
+                        (selectedBook.currentPage / selectedBook.totalPages) *
+                          100,
+                      )}
+                      %
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-border/30">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-1000",
+                          theme.solid,
+                        )}
+                        style={{
+                          width: `${Math.min(100, (selectedBook.currentPage / selectedBook.totalPages) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs font-medium text-neutral-600">
+                      <span>{selectedBook.currentPage} pág.</span>
+                      <span>{selectedBook.totalPages} pág.</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-border rounded-2xl">
+                  <BookOpen className="w-6 h-6 text-muted-foreground mb-2" />
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Selecione um livro
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-background/50">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <Button
+          type="button"
+          disabled={isSaving}
+          onClick={handleSave}
+          className={cn(
+            "flex-2 h-11 rounded-xl text-white font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed",
+            theme.solid,
+            theme.solidHover,
+          )}
+        >
+          {isSaving
+            ? "Salvando..."
+            : editSession
+              ? "Salvar alterações"
+              : "Confirmar registro"}
+        </Button>
+      </div>
+    </ModalShell>
   );
 }

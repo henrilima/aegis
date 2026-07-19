@@ -41,6 +41,19 @@ pub struct ReadingSession {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct ReadingNote {
+    pub id: Option<i32>,
+    pub user_id: String,
+    pub book_id: i32,
+    pub page_number: Option<i32>,
+    pub chapter: Option<String>,
+    pub content: String,
+    pub is_quote: bool,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadingGoal {
     pub id: Option<i64>,
     pub user_id: String,
@@ -98,6 +111,17 @@ impl ReadingManager {
                 goal_type    TEXT NOT NULL,
                 target_value REAL NOT NULL DEFAULT 0,
                 UNIQUE(user_id, goal_type)
+            );
+            CREATE TABLE IF NOT EXISTS reading_notes (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id      TEXT NOT NULL,
+                book_id      INTEGER NOT NULL,
+                page_number  INTEGER,
+                chapter      TEXT,
+                content      TEXT NOT NULL,
+                is_quote     INTEGER NOT NULL DEFAULT 0,
+                created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY(book_id) REFERENCES reading_books(id) ON DELETE CASCADE
             );"
         );
 
@@ -168,6 +192,60 @@ impl ReadingManager {
             "UPDATE reading_books SET is_favorite=?1 WHERE id=?2 AND user_id=?3",
             params![is_favorite as i32, id, user_id],
         ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn list_notes(&self, book_id: i32) -> Result<Vec<ReadingNote>, String> {
+        let conn = self.conn();
+        let mut stmt = conn.prepare("
+            SELECT id, user_id, book_id, page_number, chapter, content, is_quote, created_at
+            FROM reading_notes
+            WHERE book_id = ?1
+            ORDER BY created_at DESC
+        ").map_err(|e| e.to_string())?;
+
+        let rows = stmt.query_map(params![book_id], |row| {
+            Ok(ReadingNote {
+                id: Some(row.get(0)?),
+                user_id: row.get(1)?,
+                book_id: row.get(2)?,
+                page_number: row.get(3)?,
+                chapter: row.get(4)?,
+                content: row.get(5)?,
+                is_quote: row.get::<_, i32>(6)? != 0,
+                created_at: Some(row.get(7)?),
+            })
+        }).map_err(|e| e.to_string())?;
+
+        let mut notes = Vec::new();
+        for r in rows {
+            if let Ok(n) = r {
+                notes.push(n);
+            }
+        }
+        Ok(notes)
+    }
+
+    pub fn add_note(&self, note: ReadingNote) -> Result<i64, String> {
+        let conn = self.conn();
+        conn.execute(
+            "INSERT INTO reading_notes (user_id, book_id, page_number, chapter, content, is_quote)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                note.user_id,
+                note.book_id,
+                note.page_number,
+                note.chapter,
+                note.content,
+                note.is_quote as i32
+            ]
+        ).map_err(|e| e.to_string())?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    pub fn delete_note(&self, id: i32) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute("DELETE FROM reading_notes WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -508,4 +586,19 @@ pub async fn reading_search_books(query: String) -> Result<serde_json::Value, St
 #[tauri::command]
 pub async fn reading_toggle_favorite(state: tauri::State<'_, crate::AppState>, id: i64, user_id: String, is_favorite: bool) -> Result<(), String> {
     state.reading.toggle_favorite_book(id, &user_id, is_favorite)
+}
+
+#[tauri::command]
+pub async fn reading_list_notes(state: tauri::State<'_, crate::AppState>, book_id: i32) -> Result<Vec<ReadingNote>, String> {
+    state.reading.list_notes(book_id)
+}
+
+#[tauri::command]
+pub async fn reading_add_note(state: tauri::State<'_, crate::AppState>, note: ReadingNote) -> Result<i64, String> {
+    state.reading.add_note(note)
+}
+
+#[tauri::command]
+pub async fn reading_delete_note(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
+    state.reading.delete_note(id)
 }

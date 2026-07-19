@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { ReadingBook, ReadingStatus } from "../types";
@@ -181,364 +182,361 @@ export function BookModal({
   const labelClass = "text-xs font-medium text-muted-foreground";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-3xl bg-background border border-border rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "p-2 rounded-xl border",
-                themeStyles.bg,
-                themeStyles.border,
-              )}
-            >
-              <BookOpen className={cn("w-5 h-5", themeStyles.text)} />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground">
-                {editBook ? "Editar Obra" : "Adicionar à Biblioteca"}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Gestão de acervo e progresso
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
+    <ModalShell isOpen={show} onClose={onClose} size="xl" zIndex="z-[100]">
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "p-2 rounded-xl border",
+              themeStyles.bg,
+              themeStyles.border,
+            )}
           >
-            <X className="w-4 h-4" />
-          </button>
+            <BookOpen className={cn("w-5 h-5", themeStyles.text)} />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">
+              {editBook ? "Editar Obra" : "Adicionar à Biblioteca"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Gestão de acervo e progresso
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
-        {/* Corpo */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-          {!editBook && (
-            <div className="mb-6 space-y-3">
-              <Label className={labelClass}>Busca online</Label>
-              <div className="flex gap-2 p-1.5 bg-muted/30 rounded-xl border border-border/50">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
-                  <input
-                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium h-9 pl-9 pr-4 placeholder:text-muted-foreground/40 outline-none"
-                    placeholder="Pesquisar por título ou autor..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+      {/* Corpo */}
+      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        {!editBook && (
+          <div className="mb-6 space-y-3">
+            <Label className={labelClass}>Busca online</Label>
+            <div className="flex gap-2 p-1.5 bg-muted/30 rounded-xl border border-border/50">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                <input
+                  className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium h-9 pl-9 pr-4 placeholder:text-muted-foreground/40 outline-none"
+                  placeholder="Pesquisar por título ou autor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <Button
+                onClick={handleSearch}
+                disabled={isSearching}
+                className={cn(
+                  "h-9 px-4 rounded-lg text-white font-bold text-xs transition-all active:scale-95 shrink-0",
+                  themeStyles.solid,
+                  themeStyles.solidHover,
+                )}
+              >
+                {isSearching ? "Buscando..." : "Buscar"}
+              </Button>
+            </div>
+
+            {searchResults.length > 0 && (
+              <div className="border border-border rounded-xl overflow-hidden bg-card/40 divide-y divide-border/40 max-h-60 overflow-y-auto custom-scrollbar">
+                {searchResults.map((result) => (
+                  <button
+                    key={result.key}
+                    type="button"
+                    onClick={() => handleSelectResult(result)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-3 transition-all text-left group",
+                      themeStyles.bgHover,
+                    )}
+                  >
+                    <div className="w-8 h-12 shrink-0 rounded bg-muted border border-border/50 overflow-hidden">
+                      {result.thumbnail && (
+                        <img
+                          src={result.thumbnail}
+                          alt={result.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          "text-sm font-bold text-foreground truncate transition-colors",
+                          themeStyles.textDarkHover.replace(
+                            "hover:",
+                            "group-hover:",
+                          ),
+                        )}
+                      >
+                        {result.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {result.author}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Coluna Esquerda */}
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Título</Label>
+                <div className="relative">
+                  <Book className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                  <Input
+                    value={formData.title ?? ""}
+                    onChange={(e) => set("title", e.target.value)}
+                    className={cn(inputClass, "pl-9")}
+                    placeholder="Ex: Dom Casmurro"
                   />
                 </div>
-                <Button
-                  onClick={handleSearch}
-                  disabled={isSearching}
-                  className={cn(
-                    "h-9 px-4 rounded-lg text-white font-bold text-xs transition-all active:scale-95 shrink-0",
-                    themeStyles.solid,
-                    themeStyles.solidHover,
-                  )}
-                >
-                  {isSearching ? "Buscando..." : "Buscar"}
-                </Button>
               </div>
 
-              {searchResults.length > 0 && (
-                <div className="border border-border rounded-xl overflow-hidden bg-card/40 divide-y divide-border/40 max-h-60 overflow-y-auto custom-scrollbar">
-                  {searchResults.map((result) => (
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Autor</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                  <Input
+                    value={formData.author ?? ""}
+                    onChange={(e) => set("author", e.target.value)}
+                    className={cn(inputClass, "pl-9")}
+                    placeholder="Ex: Machado de Assis"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className={labelClass}>Páginas totais</Label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                    <Input
+                      type="number"
+                      value={formData.totalPages || ""}
+                      onChange={(e) =>
+                        set("totalPages", parseInt(e.target.value, 10) || 0)
+                      }
+                      className={cn(inputClass, "pl-9")}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className={labelClass}>Página atual</Label>
+                  <div className="relative">
+                    <Bookmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                    <Input
+                      type="number"
+                      value={formData.currentPage || ""}
+                      onChange={(e) =>
+                        set("currentPage", parseInt(e.target.value, 10) || 0)
+                      }
+                      className={cn(inputClass, "pl-9")}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna Direita */}
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Status de leitura</Label>
+                <div className="flex flex-wrap gap-1 p-1 bg-muted/30 rounded-xl border border-border/50">
+                  {(
+                    [
+                      { id: "WantToRead", label: "Quero ler" },
+                      { id: "Reading", label: "Lendo" },
+                      { id: "Completed", label: "Lido" },
+                      { id: "Dropped", label: "Parei" },
+                    ] as { id: ReadingStatus; label: string }[]
+                  ).map((opt) => (
                     <button
-                      key={result.key}
+                      key={opt.id}
                       type="button"
-                      onClick={() => handleSelectResult(result)}
+                      onClick={() => set("status", opt.id)}
                       className={cn(
-                        "w-full flex items-center gap-3 p-3 transition-all text-left group",
-                        themeStyles.bgHover,
+                        "flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                        formData.status === opt.id
+                          ? cn(themeStyles.solid, "text-white")
+                          : "text-muted-foreground hover:bg-muted/50",
                       )}
                     >
-                      <div className="w-8 h-12 shrink-0 rounded bg-muted border border-border/50 overflow-hidden">
-                        {result.thumbnail && (
-                          <img
-                            src={result.thumbnail}
-                            alt={result.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={cn(
-                            "text-sm font-bold text-foreground truncate transition-colors",
-                            themeStyles.textDarkHover.replace(
-                              "hover:",
-                              "group-hover:",
-                            ),
-                          )}
-                        >
-                          {result.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {result.author}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+                      {opt.label}
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Coluna Esquerda */}
-              <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label className={labelClass}>Título</Label>
-                  <div className="relative">
-                    <Book className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                    <Input
-                      value={formData.title ?? ""}
-                      onChange={(e) => set("title", e.target.value)}
-                      className={cn(inputClass, "pl-9")}
-                      placeholder="Ex: Dom Casmurro"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className={labelClass}>Autor</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                    <Input
-                      value={formData.author ?? ""}
-                      onChange={(e) => set("author", e.target.value)}
-                      className={cn(inputClass, "pl-9")}
-                      placeholder="Ex: Machado de Assis"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className={labelClass}>Páginas totais</Label>
-                    <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                      <Input
-                        type="number"
-                        value={formData.totalPages || ""}
-                        onChange={(e) =>
-                          set("totalPages", parseInt(e.target.value, 10) || 0)
-                        }
-                        className={cn(inputClass, "pl-9")}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className={labelClass}>Página atual</Label>
-                    <div className="relative">
-                      <Bookmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                      <Input
-                        type="number"
-                        value={formData.currentPage || ""}
-                        onChange={(e) =>
-                          set("currentPage", parseInt(e.target.value, 10) || 0)
-                        }
-                        className={cn(inputClass, "pl-9")}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Coluna Direita */}
-              <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label className={labelClass}>Status de leitura</Label>
-                  <div className="flex flex-wrap gap-1 p-1 bg-muted/30 rounded-xl border border-border/50">
-                    {(
-                      [
-                        { id: "WantToRead", label: "Quero ler" },
-                        { id: "Reading", label: "Lendo" },
-                        { id: "Completed", label: "Lido" },
-                        { id: "Dropped", label: "Parei" },
-                      ] as { id: ReadingStatus; label: string }[]
-                    ).map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => set("status", opt.id)}
-                        className={cn(
-                          "flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                          formData.status === opt.id
-                            ? cn(themeStyles.solid, "text-white")
-                            : "text-muted-foreground hover:bg-muted/50",
-                        )}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className={labelClass}>Gênero / Categoria</Label>
-                  <div className="relative group">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                    <Input
-                      value={formData.category ?? ""}
-                      onChange={(e) => {
-                        set("category", e.target.value);
-                        setShowCategorySuggestions(true);
-                      }}
-                      onFocus={() => setShowCategorySuggestions(true)}
-                      onBlur={() =>
-                        setTimeout(() => setShowCategorySuggestions(false), 200)
-                      }
-                      className={cn(inputClass, "pl-9")}
-                    />
-                    {showCategorySuggestions &&
-                      filteredCategories.length > 0 && (
-                        <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-xl overflow-hidden">
-                          {filteredCategories.slice(0, 5).map((cat) => (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={() => {
-                                set("category", cat);
-                                setShowCategorySuggestions(false);
-                              }}
-                              className="w-full text-left px-4 py-2 text-xs font-medium hover:bg-muted/50 transition-colors"
-                            >
-                              {cat}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className={labelClass}>URL da capa</Label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                    <Input
-                      value={formData.thumbnail ?? ""}
-                      onChange={(e) => set("thumbnail", e.target.value)}
-                      className={cn(inputClass, "pl-9")}
-                      placeholder="https://..."
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-3">
-                <Label className={labelClass}>Avaliação</Label>
-                <div className="flex gap-1 py-1">
-                  {[1, 2, 3, 4, 5].map((n) => {
-                    const current = formData.stars ?? 0;
-                    const isFullActive = current >= n;
-                    const isHalfActive = current >= n - 0.5 && current < n;
-                    return (
-                      <div
-                        key={n}
-                        className="relative w-7 h-7 cursor-pointer group"
-                      >
-                        <Star
-                          fill="currentColor"
-                          className={cn(
-                            "absolute inset-0 w-7 h-7 transition-all",
-                            isFullActive
-                              ? themeStyles.text
-                              : "text-muted-foreground/20",
-                          )}
-                        />
-                        {isHalfActive && (
-                          <StarHalf
-                            fill="currentColor"
-                            className={cn(
-                              "absolute inset-0 w-7 h-7",
-                              themeStyles.text,
-                            )}
-                          />
-                        )}
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Gênero / Categoria</Label>
+                <div className="relative group">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                  <Input
+                    value={formData.category ?? ""}
+                    onChange={(e) => {
+                      set("category", e.target.value);
+                      setShowCategorySuggestions(true);
+                    }}
+                    onFocus={() => setShowCategorySuggestions(true)}
+                    onBlur={() =>
+                      setTimeout(() => setShowCategorySuggestions(false), 200)
+                    }
+                    className={cn(inputClass, "pl-9")}
+                  />
+                  {showCategorySuggestions && filteredCategories.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-xl overflow-hidden">
+                      {filteredCategories.slice(0, 5).map((cat) => (
                         <button
+                          key={cat}
                           type="button"
-                          onClick={() =>
-                            set("stars", current === n - 0.5 ? 0 : n - 0.5)
-                          }
-                          className="absolute left-0 top-0 w-1/2 h-full z-10 hover:opacity-80 transition-opacity"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => set("stars", current === n ? 0 : n)}
-                          className="absolute right-0 top-0 w-1/2 h-full z-10 hover:opacity-80 transition-opacity"
-                        />
-                      </div>
-                    );
-                  })}
-                  {(formData.stars ?? 0) > 0 && (
-                    <span
-                      className={cn(
-                        "ml-2 self-center text-xs font-bold",
-                        themeStyles.text,
-                      )}
-                    >
-                      {formData.stars} ★
-                    </span>
+                          onClick={() => {
+                            set("category", cat);
+                            setShowCategorySuggestions(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs font-medium hover:bg-muted/50 transition-colors"
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label className={labelClass}>Resenha / Notas</Label>
+                <Label className={labelClass}>URL da capa</Label>
                 <div className="relative">
-                  <AlignLeft className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                  <textarea
-                    value={formData.review ?? ""}
-                    onChange={(e) => set("review", e.target.value)}
-                    className={cn(
-                      "w-full rounded-xl bg-card border border-border text-sm font-medium p-3 pl-9 min-h-[100px] resize-none outline-none transition-all text-foreground placeholder:text-muted-foreground/40",
-                      themeStyles.borderHover.replace("hover:", "focus:"),
-                      themeStyles.border.replace("border-", "focus:ring-"),
-                    )}
-                    placeholder="Suas impressões sobre a obra..."
+                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                  <Input
+                    value={formData.thumbnail ?? ""}
+                    onChange={(e) => set("thumbnail", e.target.value)}
+                    className={cn(inputClass, "pl-9")}
+                    placeholder="https://..."
                   />
                 </div>
               </div>
             </div>
-          </form>
-        </div>
+          </div>
 
-        {/* Rodapé */}
-        <div className="px-6 py-4 border-t border-border/50 flex gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/50 transition-all cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={isSaving}
-            onClick={handleSubmit}
-            className={cn(
-              "flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 cursor-pointer disabled:opacity-50",
-              themeStyles.solid,
-              themeStyles.solidHover,
-            )}
-          >
-            {isSaving
-              ? "Salvando..."
-              : editBook
-                ? "Atualizar"
-                : "Salvar na Estante"}
-          </button>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <div className="space-y-3">
+              <Label className={labelClass}>Avaliação</Label>
+              <div className="flex gap-1 py-1">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const current = formData.stars ?? 0;
+                  const isFullActive = current >= n;
+                  const isHalfActive = current >= n - 0.5 && current < n;
+                  return (
+                    <div
+                      key={n}
+                      className="relative w-7 h-7 cursor-pointer group"
+                    >
+                      <Star
+                        fill="currentColor"
+                        className={cn(
+                          "absolute inset-0 w-7 h-7 transition-all",
+                          isFullActive
+                            ? themeStyles.text
+                            : "text-muted-foreground/20",
+                        )}
+                      />
+                      {isHalfActive && (
+                        <StarHalf
+                          fill="currentColor"
+                          className={cn(
+                            "absolute inset-0 w-7 h-7",
+                            themeStyles.text,
+                          )}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          set("stars", current === n - 0.5 ? 0 : n - 0.5)
+                        }
+                        className="absolute left-0 top-0 w-1/2 h-full z-10 hover:opacity-80 transition-opacity"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => set("stars", current === n ? 0 : n)}
+                        className="absolute right-0 top-0 w-1/2 h-full z-10 hover:opacity-80 transition-opacity"
+                      />
+                    </div>
+                  );
+                })}
+                {(formData.stars ?? 0) > 0 && (
+                  <span
+                    className={cn(
+                      "ml-2 self-center text-xs font-bold",
+                      themeStyles.text,
+                    )}
+                  >
+                    {formData.stars} ★
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={labelClass}>Resenha / Notas</Label>
+              <div className="relative">
+                <AlignLeft className="absolute left-3 top-3 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+                <textarea
+                  value={formData.review ?? ""}
+                  onChange={(e) => set("review", e.target.value)}
+                  className={cn(
+                    "w-full rounded-xl bg-card border border-border text-sm font-medium p-3 pl-9 min-h-[100px] resize-none outline-none transition-all text-foreground placeholder:text-muted-foreground/40",
+                    themeStyles.borderHover.replace("hover:", "focus:"),
+                    themeStyles.border.replace("border-", "focus:ring-"),
+                  )}
+                  placeholder="Suas impressões sobre a obra..."
+                />
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
-    </div>
+
+      {/* Rodapé */}
+      <div className="px-6 py-4 border-t border-border/50 flex gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 py-2.5 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/50 transition-all cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          disabled={isSaving}
+          onClick={handleSubmit}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 cursor-pointer disabled:opacity-50",
+            themeStyles.solid,
+            themeStyles.solidHover,
+          )}
+        >
+          {isSaving
+            ? "Salvando..."
+            : editBook
+              ? "Atualizar"
+              : "Salvar na Estante"}
+        </button>
+      </div>
+    </ModalShell>
   );
 }

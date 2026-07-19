@@ -32,13 +32,14 @@ export function ReadingInfoModal({ show, onClose }: ReadingInfoModalProps) {
   );
 }
 
-export function ReadingGuidePanel() {
+export function ReadingGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color={getModuleColor("reading")}
       icon={BookOpen}
       title="Biblioteca & Progresso"
       subtitle="Guia para gestão literária e metas de leitura"
+      onBack={onBack}
     >
       <ReadingGuideContent />
     </ModuleGuideContainer>
