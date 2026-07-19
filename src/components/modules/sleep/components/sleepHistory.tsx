@@ -93,8 +93,32 @@ export function SleepHistory({
                   {qualityLabel(e.quality)}
                 </span>
               </div>
+              {(e.caffeine || e.screens || e.alcohol || e.exercise) && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5 select-none">
+                  {e.caffeine && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      ☕ Cafeína
+                    </span>
+                  )}
+                  {e.screens && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                      📱 Telas
+                    </span>
+                  )}
+                  {e.alcohol && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                      🍺 Álcool
+                    </span>
+                  )}
+                  {e.exercise && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      🏋️ Exercício
+                    </span>
+                  )}
+                </div>
+              )}
               {e.note && (
-                <p className="text-xs text-muted-foreground mt-1">{e.note}</p>
+                <p className="text-xs text-muted-foreground mt-1.5">{e.note}</p>
               )}
             </div>
 

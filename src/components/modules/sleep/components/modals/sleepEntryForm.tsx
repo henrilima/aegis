@@ -75,12 +75,16 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
     quality: initial?.quality ?? 3,
     note: initial?.note ?? "",
     nap_minutes: initial?.nap_minutes ?? 0,
+    caffeine: initial?.caffeine ?? false,
+    screens: initial?.screens ?? false,
+    alcohol: initial?.alcohol ?? false,
+    exercise: initial?.exercise ?? false,
   });
 
   const nightDuration = calcDurationMinutes(form.bedtime, form.wakeTime);
   const totalDuration = nightDuration + form.nap_minutes;
 
-  function setField(k: string, v: string | number) {
+  function setField(k: string, v: string | number | boolean) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
@@ -119,7 +123,7 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-8"
     >
-      <div className="grid grid-cols-2 gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {/* Lado Esquerdo: Horários */}
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1.5">
@@ -215,26 +219,9 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
               </div>
             </div>
           </div>
-
-          <div className="flex flex-col items-center justify-center p-6 bg-blue-500/5 border border-blue-500/10 rounded-xl animate-in fade-in duration-700">
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] text-blue-500/70 font-bold capitalize mb-1">
-                Duração total
-              </span>
-              <span className="text-xl font-bold text-blue-400">
-                {formatDuration(totalDuration)}
-              </span>
-              {form.nap_minutes > 0 && (
-                <span className="text-[10px] text-neutral-600 font-bold mt-1 capitalize">
-                  ({formatDuration(nightDuration)} sono +{" "}
-                  {formatDuration(form.nap_minutes)} soneca)
-                </span>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Lado Direito: Qualidade e Notas */}
+        {/* Coluna Central: Qualidade e Fatores */}
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <Label className={lc}>Qualidade percebida</Label>
@@ -259,6 +246,62 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
             </p>
           </div>
 
+          <div className="flex flex-col gap-3 border-t border-border pt-5">
+            <Label className={lc}>Fatores antes de dormir</Label>
+            <div className="flex flex-col gap-3.5 pl-0.5">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.caffeine}
+                  onChange={(e) => setField("caffeine", e.target.checked)}
+                  className="rounded border-border bg-card text-blue-500 focus:ring-0 cursor-pointer"
+                />
+                <span className="text-xs font-medium text-foreground">
+                  Consumiu Cafeína tarde
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.screens}
+                  onChange={(e) => setField("screens", e.target.checked)}
+                  className="rounded border-border bg-card text-blue-500 focus:ring-0 cursor-pointer"
+                />
+                <span className="text-xs font-medium text-foreground">
+                  Uso de Telas na cama
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.alcohol}
+                  onChange={(e) => setField("alcohol", e.target.checked)}
+                  className="rounded border-border bg-card text-blue-500 focus:ring-0 cursor-pointer"
+                />
+                <span className="text-xs font-medium text-foreground">
+                  Consumiu Álcool
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.exercise}
+                  onChange={(e) => setField("exercise", e.target.checked)}
+                  className="rounded border-border bg-card text-blue-500 focus:ring-0 cursor-pointer"
+                />
+                <span className="text-xs font-medium text-foreground">
+                  Praticou Exercícios
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Lado Direito: Notas e Duração */}
+        <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="ef-note" className={lc}>
               Observações qualitativas
@@ -270,6 +313,23 @@ export function SleepEntryForm({ userId, initial, onSave }: EntryFormProps) {
               value={form.note}
               onChange={(e) => setField("note", e.target.value)}
             />
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-6 bg-blue-500/5 border border-blue-500/10 rounded-xl animate-in fade-in duration-700">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-blue-500/70 font-bold capitalize mb-1">
+                Duração total
+              </span>
+              <span className="text-xl font-bold text-blue-400">
+                {formatDuration(totalDuration)}
+              </span>
+              {form.nap_minutes > 0 && (
+                <span className="text-[10px] text-neutral-600 font-bold mt-1 capitalize text-center leading-tight">
+                  ({formatDuration(nightDuration)} sono +{" "}
+                  {formatDuration(form.nap_minutes)} soneca)
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

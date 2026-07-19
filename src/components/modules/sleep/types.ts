@@ -9,6 +9,19 @@ export interface SleepEntry {
   quality: number;
   note?: string;
   createdAt?: string;
+  caffeine?: boolean;
+  screens?: boolean;
+  alcohol?: boolean;
+  exercise?: boolean;
+}
+
+export interface SleepDream {
+  id?: number;
+  userId: string;
+  date: string;
+  content: string;
+  dreamType: string; // "lúcido" | "comum" | "pesadelo"
+  createdAt?: string;
 }
 
 export interface SleepGoal {

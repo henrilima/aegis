@@ -199,10 +199,13 @@ export function SonoWidget({
               </div>
             ))}
             {recentSleep.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-                <Moon className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-                <p className="text-[11px] font-medium text-muted-foreground/60">
-                  Sem registros recentes
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <p className="text-xs text-neutral-600 font-bold">
+                  Sem Noites Registradas
+                </p>
+                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                  Adicione seus registros de sono para acompanhar sua qualidade
+                  de descanso.
                 </p>
               </div>
             )}

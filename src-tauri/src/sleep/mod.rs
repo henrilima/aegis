@@ -17,6 +17,21 @@ pub struct SleepEntry {
     pub quality: i32,
     pub note: Option<String>,
     pub created_at: Option<String>,
+    pub caffeine: Option<bool>,
+    pub screens: Option<bool>,
+    pub alcohol: Option<bool>,
+    pub exercise: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SleepDream {
+    pub id: Option<i32>,
+    pub user_id: String,
+    pub date: String,
+    pub content: String,
+    pub dream_type: String, // "lúcido" | "comum" | "pesadelo"
+    pub created_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -65,6 +80,24 @@ impl SleepManager {
         )
         .ok();
 
+        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN caffeine INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN screens INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN alcohol INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN exercise INTEGER NOT NULL DEFAULT 0", []);
+
+        let _ = conn.execute(
+            "CREATE TABLE IF NOT EXISTS sleep_dreams (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id      TEXT NOT NULL,
+                date         TEXT NOT NULL,
+                content      TEXT NOT NULL,
+                dream_type   TEXT NOT NULL DEFAULT 'comum',
+                created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(user_id, date)
+            )",
+            [],
+        );
+
         Self { db_path }
     }
 
@@ -78,15 +111,31 @@ impl SleepManager {
     pub fn upsert_entry(&self, e: SleepEntry) -> Result<i64, String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO sleep_entries (user_id, date, bedtime, wake_time, duration_minutes, quality, note)
-             VALUES (?1,?2,?3,?4,?5,?6,?7)
+            "INSERT INTO sleep_entries (user_id, date, bedtime, wake_time, duration_minutes, quality, note, caffeine, screens, alcohol, exercise)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)
              ON CONFLICT(user_id, date) DO UPDATE SET
                 bedtime          = excluded.bedtime,
                 wake_time        = excluded.wake_time,
                 duration_minutes = excluded.duration_minutes,
                 quality          = excluded.quality,
-                note             = excluded.note",
-            params![e.user_id, e.date, e.bedtime, e.wake_time, e.duration_minutes, e.quality, e.note],
+                note             = excluded.note,
+                caffeine         = excluded.caffeine,
+                screens          = excluded.screens,
+                alcohol          = excluded.alcohol,
+                exercise         = excluded.exercise",
+            params![
+                e.user_id,
+                e.date,
+                e.bedtime,
+                e.wake_time,
+                e.duration_minutes,
+                e.quality,
+                e.note,
+                e.caffeine.unwrap_or(false) as i32,
+                e.screens.unwrap_or(false) as i32,
+                e.alcohol.unwrap_or(false) as i32,
+                e.exercise.unwrap_or(false) as i32
+            ],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
     }
@@ -124,7 +173,7 @@ impl SleepManager {
             .to_string();
         let mut stmt = conn
             .prepare(
-                "SELECT id, date, bedtime, wake_time, duration_minutes, quality, note, created_at
+                "SELECT id, date, bedtime, wake_time, duration_minutes, quality, note, created_at, caffeine, screens, alcohol, exercise
              FROM sleep_entries
              WHERE user_id=?1 AND date >= ?2
              ORDER BY date DESC",
@@ -142,6 +191,10 @@ impl SleepManager {
                 quality: row.get(5)?,
                 note: row.get(6)?,
                 created_at: row.get(7)?,
+                caffeine: Some(row.get::<_, i32>(8)? != 0),
+                screens: Some(row.get::<_, i32>(9)? != 0),
+                alcohol: Some(row.get::<_, i32>(10)? != 0),
+                exercise: Some(row.get::<_, i32>(11)? != 0),
             })
         })
         .unwrap()
@@ -215,6 +268,65 @@ impl SleepManager {
         }
     }
 
+    pub fn get_dream(&self, user_id: &str, date: &str) -> Result<Option<SleepDream>, String> {
+        let conn = self.conn();
+        let dream: Option<SleepDream> = conn.query_row(
+            "SELECT id, user_id, date, content, dream_type, created_at FROM sleep_dreams WHERE user_id=?1 AND date=?2",
+            params![user_id, date],
+            |row| Ok(SleepDream {
+                id: Some(row.get(0)?),
+                user_id: row.get(1)?,
+                date: row.get(2)?,
+                content: row.get(3)?,
+                dream_type: row.get(4)?,
+                created_at: Some(row.get(5)?),
+            })
+        ).ok();
+        Ok(dream)
+    }
+
+    pub fn upsert_dream(&self, d: SleepDream) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "INSERT INTO sleep_dreams (user_id, date, content, dream_type)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(user_id, date) DO UPDATE SET
+                content    = excluded.content,
+                dream_type = excluded.dream_type",
+            params![d.user_id, d.date, d.content, d.dream_type],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn list_dreams(&self, user_id: &str) -> Result<Vec<SleepDream>, String> {
+        let conn = self.conn();
+        let mut stmt = conn.prepare("
+            SELECT id, user_id, date, content, dream_type, created_at
+            FROM sleep_dreams
+            WHERE user_id = ?1
+            ORDER BY date DESC
+        ").map_err(|e| e.to_string())?;
+
+        let rows = stmt.query_map(params![user_id], |row| {
+            Ok(SleepDream {
+                id: Some(row.get(0)?),
+                user_id: row.get(1)?,
+                date: row.get(2)?,
+                content: row.get(3)?,
+                dream_type: row.get(4)?,
+                created_at: Some(row.get(5)?),
+            })
+        }).map_err(|e| e.to_string())?;
+
+        let mut dreams = Vec::new();
+        for r in rows {
+            if let Ok(d) = r {
+                dreams.push(d);
+            }
+        }
+        Ok(dreams)
+    }
+
     pub fn export_csv(
         &self,
         user_id: &str,
@@ -263,6 +375,10 @@ impl SleepManager {
                 quality: cols[4].trim().parse().unwrap_or(3),
                 note: cols.get(5).map(|s| s.trim().to_string()),
                 created_at: None,
+                caffeine: Some(false),
+                screens: Some(false),
+                alcohol: Some(false),
+                exercise: Some(false),
             };
             self.upsert_entry(e).ok();
             count += 1;
@@ -354,4 +470,29 @@ pub async fn sono_import_csv(
     file_path: String,
 ) -> Result<usize, String> {
     state.sleep.import_csv(&user_id, &file_path)
+}
+
+#[tauri::command]
+pub async fn sono_get_dream(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    date: String,
+) -> Result<Option<SleepDream>, String> {
+    state.sleep.get_dream(&user_id, &date)
+}
+
+#[tauri::command]
+pub async fn sono_upsert_dream(
+    state: tauri::State<'_, crate::AppState>,
+    dream: SleepDream,
+) -> Result<(), String> {
+    state.sleep.upsert_dream(dream)
+}
+
+#[tauri::command]
+pub async fn sono_list_dreams(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<SleepDream>, String> {
+    state.sleep.list_dreams(&user_id)
 }

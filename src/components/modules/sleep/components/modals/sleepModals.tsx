@@ -21,7 +21,7 @@ export function SleepEntryModal({
   onClose,
 }: SleepEntryModalProps) {
   return (
-    <ModalShell isOpen={show} onClose={onClose} size="xl">
+    <ModalShell isOpen={show} onClose={onClose} size="2xl">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
         <div className="flex items-center gap-3">

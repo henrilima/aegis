@@ -9,6 +9,7 @@ import {
   Moon,
   Plus,
   Settings,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -25,6 +26,7 @@ import { getModuleColor } from "@/modules.config";
 import type { AppConfig } from "../settings/useSettingsLogic";
 import { SleepCalculator } from "./components/sleepCalculator";
 import { SleepChart } from "./components/sleepChart";
+import { SleepDreamTab } from "./components/sleepDreamTab";
 import { SleepDrowsiness } from "./components/sleepDrowsiness";
 import { SleepGoalTab } from "./components/sleepGoalTab";
 import { SleepHistory } from "./components/sleepHistory";
@@ -32,7 +34,13 @@ import { SleepStatsBanner } from "./components/sleepStatsBanner";
 import { calcDurationMinutes, isoDate, rollingRange } from "./sleepUtils";
 import type { SleepEntry, SleepGoal } from "./types";
 
-type TabId = "semana" | "historico" | "calculadora" | "sonolencia" | "guia";
+type TabId =
+  | "semana"
+  | "historico"
+  | "calculadora"
+  | "sonolencia"
+  | "sonhos"
+  | "guia";
 
 /**
  * Módulo de Sono: Monitoramento de ciclos de descanso, qualidade e metas de repouso
@@ -51,6 +59,7 @@ export default function SleepPage() {
   });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabId>("semana");
+  const [preGuideTab, setPreGuideTab] = useState<TabId>("semana");
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState<SleepEntry | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
@@ -226,7 +235,7 @@ export default function SleepPage() {
     { id: "historico", label: "Relatórios", icon: Calendar },
     { id: "calculadora", label: "Calculadora", icon: Clock },
     { id: "sonolencia", label: "Sonolência", icon: Moon },
-    { id: "guia", label: "Guia", icon: HelpCircle },
+    { id: "sonhos", label: "Diário de Sonhos", icon: Sparkles },
   ];
 
   if (loading)
@@ -249,6 +258,14 @@ export default function SleepPage() {
         tabs={SLEEP_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
+        onTitleClick={() => {
+          if (tab !== "guia") {
+            setPreGuideTab(tab);
+            setTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Sono"
         actions={[
           {
             id: "settings",
@@ -351,14 +368,14 @@ export default function SleepPage() {
       {tab === "calculadora" && (
         <SleepCalculator
           now={simulatedNow}
-          onQuickRegister={(bedtime, wakeTime) => {
+          onQuickRegister={(bedtime, wakeTime, quality) => {
             setEditEntry({
               userId: uid,
               date: isoDate(simulatedNow),
               bedtime,
               wakeTime,
               durationMinutes: calcDurationMinutes(bedtime, wakeTime),
-              quality: 4,
+              quality,
               note: "Calculado via ciclos de sono",
               nap_minutes: 0,
             });
@@ -367,11 +384,17 @@ export default function SleepPage() {
         />
       )}
 
-      {tab === "guia" && <SleepGuidePanel />}
+      {tab === "guia" && <SleepGuidePanel onBack={() => setTab(preGuideTab)} />}
 
       {tab === "sonolencia" && (
         <div className="animate-in slide-in-from-bottom-2 duration-500">
           <SleepDrowsiness entries={entries} now={simulatedNow} />
+        </div>
+      )}
+
+      {tab === "sonhos" && (
+        <div className="animate-in slide-in-from-bottom-2 duration-500">
+          <SleepDreamTab />
         </div>
       )}
 

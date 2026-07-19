@@ -1,13 +1,23 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Battery,
+  Moon,
+  Sparkles,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface SleepCalculatorProps {
   now: Date;
-  onQuickRegister: (bedtime: string, wakeTime: string) => void;
+  onQuickRegister: (
+    bedtime: string,
+    wakeTime: string,
+    defaultQuality: number,
+  ) => void;
 }
 
 // Helper para formatar hora/minuto em string HH:MM
@@ -29,36 +39,55 @@ const getCycleStyle = (cycles: number) => {
   switch (cycles) {
     case 3: // Sobrevivência
       return {
-        border: "border-red-500/25 bg-red-500/[0.01] dark:border-red-500/20",
-        text: "text-red-500 dark:text-red-400",
-        tagBg: "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400",
-        desc: "Mínimo necessário. Sensação de cansaço provável.",
+        cardBorder: "border border-red-500/20 dark:border-red-500/10",
+        cardBg:
+          "bg-gradient-to-br from-red-500/[0.04] to-transparent dark:from-red-500/[0.02]",
+        textClass: "text-red-600 dark:text-red-400",
+        badgeBg:
+          "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400",
+        btnClass:
+          "bg-red-500 hover:bg-red-600 text-white border-red-600 dark:bg-red-600 dark:hover:bg-red-700",
+        desc: "Mínimo necessário para sobrevivência. Sensação de fadiga provável.",
+        type: "Sobrevivência",
       };
-    case 4: // Razoável
+    case 4: // Aceitável / Razoável
       return {
-        border:
-          "border-amber-500/25 bg-amber-500/[0.01] dark:border-amber-500/20",
-        text: "text-amber-500 dark:text-amber-400",
-        tagBg:
-          "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400",
-        desc: "Razoável. Pode sentir um leve cansaço.",
+        cardBorder: "border border-amber-500/20 dark:border-amber-500/10",
+        cardBg:
+          "bg-gradient-to-br from-amber-500/[0.04] to-transparent dark:from-amber-500/[0.02]",
+        textClass: "text-amber-600 dark:text-amber-400",
+        badgeBg:
+          "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400",
+        btnClass:
+          "bg-amber-500 hover:bg-amber-600 text-white border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700",
+        desc: "Ciclo básico aceitável. Pode sentir alguma sonolência de dia.",
+        type: "Razoável",
       };
     case 5: // Recomendado
       return {
-        border:
-          "border-emerald-500/30 bg-emerald-500/[0.02] dark:border-emerald-500/20",
-        text: "text-emerald-500 dark:text-emerald-400",
-        tagBg:
-          "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-        desc: "Ideal para a maioria dos adultos. Acorde renovado.",
+        cardBorder: "border border-emerald-500/30 dark:border-emerald-500/15",
+        cardBg:
+          "bg-gradient-to-br from-emerald-500/[0.06] to-transparent dark:from-emerald-500/[0.03]",
+        textClass: "text-emerald-600 dark:text-emerald-400",
+        badgeBg:
+          "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+        btnClass:
+          "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700",
+        desc: "Duração recomendada para a maioria dos adultos. Acorde bem e revigorado.",
+        type: "Recomendado",
       };
-    default:
+    default: // Excelente (6)
       return {
-        border: "border-cyan-500/30 bg-cyan-500/[0.02] dark:border-cyan-500/20",
-        text: "text-cyan-500 dark:text-cyan-400",
-        tagBg:
-          "bg-cyan-500/10 border-cyan-500/20 text-cyan-600 dark:text-cyan-400",
-        desc: "Excepcional. Altamente recuperador e produtivo.",
+        cardBorder: "border border-cyan-500/30 dark:border-cyan-500/15",
+        cardBg:
+          "bg-gradient-to-br from-cyan-500/[0.06] to-transparent dark:from-cyan-500/[0.03]",
+        textClass: "text-cyan-600 dark:text-cyan-400",
+        badgeBg:
+          "bg-cyan-500/10 border-cyan-500/20 text-cyan-700 dark:text-cyan-400",
+        btnClass:
+          "bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700",
+        desc: "Excelente duração. Perfeito para descanso profundo e foco total.",
+        type: "Excelente",
       };
   }
 };
@@ -86,6 +115,8 @@ export function SleepCalculator({
         durationHours: (cycles * 90) / 60,
         time: formatMinsToTime(wakeMins),
         recommended: cycles === 5 || cycles === 6,
+        defaultQuality:
+          cycles === 3 ? 1 : cycles === 4 ? 3 : cycles === 5 ? 4 : 5,
         type:
           cycles === 3
             ? "Sobrevivência"
@@ -111,6 +142,8 @@ export function SleepCalculator({
         durationHours: (cycles * 90) / 60,
         time: formatMinsToTime(wakeMins),
         recommended: cycles === 5 || cycles === 6,
+        defaultQuality:
+          cycles === 3 ? 1 : cycles === 4 ? 3 : cycles === 5 ? 4 : 5,
         type:
           cycles === 3
             ? "Sobrevivência"
@@ -136,6 +169,8 @@ export function SleepCalculator({
         durationHours: (cycles * 90) / 60,
         time: formatMinsToTime(bedMins),
         recommended: cycles === 5 || cycles === 6,
+        defaultQuality:
+          cycles === 3 ? 1 : cycles === 4 ? 3 : cycles === 5 ? 4 : 5,
         type:
           cycles === 3
             ? "Sobrevivência"
@@ -155,65 +190,96 @@ export function SleepCalculator({
       durationHours: number;
       time: string;
       type: string;
+      defaultQuality: number;
       recommended: boolean;
     }[],
     bedtimeCreator: (time: string) => string,
     wakeTimeCreator: (time: string) => string,
   ) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {options.map((opt) => {
           const style = getCycleStyle(opt.cycles);
+
+          let CycleIcon = Moon;
+          if (opt.cycles === 3) CycleIcon = AlertTriangle;
+          else if (opt.cycles === 4) CycleIcon = Battery;
+          else if (opt.cycles === 6) CycleIcon = Sparkles;
+
           return (
             <div
               key={opt.cycles}
               className={cn(
-                "relative flex flex-col justify-between p-4 bg-card border rounded-xl transition-all hover:bg-muted/4",
-                style.border,
+                "relative flex flex-col justify-between p-5 bg-card rounded-2xl transition-all hover:brightness-105 dark:hover:brightness-110",
+                style.cardBorder,
+                style.cardBg,
               )}
             >
-              {opt.recommended && (
-                <span
+              <div>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "p-1.5 rounded-lg bg-background border border-border/50 text-left",
+                        style.textClass,
+                      )}
+                    >
+                      <CycleIcon className="w-4 h-4 shrink-0" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-extrabold uppercase tracking-wider text-left",
+                        style.textClass,
+                      )}
+                    >
+                      {style.type}
+                    </span>
+                  </div>
+                  {opt.recommended && (
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded-full border text-[9px] font-extrabold uppercase tracking-wider",
+                        style.badgeBg,
+                      )}
+                    >
+                      Ideal
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-0.5 mt-4 text-left">
+                  <span className="text-3xl font-black text-foreground tracking-tight">
+                    {opt.time}
+                  </span>
+                  <span className="text-xs text-muted-foreground leading-relaxed mt-1 font-medium">
+                    {style.desc}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400 font-bold mb-3 flex items-center gap-1.5 justify-start">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                  {opt.durationHours}h de sono ({opt.cycles} ciclos + 15m)
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onQuickRegister(
+                      bedtimeCreator(opt.time),
+                      wakeTimeCreator(opt.time),
+                      opt.defaultQuality,
+                    )
+                  }
                   className={cn(
-                    "absolute top-2.5 right-3 px-1.5 py-0.5 rounded-md border text-[9px] font-bold capitalize",
-                    style.tagBg,
+                    "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer select-none",
+                    style.btnClass,
                   )}
                 >
-                  Ideal
-                </span>
-              )}
-              <div className="flex flex-col gap-0.5">
-                <span className={cn("text-xs font-bold", style.text)}>
-                  {opt.type}
-                </span>
-                <span className="text-xl font-bold text-foreground">
-                  {opt.time}
-                </span>
-                <span className="text-xs text-muted-foreground leading-normal mt-0.5">
-                  {style.desc}
-                </span>
-                <span className="text-[10px] text-neutral-500 font-bold mt-1">
-                  {opt.durationHours}h ({opt.cycles} ciclos de 90m + 15m)
-                </span>
+                  <span>Registrar este ciclo</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  onQuickRegister(
-                    bedtimeCreator(opt.time),
-                    wakeTimeCreator(opt.time),
-                  )
-                }
-                className={cn(
-                  "mt-4 w-full flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer",
-                  opt.recommended
-                    ? "bg-cyan-500 text-white border-cyan-600 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700"
-                    : "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Registrar ciclo
-                <ArrowRight className="w-3 h-3" />
-              </button>
             </div>
           );
         })}
@@ -224,7 +290,7 @@ export function SleepCalculator({
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-5">
-        <div>
+        <div className="text-left">
           <h2 className="text-base font-bold text-foreground">
             Calculadora de Ciclos
           </h2>
@@ -243,7 +309,7 @@ export function SleepCalculator({
           }
           className="w-full"
         >
-          <TabsList className="bg-muted/50 border border-border/60 p-[3px] rounded-lg max-w-md w-full flex">
+          <TabsList className="bg-muted/50 border border-border/60 p-[3px] rounded-lg max-w-md w-full flex mb-6">
             <TabsTrigger value="dormir-agora" className="flex-1 text-xs py-1.5">
               Dormir agora
             </TabsTrigger>
@@ -261,15 +327,15 @@ export function SleepCalculator({
           {/* Tab 1: Dormir agora */}
           <TabsContent
             value="dormir-agora"
-            className="mt-5 flex flex-col gap-5"
+            className="mt-2 flex flex-col gap-5"
           >
-            <div className="py-2 border-b border-border/60 flex items-center justify-between gap-4">
-              <div>
+            <div className="py-3 border-b border-border/60 flex items-center justify-between gap-4">
+              <div className="text-left">
                 <span className="text-xs font-bold text-foreground">
                   Horário de deitar considerado
                 </span>
                 <p className="text-[10px] text-muted-foreground">
-                  Hora atual simulada (inclui 15m para adormecer)
+                  Hora atual simulada (inclui 15m de latência)
                 </p>
               </div>
               <span className="text-sm font-bold text-cyan-500">
@@ -290,20 +356,24 @@ export function SleepCalculator({
           {/* Tab 2: Planejar Deitar */}
           <TabsContent
             value="planejar-dormir"
-            className="mt-5 flex flex-col gap-5"
+            className="mt-2 flex flex-col gap-5"
           >
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1 space-y-2 w-full">
-                <span className="text-xs font-medium text-muted-foreground ml-0.5">
+            <div className="py-3 border-b border-border/60 flex items-center justify-between gap-4">
+              <div className="text-left">
+                <span className="text-xs font-bold text-foreground">
                   Horário planejado para deitar
                 </span>
-                <input
-                  type="time"
-                  value={targetBedtime}
-                  onChange={(e) => setTargetBedtime(e.target.value)}
-                  className="w-full bg-card border border-border h-11 rounded-xl px-4 text-sm font-medium focus:border-cyan-500/40 transition-all outline-none"
-                />
+                <p className="text-[10px] text-muted-foreground">
+                  Escolha quando você planeja ir para a cama (adiciona 15m de
+                  latência)
+                </p>
               </div>
+              <input
+                type="time"
+                value={targetBedtime}
+                onChange={(e) => setTargetBedtime(e.target.value)}
+                className="bg-card border border-border/60 h-9 rounded-lg px-3 text-xs font-bold text-cyan-500 focus:border-cyan-500/40 transition-all outline-none"
+              />
             </div>
 
             {renderOptionsGrid(
@@ -316,20 +386,23 @@ export function SleepCalculator({
           {/* Tab 3: Planejar Despertar */}
           <TabsContent
             value="acordar-hora"
-            className="mt-5 flex flex-col gap-5"
+            className="mt-2 flex flex-col gap-5"
           >
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1 space-y-2 w-full">
-                <span className="text-xs font-medium text-muted-foreground ml-0.5">
+            <div className="py-3 border-b border-border/60 flex items-center justify-between gap-4">
+              <div className="text-left">
+                <span className="text-xs font-bold text-foreground">
                   Horário planejado para acordar
                 </span>
-                <input
-                  type="time"
-                  value={targetWakeTime}
-                  onChange={(e) => setTargetWakeTime(e.target.value)}
-                  className="w-full bg-card border border-border h-11 rounded-xl px-4 text-sm font-medium focus:border-cyan-500/40 transition-all outline-none"
-                />
+                <p className="text-[10px] text-muted-foreground">
+                  Escolha a hora que você precisa despertar na manhã seguinte
+                </p>
               </div>
+              <input
+                type="time"
+                value={targetWakeTime}
+                onChange={(e) => setTargetWakeTime(e.target.value)}
+                className="bg-card border border-border/60 h-9 rounded-lg px-3 text-xs font-bold text-cyan-500 focus:border-cyan-500/40 transition-all outline-none"
+              />
             </div>
 
             {renderOptionsGrid(
@@ -342,7 +415,7 @@ export function SleepCalculator({
       </div>
 
       {/* Dicas de higiene do sono */}
-      <div className="flex flex-col gap-3 pt-2 border-t border-border/60">
+      <div className="flex flex-col gap-3 pt-4 border-t border-border/60 text-left">
         <h3 className="text-xs font-bold text-foreground">
           Dicas de higiene do sono
         </h3>

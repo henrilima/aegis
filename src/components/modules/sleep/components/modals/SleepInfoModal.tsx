@@ -33,13 +33,14 @@ export function SleepInfoModal({ show, onClose }: SleepInfoModalProps) {
   );
 }
 
-export function SleepGuidePanel() {
+export function SleepGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color={getModuleColor("sleep")}
       icon={BedDouble}
       title="Monitoramento de Sono"
       subtitle="Guia para otimizar seu descanso"
+      onBack={onBack}
     >
       <SleepGuideContent />
     </ModuleGuideContainer>
