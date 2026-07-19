@@ -1,6 +1,7 @@
 "use client";
 
 import { Key, ShieldCheck } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -9,6 +10,7 @@ import {
   ProTip,
   StatRow,
 } from "@/components/global/ModuleInfoParts";
+import type { ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface PasswordsInfoModalProps {
@@ -26,6 +28,28 @@ export function PasswordsInfoModal({ show, onClose }: PasswordsInfoModalProps) {
       subtitle="Guia para gestão segura de credenciais"
       closeLabel="Entendido, cofre seguro!"
     >
+      <PasswordsGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function PasswordsGuidePanel({ onBack }: { onBack?: () => void }) {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("passwords") as ThemeColorKey}
+      icon={Key}
+      title="Cofre de Senhas"
+      subtitle="Guia para gestão segura de credenciais"
+      onBack={onBack}
+    >
+      <PasswordsGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function PasswordsGuideContent() {
+  return (
+    <>
       <InfoSection icon={ShieldCheck} title="Criptografia de Nível Militar">
         <p className="text-sm text-muted-foreground leading-relaxed">
           O Aegis utiliza o padrão <Highlight>AES-256</Highlight> para proteger
@@ -82,6 +106,6 @@ export function PasswordsInfoModal({ show, onClose }: PasswordsInfoModalProps) {
         inacessíveis para sempre. Recomendamos guardar sua senha mestra em um
         local físico seguro.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

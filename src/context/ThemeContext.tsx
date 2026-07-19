@@ -124,7 +124,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (VALID_THEME_IDS.has(typedTheme)) {
           setThemeState(typedTheme);
           localStorage.setItem("aegis-chromatic-theme", typedTheme);
-          
+
           if (newAccent) {
             setAccentColorState(newAccent);
             localStorage.setItem("aegis-accent-color", newAccent);
@@ -148,11 +148,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
       listen("restore-default-theme", () => {
         const preferredTheme =
-          (localStorage.getItem("aegis-preferred-theme") as ChromaticThemeId | null) ||
-          FALLBACK_THEME;
+          (localStorage.getItem(
+            "aegis-preferred-theme",
+          ) as ChromaticThemeId | null) || FALLBACK_THEME;
         const preferredAccent =
-          (localStorage.getItem("aegis-accent-color-preferred") as ThemeColorKey | null) ||
-          "blue";
+          (localStorage.getItem(
+            "aegis-accent-color-preferred",
+          ) as ThemeColorKey | null) || "blue";
 
         setThemeState(preferredTheme);
         localStorage.setItem("aegis-chromatic-theme", preferredTheme);

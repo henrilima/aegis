@@ -35,13 +35,14 @@ export function FlashcardsInfoModal({
   );
 }
 
-export function FlashcardsGuidePanel() {
+export function FlashcardsGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color={getModuleColor("flashcards")}
       icon={Brain}
       title="Guia do Módulo de Flashcards"
       subtitle="Memorização activa e repetição espaçada para impulsionar seus estudos"
+      onBack={onBack}
     >
       <FlashcardsGuideContent />
     </ModuleGuideContainer>

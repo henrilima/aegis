@@ -100,6 +100,13 @@ const FlashcardsWidget = dynamic(
     ssr: false,
   },
 );
+const ScheduleWidget = dynamic(
+  () => import("./studies/ScheduleWidget").then((m) => m.ScheduleWidget),
+  {
+    loading: WidgetSkeleton,
+    ssr: false,
+  },
+);
 
 // biome-ignore lint/suspicious/noExplicitAny: Heterogeneous widget registry
 export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
@@ -116,6 +123,7 @@ export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   movies: MoviesWidget,
   dictionary: DictionaryWidget,
   flashcards: FlashcardsWidget,
+  schedule_mural: ScheduleWidget,
 };
 
 export const WIDGET_METADATA = [
@@ -125,6 +133,11 @@ export const WIDGET_METADATA = [
   { id: "tasks", name: "Tarefas", description: "Lista de afazeres" },
   { id: "studies", name: "Estudos", description: "Horas e sessões semanais" },
   { id: "sleep", name: "Sono", description: "Qualidade e duração média" },
+  {
+    id: "schedule_mural",
+    name: "Grade Horária",
+    description: "Grade de aulas e contagem regressiva",
+  },
   {
     id: "calendar",
     name: "Calendário",

@@ -1361,7 +1361,8 @@ pub fn run() {
             habits::habit_toggle_date,
             habits::habit_mark_habit_done, habits::habit_use_habit_charge, habits::habit_reset_habit, 
             habits::habit_hard_reset_habit, habits::habit_delete_habit, habits::habit_export_habits_csv, 
-            habits::habit_import_habits_csv,
+            habits::habit_import_habits_csv, habits::habit_add_sober_log, habits::habit_list_sober_logs,
+            habits::habit_reset_with_trigger,
 
             // Notes
             notes::note_list_notes, notes::note_list_note_items, notes::note_add_note, 
@@ -1373,6 +1374,7 @@ pub fn run() {
             studies::estudos_add_session, studies::estudos_update_session, studies::estudos_delete_session, 
             studies::estudos_list_sessions, studies::estudos_upsert_goal, studies::estudos_list_goals, 
             studies::estudos_export_csv, studies::estudos_import_csv,
+            studies::estudos_add_schedule, studies::estudos_delete_schedule, studies::estudos_list_schedules,
 
             // Simulados & Notas
             studies::grades_add, studies::grades_update, studies::grades_delete, studies::grades_list,
@@ -1383,6 +1385,7 @@ pub fn run() {
             // Sleep
             sleep::sono_upsert_entry, sleep::sono_delete_entry, sleep::sono_list_entries, 
             sleep::sono_upsert_goal, sleep::sono_get_goal, sleep::sono_export_csv, sleep::sono_import_csv,
+            sleep::sono_get_dream, sleep::sono_upsert_dream, sleep::sono_list_dreams,
 
             // Automation
             automation::automation_list_rules, automation::automation_add_rule, 
@@ -1410,6 +1413,7 @@ pub fn run() {
             reading::reading_upsert_session, reading::reading_list_sessions, reading::reading_delete_session, 
             reading::reading_upsert_goal, reading::reading_list_goals, reading::reading_export_json, 
             reading::reading_import_json, reading::reading_search_books, reading::reading_toggle_favorite,
+            reading::reading_list_notes, reading::reading_add_note, reading::reading_delete_note,
 
             // Dictionary
             dictionary::dictionary_search, dictionary::dictionary_list, dictionary::dictionary_add, 

@@ -20,7 +20,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import type { ThemeColorKey } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { CHROMATIC_THEMES } from "@/themes.config";
 

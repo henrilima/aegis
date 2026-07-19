@@ -41,10 +41,11 @@ export function MoviesWidget({
       onToggleInteractive={onToggleInteractive}
     >
       {!hasData ? (
-        <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-          <Film className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-          <p className="text-[11px] font-medium text-muted-foreground/60">
-            Nenhum filme adicionado
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <p className="text-xs text-neutral-600 font-bold">Sem Filmes</p>
+          <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+            Adicione filmes e séries que deseja assistir ou já assistiu para
+            acompanhá-los aqui.
           </p>
         </div>
       ) : (

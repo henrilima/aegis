@@ -9,12 +9,14 @@ import { useTime } from "@/context/TimeContext";
 
 import type { GlossaryWord } from "../dictionary/types";
 import type { Flashcard, FlashcardDeck } from "../flashcards/types";
+import type { SubjectMeta } from "../grades/types";
 import type { Movie } from "../movies/types";
 import type {
   ReadingBook,
   ReadingGoal,
   ReadingSession,
 } from "../reading/types";
+import type { StudySchedule } from "../studies/types";
 import type { Task } from "../tasks/types";
 import { startOfWeekIso } from "./helpers";
 import type {
@@ -70,6 +72,8 @@ export interface DashboardData {
   movies: Movie[];
   dictionaryWords: GlossaryWord[];
   showHolidays: boolean;
+  schedules: StudySchedule[];
+  subjects: SubjectMeta[];
 }
 
 const INITIAL_DATA: DashboardData = {
@@ -94,6 +98,8 @@ const INITIAL_DATA: DashboardData = {
   movies: [],
   dictionaryWords: [],
   showHolidays: true,
+  schedules: [],
+  subjects: [],
 };
 
 // Layout de Widgets (persistido no Store do Tauri)
@@ -249,6 +255,8 @@ export function useDashboardData() {
         invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
         invoke<Movie[]>("movies_list", { userId: uid }),
         invoke<GlossaryWord[]>("dictionary_list", { userId: uid }),
+        invoke<StudySchedule[]>("estudos_list_schedules", { userId: uid }),
+        invoke<SubjectMeta[]>("subjects_list", { userId: uid }),
       ]);
 
       // Busca baralhos de flashcards e cartões em paralelo (separado do allSettled principal por ser hierárquico)
@@ -335,6 +343,14 @@ export function useDashboardData() {
         dictionaryWords:
           results[15].status === "fulfilled"
             ? (results[15].value as GlossaryWord[])
+            : [],
+        schedules:
+          results[16].status === "fulfilled"
+            ? (results[16].value as StudySchedule[])
+            : [],
+        subjects:
+          results[17].status === "fulfilled"
+            ? (results[17].value as SubjectMeta[])
             : [],
       }));
     } catch {

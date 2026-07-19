@@ -168,7 +168,7 @@ export function DashboardConfigModal({
       const savedPath = await invoke<string>("global_save_dashboard_cover", {
         sourcePath: path,
       });
-      const localUrl = convertFileSrc(savedPath);
+      const localUrl = `${convertFileSrc(savedPath)}?t=${Date.now()}`;
       updateConfigField("dashboardCoverImage", localUrl);
     } catch (err) {
       console.error("Erro ao selecionar arquivo de capa:", err);

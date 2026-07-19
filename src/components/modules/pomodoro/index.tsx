@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { PomodoroInfoModal } from "./PomodoroInfoModal";
+import { PomodoroGuidePanel } from "./PomodoroInfoModal";
 import { PomoHeader } from "./pomoHeader";
 import { PomoHistory } from "./pomoHistory";
 import { usePomodoroLogic } from "./usePomodoroLogic";
@@ -38,6 +38,23 @@ export default function PomodoroPage() {
 
   const isWork = state?.cycleType === "Work";
 
+  if (showInfo) {
+    return (
+      <div className="h-full w-full flex justify-center overflow-auto animate-in fade-in duration-700">
+        <div className="w-full h-full flex flex-col gap-8 pb-12">
+          {/* Cabeçalho */}
+          <PomoHeader
+            cyclesCompleted={state?.cyclesCompleted || 0}
+            isWork={isWork}
+            onTitleClick={() => setShowInfo(true)}
+            onDetach={handleDetach}
+          />
+          <PomodoroGuidePanel onBack={() => setShowInfo(false)} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full flex justify-center overflow-auto animate-in fade-in duration-700">
       <div className="w-full h-full flex flex-col gap-8 pb-12">
@@ -45,11 +62,9 @@ export default function PomodoroPage() {
         <PomoHeader
           cyclesCompleted={state?.cyclesCompleted || 0}
           isWork={isWork}
-          onInfoOpen={() => setShowInfo(true)}
+          onTitleClick={() => setShowInfo(true)}
           onDetach={handleDetach}
         />
-
-        <PomodoroInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           {/* Unidade Principal */}

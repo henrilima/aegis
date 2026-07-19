@@ -19,7 +19,7 @@ interface DictionaryInfoModalProps {
   onClose: () => void;
 }
 
-export function DictionaryGuidePanel() {
+export function DictionaryGuidePanel({ onBack }: { onBack?: () => void }) {
   const color = getModuleColor("dictionary");
   const theme = getColorTheme(color);
 
@@ -29,6 +29,7 @@ export function DictionaryGuidePanel() {
       icon={Globe}
       title="Dicionário & Léxico"
       subtitle="Guia para consulta e expansão de vocabulário"
+      onBack={onBack}
     >
       <InfoSection icon={Globe} title="Base de Dados Internacional">
         <p className="text-sm text-muted-foreground leading-relaxed">

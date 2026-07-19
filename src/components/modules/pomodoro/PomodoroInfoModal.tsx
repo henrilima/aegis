@@ -1,6 +1,7 @@
 "use client";
 
 import { History, Settings, Timer } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -8,7 +9,7 @@ import {
   ProTip,
   StatRow,
 } from "@/components/global/ModuleInfoParts";
-import { getColorTheme } from "@/lib/utils";
+import type { ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface PomodoroInfoModalProps {
@@ -17,8 +18,6 @@ interface PomodoroInfoModalProps {
 }
 
 export function PomodoroInfoModal({ show, onClose }: PomodoroInfoModalProps) {
-  const _theme = getColorTheme(getModuleColor("pomodoro"));
-
   return (
     <ModuleInfoModal
       show={show}
@@ -28,6 +27,28 @@ export function PomodoroInfoModal({ show, onClose }: PomodoroInfoModalProps) {
       subtitle="Guia para produtividade e foco extremo"
       closeLabel="Entendido, hora de focar!"
     >
+      <PomodoroGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function PomodoroGuidePanel({ onBack }: { onBack?: () => void }) {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("pomodoro") as ThemeColorKey}
+      icon={Timer}
+      title="Técnica Pomodoro"
+      subtitle="Guia para produtividade e foco extremo"
+      onBack={onBack}
+    >
+      <PomodoroGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function PomodoroGuideContent() {
+  return (
+    <>
       <InfoSection icon={Timer} title="Ciclos de Trabalho e Pausa">
         <p className="text-sm text-muted-foreground leading-relaxed">
           O método Pomodoro consiste em dividir o trabalho em blocos de foco
@@ -74,6 +95,6 @@ export function PomodoroInfoModal({ show, onClose }: PomodoroInfoModalProps) {
         Ao iniciar o timer, tente se desconectar de redes sociais e distrações.
         O objetivo do Pomodoro é o estado de fluxo (flow).
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

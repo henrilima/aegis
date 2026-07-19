@@ -58,7 +58,10 @@ commands.allow = [
     "habit_hard_reset_habit",
     "habit_delete_habit",
     "habit_export_habits_csv",
-    "habit_import_habits_csv"
+    "habit_import_habits_csv",
+    "habit_add_sober_log",
+    "habit_list_sober_logs",
+    "habit_reset_with_trigger"
 ]
 
 [[permission]]
@@ -91,6 +94,9 @@ commands.allow = [
     "estudos_list_goals",
     "estudos_export_csv",
     "estudos_import_csv",
+    "estudos_add_schedule",
+    "estudos_delete_schedule",
+    "estudos_list_schedules",
     "grades_add",
     "grades_update",
     "grades_delete",
@@ -116,7 +122,10 @@ commands.allow = [
     "sono_upsert_goal",
     "sono_get_goal",
     "sono_export_csv",
-    "sono_import_csv"
+    "sono_import_csv",
+    "sono_get_dream",
+    "sono_upsert_dream",
+    "sono_list_dreams"
 ]
 
 [[permission]]
@@ -164,7 +173,10 @@ commands.allow = [
     "reading_export_json",
     "reading_import_json",
     "reading_search_books",
-    "reading_toggle_favorite"
+    "reading_toggle_favorite",
+    "reading_list_notes",
+    "reading_add_note",
+    "reading_delete_note"
 ]
 
 [[permission]]

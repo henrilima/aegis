@@ -9,7 +9,7 @@ import {
   Search,
   Timer,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { useModules } from "@/context/ModuleContext";
@@ -58,6 +58,9 @@ export interface ModuleHeaderProps {
   searchPlaceholder?: string;
   integrations?: string[];
   onBack?: () => void;
+  onTitleClick?: () => void;
+  titleHoverIcon?: LucideIcon;
+  titleTooltip?: string;
 }
 
 interface Integration {
@@ -113,15 +116,54 @@ export function ModuleHeader({
   searchPlaceholder = "Pesquisar...",
   integrations,
   onBack,
+  onTitleClick,
+  titleHoverIcon,
+  titleTooltip,
 }: ModuleHeaderProps) {
   const m = getColorTheme(color as string);
   const { appMode } = useTheme();
   const { navigate, previousRoute } = useNavigation();
   const { isModuleEnabled } = useModules();
+  const [isTitleHovered, setIsTitleHovered] = useState(false);
 
   const filteredActions = actions;
 
   const iconBox = cn("p-2 rounded-xl border transition-all", m.bg, m.border);
+  const TitleIcon = isTitleHovered && titleHoverIcon ? titleHoverIcon : Icon;
+
+  const renderTitleContent = () => (
+    <>
+      <div
+        className={cn(
+          iconBox,
+          onTitleClick && "group-hover:border-border group-hover:bg-accent/40",
+        )}
+      >
+        <TitleIcon
+          className={cn(
+            "w-5 h-5 transition-transform duration-200",
+            m.text,
+            onTitleClick && "group-hover:scale-105",
+          )}
+        />
+      </div>
+      <div className="text-left">
+        <h1
+          className={cn(
+            "text-xl font-semibold leading-none flex items-center gap-1.5 transition-colors duration-200",
+            onTitleClick && "group-hover:text-foreground",
+          )}
+        >
+          {title}
+        </h1>
+        {subtitle && (
+          <div className="text-xs text-muted-foreground mt-0.5 transition-colors duration-200">
+            {subtitle}
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -155,17 +197,24 @@ export function ModuleHeader({
               </button>
             </ToolTip>
           )}
-          <div className={iconBox}>
-            <Icon className={cn("w-5 h-5", m.text)} />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold leading-none">{title}</h1>
-            {subtitle && (
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {subtitle}
-              </div>
-            )}
-          </div>
+
+          {onTitleClick ? (
+            <ToolTip content={titleTooltip || "Clique para abrir"}>
+              <button
+                type="button"
+                onClick={onTitleClick}
+                onMouseEnter={() => setIsTitleHovered(true)}
+                onMouseLeave={() => setIsTitleHovered(false)}
+                className="flex items-center gap-3 group cursor-pointer border-none bg-transparent p-0 outline-none text-left focus:outline-none shadow-none"
+              >
+                {renderTitleContent()}
+              </button>
+            </ToolTip>
+          ) : (
+            <div className="flex items-center gap-3">
+              {renderTitleContent()}
+            </div>
+          )}
         </div>
 
         {/* Ações */}

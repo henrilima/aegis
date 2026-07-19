@@ -1,6 +1,7 @@
 "use client";
 
-import { Flag, Hash, Subtitles } from "lucide-react";
+import { Flag, Hash, ListTodo, Subtitles } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   FeatureGrid,
@@ -8,7 +9,7 @@ import {
   ProTip,
   StatRow,
 } from "@/components/global/ModuleInfoParts";
-import { getColorTheme } from "@/lib/utils";
+import type { ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface TasksInfoModalProps {
@@ -17,8 +18,6 @@ interface TasksInfoModalProps {
 }
 
 export function TasksInfoModal({ show, onClose }: TasksInfoModalProps) {
-  const _theme = getColorTheme(getModuleColor("tasks"));
-
   return (
     <ModuleInfoModal
       show={show}
@@ -28,6 +27,28 @@ export function TasksInfoModal({ show, onClose }: TasksInfoModalProps) {
       subtitle="Organize seu fluxo de trabalho com hierarquia e prioridades"
       closeLabel="Entendido, vamos organizar!"
     >
+      <TasksGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function TasksGuidePanel({ onBack }: { onBack?: () => void }) {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("tasks") as ThemeColorKey}
+      icon={ListTodo}
+      title="Gestão de Tarefas"
+      subtitle="Organize seu fluxo de trabalho com hierarquia e prioridades"
+      onBack={onBack}
+    >
+      <TasksGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function TasksGuideContent() {
+  return (
+    <>
       <InfoSection icon={Subtitles} title="Hierarquia de Subtarefas">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Divida grandes objetivos em passos menores. O Aegis permite criar um
@@ -76,6 +97,6 @@ export function TasksInfoModal({ show, onClose }: TasksInfoModalProps) {
         A lista é ordenada automaticamente pelas tarefas de maior prioridade no
         topo, garantindo que você foque no que realmente importa.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

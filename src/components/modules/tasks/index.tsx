@@ -26,7 +26,7 @@ import { useTime } from "@/context/TimeContext";
 import { cn } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { TaskCreateModal } from "./components/modals/TaskCreateModal";
-import { TasksInfoModal } from "./components/TasksInfoModal";
+import { TasksGuidePanel, TasksInfoModal } from "./components/TasksInfoModal";
 import type { Task } from "./types";
 
 export default function TasksPage() {
@@ -355,6 +355,14 @@ export default function TasksPage() {
     );
   };
 
+  if (showInfo) {
+    return (
+      <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 text-foreground">
+        <TasksGuidePanel onBack={() => setShowInfo(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 text-foreground">
       <ModuleHeader
@@ -362,13 +370,10 @@ export default function TasksPage() {
         title="Lista de Tarefas"
         subtitle={`${pendingCount} ${pendingCount === 1 ? "tarefa pendente" : "tarefas pendentes"}`}
         icon={ListTodo}
+        onTitleClick={() => setShowInfo(true)}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Tarefas"
         actions={[
-          {
-            id: "info",
-            icon: HelpCircle,
-            tooltip: "Guia do Módulo",
-            onClick: () => setShowInfo(true),
-          },
           {
             id: "add",
             label: "Nova Tarefa",

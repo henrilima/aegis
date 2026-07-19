@@ -7,14 +7,14 @@ import { getModuleColor } from "@/modules.config";
 interface PomoHeaderProps {
   cyclesCompleted: number;
   isWork: boolean;
-  onInfoOpen?: () => void;
+  onTitleClick?: () => void;
   onDetach?: () => void;
 }
 
 export function PomoHeader({
   cyclesCompleted,
   isWork,
-  onInfoOpen,
+  onTitleClick,
   onDetach,
 }: PomoHeaderProps) {
   const subtitle = isWork
@@ -32,15 +32,6 @@ export function PomoHeader({
     });
   }
 
-  if (onInfoOpen) {
-    headerActions.push({
-      id: "info",
-      icon: HelpCircle,
-      tooltip: "Guia do Módulo",
-      onClick: onInfoOpen,
-    });
-  }
-
   return (
     <ModuleHeader
       color={getModuleColor("pomodoro")}
@@ -48,6 +39,9 @@ export function PomoHeader({
       subtitle={subtitle}
       icon={Timer}
       actions={headerActions}
+      onTitleClick={onTitleClick}
+      titleHoverIcon={HelpCircle}
+      titleTooltip="Visualizar Guia do Pomodoro"
     />
   );
 }

@@ -33,7 +33,14 @@ export function StatisticsWidget({
         isInteractive={isInteractive}
         onToggleInteractive={onToggleInteractive}
       >
-        <p className="text-xs text-neutral-600 italic">Processando dados...</p>
+        <div className="flex flex-col items-center justify-center py-6 text-center h-full">
+          <p className="text-xs text-neutral-600 font-bold">
+            Processando Dados
+          </p>
+          <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+            Por favor, aguarde enquanto calculamos suas estatísticas semanais.
+          </p>
+        </div>
       </BaseWidget>
     );
 

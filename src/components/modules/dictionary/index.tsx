@@ -34,6 +34,7 @@ export default function DictionaryPage() {
   const [glossary, setGlossary] = useState<GlossaryWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabId>("all");
+  const [preGuideTab, setPreGuideTab] = useState<TabId>("all");
   const [glossarySearch, setGlossarySearch] = useState("");
 
   const [searchResult, setSearchResult] = useState<DictionaryEntry[] | null>(
@@ -174,10 +175,17 @@ export default function DictionaryPage() {
         tabs={[
           { id: "all", label: "Todos", icon: LayoutGrid },
           { id: "favorites", label: "Favoritos", icon: Star },
-          { id: "guia", label: "Guia", icon: HelpCircle },
         ]}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
+        onTitleClick={() => {
+          if (tab !== "guia") {
+            setPreGuideTab(tab);
+            setTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Dicionário"
         searchValue={glossarySearch}
         onSearchChange={setGlossarySearch}
         searchPlaceholder="Filtrar glossário..."
@@ -202,7 +210,9 @@ export default function DictionaryPage() {
       />
 
       {/* GUIA */}
-      {tab === "guia" && <DictionaryGuidePanel />}
+      {tab === "guia" && (
+        <DictionaryGuidePanel onBack={() => setTab(preGuideTab)} />
+      )}
 
       {/* LISTA DE CARDS COMPACTOS */}
       {tab !== "guia" && (

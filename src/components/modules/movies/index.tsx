@@ -39,6 +39,7 @@ export default function MoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<MovieTabId>("all");
+  const [preGuideTab, setPreGuideTab] = useState<MovieTabId>("all");
   const [search, setSearch] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -188,11 +189,6 @@ export default function MoviesPage() {
       count: counts.favorites,
       icon: Heart,
     },
-    {
-      id: "guia" as MovieTabId,
-      label: "Guia",
-      icon: HelpCircle,
-    },
   ];
 
   if (loading) {
@@ -213,8 +209,16 @@ export default function MoviesPage() {
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as MovieTabId)}
-        searchValue={search}
-        onSearchChange={setSearch}
+        onTitleClick={() => {
+          if (activeTab !== "guia") {
+            setPreGuideTab(activeTab);
+            setActiveTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Filmes"
+        searchValue={activeTab !== "guia" ? search : undefined}
+        onSearchChange={activeTab !== "guia" ? setSearch : undefined}
         searchPlaceholder="Buscar por título, diretor, gênero ou ano..."
         actions={[
           {
@@ -240,7 +244,7 @@ export default function MoviesPage() {
 
       {/* Content */}
       {activeTab === "guia" ? (
-        <MoviesGuidePanel />
+        <MoviesGuidePanel onBack={() => setActiveTab(preGuideTab)} />
       ) : filteredMovies.length === 0 ? (
         <div className="py-20 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-center px-10 grayscale">
           <div className="w-16 h-16 rounded-xl bg-card border border-border flex items-center justify-center mb-4">

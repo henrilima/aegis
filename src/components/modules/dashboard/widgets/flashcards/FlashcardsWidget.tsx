@@ -156,17 +156,21 @@ export function FlashcardsWidget({
           </div>
         ) : totalDecks === 0 ? (
           // Estado vazio
-          <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-            <Brain className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-            <p className="text-[11px] font-medium text-muted-foreground/60">
-              Nenhum baralho criado
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-xs text-neutral-600 font-bold">Sem Baralhos</p>
+            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+              Crie baralhos de flashcards para memorizar seus conteúdos
+              estudados.
             </p>
           </div>
         ) : (
           // Sem pendências
-          <div className="flex items-center justify-center py-4 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
-            <p className="text-[11px] font-bold text-emerald-500">
-              Tudo em dia! {totalCards} cartões revisados.
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+              Tudo em Dia
+            </p>
+            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+              Você revisou todos os seus {totalCards} cartões programados.
             </p>
           </div>
         )}

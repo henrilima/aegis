@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getModuleColor } from "@/modules.config";
 import { AddEditModal } from "./AddEditModal";
 import { LockedVault } from "./LockedVault";
-import { PasswordsInfoModal } from "./PasswordsInfoModal";
+import { PasswordsGuidePanel } from "./PasswordsInfoModal";
 import { PasswordTable } from "./PasswordTable";
 import { ResetModal } from "./ResetModal";
 import type { DecryptedEntry, PasswordEntry } from "./types";
@@ -331,6 +331,20 @@ export default function PasswordManager() {
           handleVerify={handleVerify}
           handleStartReset={handleStartReset}
         />
+      ) : showInfo ? (
+        <div className="w-full h-full flex flex-col gap-6 overflow-hidden">
+          <ModuleHeader
+            color={getModuleColor("passwords")}
+            title="Cofre de senhas"
+            subtitle={`${passwords.length} ${passwords.length === 1 ? "credencial protegida" : "credenciais protegidas"} localmente`}
+            icon={ShieldCheck}
+            onTitleClick={() => setShowInfo(true)}
+            titleHoverIcon={HelpCircle}
+            titleTooltip="Visualizar Guia de Senhas"
+            actions={[]}
+          />
+          <PasswordsGuidePanel onBack={() => setShowInfo(false)} />
+        </div>
       ) : (
         <div className="w-full h-full flex flex-col gap-6 overflow-hidden">
           <ModuleHeader
@@ -338,6 +352,9 @@ export default function PasswordManager() {
             title="Cofre de senhas"
             subtitle={`${passwords.length} ${passwords.length === 1 ? "credencial protegida" : "credenciais protegidas"} localmente`}
             icon={ShieldCheck}
+            onTitleClick={() => setShowInfo(true)}
+            titleHoverIcon={HelpCircle}
+            titleTooltip="Visualizar Guia de Senhas"
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             searchPlaceholder="Buscar por serviço ou usuário..."
@@ -355,12 +372,6 @@ export default function PasswordManager() {
                 icon: DownloadCloud,
                 tooltip: "Exportar Senhas (CSV)",
                 onClick: handleExport,
-              },
-              {
-                id: "info",
-                icon: HelpCircle,
-                tooltip: "Guia do Módulo",
-                onClick: () => setShowInfo(true),
               },
               {
                 id: "new",
@@ -433,8 +444,6 @@ export default function PasswordManager() {
           onConfirm={handleConfirmReset}
         />
       )}
-
-      <PasswordsInfoModal show={showInfo} onClose={() => setShowInfo(false)} />
     </div>
   );
 }

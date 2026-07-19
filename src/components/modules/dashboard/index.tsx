@@ -221,6 +221,15 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { now: time, isSimulated } = useTime();
   const { isModuleEnabled } = useModules();
+  const isWidgetEnabled = useCallback(
+    (widgetId: string) => {
+      if (widgetId === "schedule_mural") {
+        return isModuleEnabled("studies");
+      }
+      return isModuleEnabled(widgetId as ModuleId);
+    },
+    [isModuleEnabled],
+  );
   const { appMode } = useTheme();
   const { navigate } = useNavigation();
   const {
@@ -320,7 +329,7 @@ export default function Dashboard() {
   };
 
   const inactiveWidgets = WIDGET_METADATA.filter(
-    (w) => isModuleEnabled(w.id as ModuleId) && !activeWidgetIds.includes(w.id),
+    (w) => isWidgetEnabled(w.id) && !activeWidgetIds.includes(w.id),
   );
   const {
     data,
@@ -608,9 +617,7 @@ export default function Dashboard() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={activeWidgetIds.filter((id) =>
-                isModuleEnabled(id as ModuleId),
-              )}
+              items={activeWidgetIds.filter((id) => isWidgetEnabled(id))}
               strategy={rectSortingStrategy}
             >
               <motion.div
@@ -620,7 +627,7 @@ export default function Dashboard() {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto"
               >
                 {activeWidgetIds
-                  .filter((id) => isModuleEnabled(id as ModuleId))
+                  .filter((id) => isWidgetEnabled(id))
                   .map((id) => {
                     const WidgetComponent = WIDGET_REGISTRY[id];
                     if (!WidgetComponent) return null;
@@ -803,6 +810,23 @@ export default function Dashboard() {
                       widgetProps.weekQuestions = weekQuestions;
                       widgetProps.goalWeekHours = goalWeekHours;
                       widgetProps.goalWeekQuestions = goalWeekQuestions;
+                      widgetProps.onAddSession = async (
+                        session: StudySession,
+                      ) => {
+                        try {
+                          await invoke("estudos_add_session", {
+                            session: { ...session, userId: String(user?.id) },
+                          });
+                          fetchAll();
+                          toast.success("Estudo registrado!");
+                        } catch {
+                          toast.error("Erro ao salvar sessão");
+                        }
+                      };
+                    }
+                    if (id === "schedule_mural") {
+                      widgetProps.schedules = data.schedules;
+                      widgetProps.subjects = data.subjects;
                       widgetProps.onAddSession = async (
                         session: StudySession,
                       ) => {

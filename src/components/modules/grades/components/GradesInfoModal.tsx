@@ -10,13 +10,14 @@ import {
 } from "@/components/global/ModuleInfoParts";
 import { getModuleColor } from "@/modules.config";
 
-export function GradesGuidePanel() {
+export function GradesGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color={getModuleColor("grades")}
       icon={BarChart2}
       title="Simulados & Notas"
       subtitle="Guia de acompanhamento e cálculo de médias"
+      onBack={onBack}
     >
       <GradesGuideContent />
     </ModuleGuideContainer>

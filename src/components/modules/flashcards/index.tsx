@@ -96,7 +96,6 @@ const itemVariants = {
 const FLASHCARD_TABS = [
   { id: "baralhos", label: "Baralhos", icon: BookOpen },
   { id: "reports", label: "Relatórios", icon: BarChart3 },
-  { id: "guia", label: "Guia", icon: HelpCircle },
 ];
 
 // Helper para determinar se um cartão está devido com base no algoritmo de repetição espaçada
@@ -127,6 +126,9 @@ export default function FlashcardsPage() {
   const [activeTab, setActiveTab] = useState<"baralhos" | "reports" | "guia">(
     "baralhos",
   );
+  const [preGuideTab, setPreGuideTab] = useState<
+    "baralhos" | "reports" | "guia"
+  >("baralhos");
 
   // Estado dos modais
   const [isDeckFormOpen, setIsDeckFormOpen] = useState(false);
@@ -303,7 +305,17 @@ export default function FlashcardsPage() {
         searchPlaceholder="Pesquisar baralhos..."
         tabs={FLASHCARD_TABS}
         activeTab={activeTab}
-        onTabChange={(id) => setActiveTab(id as "baralhos" | "reports")}
+        onTabChange={(id) =>
+          setActiveTab(id as "baralhos" | "reports" | "guia")
+        }
+        onTitleClick={() => {
+          if (activeTab !== "guia") {
+            setPreGuideTab(activeTab);
+            setActiveTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Flashcards"
         actions={[
           {
             id: "add-deck",
@@ -319,7 +331,7 @@ export default function FlashcardsPage() {
       />
 
       {activeTab === "guia" ? (
-        <FlashcardsGuidePanel />
+        <FlashcardsGuidePanel onBack={() => setActiveTab(preGuideTab)} />
       ) : activeTab === "baralhos" ? (
         loading ? (
           <div className="grow flex items-center justify-center text-xs text-muted-foreground py-20">

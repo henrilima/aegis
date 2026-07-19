@@ -75,10 +75,13 @@ export function DictionaryWidget({
         </div>
 
         {!hasData ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-            <Book className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-            <p className="text-[11px] font-medium text-muted-foreground/60">
-              Glossário vazio
+          <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-xs text-neutral-600 font-bold">
+              Dicionário Vazio
+            </p>
+            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+              Adicione palavras desconhecidas ou termos técnicos para construir
+              seu vocabulário.
             </p>
           </div>
         ) : (

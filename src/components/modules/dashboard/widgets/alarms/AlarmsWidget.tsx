@@ -147,10 +147,12 @@ export function AlarmsWidget({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-                <AlarmClock className="w-5 h-5 text-muted-foreground/30 mb-1.5 stroke-[1.5]" />
-                <p className="text-[11px] font-medium text-muted-foreground/60">
-                  Nenhum alarme ativo no momento
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <p className="text-xs text-neutral-600 font-bold">
+                  Sem Alarmes Ativos
+                </p>
+                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                  Não há alarmes definidos para tocar no momento.
                 </p>
               </div>
             )}

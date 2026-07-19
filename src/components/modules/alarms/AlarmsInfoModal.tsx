@@ -9,13 +9,14 @@ import {
   Volume2,
   Zap,
 } from "lucide-react";
+import { ModuleGuideContainer } from "@/components/global/ModuleGuideContainer";
 import { ModuleInfoModal } from "@/components/global/ModuleInfoModal";
 import {
   InfoSection,
   ProTip,
   useModuleColor,
 } from "@/components/global/ModuleInfoParts";
-import { cn } from "@/lib/utils";
+import { cn, type ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 
 interface AlarmsInfoModalProps {
@@ -103,6 +104,28 @@ export function AlarmsInfoModal({ show, onClose }: AlarmsInfoModalProps) {
       subtitle="Gerencie seus alertas e lembretes periódicos"
       closeLabel="Tudo certo, vamos lá!"
     >
+      <AlarmsGuideContent />
+    </ModuleInfoModal>
+  );
+}
+
+export function AlarmsGuidePanel({ onBack }: { onBack?: () => void }) {
+  return (
+    <ModuleGuideContainer
+      color={getModuleColor("alarms") as ThemeColorKey}
+      icon={AlarmClock}
+      title="Guia do Módulo de Alarmes"
+      subtitle="Gerencie seus alertas e lembretes periódicos"
+      onBack={onBack}
+    >
+      <AlarmsGuideContent />
+    </ModuleGuideContainer>
+  );
+}
+
+function AlarmsGuideContent() {
+  return (
+    <>
       <InfoSection icon={AlarmClock} title="Tipos de Alerta">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Dois modos para atender a diferentes necessidades:
@@ -124,6 +147,6 @@ export function AlarmsInfoModal({ show, onClose }: AlarmsInfoModalProps) {
         implementar a técnica de Micro-pausas. Configure um alerta a cada 60
         minutos para se alongar, melhorando sua circulação, foco e memória.
       </ProTip>
-    </ModuleInfoModal>
+    </>
   );
 }

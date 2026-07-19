@@ -12,7 +12,7 @@ import { useState } from "react";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getModuleColor } from "@/modules.config";
-import { AlarmsInfoModal } from "./AlarmsInfoModal";
+import { AlarmsGuidePanel } from "./AlarmsInfoModal";
 import { AlarmCard } from "./components/AlarmCard";
 import { AlarmFormModal } from "./components/AlarmFormModal";
 import { useAlarmsLogic } from "./hooks/useAlarmsLogic";
@@ -74,6 +74,24 @@ export default function AlarmsPage() {
     );
   }
 
+  if (isInfoOpen) {
+    return (
+      <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground px-1">
+        <ModuleHeader
+          color={getModuleColor("alarms")}
+          title="Alarmes & Alertas"
+          subtitle={`${alarms.filter((a) => a.enabled).length} ativos de ${alarms.length} totais`}
+          icon={AlarmClock}
+          onTitleClick={() => setIsInfoOpen(true)}
+          titleHoverIcon={HelpCircle}
+          titleTooltip="Visualizar Guia de Alarmes"
+          actions={[]}
+        />
+        <AlarmsGuidePanel onBack={() => setIsInfoOpen(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground px-1">
       <ModuleHeader
@@ -81,6 +99,9 @@ export default function AlarmsPage() {
         title="Alarmes & Alertas"
         subtitle={`${alarms.filter((a) => a.enabled).length} ativos de ${alarms.length} totais`}
         icon={AlarmClock}
+        onTitleClick={() => setIsInfoOpen(true)}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Alarmes"
         actions={
           selectionMode
             ? [
@@ -105,12 +126,6 @@ export default function AlarmsPage() {
               ]
             : [
                 {
-                  id: "info",
-                  icon: HelpCircle,
-                  tooltip: "Guia do Módulo",
-                  onClick: () => setIsInfoOpen(true),
-                },
-                {
                   id: "select",
                   label: "Selecionar",
                   icon: CheckSquare,
@@ -128,8 +143,6 @@ export default function AlarmsPage() {
               ]
         }
       />
-
-      <AlarmsInfoModal show={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
 
       <AlarmFormModal
         open={isModalOpen}

@@ -41,7 +41,6 @@ const GRADES_TABS: {
   { id: "visao-geral", label: "Visão Geral", icon: BarChart2 },
   { id: "materias", label: "Matérias", icon: BookOpen },
   { id: "historico", label: "Histórico", icon: Clock },
-  { id: "guia", label: "Guia", icon: HelpCircle },
 ];
 
 /**
@@ -59,6 +58,7 @@ export function GradesModal({
   const uid = user ? String(user.id) : "";
 
   const [tab, setTab] = useState<GradesTabId>("visao-geral");
+  const [preGuideTab, setPreGuideTab] = useState<GradesTabId>("visao-geral");
   const [grades, setGrades] = useState<StudyGrade[]>([]);
   const [formulas, setFormulas] = useState<SubjectFormula[]>([]);
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
@@ -169,6 +169,14 @@ export function GradesModal({
         tabs={GRADES_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as GradesTabId)}
+        onTitleClick={() => {
+          if (tab !== "guia") {
+            setPreGuideTab(tab);
+            setTab("guia");
+          }
+        }}
+        titleHoverIcon={HelpCircle}
+        titleTooltip="Visualizar Guia de Notas & Simulados"
         onBack={onClose}
         actions={[
           {
@@ -241,7 +249,9 @@ export function GradesModal({
                   onDelete={setDeleteConfirm}
                 />
               )}
-              {tab === "guia" && <GradesGuidePanel />}
+              {tab === "guia" && (
+                <GradesGuidePanel onBack={() => setTab(preGuideTab)} />
+              )}
             </motion.div>
           </AnimatePresence>
         )}

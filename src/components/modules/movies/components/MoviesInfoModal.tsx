@@ -31,13 +31,14 @@ export function MoviesInfoModal({ show, onClose }: MoviesInfoModalProps) {
   );
 }
 
-export function MoviesGuidePanel() {
+export function MoviesGuidePanel({ onBack }: { onBack?: () => void }) {
   return (
     <ModuleGuideContainer
       color={getModuleColor("movies")}
       icon={Film}
       title="Catálogo de Filmes"
       subtitle="Organize sua jornada cinematográfica e watchlist"
+      onBack={onBack}
     >
       <MoviesGuideContent />
     </ModuleGuideContainer>
