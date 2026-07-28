@@ -81,7 +81,7 @@ export function AchievementsGrid({
   });
 
   return (
-    <div className="p-6 rounded-2xl border border-border/70 bg-card/30 flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-3">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-500" />
@@ -136,7 +136,7 @@ export function AchievementsGrid({
           return (
             <div
               key={ach.id}
-              className={`p-4 rounded-xl border flex gap-4 text-left transition-all hover:border-amber-500/30 hover:bg-amber-500/[0.02] ${
+              className={`p-4 rounded-xl border flex gap-4 text-left transition-all hover:border-amber-500/30 hover:bg-amber-500/2 ${
                 isUnlocked
                   ? "border-amber-500/20 bg-amber-500/5"
                   : "border-border/60 bg-muted/5 opacity-55"
@@ -169,7 +169,7 @@ export function AchievementsGrid({
                     +{ach.xp} XP
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed break-words">
+                <p className="text-xs text-muted-foreground leading-relaxed wrap-break-word">
                   {displayDesc}
                 </p>
 

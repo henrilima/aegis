@@ -41,7 +41,7 @@ export function CategoryMedalsCard({
         {categoryStats.map((cat) => (
           <div
             key={cat.id}
-            className="p-3.5 rounded-xl border border-border/50 bg-muted/15 flex flex-col justify-between gap-3 min-w-0"
+            className="p-3.5 rounded-xl bg-muted/25 hover:bg-muted/40 transition-colors flex flex-col justify-between gap-3 min-w-0"
           >
             <div className="flex items-center gap-2 min-w-0">
               <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 shrink-0">

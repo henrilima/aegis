@@ -20,7 +20,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
         Estatísticas Gerais
       </h3>
       <div className="grid grid-cols-2 gap-3 text-left flex-1 items-stretch">
-        <div className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col justify-center">
+        <div className="p-3.5 rounded-xl bg-muted/25 flex flex-col justify-center">
           <span className="text-xs text-muted-foreground block font-medium">
             Dias Ativos
           </span>
@@ -28,7 +28,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
             {stats.activeDaysTotal}
           </span>
         </div>
-        <div className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col justify-center">
+        <div className="p-3.5 rounded-xl bg-muted/25 flex flex-col justify-center">
           <span className="text-xs text-muted-foreground block font-medium">
             Senhas no Cofre
           </span>
@@ -36,7 +36,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
             {stats.totalPasswords}
           </span>
         </div>
-        <div className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col justify-center">
+        <div className="p-3.5 rounded-xl bg-muted/25 flex flex-col justify-center">
           <span className="text-xs text-muted-foreground block font-medium">
             Tarefas Feitas
           </span>
@@ -47,7 +47,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
             </span>
           </span>
         </div>
-        <div className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col justify-center">
+        <div className="p-3.5 rounded-xl bg-muted/25 flex flex-col justify-center">
           <span className="text-xs text-muted-foreground block font-medium">
             Pomodoros (Hoje)
           </span>
@@ -58,7 +58,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
             </span>
           </span>
         </div>
-        <div className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col justify-center">
+        <div className="p-3.5 rounded-xl bg-muted/25 flex flex-col justify-center">
           <span className="text-xs text-muted-foreground block font-medium">
             Estudos (Hoje)
           </span>
@@ -66,7 +66,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
             {stats.studyHoursToday}h
           </span>
         </div>
-        <div className="p-3.5 rounded-xl border border-border/50 bg-muted/20 flex flex-col justify-center">
+        <div className="p-3.5 rounded-xl bg-muted/25 flex flex-col justify-center">
           <span className="text-xs text-muted-foreground block font-medium">
             Páginas Lidas
           </span>
