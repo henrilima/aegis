@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { Book, Loader2, Search } from "lucide-react";
+import { Book, Loader2, Search, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
@@ -131,68 +131,56 @@ export function DictionaryQuickSearch() {
     <>
       {isOpen && (
         <div className="fixed inset-0 z-200 flex items-start justify-center pt-[15vh] p-4">
-          <ToolTip content="Fechar Busca">
+          <ToolTip content="Fechar busca">
             <button
               type="button"
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200 border-none outline-none cursor-default w-full h-full"
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 border-none outline-none cursor-default w-full h-full"
               onClick={() => setIsOpen(false)}
               aria-label="Fechar busca"
             />
           </ToolTip>
 
-          <div
-            className={cn(
-              "relative w-full max-w-xl bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200",
-
-              theme.border.split(" ")[0].replace("/20", ""),
-            )}
-          >
+          <div className="relative w-full max-w-xl bg-card border border-border rounded-2xl shadow-none overflow-hidden animate-in zoom-in-95 duration-200">
             <form
               onSubmit={handleSearch}
-              className="flex items-center px-4 py-3 border-b border-border/60"
+              className="flex items-center px-4 py-3.5 border-b border-border/60 gap-3"
             >
-              <Search className="w-5 h-5 text-muted-foreground mr-3" />
-              <div className="flex-1">
+              <Search className="w-5 h-5 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Pesquisar termo..."
-                  className="w-full bg-transparent border-none outline-none text-xl font-medium placeholder:text-muted-foreground/40"
+                  placeholder="Pesquisar palavra ou tradução..."
+                  className="w-full bg-transparent border-none outline-none text-md font-medium text-foreground placeholder:text-muted-foreground/40"
                   disabled={loading}
                 />
-                <div className="flex items-center gap-2 mt-1 px-1">
-                  <div className={cn("w-1.5 h-1.5 rounded-full", theme.bg)} />
-                  <p className="text-[10px] text-muted-foreground/60 font-medium italic">
-                    Dica: Pesquise em inglês para maior precisão nos resultados.
-                  </p>
-                </div>
               </div>
+
               {loading ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Loader2 className={cn("w-4 h-4 animate-spin", theme.text)} />
                   <button
                     type="button"
                     onClick={cancelOperation}
-                    className={cn(
-                      "text-[10px] font-bold transition-colors",
-                      theme.text,
-                      theme.textDarkHover,
-                    )}
+                    className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
                 </div>
               ) : (
-                <Kbd>Esc</Kbd>
+                <Kbd className="bg-muted/60 text-muted-foreground border-border text-[9px] px-1.5 py-0.5">
+                  Esc
+                </Kbd>
               )}
             </form>
 
-            <div className="max-h-[300px] overflow-y-auto p-4 custom-scrollbar">
+            <div className="max-h-70 overflow-y-auto p-4 custom-scrollbar">
               {suggestions.length > 0 ? (
                 <div className="space-y-3">
-                  <p className="text-[10px] font-bold text-muted-foreground">
+                  <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                     Você quis dizer?
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -201,12 +189,7 @@ export function DictionaryQuickSearch() {
                         key={s}
                         type="button"
                         onClick={() => handleSearch(undefined, s)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-sm font-bold transition-all",
-                          theme.text,
-                          theme.bg,
-                          theme.bgHover,
-                        )}
+                        className="px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent/50 text-xs font-bold text-foreground transition-all active:scale-95 cursor-pointer"
                       >
                         {s}
                       </button>
@@ -215,9 +198,12 @@ export function DictionaryQuickSearch() {
                 </div>
               ) : (
                 !loading && (
-                  <div className="py-8 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
-                    <Book className="w-8 h-8 opacity-20" />
-                    Digite algo para pesquisar
+                  <div className="py-6 text-center text-xs text-muted-foreground flex flex-col items-center gap-2">
+                    <Book className="w-7 h-7 opacity-30" />
+                    <span>
+                      Digite qualquer palavra para buscar significados e
+                      pronúncias no dicionário.
+                    </span>
                   </div>
                 )
               )}
@@ -228,6 +214,7 @@ export function DictionaryQuickSearch() {
 
       <DictionaryResultModal
         results={result}
+        searchedQuery={query}
         isOpen={isResultModalOpen}
         onClose={() => setIsResultModalOpen(false)}
         onSave={addToGlossary}

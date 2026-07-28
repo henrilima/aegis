@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use rusqlite::{params, Connection};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::AppHandle;
 
@@ -24,7 +24,7 @@ pub struct DictionaryManager {
 impl DictionaryManager {
     pub fn new(app_handle: &AppHandle) -> Self {
         let db_path = crate::config::get_database_path(app_handle);
-        
+
         let conn = Connection::open(&db_path).expect("Falha ao abrir banco de dados");
         conn.execute(
             "CREATE TABLE IF NOT EXISTS glossary (
@@ -38,9 +38,10 @@ impl DictionaryManager {
                 created_at TEXT NOT NULL
             )",
             [],
-        ).ok();
+        )
+        .ok();
 
-        Self { 
+        Self {
             db_path,
             cache: std::sync::Mutex::new(std::collections::HashMap::new()),
         }
@@ -61,37 +62,44 @@ impl DictionaryManager {
 
     fn get_connection(&self) -> Connection {
         let conn = Connection::open(&self.db_path).expect("Falha ao conectar ao banco de dados");
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).expect("Falha no timeout");
+        conn.busy_timeout(std::time::Duration::from_millis(5000))
+            .expect("Falha no timeout");
         conn
     }
 
     pub fn list_words(&self, user_id: &str) -> Vec<GlossaryWord> {
         let conn = self.get_connection();
         let mut stmt = conn.prepare("SELECT id, user_id, word, definition, phonetic, source_url, is_favorite, created_at FROM glossary WHERE user_id = ?1 ORDER BY is_favorite DESC, created_at DESC").unwrap();
-        
-        let rows = stmt.query_map(params![user_id], |row| {
-            Ok(GlossaryWord {
-                id: Some(row.get(0)?),
-                user_id: row.get(1)?,
-                word: row.get(2)?,
-                definition: row.get(3)?,
-                phonetic: row.get(4)?,
-                source_url: row.get(5)?,
-                is_favorite: row.get::<_, i32>(6)? != 0,
-                created_at: row.get(7)?,
+
+        let rows = stmt
+            .query_map(params![user_id], |row| {
+                Ok(GlossaryWord {
+                    id: Some(row.get(0)?),
+                    user_id: row.get(1)?,
+                    word: row.get(2)?,
+                    definition: row.get(3)?,
+                    phonetic: row.get(4)?,
+                    source_url: row.get(5)?,
+                    is_favorite: row.get::<_, i32>(6)? != 0,
+                    created_at: row.get(7)?,
+                })
             })
-        }).unwrap();
+            .unwrap();
 
         rows.filter_map(|r| r.ok()).collect()
     }
 
     pub fn add_word(&self, word: GlossaryWord) -> Result<Option<i32>, String> {
         let conn = self.get_connection();
-        
+
         // Verifica se já existe (Duplicado)
         let mut stmt = conn.prepare("SELECT count(*) FROM glossary WHERE user_id = ?1 AND word = ?2 AND definition = ?3").unwrap();
-        let exists: i32 = stmt.query_row(params![word.user_id, word.word, word.definition], |row| row.get(0)).unwrap_or(0);
-        
+        let exists: i32 = stmt
+            .query_row(params![word.user_id, word.word, word.definition], |row| {
+                row.get(0)
+            })
+            .unwrap_or(0);
+
         if exists > 0 {
             return Ok(None); // Já existe, não adiciona
         }
@@ -116,13 +124,34 @@ impl DictionaryManager {
         conn.query_row(
             "SELECT user_id FROM glossary WHERE id = ?1",
             params![id],
-            |row| row.get(0)
-        ).map_err(|e| e.to_string())
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())
     }
 
     pub fn delete_word(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
-        conn.execute("DELETE FROM glossary WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM glossary WHERE id = ?1", params![id])
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn update_word(&self, word: GlossaryWord) -> Result<(), String> {
+        let conn = self.get_connection();
+        let id = word.id.ok_or_else(|| "ID inválido para atualização".to_string())?;
+        conn.execute(
+            "UPDATE glossary SET word = ?1, definition = ?2, phonetic = ?3, source_url = ?4, is_favorite = ?5 WHERE id = ?6 AND user_id = ?7",
+            params![
+                word.word,
+                word.definition,
+                word.phonetic,
+                word.source_url,
+                if word.is_favorite { 1 } else { 0 },
+                id,
+                word.user_id
+            ],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -131,15 +160,24 @@ impl DictionaryManager {
         conn.execute(
             "UPDATE glossary SET is_favorite = ?1 WHERE id = ?2",
             params![if is_favorite { 1 } else { 0 }, id],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn export_csv(&self, user_id: &str, path: &str) -> Result<(), String> {
         let words = self.list_words(user_id);
         let mut wtr = csv::Writer::from_path(path).map_err(|e| e.to_string())?;
-        wtr.write_record(&["word", "definition", "phonetic", "source_url", "is_favorite", "created_at"]).map_err(|e| e.to_string())?;
-        
+        wtr.write_record(&[
+            "word",
+            "definition",
+            "phonetic",
+            "source_url",
+            "is_favorite",
+            "created_at",
+        ])
+        .map_err(|e| e.to_string())?;
+
         for w in words {
             wtr.write_record(&[
                 w.word,
@@ -148,7 +186,8 @@ impl DictionaryManager {
                 w.source_url.unwrap_or_default(),
                 w.is_favorite.to_string(),
                 w.created_at,
-            ]).map_err(|e| e.to_string())?;
+            ])
+            .map_err(|e| e.to_string())?;
         }
         wtr.flush().map_err(|e| e.to_string())?;
         Ok(())
@@ -164,10 +203,20 @@ impl DictionaryManager {
                 user_id: user_id.to_string(),
                 word: record.get(0).unwrap_or_default().to_string(),
                 definition: record.get(1).unwrap_or_default().to_string(),
-                phonetic: record.get(2).filter(|s| !s.is_empty()).map(|s| s.to_string()),
-                source_url: record.get(3).filter(|s| !s.is_empty()).map(|s| s.to_string()),
+                phonetic: record
+                    .get(2)
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string()),
+                source_url: record
+                    .get(3)
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string()),
                 is_favorite: record.get(4).map(|s| s == "true").unwrap_or(false),
-                created_at: record.get(5).filter(|s| !s.is_empty()).map(|s| s.to_string()).unwrap_or_else(|| chrono::Local::now().to_rfc3339()),
+                created_at: record
+                    .get(5)
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| chrono::Local::now().to_rfc3339()),
             };
             if let Ok(Some(_)) = self.add_word(word) {
                 count += 1;
@@ -189,10 +238,10 @@ async fn translate_text(text: &str, from: &str, to: &str) -> Result<String, Stri
         .timeout(std::time::Duration::from_secs(5))
         .build()
         .map_err(|e| e.to_string())?;
-        
+
     let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    
+
     let mut translated = String::new();
     if let Some(sentences) = json[0].as_array() {
         for sentence in sentences {
@@ -205,14 +254,14 @@ async fn translate_text(text: &str, from: &str, to: &str) -> Result<String, Stri
     if translated.is_empty() {
         return Err("Falha na tradução".to_string());
     }
-    
+
     Ok(translated)
 }
 
 #[tauri::command]
 pub async fn dictionary_search(
     state: tauri::State<'_, crate::AppState>,
-    query: String
+    query: String,
 ) -> Result<serde_json::Value, String> {
     if let Some(cached) = state.dictionary.get_cached(&query) {
         return Ok(cached);
@@ -224,16 +273,25 @@ pub async fn dictionary_search(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let en_query = translate_text(&query, "pt", "en").await.unwrap_or(query.clone());
-    let url_en = format!("https://api.dictionaryapi.dev/api/v2/entries/en/{}", urlencoding::encode(&en_query));
-    
-    let res = client.get(&url_en).send().await.map_err(|e| e.to_string())?;
+    let en_query = translate_text(&query, "pt", "en")
+        .await
+        .unwrap_or(query.clone());
+    let url_en = format!(
+        "https://api.dictionaryapi.dev/api/v2/entries/en/{}",
+        urlencoding::encode(&en_query)
+    );
+
+    let res = client
+        .get(&url_en)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
     if !res.status().is_success() {
         return Err("Palavra não encontrada.".to_string());
     }
 
     let mut json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    
+
     if let Some(entries) = json.as_array_mut() {
         let mut batch_texts = vec![];
         let sep = "\n[SEP]\n";
@@ -258,12 +316,20 @@ pub async fn dictionary_search(
                                 batch_texts.push(ex_text.to_string());
                             }
                             if let Some(syns) = def["synonyms"].as_array() {
-                                for s in syns { if let Some(t) = s.as_str() { batch_texts.push(t.to_string()); } }
+                                for s in syns {
+                                    if let Some(t) = s.as_str() {
+                                        batch_texts.push(t.to_string());
+                                    }
+                                }
                             }
                         }
                     }
                     if let Some(syns) = meaning["synonyms"].as_array() {
-                        for s in syns { if let Some(t) = s.as_str() { batch_texts.push(t.to_string()); } }
+                        for s in syns {
+                            if let Some(t) = s.as_str() {
+                                batch_texts.push(t.to_string());
+                            }
+                        }
                     }
                 }
             }
@@ -279,7 +345,7 @@ pub async fn dictionary_search(
                     .split("[SEP]")
                     .map(|s| s.trim().to_string())
                     .collect();
-                
+
                 if parts.len() == batch_texts.len() {
                     results = parts;
                     success = true;
@@ -288,7 +354,11 @@ pub async fn dictionary_search(
 
             if !success {
                 for text in &batch_texts {
-                    results.push(translate_text(text, "en", "pt").await.unwrap_or_else(|_| text.clone()));
+                    results.push(
+                        translate_text(text, "en", "pt")
+                            .await
+                            .unwrap_or_else(|_| text.clone()),
+                    );
                 }
             }
 
@@ -320,10 +390,12 @@ pub async fn dictionary_search(
                         }
                         if let Some(_definitions) = meaning["definitions"].as_array_mut() {
                             let mut truncated_defs = vec![];
-                            let defs_count = std::cmp::min(meaning["definitions"].as_array().unwrap().len(), 4);
-                            
+                            let defs_count =
+                                std::cmp::min(meaning["definitions"].as_array().unwrap().len(), 4);
+
                             for _ in 0..defs_count {
-                                let mut def = meaning["definitions"].as_array_mut().unwrap().remove(0);
+                                let mut def =
+                                    meaning["definitions"].as_array_mut().unwrap().remove(0);
                                 if def["definition"].is_string() {
                                     def["definition"] = serde_json::json!(results[cursor]);
                                     cursor += 1;
@@ -333,41 +405,59 @@ pub async fn dictionary_search(
                                     cursor += 1;
                                 }
                                 if let Some(syns) = def["synonyms"].as_array_mut() {
-                                    for s in syns { *s = serde_json::json!(results[cursor]); cursor += 1; }
+                                    for s in syns {
+                                        *s = serde_json::json!(results[cursor]);
+                                        cursor += 1;
+                                    }
                                 }
                                 truncated_defs.push(def);
                             }
                             meaning["definitions"] = serde_json::json!(truncated_defs);
                         }
                         if let Some(syns) = meaning["synonyms"].as_array_mut() {
-                            for s in syns { *s = serde_json::json!(results[cursor]); cursor += 1; }
+                            for s in syns {
+                                *s = serde_json::json!(results[cursor]);
+                                cursor += 1;
+                            }
                         }
                     }
                 }
             }
         }
     }
-    
+
     state.dictionary.set_cache(query, json.clone());
     Ok(json)
 }
 
 #[tauri::command]
 pub async fn dictionary_suggestions(query: String) -> Result<Vec<String>, String> {
-    let url = format!("https://api.dicionario-aberto.net/near/{}", urlencoding::encode(&query));
-    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
+    let url = format!(
+        "https://api.dicionario-aberto.net/near/{}",
+        urlencoding::encode(&query)
+    );
+    let client = reqwest::Client::builder()
+        .user_agent("Aegis")
+        .build()
+        .map_err(|e| e.to_string())?;
     let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
     let suggestions: Vec<String> = res.json().await.map_err(|e| e.to_string())?;
     Ok(suggestions)
 }
 
 #[tauri::command]
-pub async fn dictionary_list(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<Vec<GlossaryWord>, String> {
+pub async fn dictionary_list(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<GlossaryWord>, String> {
     Ok(state.dictionary.list_words(&user_id))
 }
 
 #[tauri::command]
-pub async fn dictionary_add(state: tauri::State<'_, crate::AppState>, word: GlossaryWord) -> Result<(), String> {
+pub async fn dictionary_add(
+    state: tauri::State<'_, crate::AppState>,
+    word: GlossaryWord,
+) -> Result<(), String> {
     let user_id = word.user_id.clone();
     let res = state.dictionary.add_word(word)?;
     if let Some(id) = res {
@@ -383,24 +473,49 @@ pub async fn dictionary_add(state: tauri::State<'_, crate::AppState>, word: Glos
 }
 
 #[tauri::command]
-pub async fn dictionary_delete(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
+pub async fn dictionary_delete(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+) -> Result<(), String> {
     if let Ok(user_id) = state.dictionary.get_word_user_id(id) {
-        let _ = state.stats.delete_xp_for_ref(&user_id, "glossary", &id.to_string());
+        let _ = state
+            .stats
+            .delete_xp_for_ref(&user_id, "glossary", &id.to_string());
     }
     state.dictionary.delete_word(id)
 }
 
 #[tauri::command]
-pub async fn dictionary_toggle_favorite(state: tauri::State<'_, crate::AppState>, id: i32, is_favorite: bool) -> Result<(), String> {
+pub async fn dictionary_toggle_favorite(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    is_favorite: bool,
+) -> Result<(), String> {
     state.dictionary.toggle_favorite(id, is_favorite)
 }
 
 #[tauri::command]
-pub async fn dictionary_export_csv(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<(), String> {
+pub async fn dictionary_update(
+    state: tauri::State<'_, crate::AppState>,
+    word: GlossaryWord,
+) -> Result<(), String> {
+    state.dictionary.update_word(word)
+}
+
+#[tauri::command]
+pub async fn dictionary_export_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    path: String,
+) -> Result<(), String> {
     state.dictionary.export_csv(&user_id, &path)
 }
 
 #[tauri::command]
-pub async fn dictionary_import_csv(state: tauri::State<'_, crate::AppState>, user_id: String, path: String) -> Result<usize, String> {
+pub async fn dictionary_import_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    path: String,
+) -> Result<usize, String> {
     state.dictionary.import_csv(&user_id, &path)
 }

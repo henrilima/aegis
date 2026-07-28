@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   AlertTriangle,
   Book,
+  Edit3,
   HelpCircle,
   LayoutGrid,
   Plus,
@@ -23,6 +24,7 @@ import { getModuleColor } from "@/modules.config";
 import { DictionaryGuidePanel } from "./components/DictionaryInfoModal";
 import { DictionaryResultModal } from "./components/DictionaryResultModal";
 import { DictionaryTranslationModal } from "./components/DictionaryTranslationModal";
+import { EditWordModal } from "./components/EditWordModal";
 import type { DictionaryEntry, GlossaryWord } from "./types";
 
 type TabId = "all" | "favorites" | "guia";
@@ -37,12 +39,13 @@ export default function DictionaryPage() {
   const [preGuideTab, setPreGuideTab] = useState<TabId>("all");
   const [glossarySearch, setGlossarySearch] = useState("");
 
-  const [searchResult, setSearchResult] = useState<DictionaryEntry[] | null>(
+  const [searchResult, _setSearchResult] = useState<DictionaryEntry[] | null>(
     null,
   );
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [showTranslationInfo, setShowTranslationInfo] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingWord, setEditingWord] = useState<GlossaryWord | null>(null);
 
   const uid = user ? String(user.id) : "";
 
@@ -95,6 +98,16 @@ export default function DictionaryPage() {
     }
   };
 
+  const handleUpdateWord = async (updated: GlossaryWord) => {
+    try {
+      await invoke("dictionary_update", { word: updated });
+      toast.success("Palavra atualizada no glossário!");
+      fetchGlossary();
+    } catch {
+      toast.error("Erro ao atualizar palavra");
+    }
+  };
+
   const addToGlossary = async (entry: DictionaryEntry, definition: string) => {
     if (!uid) return;
     try {
@@ -118,26 +131,7 @@ export default function DictionaryPage() {
   };
 
   const handleWordClick = (word: GlossaryWord) => {
-    const entry: DictionaryEntry = {
-      word: word.word,
-      phonetic: word.phonetic,
-      phonetics: [],
-      meanings: [
-        {
-          partOfSpeech: "Salvo no Glossário",
-          definitions: [
-            {
-              definition: word.definition,
-              synonyms: [],
-              antonyms: [],
-            },
-          ],
-        },
-      ],
-      sourceUrls: word.sourceUrl ? [word.sourceUrl] : [],
-    };
-    setSearchResult([entry]);
-    setIsResultModalOpen(true);
+    setEditingWord(word);
   };
 
   const filteredGlossary = glossary.filter((word) => {
@@ -169,7 +163,7 @@ export default function DictionaryPage() {
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">
       <ModuleHeader
         color={getModuleColor("dictionary")}
-        title="Dicionário & Léxico"
+        title="Dicionário & léxico"
         subtitle={`${stats.total} ${stats.total === 1 ? "termo" : "termos"} · ${stats.favorites} favoritos`}
         icon={Book}
         tabs={[
@@ -194,15 +188,15 @@ export default function DictionaryPage() {
             id: "translation",
             label: "Tradução",
             icon: AlertTriangle,
-            tooltip: "Aviso de Tradução",
+            tooltip: "Aviso de tradução",
             onClick: () => setShowTranslationInfo(true),
             warning: true,
           },
           {
             id: "new",
-            label: "Nova Palavra",
+            label: "Nova palavra",
             icon: Plus,
-            tooltip: "Adicionar Nova Palavra",
+            tooltip: "Adicionar nova palavra",
             primary: true,
             onClick: openSearch,
           },
@@ -273,11 +267,23 @@ export default function DictionaryPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-1">
+                        <ToolTip content="Editar palavra">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingWord(word);
+                            }}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </ToolTip>
                         <ToolTip
                           content={
                             word.isFavorite
-                              ? "Remover dos Favoritos"
-                              : "Marcar como Favorito"
+                              ? "Remover dos favoritos"
+                              : "Marcar como favorito"
                           }
                         >
                           <button
@@ -305,7 +311,7 @@ export default function DictionaryPage() {
                             />
                           </button>
                         </ToolTip>
-                        <ToolTip content="Remover do Glossário">
+                        <ToolTip content="Remover do glossário">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -325,7 +331,7 @@ export default function DictionaryPage() {
                     </p>
 
                     <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50 w-full">
-                      <span className="text-[10px] font-bold text-muted-foreground/40 uppercase">
+                      <span className="text-xs font-bold text-muted-foreground/50">
                         Léxico
                       </span>
                       <span className="text-[10px] font-medium text-muted-foreground/30">
@@ -353,8 +359,16 @@ export default function DictionaryPage() {
         />
       )}
 
+      <EditWordModal
+        word={editingWord}
+        isOpen={editingWord !== null}
+        onClose={() => setEditingWord(null)}
+        onSave={handleUpdateWord}
+      />
+
       <DictionaryResultModal
         results={searchResult}
+        searchedQuery={glossarySearch}
         isOpen={isResultModalOpen}
         onClose={() => setIsResultModalOpen(false)}
         onSave={addToGlossary}
