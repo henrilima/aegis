@@ -908,12 +908,17 @@ async fn global_delete_avatar(state: State<'_, AppState>, user_id: String) -> Re
 }
 
 #[tauri::command]
-async fn global_save_dashboard_cover(app_handle: tauri::AppHandle, source_path: String) -> Result<String, String> {
+async fn global_save_dashboard_cover(
+    app_handle: tauri::AppHandle,
+    source_path: String,
+    user_id: Option<String>,
+) -> Result<String, String> {
     use tauri::Manager;
     let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
-    let covers_dir = app_data_dir.join("covers");
+    let uid = user_id.unwrap_or_else(|| "default".to_string());
+    let covers_dir = app_data_dir.join("covers").join(&uid);
     
-    // Se já existir a pasta/capa anterior, vamos removê-la para evitar conflitos de extensão/acumulação
+    // Se já existir a pasta/capa anterior do usuário, vamos removê-la para evitar acúmulo
     if covers_dir.exists() {
         let _ = std::fs::remove_dir_all(&covers_dir);
     }
@@ -938,10 +943,14 @@ async fn global_save_dashboard_cover(app_handle: tauri::AppHandle, source_path: 
 }
 
 #[tauri::command]
-async fn global_delete_dashboard_cover(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn global_delete_dashboard_cover(
+    app_handle: tauri::AppHandle,
+    user_id: Option<String>,
+) -> Result<(), String> {
     use tauri::Manager;
     let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
-    let covers_dir = app_data_dir.join("covers");
+    let uid = user_id.unwrap_or_else(|| "default".to_string());
+    let covers_dir = app_data_dir.join("covers").join(&uid);
     if covers_dir.exists() {
         std::fs::remove_dir_all(&covers_dir).map_err(|e| format!("Falha ao remover capas: {}", e))?;
     }

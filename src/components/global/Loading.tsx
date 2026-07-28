@@ -68,7 +68,7 @@ export default function Loading() {
               />
             </h1>
             <span className="text-[10px] font-medium text-muted-foreground/50">
-              v3.6
+              v4.0.0
             </span>
           </div>
 

@@ -21,6 +21,7 @@ import { useSettingsLogic } from "@/components/modules/settings/useSettingsLogic
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,7 @@ export function DashboardConfigModal({
   const [coverInputMode, setCoverInputMode] = useState<"url" | "file">("url");
 
   // Lógica de configurações estéticas globais (relógio e cabeçalho)
+  const { user } = useAuth();
   const {
     dashboardClockStyle,
     dashboardClockAnimated,
@@ -167,13 +169,14 @@ export function DashboardConfigModal({
 
       const savedPath = await invoke<string>("global_save_dashboard_cover", {
         sourcePath: path,
+        userId: user ? String(user.id) : undefined,
       });
       const localUrl = `${convertFileSrc(savedPath)}?t=${Date.now()}`;
       updateConfigField("dashboardCoverImage", localUrl);
     } catch (err) {
       console.error("Erro ao selecionar arquivo de capa:", err);
     }
-  }, [updateConfigField]);
+  }, [updateConfigField, user]);
 
   const inactiveWidgets = WIDGET_METADATA.filter(
     (w) => !internalActiveIds.includes(w.id),
@@ -460,7 +463,7 @@ export function DashboardConfigModal({
                                 )
                               }
                               className={cn(
-                                "p-4 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-[110px] text-left",
+                                "p-4 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-27.5 text-left",
                                 isSelected
                                   ? "bg-card"
                                   : "bg-card border-border hover:border-foreground/30 hover:bg-accent/10",
@@ -574,7 +577,7 @@ export function DashboardConfigModal({
                                 )
                               }
                               className={cn(
-                                "p-4 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-[110px] text-left",
+                                "p-4 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer relative overflow-hidden min-h-27.5 text-left",
                                 isSelected
                                   ? "bg-card"
                                   : "bg-card border-border hover:border-foreground/30 hover:bg-accent/10",
@@ -1330,7 +1333,9 @@ export function DashboardConfigModal({
                 variant="danger"
                 onConfirm={async () => {
                   try {
-                    await invoke("global_delete_dashboard_cover");
+                    await invoke("global_delete_dashboard_cover", {
+                      userId: user ? String(user.id) : undefined,
+                    });
                   } catch (err) {
                     console.error("Erro ao deletar arquivo de capa:", err);
                   }

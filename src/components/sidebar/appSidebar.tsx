@@ -418,7 +418,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                 "text-muted-foreground hover:text-foreground hover:bg-accent/50",
               )}
             >
-              <Bell className="w-[18px] h-[18px]" />
+              <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 ? (
                 <span
                   className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 ${themeStyles.solid} text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none border-2 border-background`}
@@ -448,7 +448,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
               )}
             >
-              <Settings className="w-[18px] h-[18px]" />
+              <Settings className="w-4.5 h-4.5" />
             </button>
           </ToolTip>
         </div>
@@ -664,7 +664,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                     </span>
                   </div>
                 ) : (
-                  "Aegis v3.6.0"
+                  "Aegis v4.0.0"
                 )}
               </button>
             </>
