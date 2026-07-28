@@ -63,18 +63,18 @@ function SoundFeatures() {
     <ul className="space-y-3">
       {[
         {
-          label: "Ícones Temáticos",
-          desc: "Escolha entre Café, Água, Sono e outros para identificar o alerta visualmente.",
+          label: "Widget Flutuante Nativo",
+          desc: "Exibe uma janela nativa destacada com os botões de adiar (5m, 10m, 15m) e parar alarme.",
           icon: Bell,
         },
         {
-          label: "Sons Customizados",
-          desc: "Selecione o áudio que mais lhe agrada. O Aegis tocará o arquivo .mp3 escolhido.",
+          label: "Sons em Loop Contínuo",
+          desc: "Suporte aos sons Alarme 1 e Alarme 2 que tocam continuamente até a confirmação.",
           icon: Volume2,
         },
         {
-          label: "Notificações Críticas",
-          desc: "Alarmes usam o canal de alta prioridade do Aegis, garantindo que você não os perca.",
+          label: "Auto-Adiar por Inatividade",
+          desc: "Caso o alarme fique sem resposta na tela por 2 minutos, ele é adiado automaticamente.",
           icon: CheckCircle2,
         },
       ].map((item) => (

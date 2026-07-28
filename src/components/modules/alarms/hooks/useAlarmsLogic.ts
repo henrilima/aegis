@@ -4,7 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { listNotificationSounds, playNotificationSound } from "@/lib/sounds";
+import {
+  type AudioOption,
+  fetchCustomMediaMap,
+  getAudioOptions,
+  playNotificationSound,
+} from "@/lib/sounds";
 import type { AppAlarm } from "../types";
 
 export interface AlarmFormState {
@@ -16,6 +21,7 @@ export interface AlarmFormState {
   soundFile: string;
   iconName: string;
   color: string;
+  triggerMode: string;
 }
 
 const DEFAULT_FORM: AlarmFormState = {
@@ -24,9 +30,10 @@ const DEFAULT_FORM: AlarmFormState = {
   alarmType: "fixed",
   time: "09:00",
   intervalMinutes: 30,
-  soundFile: "Plin.mp3",
-  iconName: "Bell",
+  soundFile: "alarm_1.mp3",
+  iconName: "bell",
   color: "",
+  triggerMode: "widget",
 };
 
 export function useAlarmsLogic() {
@@ -38,7 +45,7 @@ export function useAlarmsLogic() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [availableSounds, setAvailableSounds] = useState<string[]>([]);
+  const [audioOptions, setAudioOptions] = useState<AudioOption[]>([]);
   const [form, setForm] = useState<AlarmFormState>(DEFAULT_FORM);
 
   // Setters individuais para simplificar o uso nos inputs controlados
@@ -50,6 +57,8 @@ export function useAlarmsLogic() {
   const setSoundFile = (v: string) => setForm((f) => ({ ...f, soundFile: v }));
   const setIconName = (v: string) => setForm((f) => ({ ...f, iconName: v }));
   const setColor = (v: string) => setForm((f) => ({ ...f, color: v }));
+  const setTriggerMode = (v: string) =>
+    setForm((f) => ({ ...f, triggerMode: v }));
 
   const fetchAlarms = useCallback(async () => {
     if (!uid) return;
@@ -66,10 +75,15 @@ export function useAlarmsLogic() {
     }
   }, [uid]);
 
+  const loadAudioOptions = useCallback(() => {
+    getAudioOptions().then(setAudioOptions).catch(console.error);
+    fetchCustomMediaMap().catch(console.error);
+  }, []);
+
   useEffect(() => {
     fetchAlarms();
-    listNotificationSounds().then(setAvailableSounds).catch(console.error);
-  }, [fetchAlarms]);
+    loadAudioOptions();
+  }, [fetchAlarms, loadAudioOptions]);
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -80,15 +94,13 @@ export function useAlarmsLogic() {
       setIsSaving(true);
       const originalAlarm = alarms.find((a) => a.id === form.editingId);
 
-      // Reseta o lastTriggered apenas se o horário ou tipo mudaram para evitar
-      // disparos imediatos desnecessários ao salvar alterações sem mudança de tempo
       const hasTimingChanged =
         originalAlarm &&
         (originalAlarm.time !== form.time ||
           originalAlarm.intervalMinutes !== form.intervalMinutes ||
           originalAlarm.alarmType !== form.alarmType);
 
-      const alarmData = {
+      const alarmData: AppAlarm = {
         id: form.editingId || undefined,
         userId: uid,
         title: form.title.trim(),
@@ -99,12 +111,13 @@ export function useAlarmsLogic() {
         lastTriggered: form.editingId
           ? hasTimingChanged
             ? null
-            : originalAlarm?.lastTriggered
+            : originalAlarm?.lastTriggered || null
           : null,
         soundFile: form.soundFile,
         icon: form.iconName,
         color: form.color,
         enabled: true,
+        triggerMode: form.triggerMode,
       };
 
       if (form.editingId) {
@@ -154,7 +167,6 @@ export function useAlarmsLogic() {
   };
 
   const handleToggle = async (id: number, enabled: boolean) => {
-    // Atualização otimista: reflete na UI antes de confirmar no backend
     setAlarms((prev) => prev.map((a) => (a.id === id ? { ...a, enabled } : a)));
     try {
       await invoke("alarm_toggle_alarm", { id, userId: uid });
@@ -174,6 +186,7 @@ export function useAlarmsLogic() {
       soundFile: alarm.soundFile,
       iconName: alarm.icon,
       color: alarm.color || "",
+      triggerMode: alarm.triggerMode || "widget",
     });
     setIsModalOpen(true);
   };
@@ -190,7 +203,8 @@ export function useAlarmsLogic() {
   return {
     alarms,
     loading,
-    availableSounds,
+    audioOptions,
+    availableSounds: audioOptions.map((o) => o.value),
     isModalOpen,
     setIsModalOpen,
     isInfoOpen,
@@ -204,6 +218,7 @@ export function useAlarmsLogic() {
     setSoundFile,
     setIconName,
     setColor,
+    setTriggerMode,
     handleSave,
     handleDelete,
     handleBulkDelete,

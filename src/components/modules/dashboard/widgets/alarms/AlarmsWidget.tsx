@@ -44,6 +44,7 @@ export function AlarmsWidget({
     setIsModalOpen,
     isSaving,
     form,
+    audioOptions,
     availableSounds,
     setTitle,
     setAlarmType,
@@ -52,6 +53,7 @@ export function AlarmsWidget({
     setSoundFile,
     setIconName,
     setColor,
+    setTriggerMode,
     playPreview,
     resetForm,
   } = useAlarmsLogic();
@@ -139,7 +141,7 @@ export function AlarmsWidget({
                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
                     <span>{nextAlarmSummary?.shortLabel}</span>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground min-w-[42px] text-right">
+                  <span className="text-xs font-semibold text-muted-foreground min-w-10.5 text-right">
                     {nextAlarmSummary?.label.startsWith("Hoje")
                       ? "Hoje"
                       : "Amanhã"}
@@ -151,7 +153,7 @@ export function AlarmsWidget({
                 <p className="text-xs text-neutral-600 font-bold">
                   Sem Alarmes Ativos
                 </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
                   Não há alarmes definidos para tocar no momento.
                 </p>
               </div>
@@ -198,7 +200,7 @@ export function AlarmsWidget({
                             : `${a.intervalMinutes}m`}
                         </span>
                       </div>
-                      <span className="text-xs font-semibold text-muted-foreground min-w-[42px] text-right">
+                      <span className="text-xs font-semibold text-muted-foreground min-w-10.5 text-right">
                         {a.alarmType === "fixed" ? "Horário" : "Intervalo"}
                       </span>
                     </div>
@@ -213,6 +215,7 @@ export function AlarmsWidget({
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         form={form}
+        audioOptions={audioOptions}
         availableSounds={availableSounds}
         isSaving={isSaving}
         onSave={() => {
@@ -227,6 +230,7 @@ export function AlarmsWidget({
         setSoundFile={setSoundFile}
         setIconName={setIconName}
         setColor={setColor}
+        setTriggerMode={setTriggerMode}
         playPreview={playPreview}
       />
     </>

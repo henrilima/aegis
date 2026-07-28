@@ -1,7 +1,17 @@
 "use client";
 
-import { AlarmClock, Clock, Timer, Volume2 } from "lucide-react";
+import {
+  AlarmClock,
+  Bell,
+  Clock,
+  MessageSquare,
+  Monitor,
+  Timer,
+  Volume2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { ColorPicker } from "@/components/global/ColorPicker";
+import { IconSelect } from "@/components/global/IconSelect";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,16 +28,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  type AudioOption,
+  getAudioOptions,
+  soundLabel,
+  stopNotificationSound,
+} from "@/lib/sounds";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { AlarmFormState } from "../hooks/useAlarmsLogic";
-import { AVAILABLE_ICONS } from "../types";
 
 interface AlarmFormModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   form: AlarmFormState;
-  availableSounds: string[];
+  availableSounds?: string[];
+  audioOptions?: AudioOption[];
   isSaving: boolean;
   onSave: () => void;
   onCancel: () => void;
@@ -38,6 +54,7 @@ interface AlarmFormModalProps {
   setSoundFile: (v: string) => void;
   setIconName: (v: string) => void;
   setColor: (v: string) => void;
+  setTriggerMode: (v: string) => void;
   playPreview: (sound: string) => void;
 }
 
@@ -45,7 +62,7 @@ export function AlarmFormModal({
   open,
   onOpenChange,
   form,
-  availableSounds,
+  audioOptions,
   isSaving,
   onSave,
   onCancel,
@@ -56,6 +73,7 @@ export function AlarmFormModal({
   setSoundFile,
   setIconName,
   setColor,
+  setTriggerMode,
   playPreview,
 }: AlarmFormModalProps) {
   const defaultColor = getModuleColor("alarms");
@@ -67,9 +85,44 @@ export function AlarmFormModal({
     m.text.replace("text-", "focus:ring-").replace("500", "500/20"),
   );
 
+  const [dynamicOptions, setDynamicOptions] = useState<AudioOption[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      getAudioOptions().then(setDynamicOptions).catch(console.error);
+    }
+  }, [open]);
+
+  // Parar qualquer áudio prévio quando o modal fechar ou desmontar
+  useEffect(() => {
+    if (!open) {
+      stopNotificationSound();
+    }
+    return () => {
+      stopNotificationSound();
+    };
+  }, [open]);
+
+  const baseOptions = audioOptions?.length ? audioOptions : dynamicOptions;
+  const optionsMap = new Map<string, AudioOption>();
+
+  for (const opt of baseOptions) {
+    optionsMap.set(opt.value, opt);
+  }
+
+  // Se o alarme atual possui um som selecionado que ainda não esteja no mapa, preserva-o!
+  if (form.soundFile && !optionsMap.has(form.soundFile)) {
+    optionsMap.set(form.soundFile, {
+      value: form.soundFile,
+      label: soundLabel(form.soundFile),
+    });
+  }
+
+  const allSoundOptions = Array.from(optionsMap.values());
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[850px]! w-[95vw] bg-background border-border p-0 overflow-hidden rounded-2xl flex flex-col max-h-[92vh]">
+      <DialogContent className="max-w-200! w-[95vw] bg-background border-border p-0 overflow-hidden rounded-2xl flex flex-col max-h-[92vh]">
         <DialogHeader className="p-6 border-b border-border/50 shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div className={cn("p-2 rounded-xl border", m.bg, m.border)}>
@@ -80,16 +133,16 @@ export function AlarmFormModal({
                 {form.editingId ? "Editar Alarme" : "Novo Alarme"}
               </span>
               <span className="block text-[10px] text-muted-foreground mt-1 font-medium">
-                Configuração de alerta
+                Configuração de alerta despertador nativo
               </span>
             </div>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <div className="grid grid-cols-2 gap-10">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Coluna esquerda: definição do alerta */}
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="space-y-1.5">
                 <Label className={lc}>
                   Título do Alerta <span className="text-red-500 ml-1">*</span>
@@ -97,13 +150,63 @@ export function AlarmFormModal({
                 <Input
                   value={form.title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Beber Água, Remédio..."
+                  placeholder="Ex: Hora de Estudar, Tomar Remédio..."
                   className={inputStyle}
                 />
               </div>
 
-              <div className="flex flex-col gap-3">
-                <Label className={lc}>Tipo de Alerta</Label>
+              {/* Modo de Exibição/Disparo */}
+              <div className="space-y-1.5">
+                <Label className={lc}>
+                  Modos de Disparo (Selecione um ou mais)
+                </Label>
+                <div className="grid grid-cols-3 p-1 bg-background border border-border rounded-xl gap-1">
+                  {(() => {
+                    const activeModes = form.triggerMode
+                      ? form.triggerMode.split(",").map((s) => s.trim())
+                      : ["widget"];
+
+                    const toggleMode = (modeId: string) => {
+                      let updated: string[];
+                      if (activeModes.includes(modeId)) {
+                        if (activeModes.length === 1) return;
+                        updated = activeModes.filter((m) => m !== modeId);
+                      } else {
+                        updated = [...activeModes, modeId];
+                      }
+                      setTriggerMode(updated.join(","));
+                    };
+
+                    return [
+                      { id: "widget", label: "Widget", icon: Monitor },
+                      { id: "system", label: "Sistema", icon: Bell },
+                      { id: "in_app", label: "In-App", icon: MessageSquare },
+                    ].map((opt) => {
+                      const isSelected = activeModes.includes(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => toggleMode(opt.id)}
+                          className={cn(
+                            "flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer border",
+                            isSelected
+                              ? cn(m.bg, m.border, m.text)
+                              : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground opacity-60 hover:opacity-100",
+                          )}
+                        >
+                          <opt.icon className="w-3.5 h-3.5" />
+                          {opt.label}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              {/* Tipo de Alerta */}
+              <div className="flex flex-col gap-1.5">
+                <Label className={lc}>Frequência de Horário</Label>
                 <div className="flex p-1 bg-background border border-border rounded-xl gap-1">
                   {[
                     { id: "fixed", label: "Horário Fixo", icon: Clock },
@@ -160,18 +263,22 @@ export function AlarmFormModal({
             </div>
 
             {/* Coluna direita: identidade e som */}
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="space-y-1.5">
-                <Label className={lc}>Som de Notificação</Label>
+                <Label className={lc}>Som do alarme (loop contínuo)</Label>
                 <div className="flex items-center gap-2">
                   <Select value={form.soundFile} onValueChange={setSoundFile}>
-                    <SelectTrigger className="bg-card border-border rounded-xl h-11 text-xs">
+                    <SelectTrigger className="bg-card border-border rounded-xl h-11 text-xs flex-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
-                      {availableSounds.map((s) => (
-                        <SelectItem key={s} value={s} className="text-xs">
-                          {s.replace(".mp3", "")}
+                      {allSoundOptions.map((s) => (
+                        <SelectItem
+                          key={s.value}
+                          value={s.value}
+                          className="text-xs"
+                        >
+                          {s.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -179,8 +286,9 @@ export function AlarmFormModal({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="rounded-xl border-border h-11 w-11 shrink-0 bg-card"
+                    className="rounded-xl border-border h-11 w-11 shrink-0 bg-card cursor-pointer"
                     onClick={() => playPreview(form.soundFile)}
+                    title="Ouvir som prévio"
                   >
                     <Volume2 className="w-4 h-4" />
                   </Button>
@@ -188,35 +296,23 @@ export function AlarmFormModal({
               </div>
 
               <div className="space-y-4">
-                <Label className={lc}>Identidade Visual</Label>
+                <Label className={lc}>Ícone Global (Sistema Aegis)</Label>
+                <IconSelect
+                  value={form.iconName}
+                  onChange={setIconName}
+                  color={activeColor}
+                />
+              </div>
 
-                {/* Seletor de cor */}
+              <div className="space-y-1.5">
+                <Label className={lc}>Cor do Tema</Label>
                 <ColorPicker
                   value={form.color || ""}
                   onChange={(c) => setColor(c)}
-                  placeholder="Padrão"
+                  placeholder="Padrão do Módulo"
                   defaultColor={defaultColor}
                   className="w-full"
                 />
-
-                {/* Seletor de ícone */}
-                <div className="grid grid-cols-4 gap-2 p-2 bg-background border border-border rounded-xl">
-                  {AVAILABLE_ICONS.map((ic) => (
-                    <button
-                      key={ic.name}
-                      type="button"
-                      onClick={() => setIconName(ic.name)}
-                      className={cn(
-                        "flex items-center justify-center py-2.5 rounded-lg border transition-all cursor-pointer",
-                        form.iconName === ic.name
-                          ? cn(m.bg, m.border, m.text)
-                          : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground",
-                      )}
-                    >
-                      <ic.icon className="w-4 h-4" />
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -235,7 +331,7 @@ export function AlarmFormModal({
             onClick={onSave}
             disabled={isSaving}
             className={cn(
-              "flex-2 px-4 py-3 rounded-xl text-white font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+              "flex-2 px-4 py-3 rounded-xl text-white font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-none",
               m.solid,
               m.solidHover,
             )}

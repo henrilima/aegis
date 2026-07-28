@@ -21,6 +21,7 @@ export default function AlarmsPage() {
   const {
     alarms,
     loading,
+    audioOptions,
     availableSounds,
     isModalOpen,
     setIsModalOpen,
@@ -35,6 +36,7 @@ export default function AlarmsPage() {
     setSoundFile,
     setIconName,
     setColor,
+    setTriggerMode,
     handleSave,
     handleDelete,
     handleBulkDelete,
@@ -148,6 +150,7 @@ export default function AlarmsPage() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         form={form}
+        audioOptions={audioOptions}
         availableSounds={availableSounds}
         isSaving={isSaving}
         onSave={handleSave}
@@ -159,6 +162,7 @@ export default function AlarmsPage() {
         setSoundFile={setSoundFile}
         setIconName={setIconName}
         setColor={setColor}
+        setTriggerMode={setTriggerMode}
         playPreview={playPreview}
       />
 

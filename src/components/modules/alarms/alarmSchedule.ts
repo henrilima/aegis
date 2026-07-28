@@ -55,7 +55,7 @@ export function getNextAlarmSummary(alarm: AppAlarm, now = new Date()) {
   });
   const today = startOfDay(now).getTime();
   const nextDay = startOfDay(nextDate).getTime();
-  const dayLabel = nextDay === today ? "Hoje" : "Amanha";
+  const dayLabel = nextDay === today ? "Hoje" : "Amanhã";
 
   return {
     date: nextDate,
