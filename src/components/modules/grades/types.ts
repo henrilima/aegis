@@ -27,6 +27,7 @@ export interface SubjectMeta {
   userId: string;
   name: string;
   color: string;
+  weeklyTargetHours?: number;
 }
 
 export interface SubjectGroup {
