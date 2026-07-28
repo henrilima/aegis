@@ -61,6 +61,7 @@ export function CalendarHeader({
   return (
     <div className="flex flex-col gap-4">
       <ModuleHeader
+        moduleId="calendar"
         color={color}
         title="Calendário"
         subtitle="Gestão de eventos e feriados"
@@ -102,7 +103,7 @@ export function CalendarHeader({
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <div className="px-4 flex items-center justify-center min-w-[140px]">
+          <div className="px-4 flex items-center justify-center min-w-35">
             <span className="text-xs font-black text-foreground capitalize">
               {label}
             </span>
