@@ -1,24 +1,64 @@
-[version]:["3.3.0"]
+[version]:["4.0.0"]
 
-[passwords]("Atualizado")
-[1]:["Armazene credenciais de forma segura em um cofre criptografado localmente utilizando chaves AES-256-GCM robustas e integradas ao Tauri."]
-[2]:["Organize suas senhas em categorias personalizáveis (ex: Trabalho, Pessoal, Finanças) e realize buscas rápidas em tempo real por título, usuário ou URL."]
-[3]:["Gere senhas fortes de forma integrada com controle completo sobre comprimento, inclusão de números, símbolos e letras maiúsculas/minúsculas."]
-[4]:["Exporte e importe suas senhas em formato CSV para compatibilidade universal com gerenciadores de credenciais externos."]
-[5]:["Realize backups automáticos locais do progresso e dados com rotação inteligente integrada (mantendo no máximo as últimas 2 cópias por usuário)."]
+[automations]("Novo")
+[1]:["Crie regras automáticas entre módulos sem código (ex: conectar sessões de estudo ou tarefas concluídas para marcar hábitos de apoio)."]
+[2]:["Receba notificações in-app instantâneas a cada disparo automático bem-sucedido com prevenção contra execuções duplicadas no mesmo dia."]
+[3]:["Exporte, importe e inclua todas as regras de automação no backup local do aplicativo."]
+
+[habits]("Atualizado")
+[1]:["Rastreie hábitos positivos diários ou hábitos de controle de vícios com painel detalhado de sobriedade."]
+[2]:["Monitore o cronômetro de abstinência ativo mostrando dias, horas, minutos e segundos desde o último registro de recaída."]
+[3]:["Firme o Pacto Matinal diário e realize a Revisão Noturna para avaliar o nível de dificuldade com diário pessoal de sentimentos."]
+[4]:["Registre deslizes identificando gatilhos emocionais (Estresse, Ansiedade, Tédio, Influência Social) com gráficos de vulnerabilidades."]
+[5]:["Acompanhe sequências de consistência diária ativa (streaks) e visualização de hábitos em formato semanal e mensal."]
+
+[sleep]("Atualizado")
+[1]:["Registre noites dormidas e acompanhe a eficiência e a qualidade do sono calculadas automaticamente."]
+[2]:["Analise seu ritmo circadiano na aba de Sonolência, estimando janelas de pico matinal, vale circadiano, pico vespertino e pressão de sono pré-dormir."]
+[3]:["Registre relatos no Diário de Sonhos (lúcido, comum, pesadelo) e marque fatores de qualidade ao acordar (café, telas, álcool, exercícios)."]
+[4]:["Utilize a Calculadora de Ciclos com classificação automática de recuperação de sono e botão para criar alarme direto para o horário sugerido."]
+[5]:["Monitore o alerta de débito de sono semanal no widget da Dashboard quando dormir menos que a meta estabelecida."]
+
+[alarms]("Atualizado")
+[1]:["Transforme os alarmes em um despertador nativo completo com janela flutuante no desktop (always-on-top)."]
+[2]:["Utilize botões de adiamento inteligente (5, 10 ou 15 minutos) e encerramento do alarme com resposta imediata."]
+[3]:["Toque áudios de alarme contínuos em loop (com adiamento automático por inatividade após 2 minutos)."]
+[4]:["Escolha entre 3 modos de notificação por alarme: Widget Flutuante, Notificação de Sistema ou Alerta na Aplicação."]
+[5]:["Personalize alarmes utilizando o seletor dinâmico com busca por mais de 85 ícones do sistema."]
 
 [tasks]("Atualizado")
-[1]:["Gerencie listas de afazeres com suporte a títulos, descrições detalhadas, prioridades alta/média/baixa e datas de vencimento."]
-[2]:["Crie e organize sub-tarefas (checklists) dentro de cada tarefa principal para dividir projetos complexos em etapas menores."]
-[3]:["Classifique suas tarefas por marcadores ou categorias para facilitar a filtragem visual rápida no painel de navegação."]
-[4]:["Monitore a produtividade diária através de um widget compacto na Dashboard que exibe contagem de pendências e progresso percentual."]
-[5]:["Aproveite micro-interações táteis e atalhos rápidos para marcar conclusões, editar conteúdos ou deletar itens de forma instantânea."]
+[1]:["Alterne entre a visualização em lista e o Quadro Kanban visual organizado por colunas ('A Fazer', 'Fazendo', 'Concluído')."]
+[2]:["Utilize drag-and-drop nativo para mover o status das tarefas entre colunas do Kanban sem abrir modais."]
+[3]:["Acompanhe o tempo de execução com o temporizador embutido por tarefa, somando tempo acumulado e pausando tarefas anteriores automaticamente."]
+[4]:["Exiba cores personalizadas, prioridades (Alta, Média, Baixa), categorias e sub-tarefas em cada cartão."]
 
-[calendar]
-[1]:["Visualize compromissos, lembretes e prazos de tarefas integrados de forma visual em layouts de calendário mensal e semanal."]
-[2]:["Adicione novos eventos diretamente nas datas correspondentes com informações de título, descrição, horário exato e categorização de cor."]
-[3]:["Sincronize prazos críticos do módulo de Tarefas para exibição automática nos dias correspondentes do calendário."]
-[4]:["Aproveite o design adaptável que realça os dias atuais, fins de semana e destaca compromissos por relevância de cor."]
+[reading]("Atualizado")
+[1]:["Gerencie uma estante virtual com livros físicos e digitais lendo, querendo ler ou concluídos."]
+[2]:["Acompanhe o Fichamento de Livros na aba de resenha com cálculo dinâmico da velocidade de leitura (palavras por minuto) e data estimada de término."]
+[3]:["Vincule um hábito de leitura para marcação automática ao registrar sessões de leitura no dia."]
+[4]:["Organize anotações e citações com referências de capítulo e página em uma timeline vertical limpa."]
+
+[flashcards]("Atualizado")
+[1]:["Crie baralhos e cartões de memorização frente/verso para praticar repetição espaçada (SRS)."]
+[2]:["Visualize o gráfico da Curva de Esquecimento (Ebbinghaus) projetando a retenção de memória nos próximos 7 dias e listando cartões urgentes."]
+[3]:["Personalize capas de baralhos utilizando o seletor global de ícones com busca por texto e iluminação temática do baralho."]
+[4]:["Acompanhe o widget de estatísticas na Dashboard com revisões pendentes do dia, taxa de acerto global e total de cartões."]
+
+[pomodoro]("Atualizado")
+[1]:["Utilize o temporizador Pomodoro em uma mini-janela flutuante no desktop (always-on-top) para controlar sessões de foco sobre qualquer programa."]
+[2]:["Vincule o tempo de foco acumulado nos ciclos encerrados diretamente a uma matéria de estudos cadastrada."]
+[3]:["Preserve o tempo acumulado no temporizador que é pausado automaticamente ao fechar e reabrir o aplicativo."]
+[4]:["Receba confirmação de encerramento antes de vincular sessões aos estudos."]
+
+[studies]("Atualizado")
+[1]:["Monitore o tempo de estudo por matéria com cronômetro nativo e defina metas de horas semanais individuais por disciplina."]
+[2]:["Analise a grade anual de constância (Mapa de Calor) integrada diretamente na aba de Relatórios de estudos."]
+[3]:["Exiba cartões no histórico de estudos com sequência limpa (Tempo ➔ Foco ➔ Questões ➔ Páginas) e destaque em rosa para sessões do Pomodoro."]
+
+[dictionary]("Atualizado")
+[1]:["Crie um glossário pessoal bilíngue de novos termos ou palavras estudadas."]
+[2]:["Edite termos salvos no glossário (termo, transcrição fonética e definição) diretamente via ícone de lápis em cada card."]
+[3]:["Ajuste e personalize a palavra associada e definição no modal de busca antes de salvar no glossário."]
 
 [notes]
 [1]:["Escreva anotações pessoais, relatórios ou ideias de forma fluida usando um editor com suporte nativo a Markdown e visualização formatada em tempo real."]
@@ -26,25 +66,17 @@
 [3]:["Pesquise notas instantaneamente usando filtros de busca por texto livre, nomes de arquivos ou tags inseridas no cabeçalho."]
 [4]:["Adicione prefixos identificadores automatizados para controle de ordenação e segurança contra conflitos de gravação."]
 
-[studies]("Atualizado")
-[1]:["Monitore o tempo dedicado de estudo para cada disciplina ou matéria através de um cronômetro e timer de estudos nativo."]
-[2]:["Defina metas de estudos semanais ou diárias por disciplina, visualizando barras de progresso que indicam o cumprimento em tempo real."]
-[3]:["Registre avaliações acadêmicas, simulados e notas de matérias com suporte a médias simples, ponderadas, por meta ou personalizadas."]
-[4]:["Gerencie disciplinas de forma visual em grupos com cores customizadas, suporte a renomeação e organização dedicada no painel de estudos."]
-[5]:["Registre sessões de estudo manuais no histórico detalhado, especificando data, matéria estudada e anotações resumidas de progresso."]
-[6]:["Visualize estatísticas consolidadas de horas dedicadas aos estudos na Dashboard através de gráficos de linhas e resumos de tempo."]
+[calendar]
+[1]:["Visualize compromissos, lembretes e prazos de tarefas integrados de forma visual em layouts de calendário mensal e semanal."]
+[2]:["Adicione novos eventos diretamente nas datas correspondentes com informações de título, descrição, horário exato e categorização de cor."]
+[3]:["Sincronize prazos críticos do módulo de Tarefas para exibição automática nos dias correspondentes do calendário."]
+[4]:["Aproveite o design adaptável que realça os dias atuais, fins de semana e destaca compromissos por relevância de cor."]
 
-[reading]
-[1]:["Gerencie uma estante virtual com livros físicos e digitais que você está lendo, quer ler ou já concluiu com sucesso."]
-[2]:["Registre seu progresso de leitura atualizando a página atual, gerando cálculo automatizado da porcentagem concluída e páginas restantes."]
-[3]:["Escreva anotações, pensamentos e resumos vinculados a capítulos específicos de cada livro para consultas de aprendizado futuras."]
-[4]:["Monitore sua velocidade média e estime o tempo restante necessário para concluir a leitura da obra atual com base no seu ritmo histórico."]
-
-[dictionary]
-[1]:["Crie um glossário pessoal bilíngue de novos termos ou palavras estudadas durante leituras e aprendizado de novos idiomas."]
-[2]:["Cadastre traduções, sinônimos, exemplos práticos de uso em frases e anotações gramaticais detalhadas para fixação ativa."]
-[3]:["Organize o dicionário em ordem alfabética ou cronológica de criação, contando com busca imediata para encontrar termos cadastrados."]
-[4]:["Exiba títulos de palavras no padrão organizado de tradução e idiomas para fácil leitura e memorização visual imediata."]
+[passwords]
+[1]:["Armazene credenciais de forma segura em um cofre criptografado localmente utilizando chaves AES-256-GCM robustas e integradas ao Tauri."]
+[2]:["Organize suas senhas em categorias personalizáveis (ex: Trabalho, Pessoal, Finanças) e realize buscas rápidas em tempo real por título, usuário ou URL."]
+[3]:["Gere senhas fortes de forma integrada com controle completo sobre comprimento, inclusão de números, símbolos e letras maiúsculas/minúsculas."]
+[4]:["Exporte e importe suas senhas em formato CSV para compatibilidade universal com gerenciadores de credenciais externos."]
 
 [movies]
 [1]:["Organize sua biblioteca cinematográfica de filmes e séries assistidos, favoritos ou salvos em uma lista de desejos para assistir futuramente."]
@@ -52,38 +84,7 @@
 [3]:["Escreva avaliações de notas de 1 a 10 estrelas e registre resenhas pessoais sobre suas impressões de cada obra assistida."]
 [4]:["Filtre seu acervo por status (Assistido, Assistindo, Quero Assistir) e gêneros com transições visuais extremamente fluidas."]
 
-[habits]("Atualizado")
-[1]:["Rastreie hábitos positivos que você quer cultivar (ex: exercitar) ou hábitos negativos que deseja eliminar (ex: redes sociais) com regras de pontuação exclusivas."]
-[2]:["Acompanhe sequências de consistência diária ativa (ofensivas ou streaks) que exibem chamas e contadores visuais dinâmicos no widget e no painel."]
-[3]:["Registre o progresso diário em uma grade de consistência no estilo calendário que preenche as cores conforme o sucesso do hábito."]
-[4]:["Gere relatórios de progresso em formato visual do tipo canvas interativo com estatísticas exportáveis de cumprimento semanal e mensal."]
-
-[pomodoro]
-[1]:["Utilize um temporizador Pomodoro clássico com contagem regressiva suave baseada em intervalos clássicos ou personalizados de foco e pausas."]
-[2]:["Configure livremente o tempo das sessões de foco (ex: 25 min), pausas curtas (ex: 5 min) e pausas longas (ex: 15 min) conforme seu método de produtividade."]
-[3]:["Receba notificações visuais no desktop e alertas sonoros quando um período de foco ou descanso for finalizado com sucesso."]
-[4]:["Monitore o total de ciclos de foco (pomodoros) concluídos durante o dia para acompanhar a evolução do seu nível de atenção."]
-
-[sleep]
-[1]:["Registre a quantidade de sono diária especificando com precisão a hora de deitar e a hora de acordar no dia seguinte."]
-[2]:["Monitore a eficiência e a qualidade do sono calculada automaticamente com base nas horas reais adormecidas vs. deitado."]
-[3]:["Acompanhe o progresso do sono na Dashboard e visualize histórico com médias semanais e mensais para identificar variações na sua rotina."]
-[4]:["Receba recomendações de horários de repouso ideais com base nos seus ciclos de sono anteriores para otimizar seu bem-estar."]
-
-[alarms]("Atualizado")
-[1]:["Crie e agende múltiplos alarmes com disparos únicos ou recorrentes selecionando os dias específicos da semana para ativação."]
-[2]:["Personalize o som de cada despertador escolhendo entre arquivos de áudio integrados no sistema ou carregando músicas e arquivos locais do seu PC."]
-[3]:["Aproveite o scheduler inteligente do backend Tauri que roda em segundo plano e realiza limpezas automáticas de registros órfãos ou inválidos."]
-[4]:["Visualize os próximos horários de disparo calculados em tempo real diretamente na lista e no widget interativo de alarmes do painel."]
-
-[statistics]("Atualizado")
+[statistics]
 [1]:["Analise seu rendimento geral através de um painel integrado com relatórios visuais densos de estudos, tarefas, sono, leitura e notas acadêmicas."]
-[2]:["Visualize seu engajamento histórico através de um mapa térmico temporal de atividades (heatmap de consistência de hábitos) que usa a largura completa do monitor."]
+[2]:["Visualize seu engajamento histórico através de um mapa térmico temporal de atividades (heatmap de consistência de hábitos)."]
 [3]:["Aproveite tooltips informativos e descrições detalhadas que explicam de forma clara como as métricas são calculadas e o que elas significam."]
-[4]:["Filtre estatísticas por períodos dinâmicos e compare métricas para otimizar suas metas de hábitos e produtividade pessoal."]
-
-[flashcards]("Novo")
-[1]:["Crie baralhos e cartões de memorização frente/verso para praticar memorização ativa baseada no algoritmo de repetição espaçada (SRS)."]
-[2]:["Realize sessões de estudo focadas definindo previamente o limite de cartões diários e a ordenação (aleatória ou cronológica) para revisão."]
-[3]:["Revise todos os baralhos ativos simultaneamente através de uma fila global integrada de revisão que consolida cartões devidos no dia."]
-[4]:["Aproveite a rica interface visual com flip 3D animado do cartão, modo noturno de alto contraste no verso e relatórios detalhados com conquistas e gráficos."]
