@@ -38,7 +38,7 @@ type TabId =
   | "semana"
   | "historico"
   | "calculadora"
-  | "sonolencia"
+  | "relatorios"
   | "sonhos"
   | "guia";
 
@@ -231,11 +231,11 @@ export default function SleepPage() {
   }, [weekStart, weekEntries]);
 
   const SLEEP_TABS = [
-    { id: "semana", label: "Visão Semanal", icon: BarChart3 },
-    { id: "historico", label: "Relatórios", icon: Calendar },
-    { id: "calculadora", label: "Calculadora", icon: Clock },
-    { id: "sonolencia", label: "Sonolência", icon: Moon },
+    { id: "semana", label: "Visão Geral", icon: BarChart3 },
+    { id: "calculadora", label: "Calculadora de Ciclos", icon: Clock },
     { id: "sonhos", label: "Diário de Sonhos", icon: Sparkles },
+    { id: "relatorios", label: "Relatórios", icon: Calendar },
+    { id: "historico", label: "Histórico", icon: Calendar },
   ];
 
   if (loading)
@@ -251,6 +251,7 @@ export default function SleepPage() {
   return (
     <div className="w-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700">
       <ModuleHeader
+        moduleId="sleep"
         color={getModuleColor("sleep")}
         title="Análise de Sono"
         subtitle="Monitore e otimize seu descanso"
@@ -332,6 +333,7 @@ export default function SleepPage() {
                 title="Detalhamento da Semana"
                 entries={weekEntries}
                 targetMinutes={targetMinutes}
+                isCompact={true}
                 onEdit={(e) => {
                   setEditEntry(e);
                   setShowForm(true);
@@ -343,7 +345,7 @@ export default function SleepPage() {
         </div>
       )}
 
-      {tab === "historico" && (
+      {tab === "relatorios" && (
         <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-2 duration-500">
           <SleepStatsBanner
             weekAvgDuration={weekAvgDuration}
@@ -353,6 +355,12 @@ export default function SleepPage() {
             sleepDebt={sleepDebt}
             layout="horizontal"
           />
+          <SleepDrowsiness entries={entries} now={simulatedNow} />
+        </div>
+      )}
+
+      {tab === "historico" && (
+        <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-2 duration-500">
           <SleepHistory
             entries={entries}
             targetMinutes={targetMinutes}
@@ -385,12 +393,6 @@ export default function SleepPage() {
       )}
 
       {tab === "guia" && <SleepGuidePanel onBack={() => setTab(preGuideTab)} />}
-
-      {tab === "sonolencia" && (
-        <div className="animate-in slide-in-from-bottom-2 duration-500">
-          <SleepDrowsiness entries={entries} now={simulatedNow} />
-        </div>
-      )}
 
       {tab === "sonhos" && (
         <div className="animate-in slide-in-from-bottom-2 duration-500">

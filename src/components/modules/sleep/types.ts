@@ -19,6 +19,7 @@ export interface SleepDream {
   id?: number;
   userId: string;
   date: string;
+  title?: string;
   content: string;
   dreamType: string; // "lúcido" | "comum" | "pesadelo"
   createdAt?: string;

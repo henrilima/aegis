@@ -28,8 +28,12 @@ function timeToDecimalHours(timeStr: string): number {
 // Formata hora decimal em "HH:MM"
 function formatDecimalHour(h: number): string {
   const normalized = ((h % 24) + 24) % 24;
-  const hours = Math.floor(normalized);
-  const mins = Math.round((normalized - hours) * 60);
+  let hours = Math.floor(normalized);
+  let mins = Math.round((normalized - hours) * 60);
+  if (mins >= 60) {
+    hours = (hours + 1) % 24;
+    mins = 0;
+  }
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 

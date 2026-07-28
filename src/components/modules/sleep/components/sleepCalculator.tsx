@@ -1,6 +1,8 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import {
+  AlarmClock,
   AlertTriangle,
   ArrowRight,
   Battery,
@@ -8,7 +10,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 interface SleepCalculatorProps {
@@ -96,11 +100,41 @@ export function SleepCalculator({
   now,
   onQuickRegister,
 }: SleepCalculatorProps) {
+  const { user } = useAuth();
+  const uid = user ? String(user.id) : "";
+
   const [targetWakeTime, setTargetWakeTime] = useState("07:00");
   const [targetBedtime, setTargetBedtime] = useState("23:00");
   const [activeTab, setActiveTab] = useState<
     "dormir-agora" | "planejar-dormir" | "acordar-hora"
   >("dormir-agora");
+
+  const handleCreateAlarm = async (targetTime: string) => {
+    if (!uid) {
+      toast.error("Usuário não autenticado");
+      return;
+    }
+    try {
+      await invoke("alarm_add_alarm", {
+        alarm: {
+          userId: uid,
+          title: `Despertar (${targetTime})`,
+          alarmType: "fixed",
+          time: targetTime,
+          intervalMinutes: null,
+          lastTriggered: null,
+          soundFile: "alarm_1.mp3",
+          icon: "bell",
+          color: "cyan",
+          enabled: true,
+          triggerMode: "widget",
+        },
+      });
+      toast.success(`Alarme criado para às ${targetTime}!`);
+    } catch {
+      toast.error("Erro ao agendar alarme.");
+    }
+  };
 
   // Cálculos para "Dormir Agora" (retorna horários de acordar sugeridos)
   const wakeUpOptions = useMemo(() => {
@@ -257,28 +291,39 @@ export function SleepCalculator({
                 </div>
               </div>
 
-              <div className="mt-4">
-                <div className="text-[10px] text-neutral-500 dark:text-neutral-400 font-bold mb-3 flex items-center gap-1.5 justify-start">
+              <div className="mt-4 flex flex-col gap-2">
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400 font-bold flex items-center gap-1.5 justify-start">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
                   {opt.durationHours}h de sono ({opt.cycles} ciclos + 15m)
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onQuickRegister(
-                      bedtimeCreator(opt.time),
-                      wakeTimeCreator(opt.time),
-                      opt.defaultQuality,
-                    )
-                  }
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer select-none",
-                    style.btnClass,
-                  )}
-                >
-                  <span>Registrar este ciclo</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-2 w-full">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onQuickRegister(
+                        bedtimeCreator(opt.time),
+                        wakeTimeCreator(opt.time),
+                        opt.defaultQuality,
+                      )
+                    }
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer select-none",
+                      style.btnClass,
+                    )}
+                  >
+                    <span>Registrar</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCreateAlarm(wakeTimeCreator(opt.time))}
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold bg-background border border-border/80 hover:bg-accent text-foreground transition-all cursor-pointer select-none"
+                    title="Criar alarme para este horário"
+                  >
+                    <AlarmClock className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>Alarme</span>
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -309,7 +354,7 @@ export function SleepCalculator({
           }
           className="w-full"
         >
-          <TabsList className="bg-muted/50 border border-border/60 p-[3px] rounded-lg max-w-md w-full flex mb-6">
+          <TabsList className="bg-muted/50 border border-border/60 p-0.75 rounded-lg max-w-md w-full flex mb-6">
             <TabsTrigger value="dormir-agora" className="flex-1 text-xs py-1.5">
               Dormir agora
             </TabsTrigger>
@@ -338,7 +383,7 @@ export function SleepCalculator({
                   Hora atual simulada (inclui 15m de latência)
                 </p>
               </div>
-              <span className="text-sm font-bold text-cyan-500">
+              <span className="text-sm font-bold text-foreground bg-card border border-border/60 px-3 py-1.5 rounded-lg">
                 {String(now.getHours()).padStart(2, "0")}:
                 {String(now.getMinutes()).padStart(2, "0")}
               </span>
@@ -372,7 +417,7 @@ export function SleepCalculator({
                 type="time"
                 value={targetBedtime}
                 onChange={(e) => setTargetBedtime(e.target.value)}
-                className="bg-card border border-border/60 h-9 rounded-lg px-3 text-xs font-bold text-cyan-500 focus:border-cyan-500/40 transition-all outline-none"
+                className="bg-card border border-border/60 h-9 rounded-lg px-3 text-xs font-bold text-foreground focus:border-cyan-500/40 transition-all outline-none"
               />
             </div>
 
@@ -401,7 +446,7 @@ export function SleepCalculator({
                 type="time"
                 value={targetWakeTime}
                 onChange={(e) => setTargetWakeTime(e.target.value)}
-                className="bg-card border border-border/60 h-9 rounded-lg px-3 text-xs font-bold text-cyan-500 focus:border-cyan-500/40 transition-all outline-none"
+                className="bg-card border border-border/60 h-9 rounded-lg px-3 text-xs font-bold text-foreground focus:border-cyan-500/40 transition-all outline-none"
               />
             </div>
 
