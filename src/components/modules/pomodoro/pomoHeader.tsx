@@ -34,6 +34,7 @@ export function PomoHeader({
 
   return (
     <ModuleHeader
+      moduleId="pomodoro"
       color={getModuleColor("pomodoro")}
       title="Foco & Produtividade"
       subtitle={subtitle}
