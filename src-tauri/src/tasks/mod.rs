@@ -17,6 +17,12 @@ pub struct Task {
     pub priority: Option<i32>,
     pub category: Option<String>,
     pub color: Option<String>,
+    /// Status do kanban: "todo" | "doing" | "done"
+    #[serde(default)]
+    pub status: Option<String>,
+    /// Tempo total acumulado em segundos (soma de todas as sessões do temporizador)
+    #[serde(default)]
+    pub time_spent_seconds: Option<i64>,
 }
 
 pub struct TaskManager {
@@ -52,6 +58,10 @@ impl TaskManager {
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN category TEXT", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN color TEXT", []);
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT", []);
+        // Migração: campo de status para o kanban (todo | doing | done)
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN status TEXT", []);
+        // Migração: campo de tempo acumulado em segundos para o temporizador
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN time_spent_seconds INTEGER DEFAULT 0", []);
 
         // Remove o índice antigo sem parent_id para recriá-lo com a nova estrutura
         let _ = conn.execute("DROP INDEX IF EXISTS idx_tasks_user_title", []);
@@ -70,7 +80,7 @@ impl TaskManager {
 
     pub fn list_tasks(&self, user_id: &str) -> Vec<Task> {
         let conn = self.get_connection();
-        let mut stmt = match conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC") {
+        let mut stmt = match conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, status, time_spent_seconds FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC") {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("[TaskManager] Erro ao preparar query list_tasks: {}", e);
@@ -91,6 +101,8 @@ impl TaskManager {
                 priority: row.get(8)?,
                 category: row.get(9)?,
                 color: row.get(10)?,
+                status: row.get(11)?,
+                time_spent_seconds: row.get(12)?,
             })
         }) {
             Ok(r) => r,
@@ -109,12 +121,22 @@ impl TaskManager {
         let today_str =
             today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
+        // Determina o status com base no campo ou no completed
+        let status = task.status.clone().unwrap_or_else(|| {
+            if task.completed {
+                "done".to_string()
+            } else {
+                "todo".to_string()
+            }
+        });
+
         let result = if let Some(id) = task.id {
             conn.execute(
                 "UPDATE tasks SET title = ?1, description = ?2, completed = ?3, due_date = ?4, parent_id = ?5, priority = ?6, category = ?7, color = ?8,
-                 completed_at = CASE WHEN ?3 = 1 THEN COALESCE(completed_at, ?9) ELSE NULL END 
-                 WHERE id = ?10",
-                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, today_str, id],
+                 completed_at = CASE WHEN ?3 = 1 THEN COALESCE(completed_at, ?9) ELSE NULL END,
+                 status = ?10
+                 WHERE id = ?11",
+                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, today_str, status, id],
             )
         } else {
             let completed_at = if task.completed {
@@ -123,8 +145,8 @@ impl TaskManager {
                 None
             };
             conn.execute(
-                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, completed_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color, completed_at],
+                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, completed_at, status, time_spent_seconds) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0)",
+                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color, completed_at, status],
             )
         };
 
@@ -151,9 +173,40 @@ impl TaskManager {
         } else {
             None
         };
+        // Atualiza o status junto com o completed para manter consistência
+        let status = if completed { "done" } else { "todo" };
         conn.execute(
-            "UPDATE tasks SET completed = ?1, completed_at = ?2 WHERE id = ?3",
-            params![completed_int, completed_at, id],
+            "UPDATE tasks SET completed = ?1, completed_at = ?2, status = ?3 WHERE id = ?4",
+            params![completed_int, completed_at, status, id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    /// Atualiza apenas o status do kanban de uma tarefa
+    pub fn update_status(&self, id: i32, status: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        // Quando mover para "done", marca como concluída; caso contrário, desmarca
+        let completed = if status == "done" { 1 } else { 0 };
+        let completed_at: Option<String> = if status == "done" {
+            Some(chrono::Local::now().format("%Y-%m-%d").to_string())
+        } else {
+            None
+        };
+        conn.execute(
+            "UPDATE tasks SET status = ?1, completed = ?2, completed_at = ?3 WHERE id = ?4",
+            params![status, completed, completed_at, id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    /// Soma segundos ao tempo acumulado de uma tarefa
+    pub fn add_time(&self, id: i32, seconds: i64) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "UPDATE tasks SET time_spent_seconds = COALESCE(time_spent_seconds, 0) + ?1 WHERE id = ?2",
+            params![seconds, id],
         )
         .map_err(|e| e.to_string())?;
         Ok(())
@@ -171,10 +224,10 @@ impl TaskManager {
 
     pub fn delete_task(&self, id: i32) -> Result<(), String> {
         let conn = self.get_connection();
-        // Delete subtasks first
+        // Remove subtarefas antes
         conn.execute("DELETE FROM tasks WHERE parent_id = ?1", params![id])
             .map_err(|e| e.to_string())?;
-        // Delete the task itself
+        // Remove a tarefa principal
         conn.execute("DELETE FROM tasks WHERE id = ?1", params![id])
             .map_err(|e| e.to_string())?;
         Ok(())
@@ -222,6 +275,8 @@ impl TaskManager {
                 priority: None,
                 category: None,
                 color: None,
+                status: None,
+                time_spent_seconds: None,
             };
             let _ = self.upsert_task(task, None);
             count += 1;
@@ -277,6 +332,26 @@ pub async fn tasks_toggle(
 #[tauri::command]
 pub async fn tasks_delete(state: tauri::State<'_, crate::AppState>, id: i32) -> Result<(), String> {
     state.tasks.delete_task(id)
+}
+
+/// Atualiza o status do kanban de uma tarefa (todo | doing | done)
+#[tauri::command]
+pub async fn tasks_update_status(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    status: String,
+) -> Result<(), String> {
+    state.tasks.update_status(id, &status)
+}
+
+/// Soma o tempo de uma sessão ao acumulado da tarefa
+#[tauri::command]
+pub async fn tasks_add_time(
+    state: tauri::State<'_, crate::AppState>,
+    id: i32,
+    seconds: i64,
+) -> Result<(), String> {
+    state.tasks.add_time(id, seconds)
 }
 
 #[tauri::command]

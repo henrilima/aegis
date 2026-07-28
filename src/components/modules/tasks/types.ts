@@ -10,4 +10,8 @@ export interface Task {
   priority?: number;
   category?: string;
   color?: string;
+  /** Status do kanban: "todo" | "doing" | "done" */
+  status?: "todo" | "doing" | "done";
+  /** Tempo total acumulado em segundos (persistido no banco) */
+  timeSpentSeconds?: number;
 }

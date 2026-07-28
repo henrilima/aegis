@@ -7,6 +7,7 @@ import {
   Flag,
   Hash,
   HelpCircle,
+  Kanban,
   ListTodo,
   Pencil,
   Plus,
@@ -16,7 +17,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { resolveTaskStyles } from "@/colors.config";
-import { ModuleHeader } from "@/components/global/ModuleHeader";
+import { ModuleHeader, type ModuleTab } from "@/components/global/ModuleHeader";
 import { CardSkeletonGrid } from "@/components/ui/CardSkeletonGrid";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -25,9 +26,19 @@ import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { cn } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { KanbanView } from "./components/KanbanView";
 import { TaskCreateModal } from "./components/modals/TaskCreateModal";
 import { TasksGuidePanel, TasksInfoModal } from "./components/TasksInfoModal";
+import { TaskTimer } from "./components/TaskTimer";
 import type { Task } from "./types";
+
+/** Chave no localStorage para lembrar o modo de visualização preferido */
+const VIEW_MODE_KEY = "tasks_view_mode";
+
+const TASK_TABS: ModuleTab[] = [
+  { id: "list", label: "Lista", icon: ListTodo },
+  { id: "kanban", label: "Kanban", icon: Kanban },
+];
 
 export default function TasksPage() {
   const { user } = useAuth();
@@ -44,6 +55,18 @@ export default function TasksPage() {
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [showInfo, setShowInfo] = useState(false);
 
+  // Modo de visualização: "list" | "kanban"
+  const [viewMode, setViewMode] = useState<"list" | "kanban">(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem(VIEW_MODE_KEY) as "list" | "kanban") ?? "list"
+      );
+    }
+    return "list";
+  });
+
+  // Id da tarefa com cronômetro ativo — gerenciado pelo context global
+  // (persiste entre módulos enquanto o app estiver aberto)
   const uid = user ? String(user.id) : "";
 
   const fetchTasks = useCallback(async () => {
@@ -61,6 +84,33 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Persiste o modo de visualização no localStorage ao mudar
+  const handleViewModeChange = (mode: "list" | "kanban") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  };
+
+  // Callback para atualizar o timeSpentSeconds de uma tarefa localmente
+  const handleTimeSaved = (taskId: number, newTotal: number) => {
+    setTasks((current) =>
+      current.map((t) =>
+        t.id === taskId ? { ...t, timeSpentSeconds: newTotal } : t,
+      ),
+    );
+  };
+
+  // Callback para atualizar o status do kanban localmente (sem reload completo)
+  const handleStatusChange = (
+    taskId: number,
+    status: "todo" | "doing" | "done",
+  ) => {
+    setTasks((current) =>
+      current.map((t) =>
+        t.id === taskId ? { ...t, status, completed: status === "done" } : t,
+      ),
+    );
+  };
 
   const handleAddTask = async (
     title: string,
@@ -263,7 +313,7 @@ export default function TasksPage() {
                 {task.title}
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {Number(task.priority) > 0 && (
                   <div
                     className={cn(
@@ -275,6 +325,16 @@ export default function TasksPage() {
                     <span>{priorityLabels[task.priority ?? 0]}</span>
                   </div>
                 )}
+
+                {/* Timer — ao lado da flag de prioridade, antes das tags */}
+                {!isSubtask && task.id && (
+                  <TaskTimer
+                    task={task}
+                    onTimeSaved={handleTimeSaved}
+                    onStatusChange={handleStatusChange}
+                  />
+                )}
+
                 {task.category && (
                   <div
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold capitalize border shrink-0"
@@ -307,6 +367,8 @@ export default function TasksPage() {
               </div>
             </div>
           </div>
+
+          {/* Ações de gestão — visíveis apenas no hover */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
             {!isSubtask && !task.completed && (
               <ToolTip content="Adicionar subtarefa">
@@ -370,6 +432,9 @@ export default function TasksPage() {
         title="Lista de Tarefas"
         subtitle={`${pendingCount} ${pendingCount === 1 ? "tarefa pendente" : "tarefas pendentes"}`}
         icon={ListTodo}
+        tabs={TASK_TABS}
+        activeTab={viewMode}
+        onTabChange={(id) => handleViewModeChange(id as "list" | "kanban")}
         onTitleClick={() => setShowInfo(true)}
         titleHoverIcon={HelpCircle}
         titleTooltip="Visualizar Guia de Tarefas"
@@ -397,43 +462,67 @@ export default function TasksPage() {
         />
       ) : (
         <div className="flex flex-col gap-4 pr-2">
-          {/* Segment Control / Filtros */}
-          <div className="flex items-center gap-1.5 p-1 bg-muted/30 border border-border/50 rounded-xl max-w-[320px] shrink-0">
-            {[
-              { id: "all", label: "Todas" },
-              { id: "pending", label: "Pendentes" },
-              { id: "completed", label: "Concluídas" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() =>
-                  setFilter(tab.id as "all" | "pending" | "completed")
-                }
-                className={cn(
-                  "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none text-center",
-                  filter === tab.id
-                    ? "bg-card text-foreground border border-border/60"
-                    : "text-muted-foreground hover:text-foreground border border-transparent",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {filteredRootTasks.length === 0 ? (
-            <EmptyState
-              icon={ListTodo}
-              title="Nenhuma tarefa nesta categoria"
-              description="Nenhuma tarefa corresponde ao filtro selecionado no momento."
-              className="bg-card/20 border border-border rounded-xl p-8"
-            />
-          ) : (
-            <div className="flex flex-col gap-2">
-              {filteredRootTasks.map((task, i) => renderTask(task, i))}
+          {/* Filtros da visão de lista */}
+          {viewMode === "list" && (
+            <div className="flex items-center gap-1.5 p-1 bg-muted/30 border border-border/50 rounded-xl max-w-[320px] shrink-0">
+              {[
+                { id: "all", label: "Todas" },
+                { id: "pending", label: "Pendentes" },
+                { id: "completed", label: "Concluídas" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() =>
+                    setFilter(tab.id as "all" | "pending" | "completed")
+                  }
+                  className={cn(
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none text-center",
+                    filter === tab.id
+                      ? "bg-card text-foreground border border-border/60"
+                      : "text-muted-foreground hover:text-foreground border border-transparent",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           )}
+
+          {/* ─── VISÃO KANBAN ─── */}
+          {viewMode === "kanban" && (
+            <KanbanView
+              tasks={tasks}
+              onTimeSaved={handleTimeSaved}
+              onStatusChange={handleStatusChange}
+              onToggle={handleToggle}
+              onEdit={(task) => {
+                setEditingTask(task);
+                setIsModalOpen(true);
+              }}
+              onDelete={handleDelete}
+              onAddSubtask={(parentId) => {
+                setSelectedParentId(parentId);
+                setIsModalOpen(true);
+              }}
+              onRefresh={fetchTasks}
+            />
+          )}
+
+          {/* ─── VISÃO LISTA ─── */}
+          {viewMode === "list" &&
+            (filteredRootTasks.length === 0 ? (
+              <EmptyState
+                icon={ListTodo}
+                title="Nenhuma tarefa nesta categoria"
+                description="Nenhuma tarefa corresponde ao filtro selecionado no momento."
+                className="bg-card/20 border border-border rounded-xl p-8"
+              />
+            ) : (
+              <div className="flex flex-col gap-2">
+                {filteredRootTasks.map((task, i) => renderTask(task, i))}
+              </div>
+            ))}
         </div>
       )}
 
