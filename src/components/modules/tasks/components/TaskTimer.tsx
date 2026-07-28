@@ -43,12 +43,12 @@ export function TaskTimer({
     if (isActive) {
       await pauseTimer({
         onTimeSaved,
-        currentSavedSeconds: task.timeSpentSeconds ?? 0,
       });
     } else {
       await startTimer(taskId, {
         onStatusChange,
         taskStatus: task.status ?? (task.completed ? "done" : "todo"),
+        onTimeSaved,
       });
     }
   };

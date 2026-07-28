@@ -24,12 +24,12 @@ interface TaskTimerState {
         status: "todo" | "doing" | "done",
       ) => void;
       taskStatus?: string;
+      onTimeSaved?: (taskId: number, newTotal: number) => void;
     },
   ) => Promise<void>;
   /** Para o cronômetro da tarefa ativa e persiste o tempo acumulado. */
   pauseTimer: (opts?: {
     onTimeSaved?: (taskId: number, newTotal: number) => void;
-    currentSavedSeconds?: number;
   }) => Promise<void>;
   /** Retorna o tempo formatado de uma tarefa (base salva + sessão corrente). */
   getDisplayTime: (taskId: number, savedSeconds: number) => string;
@@ -97,13 +97,14 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
       seconds: number,
       opts?: {
         onTimeSaved?: (taskId: number, newTotal: number) => void;
-        currentSavedSeconds?: number;
       },
     ) => {
       if (seconds <= 0) return;
       try {
-        await invoke("tasks_add_time", { id: taskId, seconds });
-        const newTotal = (opts?.currentSavedSeconds ?? 0) + seconds;
+        const newTotal = await invoke<number>("tasks_add_time", {
+          id: taskId,
+          seconds,
+        });
         opts?.onTimeSaved?.(taskId, newTotal);
       } catch {
         // Falha silenciosa
@@ -121,6 +122,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
           status: "todo" | "doing" | "done",
         ) => void;
         taskStatus?: string;
+        onTimeSaved?: (taskId: number, newTotal: number) => void;
       },
     ) => {
       // Se havia outra tarefa ativa, persiste o tempo dela antes de trocar
@@ -128,7 +130,9 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
       if (prevId !== null && prevId !== taskId) {
         const secs = sessionSecondsRef.current;
         if (secs > 0) {
-          await persistSession(prevId, secs);
+          await persistSession(prevId, secs, {
+            onTimeSaved: opts?.onTimeSaved,
+          });
         }
       }
 
@@ -153,7 +157,6 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
   const pauseTimer = useCallback(
     async (opts?: {
       onTimeSaved?: (taskId: number, newTotal: number) => void;
-      currentSavedSeconds?: number;
     }) => {
       const taskId = activeTimerTaskIdRef.current;
       if (taskId === null) return;

@@ -419,15 +419,16 @@ export default function TasksPage() {
 
   if (showInfo) {
     return (
-      <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 text-foreground">
+      <div className="w-full flex flex-col gap-6 pb-10 text-foreground">
         <TasksGuidePanel onBack={() => setShowInfo(false)} />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10 text-foreground">
+    <div className="w-full flex flex-col gap-6 pb-10 text-foreground">
       <ModuleHeader
+        moduleId="tasks"
         color={getModuleColor("tasks")}
         title="Lista de Tarefas"
         subtitle={`${pendingCount} ${pendingCount === 1 ? "tarefa pendente" : "tarefas pendentes"}`}
