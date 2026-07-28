@@ -294,8 +294,9 @@ export default function FlashcardsPage() {
   });
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12 text-foreground">
+    <div className="w-full flex flex-col gap-6 pb-12 text-foreground">
       <ModuleHeader
+        moduleId="flashcards"
         color={getModuleColor("flashcards")}
         title="Flashcards"
         subtitle="Memorização ativa e repetição espaçada para impulsionar seus estudos"
@@ -515,7 +516,7 @@ export default function FlashcardsPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-neutral-600 font-medium line-clamp-2 mt-1 min-h-[32px] leading-relaxed">
+                          <p className="text-xs text-neutral-600 font-medium line-clamp-2 mt-1 min-h-8 leading-relaxed">
                             {deck.description || "Sem descrição disponível."}
                           </p>
                         </div>
