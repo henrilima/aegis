@@ -200,8 +200,9 @@ export default function MoviesPage() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col gap-5 overflow-auto pb-12 text-foreground">
+    <div className="w-full flex flex-col gap-5 pb-12 text-foreground">
       <ModuleHeader
+        moduleId="movies"
         color={getModuleColor("movies")}
         title="Filmes"
         subtitle={`${counts.watched} assistidos · ${counts.wishlist} na lista`}
@@ -468,7 +469,7 @@ function MovieCard({
       role="button"
       tabIndex={0}
       className={cn(
-        "group relative flex flex-row bg-card border border-border rounded-xl overflow-hidden transition-all cursor-pointer h-[150px]",
+        "group relative flex flex-row bg-card border border-border rounded-xl overflow-hidden transition-all cursor-pointer h-37.5",
         theme.borderHover,
       )}
       onClick={() => onView(movie)}
@@ -480,7 +481,7 @@ function MovieCard({
       }}
     >
       {/* Poster */}
-      <div className="w-[100px] shrink-0 relative overflow-hidden bg-muted border-r border-border/50">
+      <div className="w-25 shrink-0 relative overflow-hidden bg-muted border-r border-border/50">
         {movie.thumbnail ? (
           <img
             src={movie.thumbnail}
@@ -560,7 +561,7 @@ function MovieCard({
           </span>
           {movie.year && <span>{movie.year}</span>}
           {movie.category && (
-            <span className="truncate max-w-[100px]">{movie.category}</span>
+            <span className="truncate max-w-25">{movie.category}</span>
           )}
         </div>
 
