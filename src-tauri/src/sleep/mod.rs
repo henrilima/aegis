@@ -80,10 +80,22 @@ impl SleepManager {
         )
         .ok();
 
-        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN caffeine INTEGER NOT NULL DEFAULT 0", []);
-        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN screens INTEGER NOT NULL DEFAULT 0", []);
-        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN alcohol INTEGER NOT NULL DEFAULT 0", []);
-        let _ = conn.execute("ALTER TABLE sleep_entries ADD COLUMN exercise INTEGER NOT NULL DEFAULT 0", []);
+        let _ = conn.execute(
+            "ALTER TABLE sleep_entries ADD COLUMN caffeine INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE sleep_entries ADD COLUMN screens INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE sleep_entries ADD COLUMN alcohol INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE sleep_entries ADD COLUMN exercise INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
 
         let _ = conn.execute(
             "CREATE TABLE IF NOT EXISTS sleep_dreams (
@@ -142,11 +154,13 @@ impl SleepManager {
 
     pub fn exists(&self, user_id: &str, date: &str) -> bool {
         let conn = self.conn();
-        let count: i32 = conn.query_row(
-            "SELECT COUNT(*) FROM sleep_entries WHERE user_id=?1 AND date=?2",
-            params![user_id, date],
-            |r| r.get(0)
-        ).unwrap_or(0);
+        let count: i32 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sleep_entries WHERE user_id=?1 AND date=?2",
+                params![user_id, date],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
         count > 0
     }
 
@@ -294,29 +308,36 @@ impl SleepManager {
                 content    = excluded.content,
                 dream_type = excluded.dream_type",
             params![d.user_id, d.date, d.content, d.dream_type],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub fn list_dreams(&self, user_id: &str) -> Result<Vec<SleepDream>, String> {
         let conn = self.conn();
-        let mut stmt = conn.prepare("
+        let mut stmt = conn
+            .prepare(
+                "
             SELECT id, user_id, date, content, dream_type, created_at
             FROM sleep_dreams
             WHERE user_id = ?1
             ORDER BY date DESC
-        ").map_err(|e| e.to_string())?;
+        ",
+            )
+            .map_err(|e| e.to_string())?;
 
-        let rows = stmt.query_map(params![user_id], |row| {
-            Ok(SleepDream {
-                id: Some(row.get(0)?),
-                user_id: row.get(1)?,
-                date: row.get(2)?,
-                content: row.get(3)?,
-                dream_type: row.get(4)?,
-                created_at: Some(row.get(5)?),
+        let rows = stmt
+            .query_map(params![user_id], |row| {
+                Ok(SleepDream {
+                    id: Some(row.get(0)?),
+                    user_id: row.get(1)?,
+                    date: row.get(2)?,
+                    content: row.get(3)?,
+                    dream_type: row.get(4)?,
+                    created_at: Some(row.get(5)?),
+                })
             })
-        }).map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())?;
 
         let mut dreams = Vec::new();
         for r in rows {
@@ -420,7 +441,9 @@ pub async fn sono_delete_entry(
 ) -> Result<(), String> {
     let result = state.sleep.delete_entry(id, &user_id);
     if result.is_ok() {
-        let _ = state.stats.delete_xp_for_ref(&user_id, "sleep_entries", &id.to_string());
+        let _ = state
+            .stats
+            .delete_xp_for_ref(&user_id, "sleep_entries", &id.to_string());
     }
     result
 }

@@ -161,7 +161,7 @@ export function SleepDreamTab() {
           <div className="flex flex-col gap-1.5">
             <Label className={lc}>O que você lembra do sonho?</Label>
             <Textarea
-              className="bg-card border-border rounded-xl min-h-[140px] resize-none pt-4 text-sm font-medium focus:border-blue-600/30 placeholder:text-muted-foreground/50 transition-all"
+              className="bg-card border-border rounded-xl min-h-35 resize-none pt-4 text-sm font-medium focus:border-blue-600/30 placeholder:text-muted-foreground/50 transition-all"
               placeholder="Descreva detalhes, pessoas, sentimentos, cores..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -230,7 +230,7 @@ export function SleepDreamTab() {
               <p className="text-xs text-neutral-600 font-bold">
                 Sem Sonhos Registrados
               </p>
-              <p className="text-[10px] text-neutral-600 font-medium max-w-[220px] mt-1">
+              <p className="text-[10px] text-neutral-600 font-medium max-w-55 mt-1">
                 Relate seu primeiro sonho utilizando o formulário ao lado.
               </p>
             </div>
