@@ -78,8 +78,9 @@ export default function AlarmsPage() {
 
   if (isInfoOpen) {
     return (
-      <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground px-1">
+      <div className="w-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground">
         <ModuleHeader
+          moduleId="alarms"
           color={getModuleColor("alarms")}
           title="Alarmes & Alertas"
           subtitle={`${alarms.filter((a) => a.enabled).length} ativos de ${alarms.length} totais`}
@@ -95,8 +96,9 @@ export default function AlarmsPage() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground px-1">
+    <div className="w-full flex flex-col gap-6 pb-12 animate-in fade-in duration-700 text-foreground">
       <ModuleHeader
+        moduleId="alarms"
         color={getModuleColor("alarms")}
         title="Alarmes & Alertas"
         subtitle={`${alarms.filter((a) => a.enabled).length} ativos de ${alarms.length} totais`}
