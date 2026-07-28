@@ -60,6 +60,7 @@ export interface AppConfig {
   showProfileRankBorder?: boolean;
   showSidebarRankBorder?: boolean;
   achievementsEnabled?: boolean;
+  showLevelUpModal?: boolean;
 }
 
 let globalCachedConfig: AppConfig | null = null;
@@ -185,6 +186,9 @@ export function useSettingsLogic() {
   );
   const [showSidebarRankBorder, setShowSidebarRankBorder] = useState(
     () => globalCachedConfig?.showSidebarRankBorder ?? true,
+  );
+  const [showLevelUpModal, setShowLevelUpModal] = useState(
+    () => globalCachedConfig?.showLevelUpModal ?? true,
   );
   const [isConfigLoading, setIsConfigLoading] = useState(
     () => !globalCachedConfig,
@@ -339,6 +343,8 @@ export function useSettingsLogic() {
         setShowProfileRankBorder(config.showProfileRankBorder);
       if (config.showSidebarRankBorder !== undefined)
         setShowSidebarRankBorder(config.showSidebarRankBorder);
+      if (config.showLevelUpModal !== undefined)
+        setShowLevelUpModal(config.showLevelUpModal);
       setIsConfigLoading(false);
     } catch (err) {
       console.error("Failed to load config:", err);
@@ -483,6 +489,7 @@ export function useSettingsLogic() {
         setShowProfileRankBorder(value as boolean);
       if (key === "showSidebarRankBorder")
         setShowSidebarRankBorder(value as boolean);
+      if (key === "showLevelUpModal") setShowLevelUpModal(value as boolean);
       window.dispatchEvent(new Event("aegis-config-changed"));
       toast.success("Configuração atualizada");
     } catch (err) {
@@ -948,6 +955,7 @@ export function useSettingsLogic() {
     selectedRankTitle,
     showProfileRankBorder,
     showSidebarRankBorder,
+    showLevelUpModal,
     updateConfigField,
     updateConfigFields,
     showHolidays,

@@ -137,7 +137,12 @@ const MODULE_DEFS: {
 ];
 
 export function ModulesTab() {
-  const { isModuleEnabled, toggleModule } = useModules();
+  const {
+    isModuleEnabled,
+    toggleModule,
+    isStickyHeaderEnabled,
+    toggleStickyHeader,
+  } = useModules();
   const { themeStyles } = useTheme();
 
   return (
@@ -145,6 +150,7 @@ export function ModulesTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {MODULE_DEFS.map((mod) => {
           const enabled = isModuleEnabled(mod.id);
+          const isSticky = isStickyHeaderEnabled(mod.id);
           const moduleColor = getModuleColor(mod.id);
           const m = getColorTheme(moduleColor);
 
@@ -187,12 +193,40 @@ export function ModulesTab() {
                 </button>
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-foreground">{mod.label}</p>
                 <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
                   {mod.description}
                 </p>
               </div>
+
+              {enabled && (
+                <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between gap-3">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-foreground">
+                      Cabeçalho fixo
+                    </span>
+                    <span className="text-[10px] text-muted-foreground truncate">
+                      Fixar no topo ao rolar
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleStickyHeader(mod.id)}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                      isSticky ? themeStyles.solid : "bg-muted",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                        isSticky ? "translate-x-4" : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

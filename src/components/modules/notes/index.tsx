@@ -213,6 +213,7 @@ export default function NotesPage() {
     return (
       <div className="w-full flex flex-col gap-6 text-foreground">
         <ModuleHeader
+          moduleId="notes"
           color={getModuleColor("notes")}
           title="Anotações"
           subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length} fixadas`}
@@ -228,8 +229,9 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="w-full flex flex-col gap-6  text-foreground">
+    <div className="w-full flex flex-col gap-6 text-foreground">
       <ModuleHeader
+        moduleId="notes"
         color={getModuleColor("notes")}
         title="Anotações"
         subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length} fixadas`}

@@ -332,8 +332,9 @@ export default function PasswordManager() {
           handleStartReset={handleStartReset}
         />
       ) : showInfo ? (
-        <div className="w-full h-full flex flex-col gap-6 overflow-hidden">
+        <div className="w-full flex flex-col gap-6">
           <ModuleHeader
+            moduleId="passwords"
             color={getModuleColor("passwords")}
             title="Cofre de senhas"
             subtitle={`${passwords.length} ${passwords.length === 1 ? "credencial protegida" : "credenciais protegidas"} localmente`}
@@ -346,8 +347,9 @@ export default function PasswordManager() {
           <PasswordsGuidePanel onBack={() => setShowInfo(false)} />
         </div>
       ) : (
-        <div className="w-full h-full flex flex-col gap-6 overflow-hidden">
+        <div className="w-full flex flex-col gap-6">
           <ModuleHeader
+            moduleId="passwords"
             color={getModuleColor("passwords")}
             title="Cofre de senhas"
             subtitle={`${passwords.length} ${passwords.length === 1 ? "credencial protegida" : "credenciais protegidas"} localmente`}

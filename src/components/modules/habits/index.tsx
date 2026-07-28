@@ -232,12 +232,13 @@ export default function HabitsPage() {
   const HABIT_TABS = [
     { id: "positive", label: "Hábitos Diários", icon: Zap },
     { id: "negative", label: "Controle de Vício", icon: ShieldOff },
-    { id: "report", label: "Relatório", icon: ImageIcon },
+    { id: "report", label: "Relatórios", icon: ImageIcon },
   ];
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-12 text-foreground">
+    <div className="w-full flex flex-col gap-6 pb-12 text-foreground">
       <ModuleHeader
+        moduleId="habits"
         color={getModuleColor("habits")}
         title="Hábitos & Disciplina"
         subtitle={`${habits.filter((h) => !h.archived).length} ativos · ${positive.filter((h) => !h.archived).length} hábitos · ${negative.filter((h) => !h.archived).length} vícios`}

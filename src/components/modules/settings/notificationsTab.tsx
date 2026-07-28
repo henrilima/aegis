@@ -41,6 +41,7 @@ interface NotificationsTabProps {
   notifEventUpcomingTime: string;
   autoReadNotifications: boolean;
   notificationSound: string;
+  showLevelUpModal?: boolean;
   updateConfig: (key: string, val: string | number | boolean) => Promise<void>;
   updateAutoReadNotifications: (val: boolean) => Promise<void>;
   handleTestNotification: () => void;
@@ -156,6 +157,7 @@ export function NotificationsTab({
   updateAutoReadNotifications,
   handleTestNotification,
   notificationSound,
+  showLevelUpModal,
 }: NotificationsTabProps) {
   const [audioOptions, setAudioOptions] = useState<AudioOption[]>([]);
 
@@ -224,6 +226,28 @@ export function NotificationsTab({
               onCheckedChange={(v) =>
                 updateConfig("highPriorityNotifications", v)
               }
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-5 bg-card border border-border rounded-2xl md:col-span-2">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl">
+                <Zap className="w-5 h-5" />
+              </div>
+              <label htmlFor="show-level-up-notif" className="cursor-pointer">
+                <span className="text-sm font-bold block">
+                  Avisos de Subir de Nível (Level Up)
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Exibir pop-up comemorativo com partículas ao alcançar um novo
+                  nível de XP.
+                </p>
+              </label>
+            </div>
+            <Switch
+              id="show-level-up-notif"
+              checked={showLevelUpModal ?? true}
+              onCheckedChange={(v) => updateConfig("showLevelUpModal", v)}
             />
           </div>
         </div>

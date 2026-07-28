@@ -162,6 +162,7 @@ export function GradesModal({
   return (
     <div className="w-full flex flex-col gap-4 pb-2 animate-in fade-in duration-300">
       <ModuleHeader
+        moduleId="grades"
         color={getModuleColor("grades")}
         title="Simulados & Notas"
         subtitle="Histórico acadêmico e cálculo de médias"
