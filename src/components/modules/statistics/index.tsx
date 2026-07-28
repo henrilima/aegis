@@ -145,8 +145,9 @@ export default function StatisticsPage() {
     activeSources.includes("estudos") && activeSources.includes("sono");
 
   return (
-    <div className="w-full h-full flex flex-col gap-5 pb-12 animate-in fade-in duration-700 text-foreground px-1">
+    <div className="w-full flex flex-col gap-5 pb-12 animate-in fade-in duration-700 text-foreground">
       <ModuleHeader
+        moduleId="statistics"
         color={getModuleColor("statistics")}
         title="Estatísticas"
         subtitle="Leitura cruzada de estudo, sono, foco e leitura"

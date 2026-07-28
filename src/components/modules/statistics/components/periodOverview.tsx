@@ -123,7 +123,7 @@ export function PeriodOverview({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {overviewItems.map((item) => (
             <ToolTip key={item.label} content={item.tooltip}>
-              <div className="min-h-[116px] rounded-xl border border-border/70 bg-background/40 p-4 flex flex-col justify-between cursor-help">
+              <div className="min-h-29 rounded-xl bg-muted/25 hover:bg-muted/40 transition-colors p-4 flex flex-col justify-between cursor-help">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-bold text-muted-foreground">
                     {item.label}
@@ -214,7 +214,7 @@ function Signal({
 }) {
   return (
     <ToolTip content={tooltip}>
-      <div className="rounded-xl border border-border/70 bg-background/40 p-3 cursor-help">
+      <div className="rounded-xl bg-muted/25 hover:bg-muted/40 transition-colors p-3 cursor-help">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
           <Info className="w-3 h-3 text-muted-foreground/70" />

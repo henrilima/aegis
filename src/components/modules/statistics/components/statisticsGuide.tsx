@@ -74,8 +74,8 @@ export function StatisticsGuide() {
             contíguos e de tamanhos iguais:
           </p>
 
-          <div className="flex flex-col md:flex-row items-center justify-center gap-3 p-4 bg-accent/25 rounded-xl border border-border/40 my-3 text-center md:text-left">
-            <div className="flex-1 p-3 bg-card border border-border/60 rounded-lg">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-3 p-4 bg-muted/20 rounded-xl border border-border/40 my-3 text-center md:text-left">
+            <div className="flex-1 p-3 bg-muted/40 rounded-lg">
               <span className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">
                 Período anterior (Passado)
               </span>
@@ -89,7 +89,7 @@ export function StatisticsGuide() {
 
             <div className="text-muted-foreground font-black text-lg">➔</div>
 
-            <div className="flex-1 p-3 bg-card border border-border/80 rounded-lg">
+            <div className="flex-1 p-3 bg-muted/40 rounded-lg">
               <span className="block text-[10px] font-bold text-violet-400 uppercase mb-1">
                 Período atual (Recente)
               </span>
