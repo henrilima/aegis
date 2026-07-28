@@ -574,13 +574,13 @@ export function OverviewTab({
                     const rate = hitRate(totalC, totalQ);
                     return (
                       <div key={subj} className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-xs font-bold text-foreground wrap-break-word flex-1 pr-1">
                             {subj}
                           </span>
                           <span
                             className={cn(
-                              "px-1.5 py-0.2 rounded text-[9px] font-bold border",
+                              "px-1.5 py-0.2 rounded text-[9px] font-bold border shrink-0",
                               rate >= 70
                                 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                                 : rate >= 50

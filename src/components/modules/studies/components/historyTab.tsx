@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { BookOpen, Clock, Pencil, Search, Timer, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { HistoryCard } from "@/components/ui/HistoryCard";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import {
   Select,
@@ -12,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { resolveColor } from "@/config/colors.config";
+import { resolveColor, resolveColorFromTag } from "@/config/colors.config";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudySession } from "../types";
@@ -30,7 +31,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const _itemVariants = {
   hidden: { opacity: 0, y: 15 },
   show: {
     opacity: 1,
@@ -177,19 +178,17 @@ export function HistoryTab({
                   .filter((t) => Boolean(t) && t.toLowerCase() !== "pomodoro")
               : [];
 
+            const tagColor = resolveColorFromTag(s.tags);
+            const defaultCardColor = isPomo ? pomoColor : color;
+            const cardColor = tagColor || defaultCardColor;
+            const cardTheme = getColorTheme(cardColor);
+
             return (
-              <motion.div
-                key={s.id}
-                variants={itemVariants}
-                className={cn(
-                  "group bg-card/60 border border-border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:bg-card",
-                  isPomo ? pomoTheme.borderHover : theme.borderHover,
-                )}
-              >
+              <HistoryCard key={s.id} color={cardColor} tags={s.tags}>
                 {/* Linha Superior: Matéria, Grupo/Pomodoro e Ações com Data */}
                 <div className="flex items-center justify-between gap-2 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                    <h3 className="text-sm font-bold text-foreground truncate max-w-50">
+                    <h3 className="text-sm font-bold text-foreground wrap-break-word">
                       {s.subject}
                     </h3>
 
@@ -269,18 +268,8 @@ export function HistoryTab({
                 <div className="flex items-center justify-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40 text-xs flex-wrap">
                   {/* 1. Tempo Registrado */}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Clock
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        isPomo ? pomoTheme.text : "text-muted-foreground",
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "font-bold",
-                        isPomo ? pomoTheme.text : "text-foreground",
-                      )}
-                    >
+                    <Clock className={cn("w-3.5 h-3.5", cardTheme.text)} />
+                    <span className={cn("font-bold", cardTheme.text)}>
                       {formatHours(s.hours)}
                     </span>
                   </div>
@@ -291,7 +280,7 @@ export function HistoryTab({
                       <span className="text-muted-foreground font-medium">
                         Foco:
                       </span>
-                      <StudyStars score={s.focusScore} isPomodoro={isPomo} />
+                      <StudyStars score={s.focusScore} color={cardColor} />
                     </div>
                   )}
 
@@ -347,9 +336,9 @@ export function HistoryTab({
                         key={tag}
                         className={cn(
                           "px-2 py-0.5 rounded-md text-[10px] font-medium border whitespace-nowrap",
-                          isPomo
-                            ? cn(pomoTheme.bg, pomoTheme.text, pomoTheme.border)
-                            : "bg-muted/40 text-neutral-400 border-border/40",
+                          cardTheme.bg,
+                          cardTheme.text,
+                          cardTheme.border,
                         )}
                       >
                         #{tag}
@@ -357,7 +346,7 @@ export function HistoryTab({
                     ))}
                   </div>
                 )}
-              </motion.div>
+              </HistoryCard>
             );
           })}
         </motion.div>

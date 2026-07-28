@@ -35,8 +35,8 @@ export function PerformanceRanking({
                 key={s.name}
                 className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-border"
               >
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
+                <div className="flex flex-col flex-1 min-w-0 pr-2">
+                  <span className="text-xs font-bold text-foreground wrap-break-word">
                     {s.name}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
@@ -73,8 +73,8 @@ export function PerformanceRanking({
                 key={s.name}
                 className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-border"
               >
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
+                <div className="flex flex-col flex-1 min-w-0 pr-2">
+                  <span className="text-xs font-bold text-foreground wrap-break-word">
                     {s.name}
                   </span>
                   <span className="text-[10px] text-muted-foreground">

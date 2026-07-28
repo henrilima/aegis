@@ -470,8 +470,8 @@ export default function StudiesPage() {
     { id: "visao-geral", label: "Visão Geral", icon: LayoutDashboard },
     { id: "materias", label: "Matérias", icon: Layers },
     { id: "horarios", label: "Horários", icon: Clock },
+    { id: "relatorio", label: "Relatórios", icon: Copy },
     { id: "historico", label: "Histórico", icon: Calendar },
-    { id: "relatorio", label: "Relatório", icon: Copy },
   ];
 
   if (showGrades) {
@@ -490,6 +490,7 @@ export default function StudiesPage() {
   return (
     <div className="w-full flex flex-col gap-6 pb-10">
       <ModuleHeader
+        moduleId="studies"
         color={getModuleColor("studies")}
         title="Estudos e desempenho"
         subtitle="Centro de comando acadêmico"
