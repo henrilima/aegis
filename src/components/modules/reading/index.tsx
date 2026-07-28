@@ -327,15 +327,16 @@ export default function ReadingPage() {
 
   const READING_TABS = [
     { id: "overview", label: "Visão Geral", icon: LayoutDashboard },
-    { id: "history", label: "Histórico", icon: HistoryIcon },
     { id: "library", label: "Biblioteca", icon: Library },
     { id: "notes", label: "Fichamentos", icon: Bookmark },
     { id: "reports", label: "Relatórios", icon: BarChart3 },
+    { id: "history", label: "Histórico", icon: HistoryIcon },
   ];
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-auto pb-10">
+    <div className="w-full flex flex-col gap-6 pb-10">
       <ModuleHeader
+        moduleId="reading"
         color={getModuleColor("reading")}
         title="Biblioteca & Progresso"
         subtitle="Gestão literária e metas de leitura"
