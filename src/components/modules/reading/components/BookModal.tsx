@@ -50,7 +50,7 @@ interface GoogleBooksResponse {
       title: string;
       authors?: string[];
       pageCount?: number;
-      imageLinks?: { thumbnail: string };
+      imageLinks?: { thumbnail?: string; smallThumbnail?: string };
       categories?: string[];
     };
   }>;
@@ -117,13 +117,16 @@ export function BookModal({
       if (data.items && data.items.length > 0) {
         const results: SearchResult[] = data.items.map((item, index) => {
           const info = item.volumeInfo;
+          const rawThumb =
+            info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "";
           return {
             key: String(index),
             title: info.title || "Sem título",
-            author: info.authors ? info.authors[0] : "Autor desconhecido",
+            author: info.authors
+              ? info.authors.join(", ")
+              : "Autor desconhecido",
             pages: info.pageCount || 0,
-            thumbnail:
-              info.imageLinks?.thumbnail?.replace("http:", "https:") || "",
+            thumbnail: rawThumb.replace("http:", "https:"),
             category: info.categories ? info.categories[0] : "Geral",
           };
         });
@@ -499,7 +502,7 @@ export function BookModal({
                   value={formData.review ?? ""}
                   onChange={(e) => set("review", e.target.value)}
                   className={cn(
-                    "w-full rounded-xl bg-card border border-border text-sm font-medium p-3 pl-9 min-h-[100px] resize-none outline-none transition-all text-foreground placeholder:text-muted-foreground/40",
+                    "w-full rounded-xl bg-card border border-border text-sm font-medium p-3 pl-9 min-h-25 resize-none outline-none transition-all text-foreground placeholder:text-muted-foreground/40",
                     themeStyles.borderHover.replace("hover:", "focus:"),
                     themeStyles.border.replace("border-", "focus:ring-"),
                   )}

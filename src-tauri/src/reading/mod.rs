@@ -44,7 +44,7 @@ pub struct ReadingSession {
 pub struct ReadingNote {
     pub id: Option<i32>,
     pub user_id: String,
-    pub book_id: i32,
+    pub book_id: i64,
     pub page_number: Option<i32>,
     pub chapter: Option<String>,
     pub content: String,
@@ -195,7 +195,7 @@ impl ReadingManager {
         Ok(())
     }
 
-    pub fn list_notes(&self, book_id: i32) -> Result<Vec<ReadingNote>, String> {
+    pub fn list_notes(&self, book_id: i64) -> Result<Vec<ReadingNote>, String> {
         let conn = self.conn();
         let mut stmt = conn.prepare("
             SELECT id, user_id, book_id, page_number, chapter, content, is_quote, created_at
@@ -516,7 +516,11 @@ pub async fn reading_delete_book(state: tauri::State<'_, crate::AppState>, id: i
 }
 
 #[tauri::command]
-pub async fn reading_upsert_session(state: tauri::State<'_, crate::AppState>, session: ReadingSession) -> Result<i64, String> {
+pub async fn reading_upsert_session(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    session: ReadingSession,
+) -> Result<i64, String> {
     let is_new = session.id.is_none();
     let user_id = session.user_id.clone();
     let pages = session.pages_read;
@@ -530,6 +534,7 @@ pub async fn reading_upsert_session(state: tauri::State<'_, crate::AppState>, se
                 Some("reading_sessions"),
                 Some(&inserted_id.to_string()),
             );
+            let _ = crate::automation::evaluate_rules(&state, &app_handle, &user_id);
         }
     }
     res
@@ -573,14 +578,56 @@ pub async fn reading_export_json(state: tauri::State<'_, crate::AppState>, user_
 
 #[tauri::command]
 pub async fn reading_search_books(query: String) -> Result<serde_json::Value, String> {
-    let url = format!(
-        "https://www.googleapis.com/books/v1/volumes?q={}&maxResults=5&langRestrict=pt",
+    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
+
+    let google_url = format!(
+        "https://www.googleapis.com/books/v1/volumes?q={}&maxResults=10",
         urlencoding::encode(&query)
     );
-    let client = reqwest::Client::builder().user_agent("Aegis").build().map_err(|e| e.to_string())?;
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    Ok(json)
+
+    if let Ok(res) = client.get(&google_url).send().await {
+        if let Ok(json) = res.json::<serde_json::Value>().await {
+            if json.get("items").and_then(|i| i.as_array()).map_or(false, |a| !a.is_empty()) {
+                return Ok(json);
+            }
+        }
+    }
+
+    // Fallback: Open Library API
+    let ol_url = format!(
+        "https://openlibrary.org/search.json?q={}&limit=10",
+        urlencoding::encode(&query)
+    );
+    if let Ok(res) = client.get(&ol_url).send().await {
+        if let Ok(ol_json) = res.json::<serde_json::Value>().await {
+            if let Some(docs) = ol_json.get("docs").and_then(|d| d.as_array()) {
+                let items: Vec<serde_json::Value> = docs.iter().map(|doc| {
+                    let title = doc.get("title").and_then(|v| v.as_str()).unwrap_or("");
+                    let authors = doc.get("author_name").and_then(|v| v.as_array()).map(|arr| {
+                        arr.iter().filter_map(|a| a.as_str().map(String::from)).collect::<Vec<_>>()
+                    }).unwrap_or_default();
+                    let page_count = doc.get("number_of_pages_median").and_then(|v| v.as_i64()).unwrap_or(0);
+                    let cover_i = doc.get("cover_i").and_then(|v| v.as_i64());
+                    let thumbnail = cover_i.map(|id| format!("https://covers.openlibrary.org/b/id/{}-M.jpg", id));
+
+                    serde_json::json!({
+                        "volumeInfo": {
+                            "title": title,
+                            "authors": authors,
+                            "pageCount": page_count,
+                            "imageLinks": {
+                                "thumbnail": thumbnail
+                            }
+                        }
+                    })
+                }).collect();
+
+                return Ok(serde_json::json!({ "items": items }));
+            }
+        }
+    }
+
+    Ok(serde_json::json!({ "items": [] }))
 }
 
 #[tauri::command]
@@ -589,7 +636,7 @@ pub async fn reading_toggle_favorite(state: tauri::State<'_, crate::AppState>, i
 }
 
 #[tauri::command]
-pub async fn reading_list_notes(state: tauri::State<'_, crate::AppState>, book_id: i32) -> Result<Vec<ReadingNote>, String> {
+pub async fn reading_list_notes(state: tauri::State<'_, crate::AppState>, book_id: i64) -> Result<Vec<ReadingNote>, String> {
     state.reading.list_notes(book_id)
 }
 

@@ -324,6 +324,28 @@ export function OverviewTab({
 
             <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-5">
               {(() => {
+                // Filtra as sessões realizadas na semana atual (a partir de segunda-feira 00:00)
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+                const monday = new Date(now);
+                monday.setDate(now.getDate() + diffToMonday);
+                monday.setHours(0, 0, 0, 0);
+
+                const currentWeekSessions = sessions.filter((s) => {
+                  const sDate = new Date(s.date);
+                  return sDate >= monday;
+                });
+
+                const weeklyPages = currentWeekSessions.reduce(
+                  (acc, s) => acc + (s.pagesRead || 0),
+                  0,
+                );
+                const weeklyMinutes = currentWeekSessions.reduce(
+                  (acc, s) => acc + (s.durationMinutes || 0),
+                  0,
+                );
+
                 // Mostra apenas os tipos de metas semanais para evitar duplicatas/fantasmas
                 const targetTypes = ["PagesPerWeek", "TimePerWeek"];
                 const weeklyGoals = targetTypes
@@ -343,8 +365,8 @@ export function OverviewTab({
                 return weeklyGoals.map((goal) => {
                   const isPages = goal.goalType === "PagesPerWeek";
                   const current = isPages
-                    ? stats.totalPages
-                    : Math.round(stats.totalMinutes);
+                    ? weeklyPages
+                    : Math.round(weeklyMinutes);
                   const progress =
                     goal.targetValue > 0
                       ? Math.min(
@@ -385,7 +407,7 @@ export function OverviewTab({
               <HistoryIcon className={cn("w-4 h-4", theme.text)} />
               Últimas sessões
             </h2>
-            <div className="bg-card border border-border rounded-xl p-5 min-h-[220px]">
+            <div className="bg-card border border-border rounded-xl p-5 min-h-55">
               {sessions.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 grayscale opacity-40">
                   <Flame className="w-8 h-8 mb-2" />
@@ -396,7 +418,9 @@ export function OverviewTab({
               ) : (
                 <div className="relative pl-6 border-l border-border flex flex-col gap-6 my-2">
                   {sessions.slice(0, 4).map((s) => {
-                    const book = books.find((b) => b.id === s.bookId);
+                    const book = books.find(
+                      (b) => Number(b.id) === Number(s.bookId),
+                    );
                     return (
                       <div
                         key={s.id}
@@ -404,12 +428,12 @@ export function OverviewTab({
                       >
                         <div
                           className={cn(
-                            "absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full border-2 border-card flex items-center justify-center",
+                            "absolute -left-7.75 top-1 w-3.5 h-3.5 rounded-full border-2 border-card flex items-center justify-center",
                             theme.solid,
                           )}
                         />
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold text-foreground truncate max-w-[140px]">
+                          <span className="text-xs font-bold text-foreground truncate max-w-35">
                             {book?.title || "Leitura avulsa"}
                           </span>
                           <span className="text-[10px] font-medium text-neutral-500 tabular-nums">

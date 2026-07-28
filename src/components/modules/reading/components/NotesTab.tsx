@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
@@ -36,6 +37,17 @@ export function NotesTab({ books }: NotesTabProps) {
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBookId, setFilterBookId] = useState("");
+
+  useEffect(() => {
+    if (!selectedBookId && books.length > 0) {
+      const firstActive =
+        books.find((b) => b.status === "Reading" || b.status === "Completed") ??
+        books[0];
+      if (firstActive?.id != null) {
+        setSelectedBookId(String(firstActive.id));
+      }
+    }
+  }, [books, selectedBookId]);
 
   const fetchNotes = useCallback(async () => {
     if (books.length === 0) {
@@ -73,8 +85,8 @@ export function NotesTab({ books }: NotesTabProps) {
 
       // Ordenar por data de criação decrescente
       allNotesList.sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
       });
 
@@ -171,9 +183,16 @@ export function NotesTab({ books }: NotesTabProps) {
                 Livro
               </Label>
               <BookSelect
-                books={books.filter(
-                  (b) => b.status === "Reading" || b.status === "Completed",
-                )}
+                books={
+                  books.filter(
+                    (b) => b.status === "Reading" || b.status === "Completed",
+                  ).length > 0
+                    ? books.filter(
+                        (b) =>
+                          b.status === "Reading" || b.status === "Completed",
+                      )
+                    : books
+                }
                 value={selectedBookId ? Number(selectedBookId) : undefined}
                 onChange={(id) => setSelectedBookId(String(id))}
               />
@@ -213,7 +232,7 @@ export function NotesTab({ books }: NotesTabProps) {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Insira a citação direta ou sua anotação..."
-                className="bg-card border-border text-xs font-medium resize-none min-h-[100px] rounded-xl"
+                className="bg-card border-border text-xs font-medium resize-none min-h-25 rounded-xl"
                 required
               />
             </div>
@@ -259,18 +278,29 @@ export function NotesTab({ books }: NotesTabProps) {
               className="pl-9 bg-card border-border h-9 text-xs font-medium rounded-xl"
             />
           </div>
-          <select
-            value={filterBookId}
-            onChange={(e) => setFilterBookId(e.target.value)}
-            className="bg-card h-9 border border-border rounded-xl text-xs font-semibold px-3 outline-none"
-          >
-            <option value="">Todos os livros</option>
-            {books.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.title}
-              </option>
-            ))}
-          </select>
+          <div className="w-full sm:w-56 shrink-0">
+            <SearchableSelect
+              items={[{ id: 0, title: "Todos os livros" }, ...books]}
+              value={filterBookId ? Number(filterBookId) : 0}
+              onChange={(item) =>
+                setFilterBookId(
+                  typeof item === "string"
+                    ? item
+                    : item.id === 0
+                      ? ""
+                      : String(item.id),
+                )
+              }
+              placeholder="Todos os livros"
+              searchPlaceholder="Buscar livro..."
+              emptyMessage="Nenhum livro correspondente"
+              getItemKey={(b) => Number(b.id ?? 0)}
+              getItemLabel={(b) => b.title}
+              moduleName="reading"
+              mode="combobox"
+              inputClass="h-9 text-xs"
+            />
+          </div>
         </div>
 
         {/* Timeline das Notas */}
@@ -350,7 +380,7 @@ export function NotesTab({ books }: NotesTabProps) {
               <p className="text-xs text-neutral-600 font-bold">
                 Sem Fichamentos Registrados
               </p>
-              <p className="text-[10px] text-neutral-600 font-medium max-w-[220px] mt-1 leading-normal">
+              <p className="text-[10px] text-neutral-600 font-medium max-w-55 mt-1 leading-normal">
                 Crie sua primeira nota usando o formulário lateral selecionando
                 um dos seus livros.
               </p>

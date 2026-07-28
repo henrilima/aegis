@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
+import type { Habit } from "@/components/modules/habits/types";
 import {
   ConfirmModal,
   type ConfirmVariant,
@@ -33,11 +34,26 @@ import { ReportsTab } from "./components/ReportsTab";
 import { SessionModal } from "./components/SessionModal";
 import type { ReadingBook, ReadingGoal, ReadingSession, TabId } from "./types";
 
+interface AutomationRule {
+  id?: number;
+  userId: string;
+  name: string;
+  triggerType: string;
+  triggerOperator: string;
+  triggerValue: number;
+  actionType: string;
+  actionTargetId: string;
+  actionTargetName?: string;
+  active: boolean;
+}
+
 export default function ReadingPage() {
   const { user } = useAuth();
   const [books, setBooks] = useState<ReadingBook[]>([]);
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [goals, setGoals] = useState<ReadingGoal[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [linkedHabitId, setLinkedHabitId] = useState<string>("none");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [preGuideTab, setPreGuideTab] = useState<TabId>("overview");
@@ -68,16 +84,24 @@ export default function ReadingPage() {
   const fetchData = useCallback(async () => {
     if (!uid) return;
     try {
-      const [booksData, sessionsData, goalsData, configData] =
-        await Promise.all([
-          invoke<ReadingBook[]>("reading_list_books", { userId: uid }),
-          invoke<ReadingSession[]>("reading_list_sessions", {
-            userId: uid,
-            monthsBack: 12,
-          }),
-          invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
-          invoke<AppConfig>("global_get_app_config", { userId: uid }),
-        ]);
+      const [
+        booksData,
+        sessionsData,
+        goalsData,
+        configData,
+        habitsData,
+        rulesData,
+      ] = await Promise.all([
+        invoke<ReadingBook[]>("reading_list_books", { userId: uid }),
+        invoke<ReadingSession[]>("reading_list_sessions", {
+          userId: uid,
+          monthsBack: 12,
+        }),
+        invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
+        invoke<AppConfig>("global_get_app_config", { userId: uid }),
+        invoke<Habit[]>("habit_list_habits", { userId: uid }),
+        invoke<AutomationRule[]>("automation_list_rules", { userId: uid }),
+      ]);
       const sortedBooks = (booksData || []).sort((a, b) => {
         const priority: Record<string, number> = {
           Reading: 0,
@@ -91,6 +115,20 @@ export default function ReadingPage() {
       setSessions(sessionsData);
       setGoals(goalsData);
       setAppConfig(configData);
+      setHabits(habitsData || []);
+
+      const readingHabitRule = (rulesData || []).find(
+        (r) =>
+          (r.triggerType === "reading_pages" ||
+            r.triggerType === "reading_pages_today") &&
+          r.actionType === "mark_habit" &&
+          r.triggerValue === 0.01,
+      );
+      if (readingHabitRule?.actionTargetId) {
+        setLinkedHabitId(readingHabitRule.actionTargetId);
+      } else {
+        setLinkedHabitId("none");
+      }
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
     } finally {
@@ -178,18 +216,67 @@ export default function ReadingPage() {
   const handleSaveGoals = async (
     newGoals: ReadingGoal[],
     weekStartsOnMonday: boolean,
+    newLinkedHabitId: string,
   ) => {
     try {
+      const rulesList = await invoke<AutomationRule[]>(
+        "automation_list_rules",
+        { userId: uid },
+      );
+      const readingHabitRule = rulesList.find(
+        (r) =>
+          (r.triggerType === "reading_pages" ||
+            r.triggerType === "reading_pages_today") &&
+          r.actionType === "mark_habit" &&
+          r.triggerValue === 0.01,
+      );
+
+      if (newLinkedHabitId === "none") {
+        if (readingHabitRule?.id) {
+          await invoke("automation_delete_rule", { id: readingHabitRule.id });
+        }
+      } else {
+        const targetHabit = habits.find(
+          (h) => String(h.id) === newLinkedHabitId,
+        );
+        const habitName = targetHabit ? targetHabit.name : "Hábito de Leitura";
+
+        if (readingHabitRule) {
+          const updatedRule = {
+            ...readingHabitRule,
+            actionTargetId: newLinkedHabitId,
+            actionTargetName: habitName,
+            active: true,
+          };
+          await invoke("automation_add_rule", { rule: updatedRule });
+        } else {
+          const newRule = {
+            userId: uid,
+            name: "Leitura automática",
+            triggerType: "reading_pages",
+            triggerOperator: ">=",
+            triggerValue: 0.01,
+            actionType: "mark_habit",
+            actionTargetId: newLinkedHabitId,
+            actionTargetName: habitName,
+            active: true,
+          };
+          await invoke("automation_add_rule", { rule: newRule });
+        }
+      }
+
       await Promise.all([
         ...newGoals.map((goal) => invoke("reading_upsert_goal", { goal })),
         invoke("global_set_app_config", {
           config: { ...appConfig, week_starts_on_monday: weekStartsOnMonday },
         }),
       ]);
+      setLinkedHabitId(newLinkedHabitId);
       toast.success("Metas e preferências atualizadas!");
       setIsGoalsModalOpen(false);
       fetchData();
-    } catch (_error) {
+    } catch (error) {
+      console.error("Erro ao salvar metas:", error);
       toast.error("Erro ao salvar metas");
     }
   };
@@ -376,6 +463,8 @@ export default function ReadingPage() {
         goals={goals}
         uid={uid}
         weekStartsOnMondayInitial={appConfig?.week_starts_on_monday}
+        habits={habits}
+        linkedHabitIdInitial={linkedHabitId}
       />
 
       {confirmState?.show && (
