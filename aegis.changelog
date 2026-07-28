@@ -1,4 +1,4 @@
-[version]:["4.0.0"]
+[version]:["4.0.1"]
 
 [updates]
 [1]:["Capas em Vídeo Animado (MP4/WebM) na Dashboard: Suporte a vídeos animados locais com pausa automática ao minimizar ou rolar a página."]
@@ -15,3 +15,6 @@
 [4]:["Isolamento por Perfil de Usuário: Separação total de temas, automações e configurações por conta, evitando contaminação ao alternar de usuário."]
 [5]:["Módulo de Leitura - Precisão nas Metas Semanais: O resumo semanal de páginas e minutos lidos passa a contabilizar estritamente a semana corrente."]
 [6]:["Módulo Pomodoro - Retomada Segura ao Reabrir App: Ao reabrir o app com Pomodoro ativo, ele é retomado em estado pausado preservando o tempo contado."]
+[7]:["Otimização de Build no CI/CD: Remoção de empacotadores redundantes e correção na geração de artefatos de atualização do Tauri."]
+[8]:["Estudos e Desempenho - Quebra de Linhas em Matérias: Nomes de matérias longos no card de Domínio por Matéria agora realizam quebra de linha fluida sem truncar com reticências."]
+[9]:["Cabeçalho dos Módulos - Ajuste de Opacidade: Padronização na opacidade do fundo colorido em glassmorphic nos headers da aplicação."]

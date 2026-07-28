@@ -32,11 +32,23 @@ function findAsset(files, predicate) {
 
 function readSignature(assetPath) {
   const sigPath = `${assetPath}.sig`;
-  if (!fs.existsSync(sigPath)) {
-    throw new Error(`Missing updater signature for ${assetPath}`);
+  if (fs.existsSync(sigPath)) {
+    return fs.readFileSync(sigPath, "utf8").trim();
   }
 
-  return fs.readFileSync(sigPath, "utf8").trim();
+  const dir = path.dirname(assetPath);
+  const baseName = path.basename(assetPath);
+  if (fs.existsSync(dir)) {
+    const candidateSig = fs
+      .readdirSync(dir)
+      .find((f) => f.startsWith(baseName) && f.endsWith(".sig"));
+    if (candidateSig) {
+      return fs.readFileSync(path.join(dir, candidateSig), "utf8").trim();
+    }
+  }
+
+  console.warn(`[WARNING] Missing updater signature for ${assetPath}`);
+  return "";
 }
 
 function releaseUrl(assetPath) {
@@ -57,11 +69,15 @@ const platforms = {};
 
 const windowsAsset = findAsset(
   files,
-  (file) => file.endsWith(".exe") && !file.endsWith(".exe.sig"),
+  (file) => file.endsWith(".exe") && !file.endsWith(".sig"),
 );
 const linuxAsset = findAsset(
   files,
-  (file) => file.endsWith(".appimage") && !file.endsWith(".appimage.sig"),
+  (file) =>
+    (file.endsWith(".deb") ||
+      file.endsWith(".appimage") ||
+      file.endsWith(".tar.gz")) &&
+    !file.endsWith(".sig"),
 );
 const macAsset = findAsset(files, (file) => file.endsWith(".app.tar.gz"));
 

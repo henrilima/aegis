@@ -137,6 +137,32 @@ function resolveModuleId(
   return null;
 }
 
+const HEADER_BG_COLORS: Record<string, string> = {
+  blue: "bg-blue-500/22 dark:bg-blue-500/18",
+  sky: "bg-sky-500/22 dark:bg-sky-500/18",
+  cyan: "bg-cyan-500/22 dark:bg-cyan-500/18",
+  indigo: "bg-indigo-500/22 dark:bg-indigo-500/18",
+  violet: "bg-violet-500/22 dark:bg-violet-500/18",
+  purple: "bg-purple-500/22 dark:bg-purple-500/18",
+  fuchsia: "bg-fuchsia-500/22 dark:bg-fuchsia-500/18",
+  pink: "bg-pink-500/22 dark:bg-pink-500/18",
+  rose: "bg-rose-500/22 dark:bg-rose-500/18",
+  red: "bg-red-500/22 dark:bg-red-500/18",
+  orange: "bg-orange-500/22 dark:bg-orange-500/18",
+  amber: "bg-amber-500/22 dark:bg-amber-500/18",
+  yellow: "bg-yellow-500/22 dark:bg-yellow-500/18",
+  lime: "bg-lime-500/22 dark:bg-lime-500/18",
+  green: "bg-green-500/22 dark:bg-green-500/18",
+  emerald: "bg-emerald-500/22 dark:bg-emerald-500/18",
+  teal: "bg-teal-500/22 dark:bg-teal-500/18",
+  slate: "bg-slate-500/22 dark:bg-slate-500/18",
+  zinc: "bg-zinc-500/22 dark:bg-zinc-500/18",
+  neutral: "bg-neutral-500/22 dark:bg-neutral-500/18",
+  stone: "bg-stone-500/22 dark:bg-stone-500/18",
+  coffee: "bg-amber-900/22 dark:bg-amber-900/18",
+  carbon: "bg-zinc-800/22 dark:bg-zinc-800/18",
+};
+
 // Componente
 export function ModuleHeader({
   color,
@@ -162,6 +188,7 @@ export function ModuleHeader({
   children,
 }: ModuleHeaderProps) {
   const m = getColorTheme(color as string);
+  const headerBgClass = HEADER_BG_COLORS[color] || HEADER_BG_COLORS.blue;
   const { appMode } = useTheme();
   const { navigate, previousRoute } = useNavigation();
   const { isModuleEnabled, isStickyHeaderEnabled } = useModules();
@@ -225,13 +252,15 @@ export function ModuleHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 transition-all pt-6 md:pt-8 pb-4 mb-6",
+        "flex flex-col gap-4 transition-all pt-6 md:pt-8 pb-4 mb-6 relative overflow-hidden",
         "w-[calc(100%+3rem)] md:w-[calc(100%+5rem)] -ml-6 md:-ml-10 -mr-6 md:-mr-10 px-6 md:px-10",
-        "bg-linear-to-b from-card via-background/95 to-background/80 dark:from-card dark:via-background/95 dark:to-background/80 backdrop-blur-2xl border-b border-border/80",
-        m.bg,
+        "border-b border-border/80 backdrop-blur-2xl shadow-xs",
+        headerBgClass,
         isSticky ? "sticky top-0 z-30" : "relative z-0",
       )}
     >
+      {/* Camada de vidro (Glassmorphism) */}
+      <div className="absolute inset-0 bg-background/40 dark:bg-background/50 -z-10 pointer-events-none" />
       {/* Linha superior: Identidade do módulo + Botões de Ação / Slots */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         {/* Identidade do módulo */}
