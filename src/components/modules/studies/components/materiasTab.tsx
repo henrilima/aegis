@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BookOpen,
   ChevronDown,
+  Clock,
   Folder,
   FolderOpen,
   FolderPlus,
@@ -39,6 +40,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ModalShell } from "@/components/ui/ModalShell";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import {
   Select,
   SelectContent,
@@ -47,8 +49,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import type { StudySession } from "../types";
+import { formatHours, isoDate, startOfWeek } from "../utils";
 import { SubjectEditModal } from "./SubjectEditModal";
 
 interface MateriasTabProps {
@@ -62,6 +67,8 @@ interface MateriasTabProps {
   grades?: StudyGrade[];
   onEditGrade?: (grade: StudyGrade) => void;
   onDeleteGrade?: (id: number) => void;
+  activeSubjects?: string[];
+  onToggleActiveSubject?: (subject: string) => void;
 }
 
 const STATUS_CONFIG = {
@@ -104,6 +111,8 @@ export function MateriasTab({
   grades = [],
   onEditGrade,
   onDeleteGrade,
+  activeSubjects,
+  onToggleActiveSubject,
 }: MateriasTabProps) {
   const color = getModuleColor(moduleMode);
   const theme = getColorTheme(color);
@@ -115,6 +124,10 @@ export function MateriasTab({
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
   const [formulas, setFormulas] = useState<SubjectFormula[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { now: simulatedNow } = useTime();
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [weekStartDay, setWeekStartDay] = useState(1);
 
   // Estados de busca e filtros
   const [searchQuery, setSearchQuery] = useState("");
@@ -140,35 +153,64 @@ export function MateriasTab({
     subject: string;
   } | null>(null);
 
-  // Estado das metas ativas (persistidas no localStorage)
-  const [activeSubjects, setActiveSubjects] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
+  // Estado das metas ativas (persistidas no localStorage ou fornecidas por props)
+  const [internalActiveSubjects, setInternalActiveSubjects] = useState<
+    string[]
+  >([]);
+  const resolvedActiveSubjects = activeSubjects ?? internalActiveSubjects;
+
+  useEffect(() => {
+    if (!activeSubjects && typeof window !== "undefined") {
       const stored = localStorage.getItem(`aegis-active-subjects-${userId}`);
       if (stored) {
         try {
-          return JSON.parse(stored);
+          setInternalActiveSubjects(JSON.parse(stored));
         } catch {
           const old = localStorage.getItem(`aegis-active-subject-${userId}`);
-          return old ? [old] : [];
+          setInternalActiveSubjects(old ? [old] : []);
         }
+      } else {
+        const old = localStorage.getItem(`aegis-active-subject-${userId}`);
+        setInternalActiveSubjects(old ? [old] : []);
       }
-      const old = localStorage.getItem(`aegis-active-subject-${userId}`);
-      return old ? [old] : [];
     }
-    return [];
-  });
+  }, [activeSubjects, userId]);
+
+  const toggleActiveSubject = (subject: string) => {
+    if (onToggleActiveSubject) {
+      onToggleActiveSubject(subject);
+    } else {
+      const newVal = resolvedActiveSubjects.includes(subject)
+        ? resolvedActiveSubjects.filter((s) => s !== subject)
+        : [...resolvedActiveSubjects, subject];
+      setInternalActiveSubjects(newVal);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          `aegis-active-subjects-${userId}`,
+          JSON.stringify(newVal),
+        );
+      }
+    }
+  };
 
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const [metas, grps, frms] = await Promise.all([
+      const [metas, grps, frms, sess, config] = await Promise.all([
         invoke<SubjectMeta[]>("subjects_list", { userId }),
         invoke<SubjectGroup[]>("subject_groups_list", { userId }),
         invoke<SubjectFormula[]>("subject_formulas_list", { userId }),
+        invoke<StudySession[]>("estudos_list_sessions", {
+          userId,
+          monthsBack: 1,
+        }),
+        invoke<{ weekStartDay: number }>("global_get_app_config"),
       ]);
       setSubjectMetas(metas);
       setGroups(grps);
       setFormulas(frms);
+      setSessions(sess);
+      setWeekStartDay(config.weekStartDay);
     } catch (err) {
       toast.error(`Erro ao carregar dados: ${err}`);
     } finally {
@@ -187,22 +229,8 @@ export function MateriasTab({
   }, [studySubjects, subjectMetas]);
 
   const validActiveSubjects = useMemo(() => {
-    return activeSubjects.filter((s) => allSubjects.includes(s));
-  }, [activeSubjects, allSubjects]);
-
-  const toggleActiveSubject = (subject: string) => {
-    const newVal = activeSubjects.includes(subject)
-      ? activeSubjects.filter((s) => s !== subject)
-      : [...activeSubjects, subject];
-    setActiveSubjects(newVal);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        `aegis-active-subjects-${userId}`,
-        JSON.stringify(newVal),
-      );
-      localStorage.removeItem(`aegis-active-subject-${userId}`);
-    }
-  };
+    return resolvedActiveSubjects.filter((s) => allSubjects.includes(s));
+  }, [resolvedActiveSubjects, allSubjects]);
 
   // Mapeia cor por matéria
   const colorMap = useMemo(() => {
@@ -221,6 +249,39 @@ export function MateriasTab({
     }
     return m;
   }, [formulas]);
+
+  // Mapeia metas de horas semanais por matéria
+  const weeklyTargetMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const meta of subjectMetas) {
+      if (
+        meta.weeklyTargetHours !== undefined &&
+        meta.weeklyTargetHours !== null
+      ) {
+        m[meta.name] = meta.weeklyTargetHours;
+      }
+    }
+    return m;
+  }, [subjectMetas]);
+
+  // Calcula início da semana atual
+  const weekStart = useMemo(() => {
+    return isoDate(startOfWeek(simulatedNow, weekStartDay));
+  }, [simulatedNow, weekStartDay]);
+
+  // Filtra sessões da semana atual
+  const weekSessions = useMemo(() => {
+    return sessions.filter((s) => s.date >= weekStart);
+  }, [sessions, weekStart]);
+
+  // Mapeia total de horas estudadas na semana por matéria
+  const weekHoursBySubject = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const s of weekSessions) {
+      map[s.subject] = (map[s.subject] || 0) + s.hours;
+    }
+    return map;
+  }, [weekSessions]);
 
   // Status e médias calculadas por matéria se houver notas
   const subjectStatuses = useMemo(() => {
@@ -466,7 +527,7 @@ export function MateriasTab({
           borderBottomColor: isHovered ? `${hex}45` : "var(--border)",
         }}
       >
-        <div className="w-full flex items-center pr-4 min-h-[76px] gap-4">
+        <div className="w-full flex items-center pr-4 min-h-19 gap-4">
           {/* Lado Esquerdo Clickable (Expande histórico de avaliações se houver notas) */}
           <button
             type="button"
@@ -537,6 +598,13 @@ export function MateriasTab({
                       : subjectFormula.formulaType}
                 </span>
               )}
+              {weeklyTargetMap[subject] !== undefined &&
+                weeklyTargetMap[subject] > 0 && (
+                  <span className="opacity-80 flex items-center gap-1 font-bold">
+                    <Target className="w-3 h-3 text-muted-foreground" />
+                    Meta: {formatHours(weeklyTargetMap[subject])}/semana
+                  </span>
+                )}
             </div>
 
             {/* Barra de Progresso e Média (se houver notas) */}
@@ -649,6 +717,34 @@ export function MateriasTab({
             )}
           </div>
         </div>
+
+        {/* Barra de Progresso de Horas Semanais (Largura Completa do Card) */}
+        {weeklyTargetMap[subject] !== undefined &&
+          weeklyTargetMap[subject] > 0 && (
+            <div className="px-4 pb-4 -mt-1 flex flex-col gap-1 w-full border-t border-border/10 pt-3">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground font-semibold">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Progresso de Estudos Semanal
+                </span>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="font-bold text-foreground">
+                    {formatHours(weekHoursBySubject[subject] || 0)}
+                  </span>
+                  <span> / {formatHours(weeklyTargetMap[subject])}</span>
+                </div>
+              </div>
+              <div className="w-full bg-border/20 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, ((weekHoursBySubject[subject] || 0) / weeklyTargetMap[subject]) * 100)}%`,
+                    backgroundColor: hex,
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
         {/* Histórico expandido (Somente se expanded) */}
         {isExpanded && hasGradesData && (
@@ -881,7 +977,7 @@ export function MateriasTab({
                             handleFolderClick(group.id);
                         }
                       }}
-                      className="group flex items-center justify-between p-4 bg-card/45 hover:bg-card/75 border border-border/60 hover:border-border/80 rounded-xl cursor-pointer transition-all min-h-[68px]"
+                      className="group flex items-center justify-between p-4 bg-card/45 hover:bg-card/75 border border-border/60 hover:border-border/80 rounded-xl cursor-pointer transition-all min-h-17"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Folder
@@ -1052,7 +1148,7 @@ export function MateriasTab({
                             handleFolderClick(group.id);
                         }
                       }}
-                      className="group flex items-center justify-between p-4 bg-card/45 hover:bg-card/75 border border-border/60 hover:border-border/80 rounded-xl cursor-pointer transition-all min-h-[68px]"
+                      className="group flex items-center justify-between p-4 bg-card/45 hover:bg-card/75 border border-border/60 hover:border-border/80 rounded-xl cursor-pointer transition-all min-h-17"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Folder
@@ -1279,7 +1375,6 @@ function GroupCreateModal({
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupColor, setGroupColor] = useState("emerald");
-  const [subjectSearch, setSubjectSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleToggleSubject = (subject: string) => {
@@ -1291,12 +1386,8 @@ function GroupCreateModal({
   };
 
   const availableSubjects = useMemo(() => {
-    return allSubjects.filter(
-      (s) =>
-        !selected.includes(s) &&
-        s.toLowerCase().includes(subjectSearch.toLowerCase()),
-    );
-  }, [allSubjects, selected, subjectSearch]);
+    return allSubjects.filter((s) => !selected.includes(s));
+  }, [allSubjects, selected]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -1333,7 +1424,7 @@ function GroupCreateModal({
       </div>
 
       <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[350px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-87.5">
           {/* Coluna da Esquerda: Configurações do Grupo e Pesquisa */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -1379,67 +1470,24 @@ function GroupCreateModal({
               <Label className="text-xs font-bold text-muted-foreground">
                 Adicionar Matérias
               </Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  value={subjectSearch}
-                  onChange={(e) => setSubjectSearch(e.target.value)}
-                  placeholder="Pesquisar matéria..."
-                  className="bg-card border-border rounded-xl pl-9"
-                />
-                {subjectSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setSubjectSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-muted text-muted-foreground transition-all cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-
-              {/* Lista de resultados da busca */}
-              <div className="flex flex-col gap-1.5 mt-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                {availableSubjects.map((subject) => {
-                  const hex = resolveColor(colorMap[subject] ?? "slate");
-                  return (
-                    <button
-                      key={subject}
-                      type="button"
-                      onClick={() => {
-                        setSelected((prev) => [...prev, subject]);
-                        setSubjectSearch("");
-                      }}
-                      className="w-full flex items-center justify-between p-2 rounded-xl border border-border bg-card hover:bg-accent/45 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: hex }}
-                        />
-                        <span className="text-xs font-bold">{subject}</span>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border",
-                          theme.bg,
-                          theme.border,
-                          theme.text,
-                        )}
-                      >
-                        + Vincular
-                      </span>
-                    </button>
-                  );
-                })}
-                {availableSubjects.length === 0 && (
-                  <p className="text-xs text-muted-foreground/60 italic text-center py-4">
-                    {subjectSearch
-                      ? "Nenhuma matéria correspondente."
-                      : "Todas as matérias foram vinculadas ou digite para buscar."}
-                  </p>
-                )}
-              </div>
+              <SearchableSelect
+                items={availableSubjects}
+                value=""
+                onChange={(val) => {
+                  const s = typeof val === "string" ? val : String(val);
+                  if (s && !selected.includes(s)) {
+                    setSelected((prev) => [...prev, s]);
+                  }
+                }}
+                placeholder="Selecionar matéria..."
+                searchPlaceholder="Buscar matéria..."
+                emptyMessage="Nenhuma matéria disponível"
+                getItemKey={(s) => s}
+                getItemLabel={(s) => s}
+                moduleName="studies"
+                mode="combobox"
+                inputClass="h-10 text-xs"
+              />
             </div>
           </div>
 
@@ -1451,7 +1499,7 @@ function GroupCreateModal({
                 {selected.length}
               </span>
             </Label>
-            <div className="flex-1 max-h-[360px] overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card/25 p-3 flex flex-col gap-2 min-h-[250px]">
+            <div className="flex-1 max-h-90 overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card/25 p-3 flex flex-col gap-2 min-h-62.5">
               {selected.map((subject) => {
                 const hex = resolveColor(colorMap[subject] ?? "slate");
                 return (
@@ -1550,7 +1598,6 @@ function GroupEditModal({
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [groupColor, setGroupColor] = useState("emerald");
-  const [subjectSearch, setSubjectSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -1570,12 +1617,8 @@ function GroupEditModal({
   };
 
   const availableSubjects = useMemo(() => {
-    return allSubjects.filter(
-      (s) =>
-        !selected.includes(s) &&
-        s.toLowerCase().includes(subjectSearch.toLowerCase()),
-    );
-  }, [allSubjects, selected, subjectSearch]);
+    return allSubjects.filter((s) => !selected.includes(s));
+  }, [allSubjects, selected]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -1611,7 +1654,7 @@ function GroupEditModal({
       </div>
 
       <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[350px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-87.5">
           {/* Coluna da Esquerda: Configurações do Grupo e Pesquisa */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -1657,67 +1700,24 @@ function GroupEditModal({
               <Label className="text-xs font-bold text-muted-foreground">
                 Adicionar Matérias
               </Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  value={subjectSearch}
-                  onChange={(e) => setSubjectSearch(e.target.value)}
-                  placeholder="Pesquisar matéria..."
-                  className="bg-card border-border rounded-xl pl-9"
-                />
-                {subjectSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setSubjectSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-muted text-muted-foreground transition-all cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-
-              {/* Lista de resultados da busca */}
-              <div className="flex flex-col gap-1.5 mt-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                {availableSubjects.map((subject) => {
-                  const hex = resolveColor(colorMap[subject] ?? "slate");
-                  return (
-                    <button
-                      key={subject}
-                      type="button"
-                      onClick={() => {
-                        setSelected((prev) => [...prev, subject]);
-                        setSubjectSearch("");
-                      }}
-                      className="w-full flex items-center justify-between p-2 rounded-xl border border-border bg-card hover:bg-accent/45 text-muted-foreground hover:text-foreground transition-all cursor-pointer text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: hex }}
-                        />
-                        <span className="text-xs font-bold">{subject}</span>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border",
-                          theme.bg,
-                          theme.border,
-                          theme.text,
-                        )}
-                      >
-                        + Vincular
-                      </span>
-                    </button>
-                  );
-                })}
-                {availableSubjects.length === 0 && (
-                  <p className="text-xs text-muted-foreground/60 italic text-center py-4">
-                    {subjectSearch
-                      ? "Nenhuma matéria correspondente."
-                      : "Todas as matérias foram vinculadas ou digite para buscar."}
-                  </p>
-                )}
-              </div>
+              <SearchableSelect
+                items={availableSubjects}
+                value=""
+                onChange={(val) => {
+                  const s = typeof val === "string" ? val : String(val);
+                  if (s && !selected.includes(s)) {
+                    setSelected((prev) => [...prev, s]);
+                  }
+                }}
+                placeholder="Selecionar matéria..."
+                searchPlaceholder="Buscar matéria..."
+                emptyMessage="Nenhuma matéria disponível"
+                getItemKey={(s) => s}
+                getItemLabel={(s) => s}
+                moduleName="studies"
+                mode="combobox"
+                inputClass="h-10 text-xs"
+              />
             </div>
           </div>
 
@@ -1729,7 +1729,7 @@ function GroupEditModal({
                 {selected.length}
               </span>
             </Label>
-            <div className="flex-1 max-h-[360px] overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card/25 p-3 flex flex-col gap-2 min-h-[250px]">
+            <div className="flex-1 max-h-90 overflow-y-auto custom-scrollbar border border-border/60 rounded-xl bg-card/25 p-3 flex flex-col gap-2 min-h-62.5">
               {selected.map((subject) => {
                 const hex = resolveColor(colorMap[subject] ?? "slate");
                 return (

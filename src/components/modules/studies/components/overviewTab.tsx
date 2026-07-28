@@ -8,14 +8,16 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo } from "react";
+import { resolveColor } from "@/colors.config";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import type { StudyGrade } from "../../grades/types";
+import type { StudyGrade, SubjectMeta } from "../../grades/types";
 import { GOAL_LABELS } from "../goalPanel";
-import type { StudyStats, SubjectData } from "../types";
-import { formatHours, hitRate } from "../utils";
+import type { StudySession, StudyStats, SubjectData } from "../types";
+import { formatHours, hitRate, isoDate, startOfWeek } from "../utils";
 
 interface OverviewTabProps {
   weekStats: StudyStats;
@@ -26,6 +28,10 @@ interface OverviewTabProps {
   subjectMap: Record<string, SubjectData>;
   grades: StudyGrade[];
   onOpenGrades: () => void;
+  activeSubjects?: string[];
+  subjectMetas?: SubjectMeta[];
+  sessions?: StudySession[];
+  weekStartDay?: number;
 }
 
 export function OverviewTab({
@@ -36,9 +42,14 @@ export function OverviewTab({
   subjectMap,
   grades = [],
   onOpenGrades,
+  activeSubjects = [],
+  subjectMetas = [],
+  sessions = [],
+  weekStartDay = 1,
 }: OverviewTabProps) {
   const color = getModuleColor("studies");
   const theme = getColorTheme(color);
+  const { now: simulatedNow } = useTime();
 
   // Estatísticas de simulados e notas
   const gradesStats = useMemo(() => {
@@ -70,6 +81,30 @@ export function OverviewTab({
       hasQuestions: totalQuestions > 0,
     };
   }, [grades]);
+
+  // Calcula horas estudadas na semana por matéria
+  const weekStart = useMemo(() => {
+    return isoDate(startOfWeek(simulatedNow, weekStartDay));
+  }, [simulatedNow, weekStartDay]);
+
+  const weekSessions = useMemo(() => {
+    return sessions.filter((s) => s.date >= weekStart);
+  }, [sessions, weekStart]);
+
+  const weekHoursBySubject = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const s of weekSessions) {
+      map[s.subject] = (map[s.subject] || 0) + s.hours;
+    }
+    return map;
+  }, [weekSessions]);
+
+  const subjectsWithTarget = useMemo(() => {
+    return activeSubjects.filter((subjectName) => {
+      const meta = subjectMetas.find((m) => m.name === subjectName);
+      return meta?.weeklyTargetHours && meta.weeklyTargetHours > 0;
+    });
+  }, [activeSubjects, subjectMetas]);
 
   // Média de progresso das metas mensais para um "Score" global
   const monthlyTargetHours = goalValue("monthly_hours");
@@ -342,6 +377,87 @@ export function OverviewTab({
               );
             })}
           </div>
+
+          {/* Metas Individuais de Estudos por Matéria (Matérias Ativas com Meta > 0) */}
+          {subjectsWithTarget.length > 0 && (
+            <div className="border-t border-border/50 pt-6 mt-2 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Target className={cn("w-4 h-4", theme.text)} />
+                <h3 className="text-sm font-bold text-foreground">
+                  Metas Semanais Individuais por Disciplina
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                {subjectsWithTarget.map((subjectName) => {
+                  const meta = subjectMetas.find((m) => m.name === subjectName);
+                  const targetHours = meta?.weeklyTargetHours || 0;
+
+                  const studiedHours = weekHoursBySubject[subjectName] || 0;
+                  const pct = Math.min(
+                    100,
+                    Math.round((studiedHours / targetHours) * 100),
+                  );
+                  const hex = resolveColor(meta?.color || "slate");
+
+                  return (
+                    <div key={subjectName} className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10 dark:border-white/10"
+                            style={{ backgroundColor: hex }}
+                          />
+                          {subjectName}
+                        </span>
+                        <span className="text-xs font-bold text-foreground tabular-nums shrink-0">
+                          {formatHours(studiedHours)}{" "}
+                          <span className="text-muted-foreground/40 mx-0.5">
+                            /
+                          </span>{" "}
+                          {formatHours(targetHours)}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: hex,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span
+                          className="font-bold"
+                          style={{
+                            color: pct >= 100 ? "var(--emerald-500)" : hex,
+                          }}
+                        >
+                          {pct}% concluído
+                        </span>
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.2 rounded font-semibold text-[8px] border",
+                            pct >= 100
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : pct >= 50
+                                ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                : "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                          )}
+                        >
+                          {pct >= 100
+                            ? "Meta Batida"
+                            : pct >= 50
+                              ? "No Caminho"
+                              : "Atrasado"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Lado direito: Notas & Domínio por Matéria (4 colunas) */}

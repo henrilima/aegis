@@ -17,6 +17,7 @@ export interface StudySession {
   focusScore?: number;
   topic?: string;
   tags?: string;
+  isPomodoro?: boolean;
 }
 
 export interface StudyGoal {

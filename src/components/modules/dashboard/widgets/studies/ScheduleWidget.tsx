@@ -7,7 +7,7 @@ import type { SubjectMeta } from "@/components/modules/grades/types";
 import { Button } from "@/components/ui/button";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import type { StudySchedule } from "../../../studies/types";
+import type { StudySchedule, StudySession } from "../../../studies/types";
 import { BaseWidget } from "../BaseWidget";
 
 interface ScheduleWidgetProps {
@@ -104,6 +104,7 @@ export function ScheduleWidget({
     const dateStr = `${y}-${m}-${d}`;
 
     const newSession = {
+      userId: item.userId || "",
       date: dateStr,
       subject: item.subject,
       hours: durationHours,

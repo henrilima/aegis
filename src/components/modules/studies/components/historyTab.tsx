@@ -1,15 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  BookOpen,
-  Clock,
-  FileText,
-  Pencil,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { BookOpen, Clock, Pencil, Search, Timer, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import {
   Select,
   SelectContent,
@@ -19,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { resolveColor } from "@/config/colors.config";
-import { cn, getColorTheme, toHoverClass } from "@/lib/utils";
+import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudySession } from "../types";
 import { formatHours, hitRate, parseDate } from "../utils";
@@ -83,16 +77,19 @@ export function HistoryTab({
 }: HistoryTabProps) {
   const color = getModuleColor("studies");
   const theme = getColorTheme(color);
+  const pomoColor = getModuleColor("pomodoro");
+  const pomoTheme = getColorTheme(pomoColor);
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Barra de Filtros */}
-      <div className="flex gap-3 flex-wrap">
+      {/* Barra de Filtros em linha única */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
         {/* Campo de busca */}
-        <div className="relative flex-1 min-w-48">
+        <div className="relative flex-1 min-w-50">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
           <input
             className={cn(
-              "w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-colors",
+              "w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-colors",
               theme.borderHover.replace("hover:", "focus:"),
             )}
             placeholder="Buscar por matéria, conteúdo, data ou anotação..."
@@ -102,43 +99,43 @@ export function HistoryTab({
         </div>
 
         {/* Filtro por matéria */}
-        <Select value={filterSubject} onValueChange={onFilterSubjectChange}>
-          <SelectTrigger className="bg-card border-border rounded-xl h-9 text-xs min-w-[160px]">
-            <SelectValue placeholder="Todas as matérias" />
+        <div className="w-full sm:w-48 shrink-0">
+          <SearchableSelect
+            items={["all", ...subjects]}
+            value={filterSubject}
+            onChange={(val) =>
+              onFilterSubjectChange(typeof val === "string" ? val : String(val))
+            }
+            placeholder="Todas as matérias"
+            searchPlaceholder="Buscar matéria..."
+            emptyMessage="Nenhuma matéria correspondente"
+            getItemKey={(s) => s}
+            getItemLabel={(s) => (s === "all" ? "Todas as matérias" : s)}
+            moduleName="studies"
+            mode="combobox"
+            inputClass="h-9 text-xs"
+          />
+        </div>
+
+        {/* Filtro por mês */}
+        <Select value={filterMonth} onValueChange={onFilterMonthChange}>
+          <SelectTrigger className="bg-card border-border rounded-xl h-9 text-xs w-full sm:w-44 shrink-0">
+            <SelectValue placeholder="Todos os meses" />
           </SelectTrigger>
           <SelectContent className="bg-card border-border">
             <SelectItem value="all" className="text-xs">
-              Todas as matérias
+              Todos os meses
             </SelectItem>
-            {subjects.map((s) => (
-              <SelectItem key={s} value={s} className="text-xs">
-                {s}
+            {months.map((m) => (
+              <SelectItem key={m} value={m} className="text-xs">
+                {parseDate(`${m}-01`).toLocaleDateString("pt-BR", {
+                  month: "long",
+                  year: "numeric",
+                })}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
-        {/* Filtro por mês */}
-        <div>
-          <Select value={filterMonth} onValueChange={onFilterMonthChange}>
-            <SelectTrigger className="bg-card border-border rounded-xl h-9 text-xs min-w-[160px]">
-              <SelectValue placeholder="Todos os meses" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-xs">
-                Todos os meses
-              </SelectItem>
-              {months.map((m) => (
-                <SelectItem key={m} value={m} className="text-xs">
-                  {parseDate(`${m}-01`).toLocaleDateString("pt-BR", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       {sessions.length === 0 ? (
@@ -156,6 +153,14 @@ export function HistoryTab({
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           {sessions.map((s) => {
+            const isPomo =
+              Boolean(s.isPomodoro) ||
+              Boolean(
+                s.tags
+                  ?.split(",")
+                  .map((t) => t.trim().toLowerCase())
+                  .includes("pomodoro"),
+              );
             const totalQ = s.questionsNew + s.questionsReview;
             const totalC = s.correctNew + s.correctReview;
             const hRate = hitRate(totalC, totalQ);
@@ -165,170 +170,193 @@ export function HistoryTab({
                 .includes(s.subject.toLowerCase()),
             );
 
+            const displayTags = s.tags
+              ? s.tags
+                  .split(",")
+                  .map((t) => t.trim())
+                  .filter((t) => Boolean(t) && t.toLowerCase() !== "pomodoro")
+              : [];
+
             return (
               <motion.div
                 key={s.id}
                 variants={itemVariants}
                 className={cn(
-                  "group bg-card/50 border border-border rounded-xl p-5 transition-all duration-300",
-                  theme.borderHover,
-                  "hover:bg-card",
+                  "group bg-card/60 border border-border rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:bg-card",
+                  isPomo ? pomoTheme.borderHover : theme.borderHover,
                 )}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0 flex flex-col gap-3">
-                    {/* Linha Superior: Materia e Data */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <h3 className="text-base font-bold text-foreground flex items-center gap-2 flex-wrap min-w-0">
-                          <span className="truncate">{s.subject}</span>
-                          {subjectGroup?.color &&
-                            (() => {
-                              const hex = resolveColor(subjectGroup.color);
-                              return (
-                                <span
-                                  className="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shrink-0"
-                                  style={{
-                                    color: hex,
-                                    background: `${hex}18`,
-                                    border: `1px solid ${hex}45`,
-                                  }}
-                                >
-                                  {subjectGroup.name}
-                                </span>
-                              );
-                            })()}
-                        </h3>
-                        {/* Conteúdo estudado — exibido apenas quando preenchido */}
-                        {s.topic && (
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
-                            <span className="text-xs text-muted-foreground truncate">
-                              {s.topic}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                {/* Linha Superior: Matéria, Grupo/Pomodoro e Ações com Data */}
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                    <h3 className="text-sm font-bold text-foreground truncate max-w-50">
+                      {s.subject}
+                    </h3>
+
+                    {isPomo ? (
                       <span
                         className={cn(
-                          "shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full border",
-                          theme.bg,
-                          theme.text,
-                          theme.border,
+                          "px-2 py-0.5 rounded-md text-[10px] font-semibold border flex items-center gap-1 whitespace-nowrap",
+                          pomoTheme.bg,
+                          pomoTheme.text,
+                          pomoTheme.border,
                         )}
                       >
-                        {parseDate(s.date).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        <Timer className="w-3 h-3" />
+                        Pomodoro
                       </span>
-                    </div>
-
-                    {/* Linha de Métricas: Badges estilizados */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-border group-hover:border-border transition-colors">
-                        <Clock
-                          className={cn(
-                            "w-3.5 h-3.5 text-muted-foreground transition-colors",
-                            `group-hover:${theme.text.replace("text-", "text-")}`,
-                          )}
-                        />
-                        <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
-                          {formatHours(s.hours)}
-                        </span>
-                      </div>
-
-                      {s.focusScore !== undefined && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-border group-hover:border-border transition-colors">
-                          <StudyStars score={s.focusScore} />
-                        </div>
-                      )}
-
-                      {totalQ > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div className="px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-border text-xs font-bold text-muted-foreground">
-                            {totalQ} questões
-                          </div>
-                          <div
-                            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                              hRate >= 70
-                                ? "bg-green-500/10 border-green-500/20 text-green-400"
-                                : hRate >= 50
-                                  ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
-                                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
-                            }`}
+                    ) : (
+                      subjectGroup?.color &&
+                      (() => {
+                        const hex = resolveColor(subjectGroup.color);
+                        return (
+                          <span
+                            className="px-2 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap"
+                            style={{
+                              color: hex,
+                              backgroundColor: `${hex}15`,
+                              borderColor: `${hex}30`,
+                            }}
                           >
-                            {hRate}% acerto
-                          </div>
-                        </div>
-                      )}
-
-                      {s.pagesRead && s.pagesRead > 0 ? (
-                        <div className="px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-border text-xs font-bold text-muted-foreground">
-                          {s.pagesRead} páginas
-                        </div>
-                      ) : null}
-
-                      {s.custom_metric_label && (
-                        <div className="px-2.5 py-1.5 rounded-xl bg-neutral-800/40 border border-border text-xs font-bold text-muted-foreground">
-                          {s.custom_metric_value} {s.custom_metric_label}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Tags */}
-                    {s.tags && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {s.tags
-                          .split(",")
-                          .map((t) => t.trim())
-                          .filter(Boolean)
-                          .map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-1.5 py-0.2 rounded bg-muted text-[9px] font-bold text-neutral-400 border border-border/40"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                      </div>
-                    )}
-
-                    {/* Nota */}
-                    {s.note && (
-                      <p className="text-xs text-muted-foreground leading-relaxed italic border-border pl-3 py-0.5 mt-1 border-dashed">
-                        {s.note}
-                      </p>
+                            {subjectGroup.name}
+                          </span>
+                        );
+                      })()
                     )}
                   </div>
 
-                  {/* Ações Padronizadas */}
-                  <div className="flex bg-background/50 rounded-xl border border-border overflow-hidden shrink-0">
-                    <ToolTip content="Editar sessão">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(s)}
-                        className={cn(
-                          "p-2.5 text-neutral-600 transition-all border-r border-border active:scale-95",
-                          theme.bgHover,
-                          toHoverClass(theme.text),
-                        )}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    </ToolTip>
-                    <ToolTip content="Excluir sessão">
-                      <button
-                        type="button"
-                        onClick={() => s.id !== undefined && onDelete(s.id)}
-                        className="p-2.5 hover:bg-rose-600/10 hover:text-rose-500 text-neutral-600 transition-all active:scale-95"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </ToolTip>
+                  {/* Data e Ações */}
+                  <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {parseDate(s.date).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <div className="flex items-center gap-0.5 border-l border-border/60 pl-2">
+                      <ToolTip content="Editar sessão">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(s)}
+                          className="p-1 rounded-md hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </ToolTip>
+                      <ToolTip content="Excluir sessão">
+                        <button
+                          type="button"
+                          onClick={() => s.id !== undefined && onDelete(s.id)}
+                          className="p-1 rounded-md hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </ToolTip>
+                    </div>
                   </div>
                 </div>
+
+                {/* Tópico / Conteúdo estudado (Com rótulo Conteúdo:) */}
+                {s.topic && (
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    <span className="font-bold text-foreground">Conteúdo:</span>{" "}
+                    {s.topic}
+                  </p>
+                )}
+
+                {/* Barra Padronizada de Métricas (Ordem Fixa com Alinhamento à Esquerda e Divisores) */}
+                <div className="flex items-center justify-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40 text-xs flex-wrap">
+                  {/* 1. Tempo Registrado */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Clock
+                      className={cn(
+                        "w-3.5 h-3.5",
+                        isPomo ? pomoTheme.text : "text-muted-foreground",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "font-bold",
+                        isPomo ? pomoTheme.text : "text-foreground",
+                      )}
+                    >
+                      {formatHours(s.hours)}
+                    </span>
+                  </div>
+
+                  {/* 2. Avaliação de Foco */}
+                  {s.focusScore !== undefined && (
+                    <div className="flex items-center gap-1.5 shrink-0 border-l border-border/40 pl-3">
+                      <span className="text-muted-foreground font-medium">
+                        Foco:
+                      </span>
+                      <StudyStars score={s.focusScore} isPomodoro={isPomo} />
+                    </div>
+                  )}
+
+                  {/* 3. Questões e Acertos */}
+                  {totalQ > 0 && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium shrink-0 border-l border-border/40 pl-3">
+                      <span>Questões: {totalQ}</span>
+                      <span
+                        className={cn(
+                          "font-bold px-1.5 py-0.5 rounded text-[10px]",
+                          hRate >= 70
+                            ? "bg-green-500/10 text-green-400"
+                            : hRate >= 50
+                              ? "bg-yellow-500/10 text-yellow-400"
+                              : "bg-red-500/10 text-red-400",
+                        )}
+                      >
+                        {hRate}% acerto
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 4. Páginas Lidas */}
+                  {s.pagesRead && s.pagesRead > 0 ? (
+                    <div className="flex items-center gap-1 shrink-0 border-l border-border/40 pl-3 text-muted-foreground font-medium">
+                      <span>Páginas: {s.pagesRead}</span>
+                    </div>
+                  ) : null}
+
+                  {/* 5. Métrica Personalizada */}
+                  {s.custom_metric_label && (
+                    <div className="flex items-center gap-1 shrink-0 border-l border-border/40 pl-3 text-muted-foreground font-medium">
+                      <span>
+                        {s.custom_metric_label}: {s.custom_metric_value}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Observações / Notas (Com rótulo Notas:) */}
+                {s.note && (
+                  <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-border/80 pl-2.5 py-0.5">
+                    <span className="font-bold text-foreground">Notas:</span>{" "}
+                    {s.note}
+                  </p>
+                )}
+
+                {/* Tags no Rodapé */}
+                {displayTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 items-center pt-0.5">
+                    {displayTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className={cn(
+                          "px-2 py-0.5 rounded-md text-[10px] font-medium border whitespace-nowrap",
+                          isPomo
+                            ? cn(pomoTheme.bg, pomoTheme.text, pomoTheme.border)
+                            : "bg-muted/40 text-neutral-400 border-border/40",
+                        )}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             );
           })}

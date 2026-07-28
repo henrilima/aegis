@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { BarChart2, X } from "lucide-react";
+import { BarChart2, Target, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { resolveColor, SELECTABLE_COLORS } from "@/colors.config";
@@ -83,6 +83,8 @@ export function SubjectEditModal({
   const [editSubjectPassingGrade, setEditSubjectPassingGrade] =
     useState<number>(7);
   const [editSubjectCustomFormula, setEditSubjectCustomFormula] = useState("");
+  const [editWeeklyHours, setEditWeeklyHours] = useState<string>("");
+  const [editWeeklyMinutes, setEditWeeklyMinutes] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -99,12 +101,23 @@ export function SubjectEditModal({
       .then(([metas, grps, frms]) => {
         setGroups(grps);
 
-        // Find current color
+        // Busca a cor e a meta de horas atuais
         const meta = metas.find((m) => m.name === subjectName);
-        if (meta) {
+        if (
+          meta &&
+          meta.weeklyTargetHours !== undefined &&
+          meta.weeklyTargetHours !== null
+        ) {
           setEditSubjectColor(meta.color);
+          const totalHours = meta.weeklyTargetHours;
+          const h = Math.floor(totalHours);
+          const m = Math.round((totalHours - h) * 60);
+          setEditWeeklyHours(h > 0 ? String(h) : "");
+          setEditWeeklyMinutes(m > 0 ? String(m) : "");
         } else {
-          setEditSubjectColor("blue");
+          setEditSubjectColor(meta?.color || "blue");
+          setEditWeeklyHours("");
+          setEditWeeklyMinutes("");
         }
 
         // Find current group
@@ -157,9 +170,19 @@ export function SubjectEditModal({
         });
       }
 
+      const hoursVal = editWeeklyHours ? parseFloat(editWeeklyHours) : 0;
+      const minsVal = editWeeklyMinutes ? parseFloat(editWeeklyMinutes) : 0;
+      const totalWeeklyTargetHours = hoursVal + minsVal / 60;
+
       // 2. Salva ou atualiza a Cor/Meta da Matéria
       await invoke("subjects_upsert", {
-        subject: { userId, name: trimmedName, color: editSubjectColor },
+        subject: {
+          userId,
+          name: trimmedName,
+          color: editSubjectColor,
+          weeklyTargetHours:
+            totalWeeklyTargetHours > 0 ? totalWeeklyTargetHours : null,
+        },
       });
 
       // 3. Atualizar Grupo
@@ -224,7 +247,7 @@ export function SubjectEditModal({
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} size="xl" zIndex="z-[60]">
+    <ModalShell isOpen={isOpen} onClose={onClose} size="2xl" zIndex="z-[60]">
       <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
         <h2 className="text-base font-bold text-foreground">
           {subjectName ? "Editar Matéria" : "Nova Matéria"}
@@ -330,6 +353,58 @@ export function SubjectEditModal({
                     })}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Meta de Horas Semanais */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-bold text-muted-foreground ml-0.5 flex items-center gap-1">
+                  <Target className="w-3.5 h-3.5" />
+                  Meta de Horas Semanais (Opcional)
+                </Label>
+                <div className="flex gap-3">
+                  {/* Horas */}
+                  <div className="flex-1 relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={editWeeklyHours}
+                      onChange={(e) => setEditWeeklyHours(e.target.value)}
+                      className={cn(
+                        "bg-card border-border hover:border-border/80 rounded-xl focus:ring-0 focus-visible:ring-0 pr-8",
+                        focusBorderClass,
+                      )}
+                      placeholder="Ex: 5"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">
+                      h
+                    </div>
+                  </div>
+
+                  {/* Minutos */}
+                  <div className="flex-1 relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="5"
+                      value={editWeeklyMinutes}
+                      onChange={(e) => setEditWeeklyMinutes(e.target.value)}
+                      className={cn(
+                        "bg-card border-border hover:border-border/80 rounded-xl focus:ring-0 focus-visible:ring-0 pr-10",
+                        focusBorderClass,
+                      )}
+                      placeholder="Ex: 30"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">
+                      min
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-normal ml-0.5">
+                  Defina as horas e minutos desejados para a meta semanal. Deixe
+                  em branco se não quiser definir.
+                </p>
               </div>
             </div>
 

@@ -85,6 +85,7 @@ export default function StudiesPage() {
   const [weekStartDay, setWeekStartDay] = useState(1);
   const [showGrades, setShowGrades] = useState(false);
   const [subjectMetas, setSubjectMetas] = useState<SubjectMeta[]>([]);
+  const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [filterSubject, setFilterSubject] = useState("all");
   const [grades, setGrades] = useState<StudyGrade[]>([]);
   const [groups, setGroups] = useState<SubjectGroup[]>([]);
@@ -146,6 +147,37 @@ export default function StudiesPage() {
   }, [goals]);
 
   const uid = user ? String(user.id) : "";
+
+  // Carrega e gerencia matérias ativas
+  useEffect(() => {
+    if (uid) {
+      const stored = localStorage.getItem(`aegis-active-subjects-${uid}`);
+      if (stored) {
+        try {
+          setActiveSubjects(JSON.parse(stored));
+        } catch {
+          const old = localStorage.getItem(`aegis-active-subject-${uid}`);
+          setActiveSubjects(old ? [old] : []);
+        }
+      } else {
+        const old = localStorage.getItem(`aegis-active-subject-${uid}`);
+        setActiveSubjects(old ? [old] : []);
+      }
+    }
+  }, [uid]);
+
+  const handleToggleActiveSubject = (subj: string) => {
+    const newVal = activeSubjects.includes(subj)
+      ? activeSubjects.filter((s) => s !== subj)
+      : [...activeSubjects, subj];
+    setActiveSubjects(newVal);
+    if (uid) {
+      localStorage.setItem(
+        `aegis-active-subjects-${uid}`,
+        JSON.stringify(newVal),
+      );
+    }
+  };
 
   const saveAllGoals = async () => {
     setIsSavingGoals(true);
@@ -528,6 +560,10 @@ export default function StudiesPage() {
           subjectMap={subjectMap}
           grades={grades}
           onOpenGrades={() => setShowGrades(true)}
+          activeSubjects={activeSubjects}
+          subjectMetas={subjectMetas}
+          sessions={sessions}
+          weekStartDay={weekStartDay}
         />
       )}
 
@@ -569,6 +605,8 @@ export default function StudiesPage() {
           allStats={allStats}
           goalValue={goalValue}
           weekStartDay={weekStartDay}
+          activeSubjects={activeSubjects}
+          subjectMetas={subjectMetas}
         />
       )}
 
@@ -579,6 +617,8 @@ export default function StudiesPage() {
           studySubjects={existingSubjects}
           userId={uid}
           onRefresh={load}
+          activeSubjects={activeSubjects}
+          onToggleActiveSubject={handleToggleActiveSubject}
         />
       )}
 

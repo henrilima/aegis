@@ -27,6 +27,8 @@ pub struct StudySession {
     pub topic: Option<String>,
     #[serde(default)]
     pub tags: Option<String>,
+    #[serde(default)]
+    pub is_pomodoro: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -65,6 +67,8 @@ pub struct SubjectMeta {
     pub user_id: String,
     pub name: String,
     pub color: String,
+    #[serde(default)]
+    pub weekly_target_hours: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -129,7 +133,10 @@ impl StudiesManager {
                 pages_read        INTEGER,
                 custom_metric_label TEXT,
                 custom_metric_value REAL,
-                focus_score       INTEGER
+                focus_score       INTEGER,
+                topic             TEXT,
+                tags              TEXT,
+                is_pomodoro       INTEGER DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS study_goals (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,6 +165,7 @@ impl StudiesManager {
                 user_id           TEXT NOT NULL,
                 name              TEXT NOT NULL,
                 color             TEXT NOT NULL DEFAULT 'blue',
+                weekly_target_hours REAL,
                 UNIQUE(user_id, name)
             );
             CREATE TABLE IF NOT EXISTS study_subject_groups (
@@ -211,6 +219,10 @@ impl StudiesManager {
         );
         let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN topic TEXT", []);
         let _ = conn.execute("ALTER TABLE study_sessions ADD COLUMN tags TEXT", []);
+        let _ = conn.execute(
+            "ALTER TABLE study_sessions ADD COLUMN is_pomodoro INTEGER DEFAULT 0",
+            [],
+        );
 
         // Migração manual: renomeia tipo de fórmula 'custom' para 'personalizada'
         let _ = conn.execute("UPDATE study_subject_formulas SET formula_type = 'personalizada' WHERE formula_type = 'custom'", []);
@@ -218,6 +230,10 @@ impl StudiesManager {
         let _ = conn.execute("ALTER TABLE study_subject_groups ADD COLUMN color TEXT", []);
         let _ = conn.execute(
             "ALTER TABLE study_grades ADD COLUMN half_grade INTEGER DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE study_subjects ADD COLUMN weekly_target_hours REAL",
             [],
         );
 
@@ -233,14 +249,15 @@ impl StudiesManager {
 
     pub fn add_session(&self, s: StudySession) -> Result<i64, String> {
         let conn = self.conn();
+        let is_pomo = s.is_pomodoro.unwrap_or(false) as i32;
         conn.execute(
             "INSERT INTO study_sessions
-             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value, focus_score, topic, tags)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15)",
+             (user_id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, pages_read, custom_metric_label, custom_metric_value, focus_score, topic, tags, is_pomodoro)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
             params![s.user_id, s.date, s.subject, s.hours,
                     s.questions_new, s.questions_review,
                     s.correct_new, s.correct_review, s.note,
-                    s.pages_read, s.custom_metric_label, s.custom_metric_value, s.focus_score, s.topic, s.tags],
+                    s.pages_read, s.custom_metric_label, s.custom_metric_value, s.focus_score, s.topic, s.tags, is_pomo],
         ).map_err(|e| e.to_string())?;
         Ok(conn.last_insert_rowid())
     }
@@ -248,10 +265,11 @@ impl StudiesManager {
     pub fn update_session(&self, s: StudySession) -> Result<(), String> {
         let conn = self.conn();
         let id = s.id.ok_or("id ausente")?;
+        let is_pomo = s.is_pomodoro.unwrap_or(false) as i32;
         conn.execute(
             "UPDATE study_sessions SET date=?2, subject=?3, hours=?4,
              questions_new=?5, questions_review=?6, correct_new=?7, correct_review=?8, note=?9,
-             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12, focus_score=?14, topic=?15, tags=?16
+             pages_read=?10, custom_metric_label=?11, custom_metric_value=?12, focus_score=?14, topic=?15, tags=?16, is_pomodoro=?17
              WHERE id=?1 AND user_id=?13",
             params![
                 id,
@@ -269,7 +287,8 @@ impl StudiesManager {
                 s.user_id,
                 s.focus_score,
                 s.topic,
-                s.tags
+                s.tags,
+                is_pomo
             ],
         )
         .map_err(|e| e.to_string())?;
@@ -298,13 +317,14 @@ impl StudiesManager {
             .format("%Y-%m-%d")
             .to_string();
         let mut stmt = conn.prepare(
-            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value, focus_score, topic, tags
+            "SELECT id, date, subject, hours, questions_new, questions_review, correct_new, correct_review, note, created_at, pages_read, custom_metric_label, custom_metric_value, focus_score, topic, tags, is_pomodoro
              FROM study_sessions
              WHERE user_id=?1 AND date >= ?2
              ORDER BY date DESC, id DESC"
         ).unwrap();
 
         stmt.query_map(params![user_id, cutoff_date], |row| {
+            let is_pomo_num: Option<i32> = row.get(16)?;
             Ok(StudySession {
                 id: Some(row.get(0)?),
                 user_id: user_id.to_string(),
@@ -323,6 +343,7 @@ impl StudiesManager {
                 focus_score: row.get(13)?,
                 topic: row.get(14)?,
                 tags: row.get(15)?,
+                is_pomodoro: is_pomo_num.map(|v| v != 0),
             })
         })
         .unwrap()
@@ -453,6 +474,7 @@ impl StudiesManager {
                 focus_score: Some(focus),
                 topic: None,
                 tags: None,
+                is_pomodoro: None,
             };
             self.add_session(s).ok();
             count += 1;
@@ -564,10 +586,10 @@ impl StudiesManager {
     pub fn upsert_subject(&self, s: SubjectMeta) -> Result<(), String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO study_subjects (user_id, name, color)
-             VALUES (?1, ?2, ?3)
-             ON CONFLICT(user_id, name) DO UPDATE SET color = excluded.color",
-            params![s.user_id, s.name, s.color],
+            "INSERT INTO study_subjects (user_id, name, color, weekly_target_hours)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(user_id, name) DO UPDATE SET color = excluded.color, weekly_target_hours = excluded.weekly_target_hours",
+            params![s.user_id, s.name, s.color, s.weekly_target_hours],
         )
         .map_err(|e| e.to_string())?;
         Ok(())
@@ -653,7 +675,7 @@ impl StudiesManager {
     pub fn list_subjects(&self, user_id: &str) -> Vec<SubjectMeta> {
         let conn = self.conn();
         let mut stmt = conn
-            .prepare("SELECT id, name, color FROM study_subjects WHERE user_id=?1")
+            .prepare("SELECT id, name, color, weekly_target_hours FROM study_subjects WHERE user_id=?1")
             .unwrap();
 
         stmt.query_map(params![user_id], |row| {
@@ -662,6 +684,7 @@ impl StudiesManager {
                 user_id: user_id.to_string(),
                 name: row.get(1)?,
                 color: row.get(2)?,
+                weekly_target_hours: row.get(3)?,
             })
         })
         .unwrap()
