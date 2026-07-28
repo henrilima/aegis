@@ -217,6 +217,7 @@ export function SettingsModal() {
     handleDeleteAccount,
     highPriorityNotifications,
     notificationSound,
+    showLevelUpModal,
     user,
   } = useSettingsLogic();
 
@@ -248,6 +249,7 @@ export function SettingsModal() {
             updateAutoReadNotifications={updateAutoReadNotifications}
             handleTestNotification={handleTestNotification}
             notificationSound={notificationSound}
+            showLevelUpModal={showLevelUpModal}
           />
         );
       case "security":

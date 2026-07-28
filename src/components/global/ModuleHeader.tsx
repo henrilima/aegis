@@ -12,7 +12,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
-import { useModules } from "@/context/ModuleContext";
+import { type ModuleId, useModules } from "@/context/ModuleContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { changeModule, cn, getColorTheme, toHoverClass } from "@/lib/utils";
@@ -47,6 +47,12 @@ export interface ModuleHeaderProps {
   title: string;
   subtitle?: ReactNode;
   icon: LucideIcon;
+  /** ID explícito do módulo para recuperar preferências de usuário */
+  moduleId?: ModuleId;
+  /** Badge/Tag opcional de status ao lado do título */
+  badge?: ReactNode;
+  /** Fixa o cabeçalho no topo com transparência durante a rolagem */
+  sticky?: boolean;
   actions?: ModuleAction[];
   // Tabs opcionais
   tabs?: ModuleTab[];
@@ -61,6 +67,9 @@ export interface ModuleHeaderProps {
   onTitleClick?: () => void;
   titleHoverIcon?: LucideIcon;
   titleTooltip?: string;
+  /** Slot para elementos/controles customizados no canto direito */
+  rightSlot?: ReactNode;
+  children?: ReactNode;
 }
 
 interface Integration {
@@ -74,7 +83,7 @@ interface Integration {
 
 const integrationsData: Record<string, Integration> = {
   dictionary: {
-    tooltip: "Acesse o Módulo de Dicionário",
+    tooltip: "Acesse o módulo de dicionário",
     label: "Dicionário",
     kbd: "alt+shift+D",
     color: getModuleColor("dictionary"),
@@ -82,14 +91,14 @@ const integrationsData: Record<string, Integration> = {
     action: () => changeModule("dictionary"),
   },
   pomodoro: {
-    tooltip: "Acesse o Módulo Pomodoro",
+    tooltip: "Acesse o módulo Pomodoro",
     label: "Pomodoro",
     color: getModuleColor("pomodoro"),
     icon: Timer,
     action: () => changeModule("pomodoro"),
   },
   grades: {
-    tooltip: "Simulados & Notas",
+    tooltip: "Simulados e notas",
     label: "Notas",
     color: getModuleColor("grades"),
     icon: BarChart2,
@@ -101,12 +110,42 @@ const integrationsData: Record<string, Integration> = {
   },
 };
 
+function resolveModuleId(
+  _color: string,
+  title: string,
+  explicitId?: ModuleId,
+): ModuleId | null {
+  if (explicitId) return explicitId;
+  const t = title.toLowerCase();
+  if (t.includes("tarefa")) return "tasks";
+  if (t.includes("estudo") || t.includes("matéria")) return "studies";
+  if (t.includes("anotaç") || t.includes("nota")) return "notes";
+  if (t.includes("pomodoro")) return "pomodoro";
+  if (t.includes("leitura") || t.includes("livro")) return "reading";
+  if (t.includes("dicionário") || t.includes("dicionario")) return "dictionary";
+  if (t.includes("alarme")) return "alarms";
+  if (t.includes("sono") || t.includes("sonho")) return "sleep";
+  if (t.includes("calendário") || t.includes("calendario")) return "calendar";
+  if (t.includes("senha") || t.includes("cofre")) return "passwords";
+  if (t.includes("filme")) return "movies";
+  if (t.includes("hábito") || t.includes("habito")) return "habits";
+  if (t.includes("estatística") || t.includes("estatistica"))
+    return "statistics";
+  if (t.includes("flashcard")) return "flashcards";
+  if (t.includes("conquista")) return "achievements";
+  if (t.includes("simulado") || t.includes("nota")) return "grades";
+  return null;
+}
+
 // Componente
 export function ModuleHeader({
   color,
   title,
   subtitle,
   icon: Icon,
+  moduleId,
+  badge,
+  sticky,
   actions = [],
   tabs,
   activeTab,
@@ -119,16 +158,31 @@ export function ModuleHeader({
   onTitleClick,
   titleHoverIcon,
   titleTooltip,
+  rightSlot,
+  children,
 }: ModuleHeaderProps) {
   const m = getColorTheme(color as string);
   const { appMode } = useTheme();
   const { navigate, previousRoute } = useNavigation();
-  const { isModuleEnabled } = useModules();
+  const { isModuleEnabled, isStickyHeaderEnabled } = useModules();
   const [isTitleHovered, setIsTitleHovered] = useState(false);
+
+  // Mapeia o ID real do módulo a partir de prop, título ou contexto
+  const targetModuleId = resolveModuleId(color, title, moduleId);
+  const isSticky =
+    sticky !== undefined
+      ? sticky
+      : targetModuleId
+        ? isStickyHeaderEnabled(targetModuleId)
+        : false;
 
   const filteredActions = actions;
 
-  const iconBox = cn("p-2 rounded-xl border transition-all", m.bg, m.border);
+  const iconBox = cn(
+    "p-2.5 rounded-2xl border transition-all duration-300 flex items-center justify-center shrink-0",
+    m.bg,
+    m.border,
+  );
   const TitleIcon = isTitleHovered && titleHoverIcon ? titleHoverIcon : Icon;
 
   const renderTitleContent = () => (
@@ -136,28 +190,31 @@ export function ModuleHeader({
       <div
         className={cn(
           iconBox,
-          onTitleClick && "group-hover:border-border group-hover:bg-accent/40",
+          onTitleClick && "group-hover:border-border group-hover:bg-accent/80",
         )}
       >
         <TitleIcon
           className={cn(
-            "w-5 h-5 transition-transform duration-200",
+            "w-5 h-5 transition-transform duration-300",
             m.text,
-            onTitleClick && "group-hover:scale-105",
+            onTitleClick && "group-hover:scale-110",
           )}
         />
       </div>
-      <div className="text-left">
-        <h1
-          className={cn(
-            "text-xl font-semibold leading-none flex items-center gap-1.5 transition-colors duration-200",
-            onTitleClick && "group-hover:text-foreground",
-          )}
-        >
-          {title}
-        </h1>
+      <div className="text-left flex flex-col justify-center">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h1
+            className={cn(
+              "text-xl sm:text-2xl font-bold tracking-tight leading-tight flex items-center gap-2 transition-colors duration-200 text-foreground",
+              onTitleClick && "group-hover:text-primary",
+            )}
+          >
+            {title}
+          </h1>
+          {badge && <div className="flex items-center">{badge}</div>}
+        </div>
         {subtitle && (
-          <div className="text-xs text-muted-foreground mt-0.5 transition-colors duration-200">
+          <div className="text-xs sm:text-sm text-muted-foreground/80 font-medium mt-0.5 transition-colors duration-200">
             {subtitle}
           </div>
         )}
@@ -166,9 +223,17 @@ export function ModuleHeader({
   );
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      {/* Linha superior: identidade + ações */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div
+      className={cn(
+        "flex flex-col gap-4 transition-all pt-6 md:pt-8 pb-4 mb-6",
+        "w-[calc(100%+3rem)] md:w-[calc(100%+5rem)] -ml-6 md:-ml-10 -mr-6 md:-mr-10 px-6 md:px-10",
+        "bg-linear-to-b from-card via-background/95 to-background/80 dark:from-card dark:via-background/95 dark:to-background/80 backdrop-blur-2xl border-b border-border/80",
+        m.bg,
+        isSticky ? "sticky top-0 z-30" : "relative z-0",
+      )}
+    >
+      {/* Linha superior: Identidade do módulo + Botões de Ação / Slots */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         {/* Identidade do módulo */}
         <div className="flex items-center gap-3">
           {(appMode !== "default" ||
@@ -190,10 +255,10 @@ export function ModuleHeader({
                     navigate("dashboard");
                   }
                 }}
-                className="p-2 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all cursor-pointer mr-1"
+                className="p-2.5 rounded-xl border border-border/80 bg-card hover:bg-accent/80 hover:border-border transition-all cursor-pointer shrink-0 text-muted-foreground hover:text-foreground active:scale-95"
                 aria-label="Voltar"
               >
-                <ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+                <ArrowLeft className="w-4 h-4" />
               </button>
             </ToolTip>
           )}
@@ -205,7 +270,7 @@ export function ModuleHeader({
                 onClick={onTitleClick}
                 onMouseEnter={() => setIsTitleHovered(true)}
                 onMouseLeave={() => setIsTitleHovered(false)}
-                className="flex items-center gap-3 group cursor-pointer border-none bg-transparent p-0 outline-none text-left focus:outline-none shadow-none"
+                className="flex items-center gap-3 group cursor-pointer border-none bg-transparent p-0 outline-none text-left focus:outline-none"
               >
                 {renderTitleContent()}
               </button>
@@ -217,8 +282,12 @@ export function ModuleHeader({
           )}
         </div>
 
-        {/* Ações */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Canto direito: Slots, Integrações e Ações */}
+        <div className="flex items-center gap-2.5 flex-wrap ml-auto">
+          {rightSlot && (
+            <div className="flex items-center gap-2">{rightSlot}</div>
+          )}
+
           {/* Integrações */}
           {integrations && (
             <div className="flex gap-2 flex-wrap">
@@ -249,7 +318,7 @@ export function ModuleHeader({
                       type="button"
                       onClick={integration.action}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all cursor-pointer text-xs font-semibold",
+                        "flex items-center gap-2 h-10 px-3.5 rounded-xl border transition-all cursor-pointer text-xs font-semibold active:scale-95 hover:brightness-105",
                         moduleTheme.bg,
                         moduleTheme.bgHover,
                         moduleTheme.border,
@@ -265,6 +334,8 @@ export function ModuleHeader({
               })}
             </div>
           )}
+
+          {/* Botões de Ação */}
           {filteredActions.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {filteredActions.map((action) =>
@@ -277,13 +348,15 @@ export function ModuleHeader({
                       type="button"
                       onClick={action.onClick}
                       className={cn(
-                        "flex items-center rounded-xl text-white font-semibold text-xs transition-all cursor-pointer active:scale-95",
-                        action.label ? "px-4 py-2 gap-2" : "p-2",
+                        "flex items-center rounded-xl text-white font-semibold text-xs transition-all cursor-pointer active:scale-95 border-none",
+                        action.label
+                          ? "h-10 px-4 gap-2"
+                          : "size-10 justify-center",
                         m.solid,
                         m.solidHover,
                       )}
                     >
-                      <action.icon className="w-4 h-4" />
+                      <action.icon className="w-4 h-4 shrink-0" />
                       {action.label}
                     </button>
                   </ToolTip>
@@ -296,11 +369,13 @@ export function ModuleHeader({
                       type="button"
                       onClick={action.onClick}
                       className={cn(
-                        "flex items-center rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-all cursor-pointer text-xs font-semibold border border-amber-500/20 text-amber-600 dark:text-amber-500",
-                        action.label ? "px-3 py-2 gap-2" : "p-2",
+                        "flex items-center rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-all cursor-pointer text-xs font-semibold border border-amber-500/20 text-amber-600 dark:text-amber-500 active:scale-95",
+                        action.label
+                          ? "h-10 px-3.5 gap-2"
+                          : "size-10 justify-center",
                       )}
                     >
-                      <action.icon className="w-4 h-4" />
+                      <action.icon className="w-4 h-4 shrink-0" />
                       {action.label}
                     </button>
                   </ToolTip>
@@ -313,12 +388,14 @@ export function ModuleHeader({
                       type="button"
                       onClick={action.onClick}
                       className={cn(
-                        "flex items-center rounded-xl bg-card hover:bg-accent/50 transition-all cursor-pointer text-xs font-semibold border border-border text-muted-foreground",
-                        action.label ? "px-3 py-2 gap-2" : "p-2",
+                        "flex items-center rounded-xl bg-card hover:bg-accent/80 hover:border-border transition-all cursor-pointer text-xs font-semibold border border-border/80 text-muted-foreground hover:text-foreground active:scale-95",
+                        action.label
+                          ? "h-10 px-3.5 gap-2"
+                          : "size-10 justify-center",
                         toHoverClass(m.text),
                       )}
                     >
-                      <action.icon className="w-4 h-4" />
+                      <action.icon className="w-4 h-4 shrink-0" />
                       {action.label}
                     </button>
                   </ToolTip>
@@ -329,63 +406,72 @@ export function ModuleHeader({
         </div>
       </div>
 
-      {/* Linha inferior: tabs + pesquisa */}
-      {(tabs || onSearchChange) && (
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Tabs */}
+      {/* Linha Inferior: Abas com generoso Padding + Pesquisa + Children */}
+      {(tabs || onSearchChange || children) && (
+        <div className="flex items-center justify-between gap-4 flex-wrap pt-1">
+          {/* Abas com padding e visual de Segmented Control refinado */}
           {tabs && onTabChange && (
-            <div className="flex items-center gap-1 p-1 bg-card border border-border rounded-xl w-full sm:w-fit h-11 overflow-x-auto scrollbar-none shrink-0">
-              <div className="flex items-center gap-1 h-full min-w-max">
-                {tabs.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => onTabChange(t.id)}
-                    className={cn(
-                      "relative flex items-center justify-center gap-2 px-4 h-full rounded-lg text-xs font-semibold transition-colors cursor-pointer border select-none focus:outline-none z-10",
-                      activeTab === t.id
-                        ? cn(m.text)
-                        : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50",
-                    )}
-                  >
-                    {activeTab === t.id && (
-                      <motion.div
-                        layoutId="activeHeaderTab"
-                        className={cn(
-                          "absolute inset-0 rounded-lg -z-10 border",
-                          m.bg,
-                          m.border,
-                        )}
-                        transition={{
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 30,
-                        }}
-                      />
-                    )}
-                    {t.icon && <t.icon className="w-4 h-4" />}
-                    {t.label}
-                    {t.count !== undefined && (
-                      <span
-                        className={cn(
-                          "ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold min-w-[20px] text-center flex items-center justify-center transition-all",
-                          activeTab === t.id
-                            ? cn(m.text, m.bg, m.border)
-                            : "bg-muted text-muted-foreground border border-border/50",
-                        )}
-                      >
-                        {t.count}
-                      </span>
-                    )}
-                  </button>
-                ))}
+            <div className="flex items-center p-1.5 bg-muted/60 dark:bg-muted/40 border border-border/70 rounded-2xl max-w-full overflow-x-auto scrollbar-none shrink-0 h-11">
+              <div className="flex items-center gap-1.5 min-w-max h-full">
+                {tabs.map((t) => {
+                  const isActive = activeTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => onTabChange(t.id)}
+                      className={cn(
+                        "relative flex items-center justify-center gap-2 px-4 h-8 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none focus:outline-none z-10",
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40",
+                      )}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeModuleHeaderTab"
+                          className={cn(
+                            "absolute inset-0 rounded-xl -z-10 border transition-colors bg-card shadow-none",
+                            m.border,
+                          )}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 30,
+                          }}
+                        />
+                      )}
+                      {t.icon && (
+                        <t.icon
+                          className={cn(
+                            "w-4 h-4 transition-colors",
+                            isActive ? m.text : "text-muted-foreground",
+                          )}
+                        />
+                      )}
+                      <span className={cn(isActive && m.text)}>{t.label}</span>
+                      {t.count !== undefined && (
+                        <span
+                          className={cn(
+                            "ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold min-w-5 text-center flex items-center justify-center transition-all border",
+                            isActive
+                              ? cn(m.text, m.bg, m.border)
+                              : "bg-muted text-muted-foreground border-border/60",
+                          )}
+                        >
+                          {t.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Barra de pesquisa opcional */}
+          {/* Barra de Pesquisa Elegante e Espaçosa */}
           {onSearchChange && (
-            <div className="relative flex-1 min-w-[180px] max-w-xs h-11">
+            <div className="relative flex-1 min-w-50 max-w-xs h-10">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
@@ -394,15 +480,29 @@ export function ModuleHeader({
                 onKeyDown={(e) => e.key === "Escape" && onSearchChange("")}
                 placeholder={searchPlaceholder}
                 className={cn(
-                  "w-full h-full pl-10 pr-4 text-xs font-medium bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground transition-all outline-none",
+                  "w-full h-full pl-10 pr-9 text-xs font-medium bg-card border border-border/70 rounded-2xl text-foreground placeholder:text-muted-foreground/70 transition-all outline-none focus:border-primary focus:bg-background/95 focus:ring-1 focus:ring-primary/20",
                   m.borderHover.replace("hover:", "focus:"),
                 )}
               />
+              {searchValue && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold"
+                  aria-label="Limpar pesquisa"
+                >
+                  ×
+                </button>
+              )}
             </div>
+          )}
+
+          {/* Children customizados na barra inferior */}
+          {children && (
+            <div className="flex items-center gap-2 ml-auto">{children}</div>
           )}
         </div>
       )}
-      <div className="w-full h-px bg-border/50 mt-1" />
     </div>
   );
 }

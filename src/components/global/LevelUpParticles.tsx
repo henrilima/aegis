@@ -83,10 +83,21 @@ export function LevelUpParticles() {
       ).aegisTriggerLevelUp = trigger;
     }
 
-    const handleLevelUp = (e: Event) => {
+    const handleLevelUp = async (e: Event) => {
       const customEvent = e as CustomEvent<{ level: number }>;
       const lvl = customEvent.detail?.level;
       if (typeof lvl === "number") {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          const config = await invoke<{ showLevelUpModal?: boolean }>(
+            "global_get_app_config",
+          );
+          if (config && config.showLevelUpModal === false) {
+            return;
+          }
+        } catch {
+          // ignore
+        }
         trigger(lvl);
       }
     };
@@ -169,7 +180,7 @@ export function LevelUpParticles() {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: -20 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative pointer-events-auto px-6 py-5 rounded-2xl border border-border bg-card/95 backdrop-blur-md flex flex-col items-center gap-4 text-center max-w-[280px]"
+        className="relative pointer-events-auto px-6 py-5 rounded-2xl border border-border bg-card/95 backdrop-blur-md flex flex-col items-center gap-4 text-center max-w-70"
       >
         <button
           type="button"

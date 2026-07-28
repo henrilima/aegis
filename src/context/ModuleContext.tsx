@@ -8,7 +8,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import type { AppConfig } from "@/components/modules/settings/useSettingsLogic";
 import { useAuth } from "@/context/AuthContext";
 
 export type ModuleId =
@@ -26,12 +25,22 @@ export type ModuleId =
   | "alarms"
   | "statistics"
   | "flashcards"
-  | "achievements";
+  | "achievements"
+  | "grades";
+
+export interface SingleModuleConfig {
+  stickyHeader?: boolean;
+}
+
+export type ModuleSettingsMap = Partial<Record<ModuleId, SingleModuleConfig>>;
 
 interface ModuleContextType {
   enabledModules: ModuleId[];
   isModuleEnabled: (id: ModuleId) => boolean;
   toggleModule: (id: ModuleId) => void;
+  moduleSettings: ModuleSettingsMap;
+  isStickyHeaderEnabled: (id: ModuleId) => boolean;
+  toggleStickyHeader: (id: ModuleId) => void;
 }
 
 const DEFAULT_MODULES: ModuleId[] = [
@@ -56,44 +65,41 @@ const ModuleContext = createContext<ModuleContextType | undefined>(undefined);
 
 export function ModuleProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const userId = user?.id ?? "default";
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
+  const [moduleSettings, setModuleSettings] = useState<ModuleSettingsMap>({});
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("aegis_enabled_modules");
-    if (saved) {
+    // Carrega módulos ativos
+    const savedModules = localStorage.getItem("aegis_enabled_modules");
+    if (savedModules) {
       try {
-        const modules = JSON.parse(saved) as ModuleId[];
-        const migrated = localStorage.getItem(
-          "aegis_flashcards_enabled_default",
-        );
-        if (!migrated) {
-          if (!modules.includes("flashcards")) {
-            modules.push("flashcards");
-          }
-          localStorage.setItem("aegis_flashcards_enabled_default", "true");
-        }
-        const migratedAchievements = localStorage.getItem(
-          "aegis_achievements_enabled_default",
-        );
-        if (!migratedAchievements) {
-          if (!modules.includes("achievements")) {
-            modules.push("achievements");
-          }
-          localStorage.setItem("aegis_achievements_enabled_default", "true");
-        }
+        const modules = JSON.parse(savedModules) as ModuleId[];
         setEnabledModules(modules);
       } catch {
         setEnabledModules(DEFAULT_MODULES);
       }
     } else {
       setEnabledModules(DEFAULT_MODULES);
-      localStorage.setItem("aegis_flashcards_enabled_default", "true");
-      localStorage.setItem("aegis_achievements_enabled_default", "true");
     }
+
+    // Carrega configurações individuais de módulo por perfil de usuário
+    const savedSettings = localStorage.getItem(
+      `aegis_module_settings_${userId}`,
+    );
+    if (savedSettings) {
+      try {
+        setModuleSettings(JSON.parse(savedSettings));
+      } catch {
+        setModuleSettings({});
+      }
+    } else {
+      setModuleSettings({});
+    }
+
     setMounted(true);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
@@ -102,22 +108,17 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
           setEnabledModules(JSON.parse(e.newValue));
         } catch {}
       }
-    };
-    const handleCustomEvent = () => {
-      const saved = localStorage.getItem("aegis_enabled_modules");
-      if (saved) {
+      if (e.key === `aegis_module_settings_${userId}` && e.newValue) {
         try {
-          setEnabledModules(JSON.parse(saved));
+          setModuleSettings(JSON.parse(e.newValue));
         } catch {}
       }
     };
     window.addEventListener("storage", handleStorage);
-    window.addEventListener("aegis-modules-changed", handleCustomEvent);
     return () => {
       window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("aegis-modules-changed", handleCustomEvent);
     };
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (mounted) {
@@ -125,75 +126,21 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
         "aegis_enabled_modules",
         JSON.stringify(enabledModules),
       );
-
-      // Sincroniza a flag achievementsEnabled com o backend
-      const achievementsActive = enabledModules.includes("achievements");
-      const syncBackend = async () => {
-        try {
-          const { invoke } = await import("@tauri-apps/api/core");
-          const currentConfig = await invoke<AppConfig>(
-            "global_get_app_config",
-          );
-          if (currentConfig.achievementsEnabled !== achievementsActive) {
-            currentConfig.achievementsEnabled = achievementsActive;
-            await invoke("global_set_app_config", { config: currentConfig });
-          }
-        } catch (e) {
-          console.error(
-            "Erro ao sincronizar módulo de conquistas com o backend:",
-            e,
-          );
-        }
-      };
-      syncBackend();
-
-      // Sincroniza com o servidor remoto se estiver sob gerenciamento aprovado
-      const syncFromServer = localStorage.getItem("aegis_sync_from_server");
-      if (syncFromServer === "true") {
-        localStorage.removeItem("aegis_sync_from_server");
-      } else {
-        const managementStatus = localStorage.getItem(
-          "aegis_management_status",
-        );
-        if (managementStatus === "approved" && userId) {
-          const syncRemoteServer = async () => {
-            try {
-              const baseUrl =
-                localStorage.getItem("aegis_remote_api_url") ||
-                "https://aegiswebpainel.vercel.app";
-              const apiKey =
-                localStorage.getItem("aegis_remote_api_key") || "96421340";
-
-              await fetch(`${baseUrl}/api/users/${userId}/management-status`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": apiKey,
-                },
-                body: JSON.stringify({
-                  status: "approved",
-                  modules: enabledModules,
-                }),
-              });
-              console.log(
-                "[ModuleContext] Módulos sincronizados com o servidor remoto com sucesso.",
-              );
-            } catch (err) {
-              console.error(
-                "[ModuleContext] Erro ao sincronizar módulos com o servidor remoto:",
-                err,
-              );
-            }
-          };
-          syncRemoteServer();
-        }
-      }
     }
-  }, [enabledModules, mounted, userId]);
+  }, [enabledModules, mounted]);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem(
+        `aegis_module_settings_${userId}`,
+        JSON.stringify(moduleSettings),
+      );
+    }
+  }, [moduleSettings, mounted, userId]);
 
   const isModuleEnabled = useCallback(
     (id: ModuleId) => {
-      if (!mounted) return true; // Padrão como ativo durante SSR/montagem inicial
+      if (!mounted) return true;
       return enabledModules.includes(id);
     },
     [mounted, enabledModules],
@@ -205,9 +152,36 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const isStickyHeaderEnabled = useCallback(
+    (id: ModuleId) => {
+      return moduleSettings[id]?.stickyHeader ?? false;
+    },
+    [moduleSettings],
+  );
+
+  const toggleStickyHeader = useCallback((id: ModuleId) => {
+    setModuleSettings((prev) => {
+      const current = prev[id]?.stickyHeader ?? true;
+      return {
+        ...prev,
+        [id]: {
+          ...prev[id],
+          stickyHeader: !current,
+        },
+      };
+    });
+  }, []);
+
   return (
     <ModuleContext.Provider
-      value={{ enabledModules, isModuleEnabled, toggleModule }}
+      value={{
+        enabledModules,
+        isModuleEnabled,
+        toggleModule,
+        moduleSettings,
+        isStickyHeaderEnabled,
+        toggleStickyHeader,
+      }}
     >
       {children}
     </ModuleContext.Provider>
