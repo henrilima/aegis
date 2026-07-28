@@ -27,7 +27,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window !== "undefined" && window.__TAURI_INTERNALS__) {
       import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
-        setIsWidget(getCurrentWindow().label === "pomo-widget");
+        const label = getCurrentWindow().label;
+        setIsWidget(label === "pomo-widget" || label === "alarm-widget");
       });
     }
   }, []);

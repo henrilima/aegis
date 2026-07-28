@@ -340,9 +340,34 @@ async fn global_list_notification_sounds(app_handle: tauri::AppHandle) -> Result
                     if path.is_file() {
                         if let Some(ext) = path.extension() {
                             let ext_str = ext.to_string_lossy().to_lowercase();
-                            if ext_str == "mp3" || ext_str == "wav" || ext_str == "ogg" || ext_str == "m4a" {
+                            if matches!(ext_str.as_str(), "mp3" | "wav" | "ogg" | "m4a" | "flac" | "aac") {
                                 if let Some(name) = path.file_name() {
                                     sounds.push(name.to_string_lossy().to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Inclui mídias customizadas salvas na pasta de dados locais do usuário
+    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+        let user_sounds = app_dir.join("sounds");
+        if user_sounds.exists() && user_sounds.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(user_sounds) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Some(ext) = path.extension() {
+                            let ext_str = ext.to_string_lossy().to_lowercase();
+                            if matches!(ext_str.as_str(), "mp3" | "wav" | "ogg" | "m4a" | "flac" | "aac") {
+                                if let Some(name) = path.file_name() {
+                                    let filename = name.to_string_lossy().to_string();
+                                    if !sounds.contains(&filename) {
+                                        sounds.push(filename);
+                                    }
                                 }
                             }
                         }
@@ -358,6 +383,43 @@ async fn global_list_notification_sounds(app_handle: tauri::AppHandle) -> Result
     
     sounds.sort();
     Ok(sounds)
+}
+
+#[tauri::command]
+async fn global_list_custom_media(
+    app_handle: tauri::AppHandle,
+) -> Result<Vec<config::AppCustomMedia>, String> {
+    let config_mgr = config::ConfigManager::new(&app_handle);
+    Ok(config_mgr.list_custom_media())
+}
+
+#[tauri::command]
+async fn global_import_custom_media(
+    app_handle: tauri::AppHandle,
+    source_path: String,
+    display_name: Option<String>,
+) -> Result<config::AppCustomMedia, String> {
+    let config_mgr = config::ConfigManager::new(&app_handle);
+    config_mgr.import_custom_media(&app_handle, &source_path, display_name)
+}
+
+#[tauri::command]
+async fn global_rename_custom_media(
+    app_handle: tauri::AppHandle,
+    id: i64,
+    new_name: String,
+) -> Result<(), String> {
+    let config_mgr = config::ConfigManager::new(&app_handle);
+    config_mgr.rename_custom_media(id, &new_name)
+}
+
+#[tauri::command]
+async fn global_delete_custom_media(
+    app_handle: tauri::AppHandle,
+    id: i64,
+) -> Result<(), String> {
+    let config_mgr = config::ConfigManager::new(&app_handle);
+    config_mgr.delete_custom_media(id)
 }
 
 
@@ -460,13 +522,20 @@ async fn global_open_app_data_folder(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn global_get_app_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
-    Ok(state.config.get_config())
+async fn global_get_app_config(
+    state: State<'_, AppState>,
+    user_id: Option<String>,
+) -> Result<AppConfig, String> {
+    Ok(state.config.get_config_for_user(user_id.as_deref()))
 }
 
 #[tauri::command]
-async fn global_set_app_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
-    state.config.set_config(config)
+async fn global_set_app_config(
+    state: State<'_, AppState>,
+    config: AppConfig,
+    user_id: Option<String>,
+) -> Result<(), String> {
+    state.config.set_config_for_user(user_id.as_deref(), config)
 }
 
 #[tauri::command]
@@ -923,6 +992,19 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--minimized"])))
         .on_window_event(|window, event| {
+            let label = window.label();
+            if label == "alarm-widget" {
+                if matches!(event, tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed) {
+                    if let Ok(mut lock) = window.state::<AppState>().alarm.active_alarm.lock() {
+                        *lock = None;
+                    }
+                }
+                return;
+            }
+            if label == "pomo-widget" {
+                return;
+            }
+
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<AppState>();
                 let config = state.config.get_config();
@@ -1023,14 +1105,14 @@ pub fn run() {
             let sleep_clone = SleepManager::new(app.handle());
             let notif_clone = NotificationsManager::new(app.handle());
             let pomo_clone = PomodoroManager::new(app.handle());
-            let alarm_clone = AlarmManager::new(app.handle());
+            let alarm_clone = alarm.clone();
             let config_clone = ConfigManager::new(app.handle());
             let habit_clone = HabitManager::new(app.handle());
             let calendar_clone = CalendarManager::new(app.handle());
 
             thread::spawn::<_, ()>(move || {
-                // Inicializa com -1 para garantir que o primeiro minuto seja processado
-                let mut last_notified_min = -1;
+                // Inicializa com -1 para forçar avaliação do minuto de inicialização do app na primeira iteração
+                let mut last_notified_min: i32 = -1;
 
                 loop {
                     thread::sleep(Duration::from_secs(1)); 
@@ -1057,22 +1139,24 @@ pub fn run() {
                                     trigger = true;
                                 }
                             } else if a.alarm_type == "interval" {
-                                // Alerta de intervalo: exato no grid de minutos
+                                // Alerta de intervalo: EXATAMENTE no minuto do slot do grid
                                 if now_min >= alarm_min {
                                     let interval_mins = a.interval_minutes.unwrap_or(30);
-                                    let intervals_passed = (now_min - alarm_min) / interval_mins;
-                                    let latest_grid_slot = alarm_min + (intervals_passed * interval_mins);
-                                    
-                                    let grid_time_today = now_aegis.date_naive()
-                                        .and_hms_opt(latest_grid_slot as u32 / 60, latest_grid_slot as u32 % 60, 0)
-                                        .and_then(|dt| dt.and_local_timezone(Local).single());
-                                        
-                                    if let Some(grid_dt) = grid_time_today {
-                                        let grid_iso = grid_dt.to_rfc3339();
-                                        
-                                        if let Some(last_iso) = &a.last_triggered {
-                                            if let Ok(last_dt) = DateTime::parse_from_rfc3339(last_iso) {
-                                                if last_dt.with_timezone(&Local) < grid_dt {
+                                    if interval_mins > 0 && (now_min - alarm_min) % interval_mins == 0 {
+                                        let grid_time_today = now_aegis.date_naive()
+                                            .and_hms_opt(now_aegis.hour(), now_aegis.minute(), 0)
+                                            .and_then(|dt| dt.and_local_timezone(Local).single());
+                                            
+                                        if let Some(grid_dt) = grid_time_today {
+                                            let grid_iso = grid_dt.to_rfc3339();
+                                            
+                                            if let Some(last_iso) = &a.last_triggered {
+                                                if let Ok(last_dt) = DateTime::parse_from_rfc3339(last_iso) {
+                                                    if last_dt.with_timezone(&Local) < grid_dt {
+                                                        trigger = true;
+                                                        new_trigger_iso = Some(grid_iso);
+                                                    }
+                                                } else {
                                                     trigger = true;
                                                     new_trigger_iso = Some(grid_iso);
                                                 }
@@ -1080,20 +1164,17 @@ pub fn run() {
                                                 trigger = true;
                                                 new_trigger_iso = Some(grid_iso);
                                             }
-                                        } else {
-                                            trigger = true;
-                                            new_trigger_iso = Some(grid_iso);
                                         }
                                     }
                                 }
                             }
 
                             if trigger {
-                                log_notify!("[Aegis Loop] ALARME DISPARADO → '{}' (tipo: {})", a.title, a.alarm_type);
+                                log_notify!("[Aegis Loop] ALARME DISPARADO → '{}' (tipo: {}, modos: {:?})", a.title, a.alarm_type, a.trigger_mode);
                                 // Atualiza estado ANTES de notificar para segurança
                                 if a.alarm_type == "interval" {
                                     let iso_to_save = new_trigger_iso.clone().unwrap_or_else(|| now_aegis.to_rfc3339());
-                                    alarm_clone.update_last_triggered(a.id.unwrap(), &iso_to_save);
+                                    let _ = alarm_clone.update_last_triggered(a.id.unwrap(), &iso_to_save);
                                 }
                                 
                                 let title = format!("Aegis: {}", a.title);
@@ -1103,15 +1184,29 @@ pub fn run() {
                                     "Alerta programado disparado!".to_string() 
                                 };
                                 
-                                notify_critical(&app_handle, &title, &body);
-                                if let Err(e) = app_handle.emit("trigger-alarm", a.clone()) {
-                                    log_error!("[Aegis Loop] Falha ao emitir trigger-alarm: {}", e);
+                                let modes_str = a.trigger_mode.as_deref().unwrap_or("widget");
+                                let modes: Vec<&str> = modes_str.split(',').map(|s| s.trim()).collect();
+
+                                // 1. Notificação do Sistema
+                                if modes.contains(&"system") {
+                                    notify_critical(&app_handle, &title, &body);
                                 }
-                                if let Err(e) = notif_clone.push(&a.user_id, &title, &body, "alarms", None, a.color.as_deref(), Some(&a.icon)) {
-                                    log_error!("[Aegis Loop] Falha ao salvar notificação de alarme no banco: {}", e);
+
+                                // 2. Notificação In-App
+                                if modes.contains(&"in_app") {
+                                    if let Err(e) = notif_clone.push(&a.user_id, &title, &body, "alarms", None, a.color.as_deref(), Some(&a.icon)) {
+                                        log_error!("[Aegis Loop] Falha ao salvar notificação de alarme no banco: {}", e);
+                                    }
+                                    let skip_sound = modes.contains(&"widget");
+                                    let _ = app_handle.emit("new-notification", serde_json::json!({ "skipSound": skip_sound }));
                                 }
-                                if let Err(e) = app_handle.emit("new-notification", ()) {
-                                    log_error!("[Aegis Loop] Falha ao emitir new-notification: {}", e);
+
+                                // 3. Widget Flutuante Nativo na Tela
+                                if modes.contains(&"widget") {
+                                    let alarm_obj = a.clone();
+                                    if let Err(e) = alarm_clone.open_widget_window(alarm_obj) {
+                                        log_error!("[Aegis Loop] Falha ao abrir widget de alarme: {}", e);
+                                    }
                                 }
                             }
                         }
@@ -1215,24 +1310,25 @@ pub fn run() {
 
                     // Pomodoro Tick (Independente de minuto, usa tempo real ou simulado)
                     let user_ids = pomo_clone.get_all_user_ids();
+                    let now_pomo = config_clone.get_now();
                     for user_id in user_ids {
-                        let mut state = pomo_clone.get_state(&user_id);
+                        let state = pomo_clone.get_state(&user_id);
                         if state.is_running {
                             if let Some(start_time) = state.start_time {
-                                let elapsed_since_start = Utc::now().signed_duration_since(start_time).num_seconds() as i32;
+                                let elapsed_since_start = std::cmp::max(0, now_pomo.signed_duration_since(start_time).num_seconds() as i32);
                                 let total_elapsed = state.accumulated_seconds + elapsed_since_start;
                                 
                                 let duration_mins = if state.cycle_type == "Work" { state.work_minutes } else { state.break_minutes };
                                 let total_secs = duration_mins * 60;
                                 
                                 if total_elapsed >= total_secs {
-                                    state.cycles_completed += if state.cycle_type == "Work" { 1 } else { 0 };
-                                    state.cycle_type = if state.cycle_type == "Work" { "ShortBreak".to_string() } else { "Work".to_string() };
-                                    state.start_time = Some(Utc::now());
-                                    state.accumulated_seconds = 0;
-                                    
-                                    let _ = pomo_clone.save_state(&user_id, &state);
-                                    notify_critical(&app_handle, "Aegis Pomodoro", "Ciclo concluído!");
+                                    let new_state = pomo_clone.advance_cycle(&user_id, now_pomo);
+                                    let notif_msg = if new_state.cycle_type == "ShortBreak" {
+                                        "Ciclo de foco concluído! Hora do descanso."
+                                    } else {
+                                        "Descanso concluído! Hora de focar."
+                                    };
+                                    notify_critical(&app_handle, "Aegis Pomodoro", notif_msg);
                                 }
                             }
                         }
@@ -1339,6 +1435,7 @@ pub fn run() {
             global_export_user_package, global_import_user_package, global_export_full_system_bundle, global_import_full_system_bundle,
             global_export_raw_user_json, global_import_raw_user_json,
             global_list_notification_sounds,
+            global_list_custom_media, global_import_custom_media, global_rename_custom_media, global_delete_custom_media,
             global_notif_push, global_notif_list, global_notif_unread_count, global_notif_mark_read, global_notif_mark_unread, global_notif_mark_all_read, global_notif_delete, global_notif_delete_by_tag, global_notif_clear_read, global_ensure_discord_invite,
 
             // Passwords
@@ -1351,10 +1448,11 @@ pub fn run() {
             pomodoro::pomodoro_get_pomodoro_state, pomodoro::pomodoro_save_pomodoro_state, 
             pomodoro::pomodoro_record_pomodoro_session, pomodoro::pomodoro_get_pomodoro_history, 
             pomodoro::pomodoro_clear_pomodoro_history, pomodoro::pomodoro_open_widget,
+            pomodoro::pomodoro_next_cycle,
 
             // Alarms
             alarms::alarm_list_alarms, alarms::alarm_add_alarm, alarms::alarm_update_alarm, 
-            alarms::alarm_delete_alarm, alarms::alarm_toggle_alarm,
+            alarms::alarm_delete_alarm, alarms::alarm_toggle_alarm, alarms::alarm_open_widget, alarms::alarm_get_active_widget_alarm, alarms::alarm_clear_active_widget_alarm,
 
             // Habits
             habits::habit_list_habits, habits::habit_add_habit, habits::habit_update_habit, 
@@ -1417,7 +1515,7 @@ pub fn run() {
 
             // Dictionary
             dictionary::dictionary_search, dictionary::dictionary_list, dictionary::dictionary_add, 
-            dictionary::dictionary_delete, dictionary::dictionary_toggle_favorite, dictionary::dictionary_suggestions,
+            dictionary::dictionary_delete, dictionary::dictionary_update, dictionary::dictionary_toggle_favorite, dictionary::dictionary_suggestions,
             dictionary::dictionary_export_csv, dictionary::dictionary_import_csv,
 
             // Movies
@@ -1426,7 +1524,8 @@ pub fn run() {
             movies::movies_export_json, movies::movies_import_json,
 
             // Tasks
-            tasks::tasks_list, tasks::tasks_upsert, tasks::tasks_toggle, tasks::tasks_delete, 
+            tasks::tasks_list, tasks::tasks_upsert, tasks::tasks_toggle, tasks::tasks_delete,
+            tasks::tasks_update_status, tasks::tasks_add_time,
             tasks::export_tasks_csv, tasks::import_tasks_csv,
 
             // Flashcards

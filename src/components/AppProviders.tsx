@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { VersionGuard } from "@/components/VersionGuard";
 import { AuthProvider } from "@/context/AuthContext";
 import { ModuleProvider } from "@/context/ModuleContext";
+import { TaskTimerProvider } from "@/context/TaskTimerContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { TimeProvider } from "@/context/TimeContext";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -46,11 +47,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <TimeProvider>
           <AuthProvider>
             <ModuleProvider>
-              <AppRuntimeEffects />
-              {children}
-              <NotificationPermission />
-              <VersionGuard />
-              <Toaster />
+              <TaskTimerProvider>
+                <AppRuntimeEffects />
+                {children}
+                <NotificationPermission />
+                <VersionGuard />
+                <Toaster />
+              </TaskTimerProvider>
             </ModuleProvider>
           </AuthProvider>
         </TimeProvider>

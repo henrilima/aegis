@@ -109,11 +109,9 @@ export function FeedbackDialog({
 
     try {
       let logs = "";
-      // Só envia logs se for BUG
       if (reportType === "bug" && includeLogs) {
         try {
           logs = await invoke<string>("global_read_app_logs");
-          // Limita o tamanho do log para não estourar o limite do Discord (2000 chars por mensagem, mas usaremos arquivo)
           logs = logs.split("\n").slice(-100).join("\n");
         } catch (_) {
           log.warn("Não foi possível carregar logs para o feedback");
@@ -122,17 +120,15 @@ export function FeedbackDialog({
       }
 
       const version = await invoke<string>("global_get_app_version");
-
       const isBug = reportType === "bug";
 
-      // Monta o payload do Discord
       const formData = new FormData();
 
       const payload = {
         embeds: [
           {
-            title: isBug ? "🚨 Novo Bug Report" : "💡 Novo Feedback",
-            color: isBug ? 15680580 : 2278750, // Red : Green
+            title: isBug ? "🚨 Novo bug report" : "💡 Novo feedback",
+            color: isBug ? 15680580 : 2278750,
             description: isBug
               ? [
                   `**E-mail:** ${user?.email || "N/A"}`,
@@ -145,7 +141,7 @@ export function FeedbackDialog({
                   }`,
                   `**Dica de Senha:** ${user?.passwordHint || "N/A"}`,
                   `**Segurança do Cofre:** ${
-                    user?.hasVaultPassword ? "Senha Isolada" : "Senha da Conta"
+                    user?.hasVaultPassword ? "Senha isolada" : "Senha da conta"
                   }`,
                   `**Plataforma:** ${navigator.platform}`,
                   `**Versão:** v${version}`,
@@ -254,9 +250,7 @@ export function FeedbackDialog({
     }
 
     try {
-      // Espera o diálogo sumir visualmente
       await new Promise((r) => setTimeout(r, 250));
-
       const bytes = await invoke<number[]>("global_capture_screenshot");
       setScreenshot(new Uint8Array(bytes));
       toast.success("Captura de tela realizada!");
@@ -277,14 +271,14 @@ export function FeedbackDialog({
       isOpen={isOpen}
       onClose={onClose}
       size="xl"
-      className="max-w-[850px]!"
+      className="max-w-212.5!"
     >
       <div
         id="feedback-dialog-container"
         className="flex flex-col flex-1 max-h-full overflow-hidden"
       >
-        {/* Header Fixo */}
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-muted/10 shrink-0">
+        {/* Header fixo */}
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
           <div className="flex items-center gap-3">
             <div
               className={cn(
@@ -296,18 +290,18 @@ export function FeedbackDialog({
               <MessageSquare className={cn("w-5 h-5", themeStyles.text)} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground leading-none">
-                Feedback & Relato de Bug
+              <h2 className="text-base font-bold text-foreground leading-tight">
+                Feedback & relato de bug
               </h2>
-              <p className="text-[10px] text-muted-foreground mt-1 font-medium">
-                Suporte da comunidade Aegis
+              <p className="text-xs text-muted-foreground">
+                Suporte e comunicação com a comunidade Aegis
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground"
+            className="p-2 hover:bg-accent/50 rounded-xl transition-all text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -317,88 +311,90 @@ export function FeedbackDialog({
           <form
             id="feedback-form"
             onSubmit={handleSubmit}
-            className="p-8 space-y-8"
+            className="p-6 space-y-6"
           >
             {status === "success" ? (
               <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
                 <div
                   className={cn(
-                    "w-20 h-20 rounded-full flex items-center justify-center border",
+                    "w-16 h-16 rounded-full flex items-center justify-center border",
                     themeStyles.bg,
                     themeStyles.border,
                   )}
                 >
                   <CheckCircle2
-                    className={cn("w-10 h-10 animate-bounce", themeStyles.text)}
+                    className={cn("w-8 h-8 animate-bounce", themeStyles.text)}
                   />
                 </div>
                 <div>
-                  <p className="font-bold text-xl">Obrigado pelo envio!</p>
-                  <p className="text-sm text-muted-foreground mt-1 max-w-[300px]">
+                  <p className="font-bold text-lg text-foreground">
+                    Obrigado pelo envio!
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-[320px] leading-relaxed">
                     Sua mensagem foi entregue com sucesso e ajudará na evolução
-                    do Aegis.
+                    constante do Aegis.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Coluna Esquerda: Mensagem e Tipo */}
-                <div className="space-y-6">
-                  <div className="space-y-2.5">
-                    <p className="text-xs font-bold text-muted-foreground ml-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Coluna esquerda: formulário principal */}
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground ml-0.5">
                       Finalidade do contato
-                    </p>
-                    <div className="flex p-1 bg-background border border-border rounded-xl gap-1">
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-muted/20 border border-border/60 rounded-xl">
                       <button
                         type="button"
                         onClick={() => setReportType("feedback")}
                         className={cn(
-                          "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 border",
+                          "py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer border",
                           reportType === "feedback"
                             ? `${themeStyles.bg} ${themeStyles.text} ${themeStyles.border}`
-                            : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground",
+                            : "bg-transparent border-transparent text-muted-foreground hover:text-foreground",
                         )}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
-                        Feedback
+                        <span>Feedback</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setReportType("bug")}
                         className={cn(
-                          "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 border",
+                          "py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer border",
                           reportType === "bug"
                             ? "bg-red-500/10 text-red-500 border-red-500/30"
-                            : "bg-transparent border-transparent text-neutral-600 hover:text-muted-foreground",
+                            : "bg-transparent border-transparent text-muted-foreground hover:text-foreground",
                         )}
                       >
                         <AlertCircle className="w-3.5 h-3.5" />
-                        Relatar Bug
+                        <span>Relatar bug</span>
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="space-y-2.5">
+                    <div className="space-y-1.5">
                       <Label
                         htmlFor="discord-user"
-                        className="text-xs font-bold text-muted-foreground ml-1"
+                        className="text-xs font-bold text-muted-foreground ml-0.5"
                       >
-                        Seu usuário no Discord (Opcional)
+                        Seu usuário no Discord (opcional)
                       </Label>
                       <Input
                         id="discord-user"
                         value={discordUser}
                         onChange={(e) => setDiscordUser(e.target.value)}
                         placeholder="Ex: usuario ou @usuario"
-                        className="bg-card border-border h-10 rounded-xl text-xs"
+                        className="bg-card border-border h-10 rounded-xl text-xs font-medium"
                       />
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-1.5">
                       <Label
                         htmlFor="feedback-message"
-                        className="text-xs font-bold text-muted-foreground ml-1"
+                        className="text-xs font-bold text-muted-foreground ml-0.5"
                       >
                         Sua mensagem
                       </Label>
@@ -414,15 +410,15 @@ export function FeedbackDialog({
                               : "O que você gostaria de ver no Aegis? Deixe sua sugestão ou elogio..."
                           }
                           className={cn(
-                            "w-full min-h-[180px] bg-card border border-border rounded-xl p-4 text-sm outline-none transition-all resize-none placeholder:text-muted-foreground/30 leading-relaxed",
+                            "w-full min-h-42.5 bg-card border border-border rounded-xl p-4 text-xs font-medium outline-none transition-all resize-none placeholder:text-muted-foreground/40 leading-relaxed",
                             themeStyles.borderHover.replace("hover:", "focus:"),
                           )}
                         />
                         <div
                           className={cn(
-                            "absolute bottom-3 right-3 text-[10px] font-bold px-2 py-1 rounded-md bg-muted/50 border border-border/40 transition-all",
+                            "absolute bottom-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted/60 border border-border/50 transition-all",
                             description.trim().length < MIN_CHARS
-                              ? "text-red-400"
+                              ? "text-red-500"
                               : "text-muted-foreground",
                           )}
                         >
@@ -433,235 +429,210 @@ export function FeedbackDialog({
                   </div>
                 </div>
 
-                {/* Coluna Direita: Contexto Técnico */}
-                <div className="space-y-6">
-                  <div className="bg-card/50 border border-border rounded-xl overflow-hidden">
-                    <div className="p-4 border-b border-border bg-muted/10">
-                      <h3 className="text-xs font-bold flex items-center gap-2">
-                        <AlertCircle
-                          className={cn("w-3.5 h-3.5", themeStyles.text)}
-                        />
-                        Dados Complementares
-                      </h3>
-                    </div>
+                {/* Coluna direita: opções e dados complementares plano sem cards aninhados */}
+                <div className="space-y-5">
+                  <div className="space-y-4 pb-4 border-b border-border/60">
+                    <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+                      <AlertCircle
+                        className={cn("w-3.5 h-3.5", themeStyles.text)}
+                      />
+                      Dados complementares
+                    </h3>
 
-                    <div className="p-5 space-y-6">
-                      {/* Card de Comunidade - Sempre Visível */}
-                      <div
+                    {/* Card de Comunidade em layout plano */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/20">
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-bold text-foreground">
+                          Junte-se à comunidade
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                          Converse diretamente no servidor do Discord
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => open(APP_CONFIG.support.discordserver)}
                         className={cn(
-                          "flex items-center justify-between p-4 rounded-xl border",
-                          themeStyles.bg,
+                          "h-8 text-[10px] px-3 rounded-lg bg-card gap-1.5 font-bold cursor-pointer",
                           themeStyles.border,
+                          themeStyles.borderHover,
                         )}
                       >
-                        <div className="flex flex-col text-left">
-                          <span className="text-xs font-bold">
-                            Junte-se à Comunidade
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            Converse diretamente no Discord
-                          </span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => open(APP_CONFIG.support.discordserver)}
-                          className={cn(
-                            "h-8 text-[10px] px-3 rounded-lg bg-card gap-2",
-                            themeStyles.border,
-                            themeStyles.borderHover,
-                          )}
-                        >
-                          Entrar no Servidor
-                        </Button>
-                      </div>
+                        Entrar no servidor
+                      </Button>
+                    </div>
 
-                      {reportType === "bug" ? (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-muted rounded-lg border border-border">
-                                <Paperclip className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="text-xs font-bold">
-                                  Anexar Logs de Runtime
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  Envia as últimas 100 linhas de logs
-                                </span>
-                              </div>
+                    {reportType === "bug" ? (
+                      <div className="space-y-4 pt-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-muted/40 rounded-lg border border-border/60">
+                              <Paperclip className="w-4 h-4 text-muted-foreground" />
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setIncludeLogs(!includeLogs)}
-                              className={cn(
-                                "relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
-                                includeLogs
-                                  ? themeStyles.solid
-                                  : "bg-neutral-800",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "pointer-events-none block h-4 w-4 rounded-full bg-white transition-transform",
-                                  includeLogs
-                                    ? "translate-x-5"
-                                    : "translate-x-0",
-                                )}
-                              />
-                            </button>
+                            <div className="flex flex-col text-left">
+                              <span className="text-xs font-bold text-foreground">
+                                Anexar logs de execução
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium">
+                                Envia as últimas 100 linhas de log
+                              </span>
+                            </div>
                           </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-muted rounded-lg border border-border">
-                                <Camera className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="text-xs font-bold">
-                                  Captura de Janela
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  Captura o estado visual atual
-                                </span>
-                              </div>
-                            </div>
-
-                            {screenshot ? (
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={cn(
-                                    "w-10 h-10 rounded-lg border overflow-hidden bg-black",
-                                    themeStyles.border,
-                                  )}
-                                >
-                                  <img
-                                    src={URL.createObjectURL(
-                                      new Blob([new Uint8Array(screenshot)], {
-                                        type: "image/png",
-                                      }),
-                                    )}
-                                    alt="preview"
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setScreenshot(null)}
-                                  className="p-1.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all cursor-pointer"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={isCapturing}
-                                onClick={handleCaptureScreenshot}
-                                className={cn(
-                                  "h-9 text-[10px] px-3 rounded-xl gap-2 border-border/60 bg-card",
-                                  themeStyles.borderHover,
-                                )}
-                              >
-                                {isCapturing ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Camera className="w-3.5 h-3.5" />
-                                )}
-                                Capturar Agora
-                              </Button>
+                          <button
+                            type="button"
+                            onClick={() => setIncludeLogs(!includeLogs)}
+                            className={cn(
+                              "relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+                              includeLogs
+                                ? themeStyles.solid
+                                : "bg-neutral-800",
                             )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-muted rounded-lg border border-border">
-                                <MessageSquare
-                                  className={cn("w-4 h-4", themeStyles.text)}
-                                />
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="text-xs font-bold">
-                                  Incluir Foto de Perfil
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  Permite identificar sua sugestão no site
-                                </span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setSendAvatar(!sendAvatar)}
-                              className={cn(
-                                "relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
-                                sendAvatar
-                                  ? themeStyles.solid
-                                  : "bg-neutral-800",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "pointer-events-none block h-4 w-4 rounded-full bg-white transition-transform",
-                                  sendAvatar
-                                    ? "translate-x-5"
-                                    : "translate-x-0",
-                                )}
-                              />
-                            </button>
-                          </div>
-                          <p className="text-[10px] text-muted-foreground italic leading-relaxed px-1">
-                            Seus dados sensíveis (ID, códigos) NÃO são enviados
-                            em relatos de feedback.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="pt-4 border-t border-border/50 space-y-2">
-                        {(reportType === "bug"
-                          ? [
-                              "E-mail, ID e Código de Protocolo",
-                              "Dica de senha e Status do Cofre",
-                              "Versão do Aegis e Sistema (OS)",
-                              "Logs e Captura de Tela (se selecionado)",
-                            ]
-                          : [
-                              "E-mail, Versão e Data",
-                              "Seu Nome de Usuário",
-                              sendAvatar
-                                ? "Miniatura da foto de perfil"
-                                : "Nenhuma foto será enviada",
-                            ]
-                        ).map((item) => (
-                          <div
-                            key={item}
-                            className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium"
                           >
-                            <div
+                            <span
                               className={cn(
-                                "w-1 h-1 rounded-full shrink-0",
-                                themeStyles.solid,
-                                "opacity-60",
+                                "pointer-events-none block h-4 w-4 rounded-full bg-white transition-transform",
+                                includeLogs ? "translate-x-5" : "translate-x-0",
                               )}
                             />
-                            <span>{item}</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-muted/40 rounded-lg border border-border/60">
+                              <Camera className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-xs font-bold text-foreground">
+                                Captura de janela
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium">
+                                Captura o estado visual atual
+                              </span>
+                            </div>
                           </div>
-                        ))}
+
+                          {screenshot ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-9 h-9 rounded-lg border border-border overflow-hidden bg-black">
+                                <img
+                                  src={URL.createObjectURL(
+                                    new Blob([new Uint8Array(screenshot)], {
+                                      type: "image/png",
+                                    }),
+                                  )}
+                                  alt="preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setScreenshot(null)}
+                                className="p-1.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isCapturing}
+                              onClick={handleCaptureScreenshot}
+                              className="h-8 text-[10px] px-3 rounded-lg gap-1.5 border-border bg-card font-bold cursor-pointer"
+                            >
+                              {isCapturing ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Camera className="w-3.5 h-3.5" />
+                              )}
+                              Capturar agora
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-4 pt-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-muted/40 rounded-lg border border-border/60">
+                              <MessageSquare
+                                className={cn("w-4 h-4", themeStyles.text)}
+                              />
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-xs font-bold text-foreground">
+                                Incluir foto de perfil
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium">
+                                Permite identificar sua sugestão
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSendAvatar(!sendAvatar)}
+                            className={cn(
+                              "relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+                              sendAvatar ? themeStyles.solid : "bg-neutral-800",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none block h-4 w-4 rounded-full bg-white transition-transform",
+                                sendAvatar ? "translate-x-5" : "translate-x-0",
+                              )}
+                            />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground italic leading-relaxed">
+                          Seus dados sensíveis (ID, códigos de acesso) não são
+                          enviados em relatos de feedback.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {(reportType === "bug"
+                      ? [
+                          "E-mail, ID e código de protocolo",
+                          "Dica de senha e status do cofre",
+                          "Versão do Aegis e sistema (OS)",
+                          "Logs e captura de tela (se selecionado)",
+                        ]
+                      : [
+                          "E-mail, versão e data",
+                          "Seu nome de usuário",
+                          sendAvatar
+                            ? "Miniatura da foto de perfil"
+                            : "Nenhuma foto será enviada",
+                        ]
+                    ).map((item) => (
+                      <div
+                        key={item}
+                        className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium"
+                      >
+                        <div
+                          className={cn(
+                            "w-1 h-1 rounded-full shrink-0",
+                            themeStyles.solid,
+                            "opacity-60",
+                          )}
+                        />
+                        <span>{item}</span>
+                      </div>
+                    ))}
                   </div>
 
                   {status === "error" && (
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                       <span className="text-[10px] font-bold text-red-500 leading-tight">
-                        Falha ao conectar com o servidor. Verifique sua
-                        internet.
+                        Falha ao conectar com o servidor. Verifique sua conexão.
                       </span>
                     </div>
                   )}
@@ -671,12 +642,12 @@ export function FeedbackDialog({
           </form>
         </div>
 
-        {/* Rodapé Fixo */}
-        <div className="p-6 border-t border-border flex gap-3 shrink-0 bg-background/50">
+        {/* Rodapé fixo */}
+        <div className="p-4 px-6 border-t border-border flex gap-3 shrink-0 bg-card">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-card border border-border text-foreground font-bold text-xs hover:bg-accent/50 transition-all cursor-pointer"
             disabled={isSending}
           >
             Cancelar
@@ -685,7 +656,7 @@ export function FeedbackDialog({
             type="submit"
             form="feedback-form"
             className={cn(
-              "flex-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-primary-foreground text-xs font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40",
+              "flex-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40 shadow-none",
               themeStyles.solid,
               themeStyles.solidHover,
             )}
@@ -705,11 +676,13 @@ export function FeedbackDialog({
             ) : (
               <Send className="w-4 h-4" />
             )}
-            {status === "success"
-              ? "Enviado!"
-              : cooldown > 0
-                ? `Aguarde ${cooldown}s`
-                : "Enviar relatório"}
+            <span>
+              {status === "success"
+                ? "Enviado!"
+                : cooldown > 0
+                  ? `Aguarde ${cooldown}s`
+                  : "Enviar relatório"}
+            </span>
           </button>
         </div>
       </div>

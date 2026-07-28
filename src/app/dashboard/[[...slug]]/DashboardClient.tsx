@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Loading from "@/components/global/Loading";
 import ModuleLoading from "@/components/global/ModuleLoading";
+import { FloatingAlarmWidget } from "@/components/modules/alarms/FloatingAlarmWidget";
+import Dashboard from "@/components/modules/dashboard";
 import { FloatingPomodoroWidget } from "@/components/modules/pomodoro/FloatingPomodoroWidget";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
@@ -20,9 +22,6 @@ const Alarms = dynamic(() => import("@/components/modules/alarms"), {
 });
 const Calendar = dynamic(() => import("@/components/modules/calendar"), {
   loading: () => <ModuleLoading moduleName="Calendário" />,
-});
-const Dashboard = dynamic(() => import("@/components/modules/dashboard"), {
-  loading: () => <ModuleLoading moduleName="Dashboard" />,
 });
 const Dictionary = dynamic(() => import("@/components/modules/dictionary"), {
   loading: () => <ModuleLoading moduleName="Dicionário" />,
@@ -65,12 +64,14 @@ export default function DashboardClient() {
   const router = useRouter();
   const { route } = useNavigation();
   const { user, loading, isAuthenticated } = useAuth();
-  const [isWidget, setIsWidget] = useState(false);
+  const [widgetType, setWidgetType] = useState<"pomo" | "alarm" | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.__TAURI_INTERNALS__) {
       import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
-        setIsWidget(getCurrentWindow().label === "pomo-widget");
+        const label = getCurrentWindow().label;
+        if (label === "pomo-widget") setWidgetType("pomo");
+        else if (label === "alarm-widget") setWidgetType("alarm");
       });
     }
   }, []);
@@ -92,7 +93,7 @@ export default function DashboardClient() {
     }
   }, [isAuthenticated, user?.id]);
 
-  if (isWidget && (loading || !user)) {
+  if (widgetType && (loading || !user)) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-card p-4 select-none">
         <div className="flex flex-col items-center gap-2">
@@ -107,12 +108,16 @@ export default function DashboardClient() {
     );
   }
 
-  if (loading || !user) {
-    return <Loading />;
+  if (widgetType === "alarm") {
+    return <FloatingAlarmWidget />;
   }
 
-  if (isWidget) {
+  if (widgetType === "pomo") {
     return <FloatingPomodoroWidget />;
+  }
+
+  if (loading || !user) {
+    return <Loading />;
   }
 
   const renderContent = () => {

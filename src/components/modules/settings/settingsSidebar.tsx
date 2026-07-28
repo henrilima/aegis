@@ -1,4 +1,4 @@
-import { Bell, Monitor, ShieldCheck, User } from "lucide-react";
+import { Bell, FileAudio, Monitor, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Tab } from "./useSettingsLogic";
@@ -18,6 +18,7 @@ export function SettingsSidebar({
     { id: "system" as Tab, label: "Sistema", icon: Monitor },
     { id: "security" as Tab, label: "Segurança", icon: ShieldCheck },
     { id: "notifications" as Tab, label: "Notificações", icon: Bell },
+    { id: "media" as Tab, label: "Arquivos de mídia", icon: FileAudio },
   ];
 
   return (

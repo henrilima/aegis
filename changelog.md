@@ -1,6 +1,53 @@
 # Aegis
 
 ### Novidades
+- **Redesign Horizontal Lado a Lado da Tela de Carregamento (`Loading.tsx`)**:
+  - Novo layout horizontal (*side-by-side*): Logo flutuante limpa à esquerda, linha divisória vertical elegante, título com tag de versão, mensagens dinâmicas de status e barra de progresso à direita;
+  - Tempo de carregamento estendido para 2,0 segundos no `AuthContext.tsx`, proporcionando ritmo natural e agradável na abertura do app;
+  - Rigorosamente sem sombras, sem efeitos de *blur* e com tipografia em *Sentence case*.
+- **Correção da Transição de Inicialização para a Dashboard**:
+  - Importação do módulo `Dashboard` alterada para estática no [DashboardClient.tsx](file:///s:/Aegis/src/app/dashboard/%5B%5B...slug%5D%5D/DashboardClient.tsx), eliminando o aparecimento de `ModuleLoading` na abertura.
+- **Remodelagem Visual dos Componentes Globais (`EmptyState`, `QuickSearch` e `FeedbackDialog`)**:
+  - **`EmptyState.tsx`**: Removidas sombras com *blur* excessivas, adicionado badge de ícone arredondado (`rounded-2xl`) com borda suave, tipografia em *Sentence case* e cores perfeitamente visíveis em modos claro e escuro.
+  - **`DictionaryQuickSearch.tsx`**: Redesenhado no estilo *Command-K* moderno, com indicador de estado de busca, chips de sugestão interativos e sem hacks de estilo.
+  - **`FeedbackDialog.tsx`**: Eliminação de cards aninhados (`card dentro de card`), refatoração dos seletores de finalidade e dados complementares em layout plano e limpo.
+- **Redesign Global da Modal de Confirmação de Exclusão (ConfirmModal)**:
+  - Layout totalmente reformulado e integrado ao design system do aplicativo;
+  - Remoção do banner superior pesado (`py-10`) e dos cards internos aninhados (`card dentro de card`), substituídos por um visual limpo com cabeçalho de ícone arredondado e botões de ação horizontais;
+  - Padronização em *Sentence case* e remoção de sombras para total conformidade com as diretrizes visuais.
+- **Módulo de Dicionário — Edição de Termos Salvos e Associação Personalizada na Busca**:
+  - Ao buscar um termo (ex: "Fatídico"), o modal de resultado pré-preenche a palavra associada com o termo pesquisado pelo usuário e disponibiliza um campo interativo para editar ou customizar a palavra que será armazenada no glossário antes de salvar;
+  - Suporte completo no glossário para editar termos salvos (palavra associada, transcrição fonética e definição) através de modal exclusivo de edição acessível pelo ícone de lápis em cada card.
+- **Módulo de Sono — Edição e Exclusão no Diário de Sonhos**:
+  - Edição completa de relatos de sonhos cadastrados (conteúdo, data e tipo de sonho) diretamente pela interface e exclusão com confirmação via modal.
+- **Módulo de Sono — Consolidação da Aba de Relatórios**:
+  - As abas de sonolência e relatórios de sono foram unificadas em uma única aba chamada **Relatórios** localizada ao final das abas do módulo, reunindo indicadores, análise de pressão de sono circadiana e histórico detalhado.
+- **Padronização Global de Abas e Tipografia em Sentence Case**:
+  - Padronização em todos os módulos para posicionar as abas de "Relatórios" e "Histórico" ao final do cabeçalho, com "Relatórios" sempre no plural e posicionado antes de "Histórico";
+  - Ajuste de escrita em todos os módulos, abas, botões e títulos para o padrão *Sentence case* (primeira letra maiúscula e o resto minúsculo).
+- **Módulo de Leitura — Vinculação Automática de Hábitos e Padronização do Modal de Metas**:
+  - Modal de metas e preferências redesenhado em duas colunas no formato `2xl` para melhor organização visual, padronizado com o módulo de estudos;
+  - Seção para vincular um hábito de leitura, realizando a marcação automática do hábito selecionado ao registrar uma sessão de leitura no dia;
+  - Adequação às diretrizes visuais do projeto: eliminação de sombras, tipografia padronizada em `font-bold` (sem `font-black`) e uso do componente `Select` do `shadcn`.
+- **Módulo de Pomodoro — Registro de Tempo de Foco por Disciplina**:
+  - Ao parar o temporizador com ciclos concluídos, abre automaticamente um modal com opção para vincular o tempo de foco a uma matéria de estudos cadastrada;
+  - Pré-preenchimento automático da duração total acumulada nos ciclos e seleção intuitiva de disciplinas cadastradas via autocompletar inteligente;
+  - Exibição destacada no histórico de estudos com badge visual em vermelho/rose e ícone de temporizador, permitindo edição futura completa de notas, conteúdos e nível de foco;
+  - Modal redesenhado em 2 colunas com o `ModalShell` mais largo (`xl`), isolamento de digitação (sem resets contínuos), escala de foco e energia padronizada de 0 a 5 (igual a estudos) e textos em Sentence case.
+- **Módulo de Tarefas — Quadro Kanban Visual**: Visualização alternativa das tarefas organizada em três colunas horizontais por status — "A Fazer", "Fazendo" e "Concluído".
+  - Toggle de visualização no topo do módulo para alternar entre a visão de lista e a visão kanban (preferência salva automaticamente);
+  - Drag-and-drop nativo de cards entre colunas para mover o status da tarefa sem abrir nenhum modal;
+  - Cards exibem cor lateral personalizada, prioridade, categoria e botão de temporizador integrado;
+  - Migração retrocompatível: tarefas existentes assumem automaticamente o status correto com base no campo `completed`.
+- **Módulo de Tarefas — Temporizador de Tarefa Ativa**: Cronômetro embutido por tarefa para rastrear e somar o tempo gasto na execução.
+  - Botão play/pause ao lado de cada tarefa na visão de lista e badge de timer nos cards do kanban;
+  - Apenas uma tarefa pode ter o cronômetro ativo por vez — iniciar em outra pausa automaticamente a anterior e persiste os segundos acumulados;
+  - Tempo total acumulado (soma de todas as sessões) exibido diretamente no item ou card (Ex: "1h 23min");
+  - Persistência automática via banco SQLite ao pausar ou trocar de tarefa ativa.
+- **Módulo de Estudos — Metas de Horas de Estudo por Matéria**:
+  - Permite definir alvos opcionais de horas semanais individualizados por disciplina diretamente na criação/edição de cada matéria;
+  - Reorganização do modal de edição em duas colunas elegantes no formato `2xl` para melhor disposição das informações e facilidade de configuração;
+  - Exibição de progresso em tempo real na aba de matérias através de uma barra de progresso semanal (Progresso de Estudos Semanal) que compara as horas estudadas nesta semana com a meta definida para a disciplina.
 - **Módulo de Sono — Diário de Sonhos e Fatores de Qualidade**: 
   - Nova aba de Diário de Sonhos com formulário integrado de registro e timeline visual simplificada e limpa para listagem de relatos (lúcido, comum, pesadelo) sem ícones ou elementos visuais decorativos desnecessários. Inclui isolamento de estado na data selecionada para evitar reinicializações durante o ticking do relógio;
   - Checklist integrado para registro de fatores de qualidade de sono ao acordar (caffeine, screens, alcohol, exercise), exibidos como badges coloridos e sutis no histórico de noites.
@@ -54,9 +101,25 @@
 - **Módulo Pomodoro — Widget Flutuante**: Possibilidade de destacar o temporizador Pomodoro em uma janela secundária nativa.
   - Janela flutuante sempre no topo (`always-on-top`) e redimensionável livremente;
   - Exibe contagem regressiva, tipo de ciclo ativo ("Foco" ou "Pausa") e controles de Iniciar, Pausar e Parar;
-  - Sincronização em tempo real de estado do cronômetro entre as janelas do sistema via eventos Tauri.
+- **Módulo de Estudos — Reformulação do Layout do Histórico**: Redesenho completo dos cards de sessões no histórico de estudos com organização estruturada, eliminações de poluição visual e conformidade estrita com as diretrizes do app.
+  - Alinhamento limpo da matéria, tag de grupo/Pomodoro (em sentence case) e ações diretamente no cabeçalho;
+  - Padronização em sequência fixa com alinhamento à esquerda e divisores verticais para métricas (Tempo ➔ Foco ➔ Questões ➔ Páginas);
+- **Módulo de Alarmes — Reformulação Completa para Alarmes Reais (Despertador)**: Transformação completa do módulo em um sistema despertador nativo e interativo.
+  - Widget flutuante nativo (`alarm-widget`) sempre no topo com contagem regressiva e botões de adiar (5, 10, 15 min) e parar alarme;
+  - Áudio de alarme contínuo em loop (`alarm_1.mp3` e `alarm_2.mp3`) que toca até ser desativado pelo usuário;
+  - Adiamento automático automático após 2 minutos sem resposta por inatividade na tela;
+  - Configuração por alarme de modo de disparo: Widget Flutuante, Notificação de Sistema ou In-App;
+  - Integração do componente global `IconSelect` com suporte à busca de mais de 80 ícones do sistema.
 
 ### Ajustes e Estabilidade
+- **Módulo de Alarmes — Correção no Botão Parar Alarme**: Remoção da captura de drag region no container do botão do widget flutuante e interrupção de propagação de eventos, permitindo o clique imediato e encerramento do áudio.
+- **Módulo de Alarmes — Encerramento pelo Menu/Barra de Tarefas**: Liberação da janela `alarm-widget` do comportamento `minimize_on_close` no manipulador `on_window_event` do Tauri, garantindo a interrupção do som e limpeza do alarme ativo ao fechar a janela pela barra de tarefas.
+- **Isolamento de Perfil de Usuário — Temas, Automações e Configurações**: Implementação de chaves isoladas por `user_id` nas configurações do aplicativo e context de temas, além da verificação de usuário ativo nas automações para impedir contaminação de temas ou configurações entre contas distintas.
+- **Módulo de Leitura — Cálculo de Metas Semanais**: Ajuste no cálculo de páginas e minutos por semana na Visão Geral para contabilizar estritamente os registros da semana corrente (a partir de segunda-feira).
+- **Módulo de Pomodoro — Pausa Automática ao Reabrir App**: O temporizador do Pomodoro ativo ao fechar o aplicativo agora assume o estado pausado ao reabrir a janela, preservando o tempo acumulado.
+- **Módulo de Pomodoro — Pergunta de Confirmação antes de Vincular**: Ao interromper o Pomodoro, o sistema agora solicita confirmação ao usuário via `ConfirmModal` antes de abrir o modal de vinculação aos estudos.
+- **Módulo de Pomodoro & Estudos — Unificação do Tema de Cores**: Definição da cor oficial do módulo Pomodoro como `rose` em `modules.config.ts` e substituição de todas as variáveis estáticas por `getColorTheme` em todos os componentes (`pomoHeader`, `pomoHistory`, `PomodoroLinkStudyModal` e `index`).
+- **Módulo de Estudos — Reconhecimento de Tag Pomodoro**: O histórico de estudos agora identifica sessões do Pomodoro tanto pela flag `isPomodoro` quanto pela presença manual da tag `pomodoro` nos marcadores, formatando o card com a badge especial e com toda a paleta rosa oficial do módulo.
 - **Módulo de Sono — Calculadora**: Simplificação visual da aba de Calculadora de Ciclos removendo ícones decorativos desnecessários e eliminando o padrão de card dentro de card nas dicas de higiene do sono.
 - **Módulo de Flashcards — Ajustes de Design**: Redesenho do card de baralho para adotar um estilo flat sólido (`bg-card` e hover de borda discreto), evitando vazamentos visuais do dropdown de ações.
 - **Unificação de Cores em Relatórios Globais**: Atualização dos módulos de relatórios (Flashcards e Leitura) para adotarem estritamente as cores oficiais de seus respectivos módulos em todo o painel visual, textual e seletores de abas de período, eliminando as antigas variações e inconsistências.

@@ -40,8 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchUser = useCallback(async (userId: string) => {
-    // Definimos um tempo mínimo de carregamento para o usuário ver a animação
-    const minLoadingTime = new Promise((resolve) => setTimeout(resolve, 1500));
+    const minLoadingTime = new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
       const userData = await invoke<User>("global_get_local_user", {
@@ -55,6 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (id) {
           setUser({ ...userData, id });
           setIsAuthenticated(true);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("aegis_session_user_id", id);
+          }
         } else {
           throw new Error("Usuário sem identificador válido");
         }
@@ -67,6 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         autoSave: true,
       });
       await store.delete("token");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("aegis_session_user_id");
+      }
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -83,6 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       autoSave: true,
     });
     await store.set("token", userId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aegis_session_user_id", userId);
+    }
     await fetchUser(userId);
   };
 
@@ -90,6 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     load("aegis-session.json", { defaults: {}, autoSave: true }).then((store) =>
       store.delete("token"),
     );
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("aegis_session_user_id");
+    }
     setUser(null);
     setIsAuthenticated(false);
     router.push("/");

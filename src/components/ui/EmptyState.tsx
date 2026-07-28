@@ -18,7 +18,7 @@ interface EmptyStateProps {
 
 /**
  * Componente padronizado para estados vazios (Empty States) em toda a aplicação.
- * Projetado para ser visualmente agradável sem ser excessivamente opaco ou invisível.
+ * Projetado para ser limpo, acessível e alinhado ao design system sem sombras.
  */
 export function EmptyState({
   icon: Icon,
@@ -32,23 +32,20 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-700",
+        "flex flex-col items-center justify-center py-16 px-4 text-center animate-in fade-in duration-300",
         className,
       )}
     >
-      <div className="relative mb-6">
-        {/* Efeito de brilho sutil no fundo */}
-        <div className="absolute inset-0 bg-neutral-500/5 blur-3xl rounded-full scale-150" />
-
-        <div className="relative p-6 rounded-xl bg-card/30 border border-border group-hover:border-border transition-colors">
-          <Icon className="w-12 h-12 text-neutral-600/60" />
-        </div>
+      <div className="mb-4 p-4 rounded-2xl bg-muted/20 border border-border/60 text-muted-foreground flex items-center justify-center">
+        <Icon className="w-8 h-8 opacity-80" />
       </div>
 
-      <h3 className="text-lg font-bold text-muted-foreground mb-2">{title}</h3>
+      <h3 className="text-base font-bold text-foreground mb-1.5 leading-snug">
+        {title}
+      </h3>
 
       {description && (
-        <p className="text-xs text-neutral-600 max-w-[240px] leading-relaxed font-medium">
+        <p className="text-xs text-muted-foreground max-w-70 leading-relaxed font-medium">
           {description}
         </p>
       )}
@@ -57,10 +54,10 @@ export function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-card border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-accent/50 transition-all active:scale-95 cursor-pointer"
+          className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-card border border-border text-xs font-bold text-foreground hover:bg-accent/50 transition-all active:scale-95 cursor-pointer shadow-none"
         >
           {ActionIcon && <ActionIcon className="w-3.5 h-3.5" />}
-          {actionLabel}
+          <span>{actionLabel}</span>
         </button>
       )}
     </div>

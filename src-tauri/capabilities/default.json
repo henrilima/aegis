@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": ["main", "pomo-widget"],
+  "windows": ["main", "pomo-widget", "alarm-widget"],
   "permissions": [
     "core:default",
     "core:event:default",

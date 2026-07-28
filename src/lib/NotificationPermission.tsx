@@ -12,8 +12,10 @@ export function NotificationPermission() {
   useEffect(() => {
     const checkPermission = async () => {
       try {
-        // Verifica e solicita permissão diretamente via backend Rust,
-        // evitando o registerListener interno do plugin JS
+        if (typeof window !== "undefined" && window.__TAURI_INTERNALS__) {
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          if (getCurrentWindow().label !== "main") return;
+        }
         await invoke("plugin:notification|request_permission");
       } catch (e) {
         console.error("Erro ao solicitar permissão de notificação:", e);

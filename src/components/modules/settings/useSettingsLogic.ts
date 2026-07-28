@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { type AppRoute, useNavigation } from "@/context/NavigationContext";
 import {
-  listNotificationSounds,
+  getAudioOptions,
   playNotificationSound,
   resolveNotificationSound,
 } from "@/lib/sounds";
@@ -15,6 +15,7 @@ export type Tab =
   | "system"
   | "security"
   | "notifications"
+  | "media"
   | "danger";
 
 export interface AppConfig {
@@ -62,7 +63,6 @@ export interface AppConfig {
 }
 
 let globalCachedConfig: AppConfig | null = null;
-let globalSoundsCache: string[] | null = null;
 
 export function useSettingsLogic() {
   const { user, logout } = useAuth();
@@ -195,14 +195,11 @@ export function useSettingsLogic() {
 
   const loadConfig = useCallback(async () => {
     try {
-      const [config, sounds] = await Promise.all([
+      const [config, audioOpts] = await Promise.all([
         invoke<AppConfig>("global_get_app_config"),
-        globalSoundsCache
-          ? Promise.resolve(globalSoundsCache)
-          : listNotificationSounds().catch(() => [] as string[]),
+        getAudioOptions().catch(() => []),
       ]);
       globalCachedConfig = config;
-      globalSoundsCache = sounds;
 
       setMinimizeOnClose(config.minimizeOnClose);
 
@@ -213,10 +210,11 @@ export function useSettingsLogic() {
         } else {
           setStartAtLogin(config.startAtLogin);
         }
-      } catch (e) {
-        console.error("Failed to check autostart status:", e);
+      } catch (err) {
+        console.warn("[useSettingsLogic] Falha ao ler autostart:", err);
         setStartAtLogin(config.startAtLogin);
       }
+
       setHighPriorityNotifications(config.highPriorityNotifications);
       setStartMinimized(config.startMinimized);
       setWeekStartDay(config.weekStartDay);
@@ -231,13 +229,17 @@ export function useSettingsLogic() {
       setNotifEventUpcoming(config.notifEventUpcoming);
       setNotifEventUpcomingTime(config.notifEventUpcomingTime);
       setNotifSleepTargetHours(config.notifSleepTargetHours);
+
       let activeSound = config.notificationSound;
-      if (activeSound && sounds.length > 0 && !sounds.includes(activeSound)) {
-        activeSound = resolveNotificationSound(activeSound, sounds);
-        const updatedConfig = { ...config, notificationSound: activeSound };
-        invoke("global_set_app_config", { config: updatedConfig }).catch(
-          console.error,
-        );
+      if (activeSound && audioOpts.length > 0) {
+        const resolved = resolveNotificationSound(activeSound, audioOpts);
+        if (resolved !== activeSound) {
+          activeSound = resolved;
+          const updatedConfig = { ...config, notificationSound: activeSound };
+          invoke("global_set_app_config", { config: updatedConfig }).catch(
+            console.error,
+          );
+        }
       }
       setNotificationSound(activeSound);
       if (config.tmdbApiKey !== undefined) setTmdbApiKey(config.tmdbApiKey);
@@ -260,26 +262,79 @@ export function useSettingsLogic() {
         setDashboardHeaderStyle(config.dashboardHeaderStyle);
       if (config.customDataDir !== undefined)
         setCustomDataDir(config.customDataDir);
-      if (config.dashboardCoverImage !== undefined)
-        setDashboardCoverImage(config.dashboardCoverImage);
-      if (config.dashboardWelcomingGlass !== undefined)
-        setDashboardWelcomingGlass(config.dashboardWelcomingGlass);
-      if (config.dashboardCoverPositionX !== undefined)
-        setDashboardCoverPositionX(config.dashboardCoverPositionX);
-      if (config.dashboardCoverPositionY !== undefined)
-        setDashboardCoverPositionY(config.dashboardCoverPositionY);
-      if (config.dashboardShowDate !== undefined)
-        setDashboardShowDate(config.dashboardShowDate);
-      if (config.dashboardCoverBlur !== undefined)
-        setDashboardCoverBlur(config.dashboardCoverBlur);
-      if (config.dashboardCoverGrayscale !== undefined)
-        setDashboardCoverGrayscale(config.dashboardCoverGrayscale);
-      if (config.dashboardCoverSaturation !== undefined)
-        setDashboardCoverSaturation(config.dashboardCoverSaturation);
-      if (config.dashboardCoverZoom !== undefined)
-        setDashboardCoverZoom(config.dashboardCoverZoom);
-      if (config.dashboardCoverHeight !== undefined)
-        setDashboardCoverHeight(config.dashboardCoverHeight);
+      const uid = user?.id ? String(user.id) : "";
+      if (uid && typeof window !== "undefined") {
+        const coverImg = localStorage.getItem(`aegis_cover_image_${uid}`);
+        if (coverImg !== null) setDashboardCoverImage(coverImg);
+        else if (config.dashboardCoverImage !== undefined)
+          setDashboardCoverImage(config.dashboardCoverImage);
+
+        const glass = localStorage.getItem(`aegis_cover_glass_${uid}`);
+        if (glass !== null) setDashboardWelcomingGlass(glass === "true");
+        else if (config.dashboardWelcomingGlass !== undefined)
+          setDashboardWelcomingGlass(config.dashboardWelcomingGlass);
+
+        const posX = localStorage.getItem(`aegis_cover_pos_x_${uid}`);
+        if (posX !== null) setDashboardCoverPositionX(Number(posX));
+        else if (config.dashboardCoverPositionX !== undefined)
+          setDashboardCoverPositionX(config.dashboardCoverPositionX);
+
+        const posY = localStorage.getItem(`aegis_cover_pos_y_${uid}`);
+        if (posY !== null) setDashboardCoverPositionY(Number(posY));
+        else if (config.dashboardCoverPositionY !== undefined)
+          setDashboardCoverPositionY(config.dashboardCoverPositionY);
+
+        const showDate = localStorage.getItem(`aegis_cover_show_date_${uid}`);
+        if (showDate !== null) setDashboardShowDate(showDate === "true");
+        else if (config.dashboardShowDate !== undefined)
+          setDashboardShowDate(config.dashboardShowDate);
+
+        const blur = localStorage.getItem(`aegis_cover_blur_${uid}`);
+        if (blur !== null) setDashboardCoverBlur(Number(blur));
+        else if (config.dashboardCoverBlur !== undefined)
+          setDashboardCoverBlur(config.dashboardCoverBlur);
+
+        const gray = localStorage.getItem(`aegis_cover_grayscale_${uid}`);
+        if (gray !== null) setDashboardCoverGrayscale(Number(gray));
+        else if (config.dashboardCoverGrayscale !== undefined)
+          setDashboardCoverGrayscale(config.dashboardCoverGrayscale);
+
+        const sat = localStorage.getItem(`aegis_cover_saturation_${uid}`);
+        if (sat !== null) setDashboardCoverSaturation(Number(sat));
+        else if (config.dashboardCoverSaturation !== undefined)
+          setDashboardCoverSaturation(config.dashboardCoverSaturation);
+
+        const zoom = localStorage.getItem(`aegis_cover_zoom_${uid}`);
+        if (zoom !== null) setDashboardCoverZoom(Number(zoom));
+        else if (config.dashboardCoverZoom !== undefined)
+          setDashboardCoverZoom(config.dashboardCoverZoom);
+
+        const height = localStorage.getItem(`aegis_cover_height_${uid}`);
+        if (height !== null) setDashboardCoverHeight(Number(height));
+        else if (config.dashboardCoverHeight !== undefined)
+          setDashboardCoverHeight(config.dashboardCoverHeight);
+      } else {
+        if (config.dashboardCoverImage !== undefined)
+          setDashboardCoverImage(config.dashboardCoverImage);
+        if (config.dashboardWelcomingGlass !== undefined)
+          setDashboardWelcomingGlass(config.dashboardWelcomingGlass);
+        if (config.dashboardCoverPositionX !== undefined)
+          setDashboardCoverPositionX(config.dashboardCoverPositionX);
+        if (config.dashboardCoverPositionY !== undefined)
+          setDashboardCoverPositionY(config.dashboardCoverPositionY);
+        if (config.dashboardShowDate !== undefined)
+          setDashboardShowDate(config.dashboardShowDate);
+        if (config.dashboardCoverBlur !== undefined)
+          setDashboardCoverBlur(config.dashboardCoverBlur);
+        if (config.dashboardCoverGrayscale !== undefined)
+          setDashboardCoverGrayscale(config.dashboardCoverGrayscale);
+        if (config.dashboardCoverSaturation !== undefined)
+          setDashboardCoverSaturation(config.dashboardCoverSaturation);
+        if (config.dashboardCoverZoom !== undefined)
+          setDashboardCoverZoom(config.dashboardCoverZoom);
+        if (config.dashboardCoverHeight !== undefined)
+          setDashboardCoverHeight(config.dashboardCoverHeight);
+      }
       if (config.showProfileRankBorder !== undefined)
         setShowProfileRankBorder(config.showProfileRankBorder);
       if (config.showSidebarRankBorder !== undefined)
@@ -289,7 +344,7 @@ export function useSettingsLogic() {
       console.error("Failed to load config:", err);
       setIsConfigLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     loadConfig();
@@ -382,6 +437,30 @@ export function useSettingsLogic() {
         setDashboardClockAnimated(value as boolean);
       if (key === "dashboardHeaderStyle")
         setDashboardHeaderStyle(value as string);
+      const uid = user?.id ? String(user.id) : "";
+      if (uid && typeof window !== "undefined") {
+        if (key === "dashboardCoverImage")
+          localStorage.setItem(`aegis_cover_image_${uid}`, String(value));
+        if (key === "dashboardWelcomingGlass")
+          localStorage.setItem(`aegis_cover_glass_${uid}`, String(value));
+        if (key === "dashboardCoverPositionX")
+          localStorage.setItem(`aegis_cover_pos_x_${uid}`, String(value));
+        if (key === "dashboardCoverPositionY")
+          localStorage.setItem(`aegis_cover_pos_y_${uid}`, String(value));
+        if (key === "dashboardShowDate")
+          localStorage.setItem(`aegis_cover_show_date_${uid}`, String(value));
+        if (key === "dashboardCoverBlur")
+          localStorage.setItem(`aegis_cover_blur_${uid}`, String(value));
+        if (key === "dashboardCoverGrayscale")
+          localStorage.setItem(`aegis_cover_grayscale_${uid}`, String(value));
+        if (key === "dashboardCoverSaturation")
+          localStorage.setItem(`aegis_cover_saturation_${uid}`, String(value));
+        if (key === "dashboardCoverZoom")
+          localStorage.setItem(`aegis_cover_zoom_${uid}`, String(value));
+        if (key === "dashboardCoverHeight")
+          localStorage.setItem(`aegis_cover_height_${uid}`, String(value));
+      }
+
       if (key === "dashboardCoverImage")
         setDashboardCoverImage(value as string);
       if (key === "dashboardShowDate") setDashboardShowDate(value as boolean);
@@ -404,6 +483,7 @@ export function useSettingsLogic() {
         setShowProfileRankBorder(value as boolean);
       if (key === "showSidebarRankBorder")
         setShowSidebarRankBorder(value as boolean);
+      window.dispatchEvent(new Event("aegis-config-changed"));
       toast.success("Configuração atualizada");
     } catch (err) {
       console.error("Failed to save config:", err);

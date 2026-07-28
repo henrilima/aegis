@@ -192,6 +192,15 @@ fn get_daily_completed_tasks(conn: &Connection, user_id: &str, today: &str) -> f
     .unwrap_or(0) as f64
 }
 
+fn get_daily_reading_pages(conn: &Connection, user_id: &str, today: &str) -> f64 {
+    conn.query_row(
+        "SELECT COALESCE(SUM(pages_read), 0) FROM reading_sessions WHERE user_id = ?1 AND date = ?2",
+        params![user_id, today],
+        |row| row.get::<_, i64>(0),
+    )
+    .unwrap_or(0) as f64
+}
+
 // Prevenção genérica de disparo duplicado no mesmo dia usando a tabela local de log
 fn has_rule_executed_today(conn: &Connection, rule_id: i64, today: &str) -> bool {
     let count: i64 = conn.query_row(
@@ -247,6 +256,7 @@ pub fn evaluate_rules(
             "sleep_hours" => get_daily_sleep_hours(&conn, user_id, &today),
             "pomodoros_completed" => get_daily_pomodoros(&conn, user_id, &today),
             "tasks_completed" => get_daily_completed_tasks(&conn, user_id, &today),
+            "reading_pages" | "reading_pages_today" => get_daily_reading_pages(&conn, user_id, &today),
             "current_time" => {
                 let now_local = now.with_timezone(&chrono::Local);
                 now_local.hour() as f64 + (now_local.minute() as f64 / 60.0)
@@ -267,10 +277,16 @@ pub fn evaluate_rules(
     use tauri::Emitter;
     if any_theme_rule_met {
         if let Some(theme_id) = met_theme {
-            let _ = app_handle.emit("change-theme", theme_id);
+            let _ = app_handle.emit(
+                "change-theme",
+                serde_json::json!({ "userId": user_id, "theme": theme_id }),
+            );
         }
     } else {
-        let _ = app_handle.emit("restore-default-theme", ());
+        let _ = app_handle.emit(
+            "restore-default-theme",
+            serde_json::json!({ "userId": user_id }),
+        );
     }
 
     Ok(())
@@ -328,6 +344,8 @@ fn execute_action(
                 priority: Some(2), // Média
                 category: Some("Automação".to_string()),
                 color: Some("#4f46e5".to_string()),
+                status: Some("todo".to_string()),
+                time_spent_seconds: Some(0),
             };
             let _ = state.tasks.upsert_task(new_task, Some(today.to_string()));
 

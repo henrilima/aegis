@@ -8,16 +8,18 @@ interface ModuleLoadingProps {
 
 export default function ModuleLoading({ moduleName }: ModuleLoadingProps) {
   return (
-    <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center text-center p-6 bg-transparent">
+    <div className="w-full h-full min-h-100 flex flex-col items-center justify-center text-center p-6 bg-transparent">
       <div className="flex flex-col items-center gap-3">
-        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-border bg-card shadow-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/60" />
+        <div className="flex items-center justify-center w-11 h-11 rounded-2xl border border-border/60 bg-muted/20 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin opacity-80" />
         </div>
         <div className="space-y-1">
-          <p className="text-xs font-bold text-foreground">
-            {moduleName ? `Carregando ${moduleName}...` : "Carregando..."}
+          <p className="text-xs font-bold text-foreground leading-snug">
+            {moduleName
+              ? `Carregando ${moduleName.toLowerCase()}...`
+              : "Carregando..."}
           </p>
-          <p className="text-[10px] font-medium text-muted-foreground/60">
+          <p className="text-[10px] font-medium text-muted-foreground">
             Sincronizando seus dados locais
           </p>
         </div>

@@ -29,7 +29,8 @@ commands.allow = [
     "pomodoro_record_pomodoro_session",
     "pomodoro_get_pomodoro_history",
     "pomodoro_clear_pomodoro_history",
-    "pomodoro_open_widget"
+    "pomodoro_open_widget",
+    "pomodoro_next_cycle"
 ]
 
 [[permission]]
@@ -41,6 +42,9 @@ commands.allow = [
     "alarm_update_alarm",
     "alarm_delete_alarm",
     "alarm_toggle_alarm",
+    "alarm_open_widget",
+    "alarm_get_active_widget_alarm",
+    "alarm_clear_active_widget_alarm",
     "global_list_notification_sounds"
 ]
 
@@ -187,6 +191,7 @@ commands.allow = [
     "dictionary_list",
     "dictionary_add",
     "dictionary_delete",
+    "dictionary_update",
     "dictionary_toggle_favorite",
     "dictionary_suggestions",
     "dictionary_export_csv",
@@ -216,6 +221,8 @@ commands.allow = [
     "tasks_upsert",
     "tasks_toggle",
     "tasks_delete",
+    "tasks_update_status",
+    "tasks_add_time",
     "export_tasks_csv",
     "import_tasks_csv"
 ]
@@ -291,7 +298,11 @@ commands.allow = [
     "global_get_custom_icon_path",
     "global_update_shortcut_icon",
     "global_save_dashboard_cover",
-    "global_delete_dashboard_cover"
+    "global_delete_dashboard_cover",
+    "global_list_custom_media",
+    "global_import_custom_media",
+    "global_rename_custom_media",
+    "global_delete_custom_media"
 ]
 
 

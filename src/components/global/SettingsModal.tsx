@@ -5,6 +5,7 @@ import {
   Code2,
   Cpu,
   Database,
+  FileAudio,
   HardDriveDownload,
   HeartPulse,
   Info,
@@ -38,6 +39,7 @@ import { DangerTab } from "../modules/settings/dangerTab";
 import { DataTab } from "../modules/settings/dataTab";
 import { DeveloperTab } from "../modules/settings/developerTab";
 import { IntegrationsTab } from "../modules/settings/integrationsTab";
+import { MediaTab } from "../modules/settings/mediaTab";
 import { ModulesTab } from "../modules/settings/modulesTab";
 import { NotificationsTab } from "../modules/settings/notificationsTab";
 import { ProfileTab } from "../modules/settings/profileTab";
@@ -66,7 +68,10 @@ const GROUPS: { label: string; items: SettingsItem[] }[] = [
   },
   {
     label: "Personalização",
-    items: [{ id: "themes", label: "Aparência", icon: Palette }],
+    items: [
+      { id: "themes", label: "Aparência", icon: Palette },
+      { id: "media", label: "Arquivos de mídia", icon: FileAudio },
+    ],
   },
   {
     label: "Sistema",
@@ -132,6 +137,11 @@ const TAB_DEFS: Record<
   themes: {
     title: "Aparência",
     description: "Escolha e personalize o estilo base do seu sistema.",
+  },
+  media: {
+    title: "Arquivos de mídia",
+    description:
+      "Importe, reproduza e gerencie sons customizados para o sistema.",
   },
   system: {
     title: "Geral",
@@ -248,6 +258,8 @@ export function SettingsModal() {
         return <BackupTab />;
       case "themes":
         return <ThemesTab />;
+      case "media":
+        return <MediaTab />;
       case "system":
         return <SystemTab />;
       case "modules":

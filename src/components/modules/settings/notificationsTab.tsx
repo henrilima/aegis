@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  listNotificationSounds,
+  type AudioOption,
+  getAudioOptions,
   playNotificationSound,
   resolveNotificationSound,
 } from "@/lib/sounds";
@@ -156,16 +157,16 @@ export function NotificationsTab({
   handleTestNotification,
   notificationSound,
 }: NotificationsTabProps) {
-  const [availableSounds, setAvailableSounds] = useState<string[]>([]);
+  const [audioOptions, setAudioOptions] = useState<AudioOption[]>([]);
 
   useEffect(() => {
-    listNotificationSounds().then((sounds) => {
-      setAvailableSounds(sounds);
-      if (sounds.length > 0 && !sounds.includes(notificationSound)) {
-        updateConfig(
-          "notificationSound",
-          resolveNotificationSound(notificationSound, sounds),
-        );
+    getAudioOptions().then((opts) => {
+      setAudioOptions(opts);
+      if (opts.length > 0) {
+        const resolved = resolveNotificationSound(notificationSound, opts);
+        if (resolved !== notificationSound) {
+          updateConfig("notificationSound", resolved);
+        }
       }
     });
   }, [notificationSound, updateConfig]);
@@ -254,7 +255,7 @@ export function NotificationsTab({
               <Music className="w-5 h-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-bold">Som de Notificação</p>
+              <p className="text-sm font-bold">Som de notificação</p>
               <p className="text-xs text-muted-foreground">
                 Toque padrão para todos os alertas.
               </p>
@@ -262,17 +263,17 @@ export function NotificationsTab({
           </div>
           <div className="flex items-center gap-2">
             <Select value={notificationSound} onValueChange={handleSoundChange}>
-              <SelectTrigger className="w-[180px] h-10 text-xs font-bold bg-background border-border">
+              <SelectTrigger className="w-45 h-10 text-xs font-bold bg-background border-border">
                 <SelectValue placeholder="Som" />
               </SelectTrigger>
               <SelectContent>
-                {availableSounds.map((s) => (
+                {audioOptions.map((opt) => (
                   <SelectItem
-                    key={s}
-                    value={s}
+                    key={opt.value}
+                    value={opt.value}
                     className="text-xs cursor-pointer"
                   >
-                    {s.replace(/\.[^/.]+$/, "")}
+                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>

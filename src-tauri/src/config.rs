@@ -6,6 +6,19 @@ use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+#[allow(non_snake_case)]
+pub struct AppCustomMedia {
+    pub id: Option<i64>,
+    pub fileName: String,
+    pub displayName: String,
+    pub filePath: String,
+    pub fileSize: u64,
+    pub isCustom: bool,
+    pub createdAt: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[serde(default)]
 pub struct AppConfig {
     pub minimize_on_close: bool,
@@ -49,6 +62,7 @@ pub struct AppConfig {
     pub selected_rank_title: String,
     pub show_profile_rank_border: bool,
     pub show_sidebar_rank_border: bool,
+    pub alarm_default_snooze_minutes: i32,
 }
 
 impl Default for AppConfig {
@@ -95,6 +109,7 @@ impl Default for AppConfig {
             selected_rank_title: "".to_string(),
             show_profile_rank_border: true,
             show_sidebar_rank_border: true,
+            alarm_default_snooze_minutes: 5,
         }
     }
 }
@@ -118,6 +133,19 @@ impl ConfigManager {
             "CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
+            )",
+            [],
+        )
+        .ok();
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS custom_media (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_name TEXT NOT NULL UNIQUE,
+                display_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_size INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             )",
             [],
         )
@@ -189,791 +217,348 @@ impl ConfigManager {
         conn
     }
 
+    fn query_setting(&self, conn: &Connection, key: &str, user_id: Option<&str>) -> Option<String> {
+        if let Some(uid) = user_id {
+            if !uid.is_empty() {
+                let user_key = format!("{}:{}", uid, key);
+                if let Ok(v) = conn.query_row(
+                    "SELECT value FROM settings WHERE key = ?1",
+                    params![user_key],
+                    |row| row.get(0),
+                ) {
+                    return Some(v);
+                }
+            }
+        }
+        conn.query_row(
+            "SELECT value FROM settings WHERE key = ?1",
+            params![key],
+            |row| row.get(0),
+        )
+        .ok()
+    }
+
+    fn update_setting(
+        &self,
+        conn: &Connection,
+        key: &str,
+        val: &str,
+        user_id: Option<&str>,
+        is_user_scoped: bool,
+    ) {
+        let target_key = if is_user_scoped {
+            if let Some(uid) = user_id {
+                if !uid.is_empty() {
+                    format!("{}:{}", uid, key)
+                } else {
+                    key.to_string()
+                }
+            } else {
+                key.to_string()
+            }
+        } else {
+            key.to_string()
+        };
+
+        let _ = conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![target_key, val],
+        );
+    }
+
+    #[allow(dead_code)]
     pub fn get_config(&self) -> AppConfig {
+        self.get_config_for_user(None)
+    }
+
+    pub fn get_config_for_user(&self, user_id: Option<&str>) -> AppConfig {
         let conn = self.get_connection();
-        let minimize_on_close: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'minimize_on_close'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let start_at_login: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'start_at_login'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(false);
-
-        let high_priority_notifications: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'high_priority_notifications'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(false);
-
-        let start_minimized: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'start_minimized'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(false);
-
-        let week_start_day: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'week_start_day'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(1))
-                },
-            )
-            .unwrap_or(1);
-
-        let show_holidays: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'show_holidays'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let auto_read_notifications: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'auto_read_notifications'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let notif_sleep_bedtime: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_sleep_bedtime'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let notif_sleep_morning: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_sleep_morning'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let notif_habit_uncompleted: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_habit_uncompleted'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let notif_habit_time: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_habit_time'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("22:00".to_string());
-
-        let notif_event_upcoming: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_event_upcoming'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let notif_sleep_bedtime_time: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_sleep_bedtime_time'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("23:00".to_string());
-
-        let notif_sleep_morning_time: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_sleep_morning_time'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("09:00".to_string());
-
-        let notif_event_upcoming_time: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_event_upcoming_time'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("08:00".to_string());
-
-        let notif_sleep_target_hours: f64 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notif_sleep_target_hours'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<f64>().unwrap_or(8.0))
-                },
-            )
-            .unwrap_or(8.0);
-
-        let notification_sound: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'notification_sound'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("Plin.mp3".to_string());
-
-        let tmdb_api_key: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'tmdb_api_key'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or_default();
-
-        let weather_location: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'weather_location'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or_default();
-
-        let show_weather_widget: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'show_weather_widget'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let app_zoom: f64 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'app_zoom'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<f64>().unwrap_or(100.0))
-                },
-            )
-            .unwrap_or(100.0);
-
-        let show_sidebar_trigger: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'show_sidebar_trigger'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let show_floating_trigger: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'show_floating_trigger'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let dashboard_clock_style: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_clock_style'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("default".to_string());
-
-        let dashboard_clock_animated: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_clock_animated'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let dashboard_header_style: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_header_style'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or("default".to_string());
-
-        let custom_data_dir: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'custom_data_dir'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or_default();
-
-        let achievements_enabled: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'achievements_enabled'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let dashboard_cover_image: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_image'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or_default();
-
-        let dashboard_welcoming_glass: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_welcoming_glass'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let dashboard_cover_position_x: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_position_x'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(50))
-                },
-            )
-            .unwrap_or(50);
-
-        let dashboard_cover_position_y: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_position_y'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(50))
-                },
-            )
-            .unwrap_or(50);
-
-        let dashboard_show_date: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_show_date'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let dashboard_cover_blur: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_blur'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(0))
-                },
-            )
-            .unwrap_or(0);
-
-        let dashboard_cover_grayscale: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_grayscale'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(0))
-                },
-            )
-            .unwrap_or(0);
-
-        let dashboard_cover_saturation: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_saturation'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(100))
-                },
-            )
-            .unwrap_or(100);
-
-        let dashboard_cover_zoom: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_zoom'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(100))
-                },
-            )
-            .unwrap_or(100);
-
-        let dashboard_cover_height: i32 = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'dashboard_cover_height'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s.parse::<i32>().unwrap_or(300))
-                },
-            )
-            .unwrap_or(300);
-
-        let selected_rank_title: String = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'selected_rank_title'",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or_default();
-
-        let show_profile_rank_border: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'show_profile_rank_border'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
-
-        let show_sidebar_rank_border: bool = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = 'show_sidebar_rank_border'",
-                [],
-                |row| {
-                    let s: String = row.get(0)?;
-                    Ok(s == "true")
-                },
-            )
-            .unwrap_or(true);
+        let get_b = |k: &str, def: bool| -> bool {
+            self.query_setting(&conn, k, user_id)
+                .map(|s| s == "true")
+                .unwrap_or(def)
+        };
+        let get_i = |k: &str, def: i32| -> i32 {
+            self.query_setting(&conn, k, user_id)
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(def)
+        };
+        let get_f = |k: &str, def: f64| -> f64 {
+            self.query_setting(&conn, k, user_id)
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(def)
+        };
+        let get_s = |k: &str, def: &str| -> String {
+            self.query_setting(&conn, k, user_id)
+                .unwrap_or_else(|| def.to_string())
+        };
 
         AppConfig {
-            minimize_on_close,
-            start_at_login,
-            high_priority_notifications,
-            start_minimized,
-            week_start_day,
-            show_holidays,
-            auto_read_notifications,
-            notif_sleep_bedtime,
-            notif_sleep_bedtime_time,
-            notif_sleep_morning,
-            notif_sleep_morning_time,
-            notif_habit_uncompleted,
-            notif_habit_time,
-            notif_event_upcoming,
-            notif_event_upcoming_time,
-            notif_sleep_target_hours,
-            notification_sound,
-            tmdb_api_key,
-            weather_location,
-            show_weather_widget,
-            app_zoom,
-            show_sidebar_trigger,
-            show_floating_trigger,
-            dashboard_clock_style,
-            dashboard_clock_animated,
-            dashboard_header_style,
-            custom_data_dir,
-            achievements_enabled,
-            dashboard_cover_image,
-            dashboard_welcoming_glass,
-            dashboard_cover_position_x,
-            dashboard_cover_position_y,
-            dashboard_show_date,
-            dashboard_cover_blur,
-            dashboard_cover_grayscale,
-            dashboard_cover_saturation,
-            dashboard_cover_zoom,
-            dashboard_cover_height,
-            selected_rank_title,
-            show_profile_rank_border,
-            show_sidebar_rank_border,
+            minimize_on_close: get_b("minimize_on_close", true),
+            start_at_login: get_b("start_at_login", false),
+            high_priority_notifications: get_b("high_priority_notifications", false),
+            start_minimized: get_b("start_minimized", false),
+            week_start_day: get_i("week_start_day", 1),
+            show_holidays: get_b("show_holidays", true),
+            auto_read_notifications: get_b("auto_read_notifications", true),
+            notif_sleep_bedtime: get_b("notif_sleep_bedtime", true),
+            notif_sleep_bedtime_time: get_s("notif_sleep_bedtime_time", "23:00"),
+            notif_sleep_morning: get_b("notif_sleep_morning", true),
+            notif_sleep_morning_time: get_s("notif_sleep_morning_time", "09:00"),
+            notif_habit_uncompleted: get_b("notif_habit_uncompleted", true),
+            notif_habit_time: get_s("notif_habit_time", "22:00"),
+            notif_event_upcoming: get_b("notif_event_upcoming", true),
+            notif_event_upcoming_time: get_s("notif_event_upcoming_time", "08:00"),
+            notif_sleep_target_hours: get_f("notif_sleep_target_hours", 8.0),
+            notification_sound: get_s("notification_sound", "Plin.mp3"),
+            tmdb_api_key: get_s("tmdb_api_key", ""),
+            weather_location: get_s("weather_location", ""),
+            show_weather_widget: get_b("show_weather_widget", true),
+            app_zoom: get_f("app_zoom", 100.0),
+            show_sidebar_trigger: get_b("show_sidebar_trigger", true),
+            show_floating_trigger: get_b("show_floating_trigger", true),
+            dashboard_clock_style: get_s("dashboard_clock_style", "default"),
+            dashboard_clock_animated: get_b("dashboard_clock_animated", true),
+            dashboard_header_style: get_s("dashboard_header_style", "default"),
+            custom_data_dir: get_s("custom_data_dir", ""),
+            achievements_enabled: get_b("achievements_enabled", true),
+            dashboard_cover_image: get_s("dashboard_cover_image", ""),
+            dashboard_welcoming_glass: get_b("dashboard_welcoming_glass", true),
+            dashboard_cover_position_x: get_i("dashboard_cover_position_x", 50),
+            dashboard_cover_position_y: get_i("dashboard_cover_position_y", 50),
+            dashboard_show_date: get_b("dashboard_show_date", true),
+            dashboard_cover_blur: get_i("dashboard_cover_blur", 0),
+            dashboard_cover_grayscale: get_i("dashboard_cover_grayscale", 0),
+            dashboard_cover_saturation: get_i("dashboard_cover_saturation", 100),
+            dashboard_cover_zoom: get_i("dashboard_cover_zoom", 100),
+            dashboard_cover_height: get_i("dashboard_cover_height", 300),
+            selected_rank_title: get_s("selected_rank_title", ""),
+            show_profile_rank_border: get_b("show_profile_rank_border", true),
+            show_sidebar_rank_border: get_b("show_sidebar_rank_border", true),
+            alarm_default_snooze_minutes: get_i("alarm_default_snooze_minutes", 5),
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_config(&self, config: AppConfig) -> Result<(), String> {
+        self.set_config_for_user(None, config)
+    }
+
+    pub fn set_config_for_user(
+        &self,
+        user_id: Option<&str>,
+        config: AppConfig,
+    ) -> Result<(), String> {
         let conn = self.get_connection();
-        conn.execute(
-            "UPDATE settings SET value = ?1 WHERE key = 'minimize_on_close'",
-            params![if config.minimize_on_close {
+        let set_g = |k: &str, v: &str| self.update_setting(&conn, k, v, user_id, false);
+        let set_u = |k: &str, v: &str| self.update_setting(&conn, k, v, user_id, true);
+
+        set_g(
+            "minimize_on_close",
+            if config.minimize_on_close {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "UPDATE settings SET value = ?1 WHERE key = 'start_at_login'",
-            params![if config.start_at_login {
+            },
+        );
+        set_g(
+            "start_at_login",
+            if config.start_at_login {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "UPDATE settings SET value = ?1 WHERE key = 'high_priority_notifications'",
-            params![if config.high_priority_notifications {
+            },
+        );
+        set_g(
+            "high_priority_notifications",
+            if config.high_priority_notifications {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('start_minimized', ?1)",
-            params![if config.start_minimized {
+            },
+        );
+        set_g(
+            "start_minimized",
+            if config.start_minimized {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
+            },
+        );
+        set_g("custom_data_dir", &config.custom_data_dir);
 
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('week_start_day', ?1)",
-            params![config.week_start_day.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_holidays', ?1)",
-            params![if config.show_holidays {
+        set_u("week_start_day", &config.week_start_day.to_string());
+        set_u(
+            "show_holidays",
+            if config.show_holidays {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('auto_read_notifications', ?1)",
-            params![if config.auto_read_notifications {
+            },
+        );
+        set_u(
+            "auto_read_notifications",
+            if config.auto_read_notifications {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_bedtime', ?1)",
-            params![if config.notif_sleep_bedtime {
+            },
+        );
+        set_u(
+            "notif_sleep_bedtime",
+            if config.notif_sleep_bedtime {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_morning', ?1)",
-            params![if config.notif_sleep_morning {
+            },
+        );
+        set_u("notif_sleep_bedtime_time", &config.notif_sleep_bedtime_time);
+        set_u(
+            "notif_sleep_morning",
+            if config.notif_sleep_morning {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_habit_uncompleted', ?1)",
-            params![if config.notif_habit_uncompleted {
+            },
+        );
+        set_u("notif_sleep_morning_time", &config.notif_sleep_morning_time);
+        set_u(
+            "notif_habit_uncompleted",
+            if config.notif_habit_uncompleted {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_habit_time', ?1)",
-            params![config.notif_habit_time],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_event_upcoming', ?1)",
-            params![if config.notif_event_upcoming {
+            },
+        );
+        set_u("notif_habit_time", &config.notif_habit_time);
+        set_u(
+            "notif_event_upcoming",
+            if config.notif_event_upcoming {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_bedtime_time', ?1)",
-            params![config.notif_sleep_bedtime_time],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_morning_time', ?1)",
-            params![config.notif_sleep_morning_time],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_event_upcoming_time', ?1)",
-            params![config.notif_event_upcoming_time],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notif_sleep_target_hours', ?1)",
-            params![config.notif_sleep_target_hours.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('notification_sound', ?1)",
-            params![config.notification_sound],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('weather_location', ?1)",
-            params![config.weather_location],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_weather_widget', ?1)",
-            params![if config.show_weather_widget {
+            },
+        );
+        set_u(
+            "notif_event_upcoming_time",
+            &config.notif_event_upcoming_time,
+        );
+        set_u(
+            "notif_sleep_target_hours",
+            &config.notif_sleep_target_hours.to_string(),
+        );
+        set_u("notification_sound", &config.notification_sound);
+        set_u("tmdb_api_key", &config.tmdb_api_key);
+        set_u("weather_location", &config.weather_location);
+        set_u(
+            "show_weather_widget",
+            if config.show_weather_widget {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('tmdb_api_key', ?1)",
-            params![config.tmdb_api_key],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('app_zoom', ?1)",
-            params![config.app_zoom.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_sidebar_trigger', ?1)",
-            params![if config.show_sidebar_trigger {
+            },
+        );
+        set_u("app_zoom", &config.app_zoom.to_string());
+        set_u(
+            "show_sidebar_trigger",
+            if config.show_sidebar_trigger {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_floating_trigger', ?1)",
-            params![if config.show_floating_trigger {
+            },
+        );
+        set_u(
+            "show_floating_trigger",
+            if config.show_floating_trigger {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_clock_style', ?1)",
-            params![config.dashboard_clock_style],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_clock_animated', ?1)",
-            params![if config.dashboard_clock_animated {
+            },
+        );
+        set_u("dashboard_clock_style", &config.dashboard_clock_style);
+        set_u(
+            "dashboard_clock_animated",
+            if config.dashboard_clock_animated {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_header_style', ?1)",
-            params![config.dashboard_header_style],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('custom_data_dir', ?1)",
-            params![config.custom_data_dir],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('achievements_enabled', ?1)",
-            params![if config.achievements_enabled {
+            },
+        );
+        set_u("dashboard_header_style", &config.dashboard_header_style);
+        set_u(
+            "achievements_enabled",
+            if config.achievements_enabled {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_image', ?1)",
-            params![config.dashboard_cover_image],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_welcoming_glass', ?1)",
-            params![if config.dashboard_welcoming_glass {
+            },
+        );
+        set_u("dashboard_cover_image", &config.dashboard_cover_image);
+        set_u(
+            "dashboard_welcoming_glass",
+            if config.dashboard_welcoming_glass {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_position_x', ?1)",
-            params![config.dashboard_cover_position_x.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_position_y', ?1)",
-            params![config.dashboard_cover_position_y.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_show_date', ?1)",
-            params![if config.dashboard_show_date {
+            },
+        );
+        set_u(
+            "dashboard_cover_position_x",
+            &config.dashboard_cover_position_x.to_string(),
+        );
+        set_u(
+            "dashboard_cover_position_y",
+            &config.dashboard_cover_position_y.to_string(),
+        );
+        set_u(
+            "dashboard_show_date",
+            if config.dashboard_show_date {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_blur', ?1)",
-            params![config.dashboard_cover_blur.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_grayscale', ?1)",
-            params![config.dashboard_cover_grayscale.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_saturation', ?1)",
-            params![config.dashboard_cover_saturation.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_zoom', ?1)",
-            params![config.dashboard_cover_zoom.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('dashboard_cover_height', ?1)",
-            params![config.dashboard_cover_height.to_string()],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('selected_rank_title', ?1)",
-            params![config.selected_rank_title],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_profile_rank_border', ?1)",
-            params![if config.show_profile_rank_border {
+            },
+        );
+        set_u(
+            "dashboard_cover_blur",
+            &config.dashboard_cover_blur.to_string(),
+        );
+        set_u(
+            "dashboard_cover_grayscale",
+            &config.dashboard_cover_grayscale.to_string(),
+        );
+        set_u(
+            "dashboard_cover_saturation",
+            &config.dashboard_cover_saturation.to_string(),
+        );
+        set_u(
+            "dashboard_cover_zoom",
+            &config.dashboard_cover_zoom.to_string(),
+        );
+        set_u(
+            "dashboard_cover_height",
+            &config.dashboard_cover_height.to_string(),
+        );
+        set_u("selected_rank_title", &config.selected_rank_title);
+        set_u(
+            "show_profile_rank_border",
+            if config.show_profile_rank_border {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('show_sidebar_rank_border', ?1)",
-            params![if config.show_sidebar_rank_border {
+            },
+        );
+        set_u(
+            "show_sidebar_rank_border",
+            if config.show_sidebar_rank_border {
                 "true"
             } else {
                 "false"
-            }],
-        )
-        .map_err(|e| e.to_string())?;
+            },
+        );
+        set_u(
+            "alarm_default_snooze_minutes",
+            &config.alarm_default_snooze_minutes.to_string(),
+        );
 
         Ok(())
     }
@@ -1003,15 +588,16 @@ impl ConfigManager {
         }
 
         let conn = self.get_connection();
-        let val = conn.query_row(
-            "SELECT value FROM settings WHERE key = 'debug_time_offset'",
-            [],
-            |row| {
-                let s: String = row.get(0)?;
-                Ok(s.parse::<i64>().unwrap_or(0))
-            },
-        )
-        .unwrap_or(0);
+        let val = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'debug_time_offset'",
+                [],
+                |row| {
+                    let s: String = row.get(0)?;
+                    Ok(s.parse::<i64>().unwrap_or(0))
+                },
+            )
+            .unwrap_or(0);
 
         let mut lock = self.time_offset.lock().unwrap();
         *lock = Some(val);
@@ -1054,6 +640,150 @@ impl ConfigManager {
     pub fn get_now(&self) -> DateTime<Utc> {
         let offset = self.get_time_offset();
         Utc::now() + chrono::Duration::seconds(offset)
+    }
+
+    pub fn list_custom_media(&self) -> Vec<AppCustomMedia> {
+        let conn = match Connection::open(&self.db_path) {
+            Ok(c) => c,
+            Err(_) => return Vec::new(),
+        };
+
+        let mut stmt = match conn.prepare(
+            "SELECT id, file_name, display_name, file_path, file_size, created_at FROM custom_media ORDER BY id DESC",
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+
+        let rows = stmt.query_map([], |row| {
+            Ok(AppCustomMedia {
+                id: Some(row.get(0)?),
+                fileName: row.get(1)?,
+                displayName: row.get(2)?,
+                filePath: row.get(3)?,
+                fileSize: row.get::<_, i64>(4)? as u64,
+                isCustom: true,
+                createdAt: row.get(5)?,
+            })
+        });
+
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(_) => Vec::new(),
+        }
+    }
+
+    pub fn import_custom_media(
+        &self,
+        app_handle: &AppHandle,
+        source_path_str: &str,
+        display_name_opt: Option<String>,
+    ) -> Result<AppCustomMedia, String> {
+        let source_path = std::path::Path::new(source_path_str);
+        if !source_path.exists() || !source_path.is_file() {
+            return Err("Arquivo de origem não encontrado".to_string());
+        }
+
+        let ext = source_path
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+
+        if !matches!(ext.as_str(), "mp3" | "wav" | "ogg" | "m4a" | "flac" | "aac") {
+            return Err(
+                "Formato de áudio não suportado. Use MP3, WAV, OGG, M4A, FLAC ou AAC.".to_string(),
+            );
+        }
+
+        let file_stem = source_path
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| "audio".to_string());
+
+        let display_name = display_name_opt
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| file_stem.clone());
+
+        let app_dir = app_handle
+            .path()
+            .app_data_dir()
+            .map_err(|e| e.to_string())?;
+        let sounds_dir = app_dir.join("sounds");
+        std::fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+
+        let timestamp = chrono::Utc::now().timestamp_millis();
+        let sanitized_stem: String = file_stem
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == '_' || c == '-' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let unique_file_name = format!("{}_{}.{}", sanitized_stem, timestamp, ext);
+        let target_path = sounds_dir.join(&unique_file_name);
+
+        std::fs::copy(source_path, &target_path)
+            .map_err(|e| format!("Falha ao copiar arquivo de áudio: {}", e))?;
+
+        let file_size = std::fs::metadata(&target_path)
+            .map(|m| m.len())
+            .unwrap_or(0);
+        let target_path_str = target_path.to_string_lossy().to_string();
+        let now_iso = chrono::Utc::now().to_rfc3339();
+
+        let conn = Connection::open(&self.db_path).map_err(|e| e.to_string())?;
+        conn.execute(
+            "INSERT INTO custom_media (file_name, display_name, file_path, file_size, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![unique_file_name, display_name, target_path_str, file_size as i64, now_iso],
+        )
+        .map_err(|e| e.to_string())?;
+
+        let id = conn.last_insert_rowid();
+
+        Ok(AppCustomMedia {
+            id: Some(id),
+            fileName: unique_file_name,
+            displayName: display_name,
+            filePath: target_path_str,
+            fileSize: file_size,
+            isCustom: true,
+            createdAt: now_iso,
+        })
+    }
+
+    pub fn rename_custom_media(&self, id: i64, new_display_name: &str) -> Result<(), String> {
+        let conn = Connection::open(&self.db_path).map_err(|e| e.to_string())?;
+        conn.execute(
+            "UPDATE custom_media SET display_name = ?1 WHERE id = ?2",
+            params![new_display_name, id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn delete_custom_media(&self, id: i64) -> Result<(), String> {
+        let conn = Connection::open(&self.db_path).map_err(|e| e.to_string())?;
+        let path_to_remove: Option<String> = conn
+            .query_row(
+                "SELECT file_path FROM custom_media WHERE id = ?1",
+                params![id],
+                |row| row.get(0),
+            )
+            .ok();
+
+        if let Some(path_str) = path_to_remove {
+            let p = std::path::Path::new(&path_str);
+            if p.exists() {
+                let _ = std::fs::remove_file(p);
+            }
+        }
+
+        conn.execute("DELETE FROM custom_media WHERE id = ?1", params![id])
+            .map_err(|e| e.to_string())?;
+        Ok(())
     }
 
     pub fn apply_debug_command(

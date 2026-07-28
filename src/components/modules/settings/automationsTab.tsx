@@ -28,6 +28,7 @@ type TriggerType =
   | "sleep_hours"
   | "pomodoros_completed"
   | "tasks_completed"
+  | "reading_pages"
   | "current_time";
 type TriggerOperator = ">" | ">=" | "<" | "<=" | "=";
 type ActionType =
@@ -61,6 +62,7 @@ const triggerTypeLabels: Record<TriggerType, string> = {
   sleep_hours: "Horas de sono registradas",
   pomodoros_completed: "Pomodoros concluídos hoje",
   tasks_completed: "Tarefas concluídas hoje",
+  reading_pages: "Páginas lidas hoje",
   current_time: "Horário do dia (24h)",
 };
 

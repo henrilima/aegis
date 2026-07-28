@@ -6,10 +6,12 @@ import {
   type LucideIcon,
   RotateCcw,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect } from "react";
 import { Kbd } from "@/components/ui/kbd";
 import { ModalShell } from "@/components/ui/ModalShell";
+import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn } from "@/lib/utils";
 
 export type ConfirmVariant = "danger" | "warning" | "default";
@@ -31,35 +33,32 @@ const VARIANT_CONFIG: Record<
   ConfirmVariant,
   {
     icon: LucideIcon;
+    iconBg: string;
     iconColor: string;
-    btnClass: string;
-    bgColor: string;
-    textColor: string;
+    confirmBtnClass: string;
   }
 > = {
   danger: {
     icon: Trash2,
+    iconBg: "bg-red-500/10 border-red-500/20 text-red-500 dark:text-red-400",
     iconColor: "text-red-500",
-    btnClass:
-      "bg-red-600 hover:bg-red-500 dark:bg-red-500 dark:hover:bg-red-400 text-white",
-    bgColor: "bg-red-500/10",
-    textColor: "text-red-600 dark:text-red-400",
+    confirmBtnClass:
+      "bg-red-600 hover:bg-red-500 text-white dark:bg-red-500 dark:hover:bg-red-400 border-transparent",
   },
   warning: {
     icon: AlertTriangle,
-    iconColor: "text-amber-600 dark:text-amber-500",
-    btnClass:
-      "bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white",
-    bgColor: "bg-amber-500/10",
-    textColor: "text-amber-400",
+    iconBg:
+      "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400",
+    iconColor: "text-amber-500",
+    confirmBtnClass:
+      "bg-amber-600 hover:bg-amber-500 text-white dark:bg-amber-500 dark:hover:bg-amber-400 border-transparent",
   },
   default: {
     icon: HelpCircle,
-    iconColor: "text-blue-500",
-    btnClass:
-      "bg-blue-600 hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 text-white",
-    bgColor: "bg-blue-500/10",
-    textColor: "text-blue-400",
+    iconBg: "bg-sky-500/10 border-sky-500/20 text-sky-500 dark:text-sky-400",
+    iconColor: "text-sky-500",
+    confirmBtnClass:
+      "bg-sky-600 hover:bg-sky-500 text-white dark:bg-sky-500 dark:hover:bg-sky-400 border-transparent",
   },
 };
 
@@ -67,7 +66,7 @@ export function ConfirmModal({
   title,
   description,
   confirmLabel = "Confirmar",
-  cancelLabel = "Agora não",
+  cancelLabel = "Cancelar",
   variant = "default",
   icon,
   onConfirm,
@@ -98,52 +97,63 @@ export function ConfirmModal({
   return (
     <ModalShell
       onClose={onCancel}
-      size="xs"
+      size="sm"
       zIndex="z-[999]"
       disablePortal={disablePortal}
     >
-      <div
-        className={`w-full py-10 flex justify-center ${cfg.bgColor} border-b border-border/50 shrink-0`}
-      >
-        <div
-          className={`p-4 bg-background border border-border rounded-xl w-fit ${cfg.iconColor}`}
-        >
-          <Icon className="w-8 h-8" />
+      {/* Header com ícone sutil e ação de fechar */}
+      <div className="p-6 pb-0 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className={cn("p-3 rounded-2xl border shrink-0", cfg.iconBg)}>
+            <Icon className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col gap-1 pr-2">
+            <h3 className="font-bold text-base text-foreground leading-snug">
+              {title}
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+              {description}
+            </p>
+          </div>
         </div>
+        <ToolTip content="Cancelar">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors shrink-0 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </ToolTip>
       </div>
 
-      <div className="p-8 w-full flex flex-col items-center overflow-y-auto custom-scrollbar">
-        <h3 className="font-bold text-xl text-foreground mb-2 text-center">
-          {title}
-        </h3>
-        <p className="text-xs text-muted-foreground mb-6 font-medium leading-relaxed px-4 text-center">
-          {description}
-        </p>
+      {/* Conteúdo adicional e botões de ação horizontais */}
+      <div className="p-6 flex flex-col gap-4">
+        {children && <div className="w-full">{children}</div>}
 
-        {children && <div className="w-full mb-6">{children}</div>}
+        <div className="flex items-center gap-2.5 w-full pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 px-4 rounded-xl border border-border bg-card hover:bg-accent/50 text-foreground text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <span>{cancelLabel}</span>
+            <Kbd className="bg-muted/60 text-muted-foreground border-border text-[9px] px-1 py-0.5">
+              Esc
+            </Kbd>
+          </button>
 
-        <div className="flex flex-col gap-2 w-full mt-auto">
           <button
             type="button"
             onClick={onConfirm}
             className={cn(
-              "w-full py-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2",
-              cfg.btnClass,
+              "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-none",
+              cfg.confirmBtnClass,
             )}
           >
             <span>{confirmLabel}</span>
-            <Kbd className="bg-white/15 text-white border-white/20 text-[9px]">
+            <Kbd className="bg-white/20 text-white border-white/30 text-[9px] px-1 py-0.5">
               Enter
-            </Kbd>
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-full py-2 text-muted-foreground hover:text-muted-foreground text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <span>{cancelLabel}</span>
-            <Kbd className="bg-muted/40 text-muted-foreground border-border text-[9px]">
-              Esc
             </Kbd>
           </button>
         </div>
@@ -158,37 +168,37 @@ export const CONFIRM_PRESETS = {
     description:
       "Você está prestes a registrar um deslize. Sua sequência atual será zerada.",
     confirmLabel: "Sim, resetar",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "warning" as ConfirmVariant,
     icon: RotateCcw,
   },
   hardReset: {
     title: "Zerar tudo?",
     description:
-      "Esta ação é irreversível. Você irá zerar recordes deste hábito.",
+      "Esta ação é irreversível. Você irá zerar os recordes deste hábito.",
     confirmLabel: "Sim, zerar",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteHabit: {
     title: "Excluir hábito?",
     description: "Este hábito será removido permanentemente do sistema.",
     confirmLabel: "Excluir",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteNote: {
     title: "Excluir nota?",
     description: "Esta nota será removida permanentemente de sua biblioteca.",
     confirmLabel: "Excluir",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deletePassword: {
     title: "Excluir credencial?",
     description: "Esta senha será removida permanentemente do cofre.",
     confirmLabel: "Excluir",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteEvent: {
@@ -196,7 +206,7 @@ export const CONFIRM_PRESETS = {
     description:
       "Essa ação é irreversível e removerá permanentemente o item do seu calendário.",
     confirmLabel: "Remover",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteSleep: {
@@ -204,7 +214,7 @@ export const CONFIRM_PRESETS = {
     description:
       "Essa ação é irreversível e removerá permanentemente os dados deste ciclo do seu histórico.",
     confirmLabel: "Remover",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteSession: {
@@ -212,45 +222,45 @@ export const CONFIRM_PRESETS = {
     description:
       "Essa ação é irreversível e afetará permanentemente suas estatísticas de estudos.",
     confirmLabel: "Remover",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   resetDashboard: {
-    title: "Resetar Dashboard?",
+    title: "Resetar dashboard?",
     description:
       "Seu layout personalizado será substituído pela organização padrão. Esta ação não pode ser desfeita.",
-    confirmLabel: "Resetar Agora",
+    confirmLabel: "Resetar agora",
     cancelLabel: "Manter como está",
     variant: "warning" as ConfirmVariant,
     icon: RotateCcw,
   },
   deleteGlossaryWord: {
-    title: "Remover do Glossário?",
+    title: "Remover do glossário?",
     description:
       "Esta palavra será removida permanentemente da sua lista salva.",
     confirmLabel: "Remover",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteMovie: {
     title: "Excluir filme?",
     description: "Este filme será removido permanentemente do seu catálogo.",
     confirmLabel: "Excluir",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteTask: {
     title: "Excluir tarefa?",
     description: "Esta tarefa será removida permanentemente da sua lista.",
     confirmLabel: "Excluir",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteAlarm: {
     title: "Excluir alarme?",
     description: "Este alarme será removido e não irá mais disparar.",
     confirmLabel: "Excluir",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteBook: {
@@ -258,7 +268,7 @@ export const CONFIRM_PRESETS = {
     description:
       "Este livro e todo o seu histórico de sessões serão removidos permanentemente da biblioteca.",
     confirmLabel: "Remover",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
   deleteReadingSession: {
@@ -266,7 +276,7 @@ export const CONFIRM_PRESETS = {
     description:
       "Esta sessão será removida e afetará seu progresso registrado.",
     confirmLabel: "Remover",
-    cancelLabel: "Agora não",
+    cancelLabel: "Cancelar",
     variant: "danger" as ConfirmVariant,
   },
 } as const;

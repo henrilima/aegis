@@ -110,8 +110,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     let unlistenRestore: (() => void) | null = null;
 
     import("@tauri-apps/api/event").then(({ listen }) => {
-      listen<string>("change-theme", (event) => {
-        let newTheme = event.payload;
+      listen<unknown>("change-theme", (event) => {
+        let payloadUserId: string | undefined;
+        let newThemeStr = "";
+
+        if (typeof event.payload === "object" && event.payload !== null) {
+          const obj = event.payload as { userId?: string; theme?: string };
+          payloadUserId = obj.userId;
+          newThemeStr = obj.theme || "";
+        } else if (typeof event.payload === "string") {
+          newThemeStr = event.payload;
+        }
+
+        const activeUserId =
+          typeof window !== "undefined"
+            ? localStorage.getItem("aegis_session_user_id")
+            : null;
+        if (payloadUserId && activeUserId && payloadUserId !== activeUserId) {
+          return;
+        }
+
+        let newTheme = newThemeStr;
         let newAccent: ThemeColorKey | null = null;
 
         if (newTheme.includes(":")) {
@@ -146,7 +165,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         unlistenChange = fn;
       });
 
-      listen("restore-default-theme", () => {
+      listen<unknown>("restore-default-theme", (event) => {
+        let payloadUserId: string | undefined;
+        if (typeof event.payload === "object" && event.payload !== null) {
+          payloadUserId = (event.payload as { userId?: string }).userId;
+        }
+
+        const activeUserId =
+          typeof window !== "undefined"
+            ? localStorage.getItem("aegis_session_user_id")
+            : null;
+        if (payloadUserId && activeUserId && payloadUserId !== activeUserId) {
+          return;
+        }
+
         const preferredTheme =
           (localStorage.getItem(
             "aegis-preferred-theme",
