@@ -201,15 +201,24 @@ impl TaskManager {
         Ok(())
     }
 
-    /// Soma segundos ao tempo acumulado de uma tarefa
-    pub fn add_time(&self, id: i32, seconds: i64) -> Result<(), String> {
+    /// Soma segundos ao tempo acumulado de uma tarefa e retorna o novo total
+    pub fn add_time(&self, id: i32, seconds: i64) -> Result<i64, String> {
         let conn = self.get_connection();
         conn.execute(
             "UPDATE tasks SET time_spent_seconds = COALESCE(time_spent_seconds, 0) + ?1 WHERE id = ?2",
             params![seconds, id],
         )
         .map_err(|e| e.to_string())?;
-        Ok(())
+
+        let new_total: i64 = conn
+            .query_row(
+                "SELECT COALESCE(time_spent_seconds, 0) FROM tasks WHERE id = ?1",
+                params![id],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+
+        Ok(new_total)
     }
 
     pub fn get_user_id_for_task(&self, id: i32) -> Result<String, String> {
@@ -344,13 +353,13 @@ pub async fn tasks_update_status(
     state.tasks.update_status(id, &status)
 }
 
-/// Soma o tempo de uma sessão ao acumulado da tarefa
+/// Soma o tempo de uma sessão ao acumulado da tarefa e retorna o novo total
 #[tauri::command]
 pub async fn tasks_add_time(
     state: tauri::State<'_, crate::AppState>,
     id: i32,
     seconds: i64,
-) -> Result<(), String> {
+) -> Result<i64, String> {
     state.tasks.add_time(id, seconds)
 }
 

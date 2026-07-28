@@ -129,6 +129,7 @@ commands.allow = [
     "sono_import_csv",
     "sono_get_dream",
     "sono_upsert_dream",
+    "sono_delete_dream",
     "sono_list_dreams"
 ]
 

@@ -29,6 +29,7 @@ pub struct SleepDream {
     pub id: Option<i32>,
     pub user_id: String,
     pub date: String,
+    pub title: Option<String>,
     pub content: String,
     pub dream_type: String, // "lúcido" | "comum" | "pesadelo"
     pub created_at: Option<String>,
@@ -102,11 +103,17 @@ impl SleepManager {
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id      TEXT NOT NULL,
                 date         TEXT NOT NULL,
+                title        TEXT,
                 content      TEXT NOT NULL,
                 dream_type   TEXT NOT NULL DEFAULT 'comum',
                 created_at   TEXT NOT NULL DEFAULT (datetime('now')),
                 UNIQUE(user_id, date)
             )",
+            [],
+        );
+
+        let _ = conn.execute(
+            "ALTER TABLE sleep_dreams ADD COLUMN title TEXT",
             [],
         );
 
@@ -285,15 +292,16 @@ impl SleepManager {
     pub fn get_dream(&self, user_id: &str, date: &str) -> Result<Option<SleepDream>, String> {
         let conn = self.conn();
         let dream: Option<SleepDream> = conn.query_row(
-            "SELECT id, user_id, date, content, dream_type, created_at FROM sleep_dreams WHERE user_id=?1 AND date=?2",
+            "SELECT id, user_id, date, title, content, dream_type, created_at FROM sleep_dreams WHERE user_id=?1 AND date=?2",
             params![user_id, date],
             |row| Ok(SleepDream {
                 id: Some(row.get(0)?),
                 user_id: row.get(1)?,
                 date: row.get(2)?,
-                content: row.get(3)?,
-                dream_type: row.get(4)?,
-                created_at: Some(row.get(5)?),
+                title: row.get(3)?,
+                content: row.get(4)?,
+                dream_type: row.get(5)?,
+                created_at: Some(row.get(6)?),
             })
         ).ok();
         Ok(dream)
@@ -302,12 +310,13 @@ impl SleepManager {
     pub fn upsert_dream(&self, d: SleepDream) -> Result<(), String> {
         let conn = self.conn();
         conn.execute(
-            "INSERT INTO sleep_dreams (user_id, date, content, dream_type)
-             VALUES (?1, ?2, ?3, ?4)
+            "INSERT INTO sleep_dreams (user_id, date, title, content, dream_type)
+             VALUES (?1, ?2, ?3, ?4, ?5)
              ON CONFLICT(user_id, date) DO UPDATE SET
+                title      = excluded.title,
                 content    = excluded.content,
                 dream_type = excluded.dream_type",
-            params![d.user_id, d.date, d.content, d.dream_type],
+            params![d.user_id, d.date, d.title, d.content, d.dream_type],
         )
         .map_err(|e| e.to_string())?;
         Ok(())
@@ -318,7 +327,7 @@ impl SleepManager {
         let mut stmt = conn
             .prepare(
                 "
-            SELECT id, user_id, date, content, dream_type, created_at
+            SELECT id, user_id, date, title, content, dream_type, created_at
             FROM sleep_dreams
             WHERE user_id = ?1
             ORDER BY date DESC
@@ -332,9 +341,10 @@ impl SleepManager {
                     id: Some(row.get(0)?),
                     user_id: row.get(1)?,
                     date: row.get(2)?,
-                    content: row.get(3)?,
-                    dream_type: row.get(4)?,
-                    created_at: Some(row.get(5)?),
+                    title: row.get(3)?,
+                    content: row.get(4)?,
+                    dream_type: row.get(5)?,
+                    created_at: Some(row.get(6)?),
                 })
             })
             .map_err(|e| e.to_string())?;
@@ -405,6 +415,16 @@ impl SleepManager {
             count += 1;
         }
         Ok(count)
+    }
+
+    pub fn delete_dream(&self, user_id: &str, date: &str) -> Result<(), String> {
+        let conn = self.conn();
+        conn.execute(
+            "DELETE FROM sleep_dreams WHERE user_id = ?1 AND date = ?2",
+            params![user_id, date],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
     }
 }
 
@@ -510,6 +530,15 @@ pub async fn sono_upsert_dream(
     dream: SleepDream,
 ) -> Result<(), String> {
     state.sleep.upsert_dream(dream)
+}
+
+#[tauri::command]
+pub async fn sono_delete_dream(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    date: String,
+) -> Result<(), String> {
+    state.sleep.delete_dream(&user_id, &date)
 }
 
 #[tauri::command]

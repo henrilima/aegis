@@ -1483,7 +1483,7 @@ pub fn run() {
             // Sleep
             sleep::sono_upsert_entry, sleep::sono_delete_entry, sleep::sono_list_entries, 
             sleep::sono_upsert_goal, sleep::sono_get_goal, sleep::sono_export_csv, sleep::sono_import_csv,
-            sleep::sono_get_dream, sleep::sono_upsert_dream, sleep::sono_list_dreams,
+            sleep::sono_get_dream, sleep::sono_upsert_dream, sleep::sono_delete_dream, sleep::sono_list_dreams,
 
             // Automation
             automation::automation_list_rules, automation::automation_add_rule, 

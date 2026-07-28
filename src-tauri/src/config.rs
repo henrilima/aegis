@@ -62,6 +62,7 @@ pub struct AppConfig {
     pub selected_rank_title: String,
     pub show_profile_rank_border: bool,
     pub show_sidebar_rank_border: bool,
+    pub show_level_up_modal: bool,
     pub alarm_default_snooze_minutes: i32,
 }
 
@@ -109,6 +110,7 @@ impl Default for AppConfig {
             selected_rank_title: "".to_string(),
             show_profile_rank_border: true,
             show_sidebar_rank_border: true,
+            show_level_up_modal: true,
             alarm_default_snooze_minutes: 5,
         }
     }
@@ -335,6 +337,7 @@ impl ConfigManager {
             selected_rank_title: get_s("selected_rank_title", ""),
             show_profile_rank_border: get_b("show_profile_rank_border", true),
             show_sidebar_rank_border: get_b("show_sidebar_rank_border", true),
+            show_level_up_modal: get_b("show_level_up_modal", true),
             alarm_default_snooze_minutes: get_i("alarm_default_snooze_minutes", 5),
         }
     }
@@ -550,6 +553,14 @@ impl ConfigManager {
         set_u(
             "show_sidebar_rank_border",
             if config.show_sidebar_rank_border {
+                "true"
+            } else {
+                "false"
+            },
+        );
+        set_u(
+            "show_level_up_modal",
+            if config.show_level_up_modal {
                 "true"
             } else {
                 "false"
