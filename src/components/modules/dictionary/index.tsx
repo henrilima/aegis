@@ -162,6 +162,7 @@ export default function DictionaryPage() {
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in duration-300">
       <ModuleHeader
+        moduleId="dictionary"
         color={getModuleColor("dictionary")}
         title="Dicionário & léxico"
         subtitle={`${stats.total} ${stats.total === 1 ? "termo" : "termos"} · ${stats.favorites} favoritos`}
