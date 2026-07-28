@@ -1,13 +1,15 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { Pause, Play, Square, Timer } from "lucide-react";
+import { BookOpen, Pause, Play, Square, Timer } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Input } from "@/components/ui/input";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { PomodoroGuidePanel } from "./PomodoroInfoModal";
+import { PomodoroLinkStudyModal } from "./PomodoroLinkStudyModal";
 import { PomoHeader } from "./pomoHeader";
 import { PomoHistory } from "./pomoHistory";
 import { usePomodoroLogic } from "./usePomodoroLogic";
@@ -18,6 +20,14 @@ export default function PomodoroPage() {
   const color = getModuleColor("pomodoro");
   const theme = getColorTheme(color);
   const [showInfo, setShowInfo] = useState(false);
+  const [promptLinkData, setPromptLinkData] = useState<{
+    cyclesCompleted: number;
+    workMinutes: number;
+  } | null>(null);
+  const [linkData, setLinkData] = useState<{
+    cyclesCompleted: number;
+    workMinutes: number;
+  } | null>(null);
 
   const handleDetach = async () => {
     try {
@@ -116,7 +126,14 @@ export default function PomodoroPage() {
               <Button
                 variant="ghost"
                 size="lg"
-                onClick={actions.stopTimer}
+                onClick={() =>
+                  actions.stopTimer((cycles, workMins) => {
+                    setPromptLinkData({
+                      cyclesCompleted: cycles,
+                      workMinutes: workMins,
+                    });
+                  })
+                }
                 disabled={!state?.isRunning && state?.cyclesCompleted === 0}
                 className="h-11 border border-border hover:bg-accent/50 font-bold px-6 rounded-xl transition-all text-muted-foreground disabled:opacity-30 text-sm"
               >
@@ -171,10 +188,50 @@ export default function PomodoroPage() {
 
           {/* Histórico */}
           <div className="sticky top-0 h-fit overflow-hidden">
-            <PomoHistory history={history} onClear={actions.clearHistory} />
+            <PomoHistory
+              history={history}
+              onClear={actions.clearHistory}
+              onLinkToStudies={(cycles, workMins) =>
+                setLinkData({
+                  cyclesCompleted: cycles,
+                  workMinutes: workMins,
+                })
+              }
+            />
           </div>
         </div>
       </div>
+
+      {/* Confirmação antes de abrir o modal de vinculação */}
+      {promptLinkData && (
+        <ConfirmModal
+          title="Vincular ciclos aos estudos?"
+          description={`Você concluiu ${promptLinkData.cyclesCompleted} ${
+            promptLinkData.cyclesCompleted === 1 ? "ciclo" : "ciclos"
+          } de foco (${
+            promptLinkData.cyclesCompleted * promptLinkData.workMinutes
+          } min). Gostaria de vincular este tempo a uma matéria de estudos cadastrada?`}
+          confirmLabel="Sim, vincular"
+          cancelLabel="Agora não"
+          variant="default"
+          icon={BookOpen}
+          onConfirm={() => {
+            setLinkData(promptLinkData);
+            setPromptLinkData(null);
+          }}
+          onCancel={() => setPromptLinkData(null)}
+        />
+      )}
+
+      {/* Modal para vincular a sessão de Pomodoro aos Estudos */}
+      {linkData && (
+        <PomodoroLinkStudyModal
+          isOpen={!!linkData}
+          onClose={() => setLinkData(null)}
+          cyclesCompleted={linkData.cyclesCompleted}
+          workMinutes={linkData.workMinutes}
+        />
+      )}
     </div>
   );
 }

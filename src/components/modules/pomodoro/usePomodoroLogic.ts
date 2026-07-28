@@ -61,6 +61,7 @@ export function usePomodoroLogic() {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const prevCycleTypeRef = useRef<string | null>(null);
+  const isAdvancingRef = useRef(false);
 
   const fetchHistory = useCallback(async () => {
     if (!user) return;
@@ -78,7 +79,7 @@ export function usePomodoroLogic() {
   }, [user]);
 
   const updateDisplayTime = useCallback(
-    (pState: PomodoroState) => {
+    (pState: PomodoroState, refNow?: Date) => {
       const duration =
         pState.cycleType === "Work" ? pState.workMinutes : pState.breakMinutes;
       const totalSeconds = duration * 60;
@@ -87,15 +88,16 @@ export function usePomodoroLogic() {
       // Soma o tempo acumulado com o tempo que passou desde o início do timer
       if (pState.isRunning && pState.startTime) {
         const startTime = new Date(pState.startTime).getTime();
-        const nowMs = simulatedNow.getTime();
-        elapsed += Math.floor((nowMs - startTime) / 1000);
+        const currentNow = refNow ? refNow.getTime() : Date.now();
+        elapsed += Math.max(0, Math.floor((currentNow - startTime) / 1000));
       }
 
       // Calcula o tempo restante garantindo que não seja negativo
       const left = Math.max(0, totalSeconds - elapsed);
       setTimeLeft(left);
+      return left;
     },
-    [simulatedNow],
+    [],
   );
 
   const fetchState = useCallback(async () => {
@@ -116,14 +118,14 @@ export function usePomodoroLogic() {
       prevCycleTypeRef.current = res.cycleType;
 
       setState(res);
-      updateDisplayTime(res);
+      updateDisplayTime(res, simulatedNow);
       fetchHistory();
     } catch {
       toast.error("Erro ao carregar Pomodoro");
     } finally {
       setLoading(false);
     }
-  }, [user, updateDisplayTime, fetchHistory]);
+  }, [user, updateDisplayTime, fetchHistory, simulatedNow]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
@@ -133,13 +135,48 @@ export function usePomodoroLogic() {
   useEffect(() => {
     if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     // Escuta o evento do backend para sincronizar o timer em tempo real
-    const unlisten = listen("pomo-tick", () => {
+    let unlistenFn: (() => void) | undefined;
+    listen("pomo-tick", () => {
       fetchState();
+    }).then((u) => {
+      unlistenFn = u;
     });
     return () => {
-      unlisten.then((u) => u());
+      if (unlistenFn) unlistenFn();
     };
   }, [fetchState]);
+
+  // Recalcula o tempo em tela a cada segundo e avança o ciclo se o contador zerar
+  useEffect(() => {
+    if (state?.isRunning && user) {
+      const left = updateDisplayTime(state, simulatedNow);
+      if (left === 0 && !isAdvancingRef.current) {
+        isAdvancingRef.current = true;
+        invoke<PomodoroState>("pomodoro_next_cycle", {
+          userId: String(user.id),
+        })
+          .then((res) => {
+            if (
+              prevCycleTypeRef.current !== null &&
+              res.cycleType !== prevCycleTypeRef.current &&
+              res.isRunning
+            ) {
+              playPomodoroChime();
+            }
+            prevCycleTypeRef.current = res.cycleType;
+            setState(res);
+            updateDisplayTime(res, simulatedNow);
+            fetchHistory();
+          })
+          .catch(console.error)
+          .finally(() => {
+            setTimeout(() => {
+              isAdvancingRef.current = false;
+            }, 1000);
+          });
+      }
+    }
+  }, [simulatedNow, state, updateDisplayTime, user, fetchHistory]);
 
   const toggleTimer = useCallback(async () => {
     if (!state || !user) return;
@@ -174,42 +211,53 @@ export function usePomodoroLogic() {
     }
   }, [state, user, updateDisplayTime, simulatedNow]);
 
-  const stopTimer = useCallback(async () => {
-    if (!user || !state) return;
-    if (state.cyclesCompleted > 0) {
-      const historyEntry: PomodoroHistory = {
-        userId: String(user.id),
-        workMinutes: state.workMinutes,
-        breakMinutes: state.breakMinutes,
-        cyclesDone: state.cyclesCompleted,
-        startTime: simulatedNow.toISOString(),
-        endTime: simulatedNow.toISOString(),
-      };
-      try {
-        await invoke("pomodoro_record_pomodoro_session", {
-          session: historyEntry,
-        });
-        toast.success("Log salvo!");
-      } catch (e) {
-        console.error(e);
+  const stopTimer = useCallback(
+    async (
+      onSessionEnded?: (cyclesCompleted: number, workMinutes: number) => void,
+    ) => {
+      if (!user || !state) return;
+      const cyclesCompleted = state.cyclesCompleted;
+      const workMinutes = state.workMinutes;
+      if (cyclesCompleted > 0) {
+        const historyEntry: PomodoroHistory = {
+          userId: String(user.id),
+          workMinutes: state.workMinutes,
+          breakMinutes: state.breakMinutes,
+          cyclesDone: state.cyclesCompleted,
+          startTime: simulatedNow.toISOString(),
+          endTime: simulatedNow.toISOString(),
+        };
+        try {
+          await invoke("pomodoro_record_pomodoro_session", {
+            session: historyEntry,
+          });
+          toast.success("Log de pomodoro salvo!");
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
-    const newState: PomodoroState = {
-      ...state,
-      isRunning: false,
-      startTime: null,
-      cyclesCompleted: 0,
-      accumulatedSeconds: 0,
-      cycleType: "Work",
-    };
-    await invoke("pomodoro_save_pomodoro_state", {
-      userId: String(user.id),
-      pomoState: newState,
-    });
-    setState(newState);
-    updateDisplayTime(newState);
-    fetchHistory();
-  }, [user, state, updateDisplayTime, fetchHistory, simulatedNow]);
+      const newState: PomodoroState = {
+        ...state,
+        isRunning: false,
+        startTime: null,
+        cyclesCompleted: 0,
+        accumulatedSeconds: 0,
+        cycleType: "Work",
+      };
+      await invoke("pomodoro_save_pomodoro_state", {
+        userId: String(user.id),
+        pomoState: newState,
+      });
+      setState(newState);
+      updateDisplayTime(newState);
+      fetchHistory();
+
+      if (cyclesCompleted > 0 && typeof onSessionEnded === "function") {
+        onSessionEnded(cyclesCompleted, workMinutes);
+      }
+    },
+    [user, state, updateDisplayTime, fetchHistory, simulatedNow],
+  );
 
   const clearHistory = useCallback(async () => {
     if (!user) return;

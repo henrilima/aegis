@@ -159,7 +159,7 @@ export function FloatingPomodoroWidget() {
                 )}
               </button>
               <button
-                onClick={actions.stopTimer}
+                onClick={() => actions.stopTimer()}
                 disabled={!state?.isRunning && state?.cyclesCompleted === 0}
                 className="flex items-center justify-center border border-border bg-muted/30 hover:bg-muted/80 text-muted-foreground disabled:opacity-30 rounded-lg transition-all font-bold w-8 h-8 p-0 cursor-pointer"
                 type="button"
@@ -238,7 +238,7 @@ export function FloatingPomodoroWidget() {
                 {!isTinyWidth && (state?.isRunning ? "Pausar" : "Iniciar")}
               </button>
               <button
-                onClick={actions.stopTimer}
+                onClick={() => actions.stopTimer()}
                 disabled={!state?.isRunning && state?.cyclesCompleted === 0}
                 className={cn(
                   "flex items-center justify-center border border-border bg-muted/30 hover:bg-muted/80 text-muted-foreground disabled:opacity-30 rounded-lg transition-all font-bold cursor-pointer",

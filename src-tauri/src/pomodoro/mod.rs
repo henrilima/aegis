@@ -72,27 +72,50 @@ impl PomodoroManager {
             [],
         ).ok();
 
-        // Carrega os estados iniciais do banco para o cache em memória
+        // Carrega os estados iniciais do banco para o cache em memória, garantindo que timers ativos fiquem pausados ao abrir o app
         let mut active_states = HashMap::new();
         if let Ok(mut stmt) = conn.prepare("SELECT user_id, is_running, start_time, work_minutes, break_minutes, cycle_type, cycles_completed, accumulated_seconds FROM pomodoro_v2") {
+            let now = Utc::now();
             if let Ok(rows) = stmt.query_map([], |row| {
-                let is_running: i32 = row.get(1)?;
+                let user_id: String = row.get(0)?;
+                let raw_is_running: i32 = row.get(1)?;
                 let start_time_str: Option<String> = row.get(2)?;
+                let work_minutes: i32 = row.get(3)?;
+                let break_minutes: i32 = row.get(4)?;
+                let cycle_type: String = row.get(5)?;
+                let cycles_completed: i32 = row.get(6)?;
+                let mut accumulated_seconds: i32 = row.get(7)?;
+
                 let start_time = start_time_str.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&Utc)));
+
+                if raw_is_running != 0 {
+                    if let Some(st) = start_time {
+                        let elapsed = (now - st).num_seconds();
+                        if elapsed > 0 {
+                            accumulated_seconds += elapsed as i32;
+                        }
+                    }
+                }
+
                 Ok((
-                    row.get::<_, String>(0)?,
+                    user_id,
                     PomodoroState {
-                        is_running: is_running != 0,
-                        start_time,
-                        work_minutes: row.get(3)?,
-                        break_minutes: row.get(4)?,
-                        cycle_type: row.get(5)?,
-                        cycles_completed: row.get(6)?,
-                        accumulated_seconds: row.get(7)?,
+                        is_running: false,
+                        start_time: None,
+                        work_minutes,
+                        break_minutes,
+                        cycle_type,
+                        cycles_completed,
+                        accumulated_seconds,
                     }
                 ))
             }) {
                 for r in rows.flatten() {
+                    // Atualiza o estado pausado no banco para persistência
+                    let _ = conn.execute(
+                        "UPDATE pomodoro_v2 SET is_running = 0, start_time = NULL, accumulated_seconds = ?1 WHERE user_id = ?2",
+                        params![r.1.accumulated_seconds, r.0],
+                    );
                     active_states.insert(r.0, r.1);
                 }
             }
@@ -118,16 +141,35 @@ impl PomodoroManager {
             |row| {
                 let is_running: i32 = row.get(0)?;
                 let start_time_str: Option<String> = row.get(1)?;
+                let work_minutes: i32 = row.get(2)?;
+                let break_minutes: i32 = row.get(3)?;
+                let cycle_type: String = row.get(4)?;
+                let cycles_completed: i32 = row.get(5)?;
+                let mut accumulated_seconds: i32 = row.get(6)?;
+
                 let start_time = start_time_str.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&Utc)));
-                
+
+                if is_running != 0 {
+                    if let Some(st) = start_time {
+                        let elapsed = (Utc::now() - st).num_seconds();
+                        if elapsed > 0 {
+                            accumulated_seconds += elapsed as i32;
+                        }
+                    }
+                    let _ = conn.execute(
+                        "UPDATE pomodoro_v2 SET is_running = 0, start_time = NULL, accumulated_seconds = ?1 WHERE user_id = ?2",
+                        params![accumulated_seconds, user_id],
+                    );
+                }
+
                 Ok(PomodoroState {
-                    is_running: is_running != 0,
-                    start_time,
-                    work_minutes: row.get(2)?,
-                    break_minutes: row.get(3)?,
-                    cycle_type: row.get(4)?,
-                    cycles_completed: row.get(5)?,
-                    accumulated_seconds: row.get(6)?,
+                    is_running: false,
+                    start_time: None,
+                    work_minutes,
+                    break_minutes,
+                    cycle_type,
+                    cycles_completed,
+                    accumulated_seconds,
                 })
             }
         );
@@ -245,11 +287,43 @@ impl PomodoroManager {
         let lock = self.active_states.lock().unwrap();
         lock.keys().cloned().collect()
     }
+
+    pub fn advance_cycle(&self, user_id: &str, now: DateTime<Utc>) -> PomodoroState {
+        let mut state = self.get_state(user_id);
+        if state.is_running {
+            let was_work = state.cycle_type == "Work";
+            state.cycles_completed += if was_work { 1 } else { 0 };
+            state.cycle_type = if was_work { "ShortBreak".to_string() } else { "Work".to_string() };
+            state.start_time = Some(now);
+            state.accumulated_seconds = 0;
+            let _ = self.save_state(user_id, &state);
+        }
+        state
+    }
 }
 
 #[tauri::command]
 pub async fn pomodoro_get_pomodoro_state(state: tauri::State<'_, crate::AppState>, user_id: String) -> Result<PomodoroState, String> {
     Ok(state.pomo.get_state(&user_id))
+}
+
+#[tauri::command]
+pub async fn pomodoro_next_cycle(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<PomodoroState, String> {
+    use tauri::Emitter;
+    let now = state.config.get_now();
+    let new_state = state.pomo.advance_cycle(&user_id, now);
+    let _ = app_handle.emit("pomo-tick", ());
+    let notif_msg = if new_state.cycle_type == "ShortBreak" {
+        "Ciclo de foco concluído! Hora do descanso."
+    } else {
+        "Descanso concluído! Hora de focar."
+    };
+    crate::notify_critical(&app_handle, "Aegis Pomodoro", notif_msg);
+    Ok(new_state)
 }
 
 #[tauri::command]
