@@ -87,7 +87,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <NavigationProvider>
       <div
-        className="flex min-h-screen bg-background text-foreground overflow-x-hidden"
+        className="flex h-screen w-screen bg-background text-foreground overflow-hidden"
         style={
           {
             "--sidebar-w": isSidebarVisible && isSidebarOpen ? "288px" : "0px",
@@ -128,9 +128,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           className={cn(
             isWidget
               ? "relative z-0 flex-1 flex flex-col w-screen h-screen overflow-hidden p-0 m-0 bg-card"
-              : "relative z-0 flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden p-6 md:p-10 scrollbar-stable scroll-smooth",
+              : "relative z-0 flex-1 h-full flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto px-6 md:px-10 pb-6 md:pb-10 pt-0 scrollbar-stable scroll-smooth",
             isSidebarVisible && isSidebarOpen && !isWidget
-              ? "lg:ml-72 lg:pl-6"
+              ? "lg:ml-72"
               : "ml-0",
           )}
         >

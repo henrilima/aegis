@@ -38,7 +38,7 @@ import type { CalendarEvent } from "../calendar/types";
 import type { ReadingSession } from "../reading/types";
 import type { Task } from "../tasks/types";
 import { DashboardHeader } from "./dashboardHeader";
-import { isToday } from "./helpers";
+import { isHabitDoneToday, isHabitScheduledToday, isToday } from "./helpers";
 import type { Habit, SleepEntry, StudySession } from "./types";
 import { useDashboardData, useWidgetLayout } from "./useDashboardData";
 import { WIDGET_METADATA, WIDGET_REGISTRY } from "./widgets/registry";
@@ -112,7 +112,7 @@ function SortableWidgetItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="w-full h-full min-h-[300px] lg:min-h-[340px]"
+      className="w-full h-full min-h-75 lg:min-h-85"
     >
       <div
         className={cn(
@@ -125,7 +125,7 @@ function SortableWidgetItem({
         {isVisualEditMode && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-xs rounded-2xl z-40 flex flex-col items-center justify-between p-4 pointer-events-auto">
             <div className="flex items-center justify-between w-full">
-              <div className="w-[30px]" />
+              <div className="w-7.5" />
               <span className="text-xs font-black text-foreground bg-background/85 px-2.5 py-1 rounded-full border border-border select-none">
                 {widgetName}
               </span>
@@ -357,12 +357,15 @@ export default function Dashboard() {
     goalWeekPages,
   } = derived;
 
-  const doneTodayCount = data.habits.filter(
-    (h) => h.lastDone && isToday(h.lastDone),
+  const { now } = useTime();
+
+  const scheduledPositiveHabits = data.habits.filter(
+    (h) => h.habitType === "Positive" && isHabitScheduledToday(h, now),
+  );
+  const doneTodayCount = scheduledPositiveHabits.filter((h) =>
+    isHabitDoneToday(h, now),
   ).length;
-  const positiveHabitsCount = data.habits.filter(
-    (h) => h.habitType === "Positive",
-  ).length;
+  const positiveHabitsCount = scheduledPositiveHabits.length;
 
   if (appMode === "portal") {
     const portalModules = NAV_GROUPS.flatMap((g) => g.items).filter(
@@ -411,7 +414,7 @@ export default function Dashboard() {
         )}
         <div
           className={cn(
-            "w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0 relative z-10",
+            "w-full max-w-350 flex flex-col gap-4 sm:gap-8 min-w-0 relative z-10",
           )}
           style={
             dashboardCoverImage
@@ -453,7 +456,7 @@ export default function Dashboard() {
                     variants={itemVariants}
                     onClick={() => navigate(item.route)}
                     className={cn(
-                      "p-6 bg-card border border-border rounded-3xl flex flex-col gap-4 transition-all duration-300 hover:border-border/80 group cursor-pointer relative overflow-hidden min-h-[140px]",
+                      "p-6 bg-card border border-border rounded-3xl flex flex-col gap-4 transition-all duration-300 hover:border-border/80 group cursor-pointer relative overflow-hidden min-h-35",
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -529,7 +532,7 @@ export default function Dashboard() {
       )}
       <div
         className={cn(
-          "w-full max-w-[1400px] flex flex-col gap-4 sm:gap-8 min-w-0 relative z-10",
+          "w-full max-w-350 flex flex-col gap-4 sm:gap-8 min-w-0 relative z-10",
         )}
         style={
           dashboardCoverImage
@@ -658,8 +661,7 @@ export default function Dashboard() {
                         const d = String(time.getDate()).padStart(2, "0");
                         const todayStr = `${y}-${m}-${d}`;
 
-                        const isCompleted =
-                          habit.completedDates?.includes(todayStr) || false;
+                        const isCompleted = isHabitDoneToday(habit, time);
                         try {
                           await invoke("habit_toggle_date", {
                             id: habitId,
@@ -1032,7 +1034,7 @@ export default function Dashboard() {
             {/* Overlay visual durante o drag */}
             <DragOverlay>
               {activeDragId ? (
-                <div className="w-full min-h-[300px] rounded-2xl border-2 border-dashed border-emerald-500/60 bg-emerald-500/10 backdrop-blur-sm flex items-center justify-center">
+                <div className="w-full min-h-75 rounded-2xl border-2 border-dashed border-emerald-500/60 bg-emerald-500/10 backdrop-blur-sm flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2 text-emerald-500">
                     <GripVertical className="w-8 h-8 animate-pulse" />
                     <span className="text-xs font-black">

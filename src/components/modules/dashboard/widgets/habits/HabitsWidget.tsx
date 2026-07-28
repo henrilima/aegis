@@ -4,6 +4,7 @@ import { Activity, CheckCircle2, Circle, Flame } from "lucide-react";
 import type { Habit } from "@/components/modules/habits/types";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { isHabitDoneToday, isHabitScheduledToday } from "../../helpers";
 import { BaseWidget } from "../BaseWidget";
 import { Ring } from "../ui";
 
@@ -29,34 +30,19 @@ export function HabitsWidget({
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
 
-  const getFormattedDate = (date: Date) => {
+  const _getFormattedDate = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   };
 
-  const todayStr = getFormattedDate(time);
-  const todayWeekday = time.getDay();
-
-  const isScheduled = (h: Habit, weekday: number) => {
-    if (h.archived) return false;
-    if (!h.frequency || h.frequency === "daily") return true;
-    if (h.frequency === "weekdays" && h.weekdays) {
-      const list = h.weekdays.split(",").map(Number);
-      return list.includes(weekday);
-    }
-    return false;
-  };
-
   // Filtra apenas hábitos positivos que não estão arquivados e estão agendados para hoje
   const positiveHabits = habits.filter(
-    (h) => h.habitType === "Positive" && isScheduled(h, todayWeekday),
+    (h) => h.habitType === "Positive" && isHabitScheduledToday(h, time),
   );
 
-  const doneToday = positiveHabits.filter(
-    (h) => h.completedDates?.includes(todayStr) || false,
-  );
+  const doneToday = positiveHabits.filter((h) => isHabitDoneToday(h, time));
 
   const progressPct =
     positiveHabits.length > 0
@@ -84,7 +70,7 @@ export function HabitsWidget({
       onToggleInteractive={onToggleInteractive}
     >
       <div className="flex items-center gap-[5cqw] @sm:gap-7 mb-[5cqw] @sm:mb-5">
-        <div className="relative shrink-0 w-[20cqw] h-[20cqw] min-w-[75px] min-h-[75px] max-w-[150px] max-h-[150px]">
+        <div className="relative shrink-0 w-[20cqw] h-[20cqw] min-w-18.75 min-h-18.75 max-w-37.5 max-h-37.5">
           <Ring
             pct={progressPct}
             color={
@@ -134,7 +120,7 @@ export function HabitsWidget({
 
       <div className="w-full space-y-2">
         {positiveHabits.slice(0, limit ?? 3).map((h) => {
-          const done = h.completedDates?.includes(todayStr) || false;
+          const done = isHabitDoneToday(h, time);
           const streak = h.currentStreak || 0;
           return (
             <button
@@ -215,7 +201,7 @@ export function HabitsWidget({
             <p className="text-xs text-neutral-600 font-bold">
               Sem Hábitos Ativos
             </p>
-            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+            <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
               Cadastre hábitos saudáveis para acompanhar sua consistência
               diária.
             </p>

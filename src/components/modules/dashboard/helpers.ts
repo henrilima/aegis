@@ -95,3 +95,28 @@ export function formatDateShort(iso: string) {
   }
   return iso;
 }
+
+export function isHabitScheduledToday(h: Habit, referenceNow?: Date): boolean {
+  if (h.archived) return false;
+  if (!h.frequency || h.frequency === "daily") return true;
+  if (h.frequency === "weekdays" && h.weekdays) {
+    const weekday = (referenceNow || new Date()).getDay();
+    const list = h.weekdays.split(",").map(Number);
+    return list.includes(weekday);
+  }
+  return false;
+}
+
+export function isHabitDoneToday(h: Habit, referenceNow?: Date): boolean {
+  const ref = referenceNow || new Date();
+  const y = ref.getFullYear();
+  const m = String(ref.getMonth() + 1).padStart(2, "0");
+  const d = String(ref.getDate()).padStart(2, "0");
+  const todayStr = `${y}-${m}-${d}`;
+
+  if (Array.isArray(h.completedDates)) {
+    return h.completedDates.includes(todayStr);
+  }
+
+  return h.lastDone ? isToday(h.lastDone, ref) : false;
+}

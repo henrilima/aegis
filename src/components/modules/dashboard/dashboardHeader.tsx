@@ -323,7 +323,7 @@ export function DashboardHeader({
 
   if (hour >= 12 && hour < 18) {
     greetingText = "Boa tarde";
-  } else if (hour >= 18 || hour < 6) {
+  } else if (hour >= 18 || hour < 5) {
     greetingText = "Boa noite";
   }
 
