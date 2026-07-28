@@ -79,7 +79,7 @@ export default function AchievementsModule() {
 
   if (loading || !progress || !stats) {
     return (
-      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+      <div className="h-full w-full flex items-center justify-center min-h-100">
         <div
           className={`flex items-center gap-2 animate-pulse font-bold ${theme.text}`}
         >
@@ -383,7 +383,7 @@ export default function AchievementsModule() {
                       )
                     }
                   >
-                    <SelectTrigger className="w-full sm:w-[240px] bg-card border-border/50">
+                    <SelectTrigger className="w-full sm:w-60 bg-card border-border/50">
                       <SelectValue placeholder="Selecione o período" />
                     </SelectTrigger>
                     <SelectContent>
@@ -490,7 +490,7 @@ export default function AchievementsModule() {
                 >
                   <div className="flex items-center gap-3 text-left">
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-bold border w-[76px] text-center shrink-0 ${
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-bold border w-19 text-center shrink-0 ${
                         isLost
                           ? "bg-muted border-muted-foreground/20 text-muted-foreground"
                           : isPet

@@ -9,6 +9,7 @@ import {
   getPetPhrases,
   PARTICLES_CONFIG,
 } from "@/config/pets.config";
+import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { formatDateLocal } from "@/lib/utils";
 
@@ -76,14 +77,20 @@ export function PetDisplay({
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { user } = useAuth();
+  const uid = user?.id ? String(user.id) : "";
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(
-        `aegis_pet_custom_name_${selectedPet}`,
-      );
+      const key = uid
+        ? `aegis_pet_custom_name_${uid}_${selectedPet}`
+        : `aegis_pet_custom_name_${selectedPet}`;
+      const saved =
+        localStorage.getItem(key) ??
+        localStorage.getItem(`aegis_pet_custom_name_${selectedPet}`);
       setCustomName(saved || "");
     }
-  }, [selectedPet]);
+  }, [selectedPet, uid]);
 
   useEffect(() => {
     if (isEditingName) {
@@ -93,11 +100,14 @@ export function PetDisplay({
 
   const handleSaveName = (newName: string) => {
     setCustomName(newName);
-    localStorage.setItem(`aegis_pet_custom_name_${selectedPet}`, newName);
-    setIsEditingName(false);
     if (typeof window !== "undefined") {
+      const key = uid
+        ? `aegis_pet_custom_name_${uid}_${selectedPet}`
+        : `aegis_pet_custom_name_${selectedPet}`;
+      localStorage.setItem(key, newName);
       window.dispatchEvent(new Event("aegis-pet-renamed"));
     }
+    setIsEditingName(false);
   };
 
   const daysSinceLastCompletion = useMemo(() => {
@@ -832,11 +842,11 @@ export function PetDisplay({
         {/* Balão de fala pixel-art exibido ao clicar no pet */}
         {speechText && (
           <div
-            className="absolute z-20 bottom-[100px] left-1/2 -translate-x-1/2 animate-in fade-in zoom-in-75 duration-150 pointer-events-none"
+            className="absolute z-20 bottom-25 left-1/2 -translate-x-1/2 animate-in fade-in zoom-in-75 duration-150 pointer-events-none"
             style={{ imageRendering: "pixelated" }}
           >
             <div
-              className="relative px-2.5 py-1.5 text-[10px] font-bold text-foreground leading-snug max-w-[140px] text-center"
+              className="relative px-2.5 py-1.5 text-[10px] font-bold text-foreground leading-snug max-w-35 text-center"
               style={{
                 background: "var(--card)",
                 border: "2px solid var(--border)",
@@ -848,7 +858,7 @@ export function PetDisplay({
               {speechText}
               {/* Ponteiro do balão (estilo pixel-art) */}
               <span
-                className="absolute left-1/2 -translate-x-1/2 -bottom-[10px] block w-2 h-2"
+                className="absolute left-1/2 -translate-x-1/2 -bottom-2.5 block w-2 h-2"
                 style={{
                   background: "var(--card)",
                   borderRight: "2px solid var(--border)",
@@ -884,7 +894,7 @@ export function PetDisplay({
 
       <div className="flex flex-col gap-1.5 w-full items-center">
         {isEditingName ? (
-          <div className="flex items-center gap-1.5 max-w-[210px] w-full animate-in fade-in duration-200">
+          <div className="flex items-center gap-1.5 max-w-52.5 w-full animate-in fade-in duration-200">
             <input
               ref={inputRef}
               type="text"

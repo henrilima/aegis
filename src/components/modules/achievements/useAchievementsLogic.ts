@@ -39,17 +39,16 @@ export function useAchievementsLogic() {
   >("cyclic");
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [xpHistory, setXpHistory] = useState<XPHistoryEntry[]>([]);
-  const [isPetActive, setIsPetActive] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aegis_pet_active");
-      return saved === "true";
-    }
-    return false;
-  });
+  const uid = user?.id ? String(user.id) : "";
+
+  const [isPetActive, setIsPetActive] = useState<boolean>(false);
 
   const handleTogglePetActive = (active: boolean) => {
     setIsPetActive(active);
-    localStorage.setItem("aegis_pet_active", String(active));
+    if (typeof window !== "undefined") {
+      const key = uid ? `aegis_pet_active_${uid}` : "aegis_pet_active";
+      localStorage.setItem(key, String(active));
+    }
   };
 
   const prevLevelRef = useRef<number | null>(null);
@@ -80,41 +79,71 @@ export function useAchievementsLogic() {
     return formatDateLocal(d);
   }, [now]);
 
-  // Carregar pet salvo
+  // Carregar pet salvo por usuário
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aegis_selected_pet");
+      const activeKey = uid ? `aegis_pet_active_${uid}` : "aegis_pet_active";
+      const savedActive =
+        localStorage.getItem(activeKey) ??
+        localStorage.getItem("aegis_pet_active");
+      setIsPetActive(savedActive === "true");
+
+      const petKey = uid ? `aegis_selected_pet_${uid}` : "aegis_selected_pet";
+      const saved =
+        localStorage.getItem(petKey) ??
+        localStorage.getItem("aegis_selected_pet");
       if (saved) {
         setSelectedPet(saved);
       }
-      const savedParticle = localStorage.getItem("aegis_selected_pet_particle");
+      const particleKey = uid
+        ? `aegis_selected_pet_particle_${uid}`
+        : "aegis_selected_pet_particle";
+      const savedParticle =
+        localStorage.getItem(particleKey) ??
+        localStorage.getItem("aegis_selected_pet_particle");
       if (savedParticle) {
         setSelectedParticle(savedParticle);
       }
-      const savedBg = localStorage.getItem(
-        "aegis_selected_pet_background_mode",
-      );
+      const bgKey = uid
+        ? `aegis_selected_pet_background_mode_${uid}`
+        : "aegis_selected_pet_background_mode";
+      const savedBg =
+        localStorage.getItem(bgKey) ??
+        localStorage.getItem("aegis_selected_pet_background_mode");
       if (savedBg) {
         setSelectedBgMode(savedBg as "cyclic" | "day" | "afternoon" | "night");
       }
     }
-  }, []);
+  }, [uid]);
 
   const handleSelectPet = (petId: string) => {
     setSelectedPet(petId);
-    localStorage.setItem("aegis_selected_pet", petId);
+    if (typeof window !== "undefined") {
+      const key = uid ? `aegis_selected_pet_${uid}` : "aegis_selected_pet";
+      localStorage.setItem(key, petId);
+    }
   };
 
   const handleSelectParticle = (particleId: string) => {
     setSelectedParticle(particleId);
-    localStorage.setItem("aegis_selected_pet_particle", particleId);
+    if (typeof window !== "undefined") {
+      const key = uid
+        ? `aegis_selected_pet_particle_${uid}`
+        : "aegis_selected_pet_particle";
+      localStorage.setItem(key, particleId);
+    }
   };
 
   const handleSelectBgMode = (
     bgMode: "cyclic" | "day" | "afternoon" | "night",
   ) => {
     setSelectedBgMode(bgMode);
-    localStorage.setItem("aegis_selected_pet_background_mode", bgMode);
+    if (typeof window !== "undefined") {
+      const key = uid
+        ? `aegis_selected_pet_background_mode_${uid}`
+        : "aegis_selected_pet_background_mode";
+      localStorage.setItem(key, bgMode);
+    }
   };
 
   // Carregar dados gerais e estado do usuário

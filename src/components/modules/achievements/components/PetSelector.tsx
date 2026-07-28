@@ -3,6 +3,7 @@
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PETS_CONFIG } from "@/config/pets.config";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 const petOrder = Object.keys(PETS_CONFIG);
@@ -30,13 +31,20 @@ export function PetSelector({
   onSelectPet,
   userLevel,
 }: PetSelectorProps) {
+  const { user } = useAuth();
+  const uid = user?.id ? String(user.id) : "";
   const [customNames, setCustomNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadNames = () => {
       const names: Record<string, string> = {};
       for (const pet of PETS_LIST) {
-        const saved = localStorage.getItem(`aegis_pet_custom_name_${pet.id}`);
+        const key = uid
+          ? `aegis_pet_custom_name_${uid}_${pet.id}`
+          : `aegis_pet_custom_name_${pet.id}`;
+        const saved =
+          localStorage.getItem(key) ??
+          localStorage.getItem(`aegis_pet_custom_name_${pet.id}`);
         if (saved) {
           names[pet.id] = saved;
         }
@@ -47,7 +55,7 @@ export function PetSelector({
     loadNames();
     window.addEventListener("aegis-pet-renamed", loadNames);
     return () => window.removeEventListener("aegis-pet-renamed", loadNames);
-  }, []);
+  }, [uid]);
 
   return (
     <div className="flex flex-col gap-4">
