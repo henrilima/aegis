@@ -85,9 +85,7 @@ export function PetDisplay({
       const key = uid
         ? `aegis_pet_custom_name_${uid}_${selectedPet}`
         : `aegis_pet_custom_name_${selectedPet}`;
-      const saved =
-        localStorage.getItem(key) ??
-        localStorage.getItem(`aegis_pet_custom_name_${selectedPet}`);
+      const saved = localStorage.getItem(key);
       setCustomName(saved || "");
     }
   }, [selectedPet, uid]);

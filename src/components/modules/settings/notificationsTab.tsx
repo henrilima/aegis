@@ -246,7 +246,7 @@ export function NotificationsTab({
             </div>
             <Switch
               id="show-level-up-notif"
-              checked={showLevelUpModal ?? true}
+              checked={showLevelUpModal ?? false}
               onCheckedChange={(v) => updateConfig("showLevelUpModal", v)}
             />
           </div>

@@ -54,17 +54,22 @@ export function useAchievementsLogic() {
   const prevLevelRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (uid !== undefined) {
+      prevLevelRef.current = null;
+    }
+  }, [uid]);
+
+  useEffect(() => {
     if (progress?.level) {
       if (
         prevLevelRef.current !== null &&
         progress.level > prevLevelRef.current
       ) {
-        const win = window as unknown as {
-          aegisTriggerLevelUp?: (lvl: number) => void;
-        };
-        if (typeof window !== "undefined" && win.aegisTriggerLevelUp) {
-          win.aegisTriggerLevelUp(progress.level);
-        }
+        window.dispatchEvent(
+          new CustomEvent("aegis-level-up", {
+            detail: { level: progress.level },
+          }),
+        );
       }
       prevLevelRef.current = progress.level;
     }
@@ -83,36 +88,26 @@ export function useAchievementsLogic() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const activeKey = uid ? `aegis_pet_active_${uid}` : "aegis_pet_active";
-      const savedActive =
-        localStorage.getItem(activeKey) ??
-        localStorage.getItem("aegis_pet_active");
+      const savedActive = localStorage.getItem(activeKey);
       setIsPetActive(savedActive === "true");
 
       const petKey = uid ? `aegis_selected_pet_${uid}` : "aegis_selected_pet";
-      const saved =
-        localStorage.getItem(petKey) ??
-        localStorage.getItem("aegis_selected_pet");
-      if (saved) {
-        setSelectedPet(saved);
-      }
+      const saved = localStorage.getItem(petKey);
+      setSelectedPet(saved || "doberman");
+
       const particleKey = uid
         ? `aegis_selected_pet_particle_${uid}`
         : "aegis_selected_pet_particle";
-      const savedParticle =
-        localStorage.getItem(particleKey) ??
-        localStorage.getItem("aegis_selected_pet_particle");
-      if (savedParticle) {
-        setSelectedParticle(savedParticle);
-      }
+      const savedParticle = localStorage.getItem(particleKey);
+      setSelectedParticle(savedParticle || "none");
+
       const bgKey = uid
         ? `aegis_selected_pet_background_mode_${uid}`
         : "aegis_selected_pet_background_mode";
-      const savedBg =
-        localStorage.getItem(bgKey) ??
-        localStorage.getItem("aegis_selected_pet_background_mode");
-      if (savedBg) {
-        setSelectedBgMode(savedBg as "cyclic" | "day" | "afternoon" | "night");
-      }
+      const savedBg = localStorage.getItem(bgKey);
+      setSelectedBgMode(
+        (savedBg as "cyclic" | "day" | "afternoon" | "night") || "cyclic",
+      );
     }
   }, [uid]);
 

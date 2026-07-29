@@ -4,6 +4,7 @@
 import { load } from "@tauri-apps/plugin-store";
 import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { getThemeColor, type ThemeColorKey } from "@/lib/utils";
 import { CHROMATIC_THEMES, type ChromaticThemeId } from "@/themes.config";
 
@@ -27,17 +28,35 @@ export interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const uid = user?.id ? String(user.id) : "";
+
+  const themeKey = uid
+    ? `aegis-chromatic-theme_${uid}`
+    : "aegis-chromatic-theme";
+  const prefThemeKey = uid
+    ? `aegis-preferred-theme_${uid}`
+    : "aegis-preferred-theme";
+  const accentKey = uid ? `aegis-accent-color_${uid}` : "aegis-accent-color";
+  const prefAccentKey = uid
+    ? `aegis-accent-color-preferred_${uid}`
+    : "aegis-accent-color-preferred";
+  const modeKey = uid ? `aegis-app-mode_${uid}` : "aegis-app-mode";
+  const storeFileName = uid
+    ? `aegis-theme-settings_${uid}.json`
+    : "aegis-theme-settings.json";
+
   const [theme, setThemeState] = useState<ChromaticThemeId>(FALLBACK_THEME);
   const [accentColor, setAccentColorState] = useState<ThemeColorKey>("blue");
   const [appMode, setAppModeState] = useState<
     "default" | "no_sidebar" | "portal"
   >("default");
 
-  // Carrega o tema do localStorage e do Store ao montar o componente
+  // Carrega o tema do localStorage e do Store ao montar o componente ou trocar de usuário
   useEffect(() => {
     const loadSavedThemes = async () => {
       try {
-        const store = await load("aegis-theme-settings.json", {
+        const store = await load(storeFileName, {
           defaults: {},
           autoSave: true,
         });
@@ -49,22 +68,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           "app-mode",
         );
 
-        // Se não tiver no Store, pega do localStorage (retrocompatibilidade)
+        // Se não tiver no Store, pega do localStorage
         if (!savedTheme) {
           savedTheme =
-            (localStorage.getItem(
-              "aegis-chromatic-theme",
-            ) as ChromaticThemeId | null) || FALLBACK_THEME;
+            (localStorage.getItem(themeKey) as ChromaticThemeId | null) ||
+            FALLBACK_THEME;
         }
         if (!savedAccent) {
           savedAccent =
-            (localStorage.getItem(
-              "aegis-accent-color",
-            ) as ThemeColorKey | null) || "blue";
+            (localStorage.getItem(accentKey) as ThemeColorKey | null) || "blue";
         }
         if (!savedAppMode) {
           savedAppMode =
-            (localStorage.getItem("aegis-app-mode") as
+            (localStorage.getItem(modeKey) as
               | "default"
               | "no_sidebar"
               | "portal"
@@ -80,7 +96,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setAccentColorState(savedAccent);
         setAppModeState(savedAppMode);
 
-        document.documentElement.setAttribute("data-theme", finalTheme);
+        if (finalTheme === "default") {
+          document.documentElement.removeAttribute("data-theme");
+        } else {
+          document.documentElement.setAttribute("data-theme", finalTheme);
+        }
+
         if (finalTheme === "light") {
           document.documentElement.classList.remove("dark");
         } else {
@@ -88,10 +109,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Garante que o localStorage e o Store fiquem sincronizados
-        localStorage.setItem("aegis-chromatic-theme", finalTheme);
-        localStorage.setItem("aegis-preferred-theme", finalTheme); // Inicializa a preferência
-        localStorage.setItem("aegis-accent-color", savedAccent);
-        localStorage.setItem("aegis-accent-color-preferred", savedAccent); // Inicializa a preferência
+        localStorage.setItem(themeKey, finalTheme);
+        localStorage.setItem(prefThemeKey, finalTheme);
+        localStorage.setItem(accentKey, savedAccent);
+        localStorage.setItem(prefAccentKey, savedAccent);
+        localStorage.setItem(modeKey, savedAppMode);
 
         await store.set("theme", finalTheme);
         await store.set("accent-color", savedAccent);
@@ -102,7 +124,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
 
     loadSavedThemes();
-  }, []);
+  }, [
+    storeFileName,
+    themeKey,
+    accentKey,
+    modeKey,
+    prefThemeKey,
+    prefAccentKey,
+  ]);
 
   // Ouvintes de eventos Tauri para automação de alteração temporária de temas
   useEffect(() => {
@@ -142,11 +171,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const typedTheme = newTheme as ChromaticThemeId;
         if (VALID_THEME_IDS.has(typedTheme)) {
           setThemeState(typedTheme);
-          localStorage.setItem("aegis-chromatic-theme", typedTheme);
+          localStorage.setItem(themeKey, typedTheme);
 
           if (newAccent) {
             setAccentColorState(newAccent);
-            localStorage.setItem("aegis-accent-color", newAccent);
+            localStorage.setItem(accentKey, newAccent);
           }
 
           if (typedTheme === "light") {
@@ -180,19 +209,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
 
         const preferredTheme =
-          (localStorage.getItem(
-            "aegis-preferred-theme",
-          ) as ChromaticThemeId | null) || FALLBACK_THEME;
+          (localStorage.getItem(prefThemeKey) as ChromaticThemeId | null) ||
+          FALLBACK_THEME;
         const preferredAccent =
-          (localStorage.getItem(
-            "aegis-accent-color-preferred",
-          ) as ThemeColorKey | null) || "blue";
+          (localStorage.getItem(prefAccentKey) as ThemeColorKey | null) ||
+          "blue";
 
         setThemeState(preferredTheme);
-        localStorage.setItem("aegis-chromatic-theme", preferredTheme);
+        localStorage.setItem(themeKey, preferredTheme);
 
         setAccentColorState(preferredAccent);
-        localStorage.setItem("aegis-accent-color", preferredAccent);
+        localStorage.setItem(accentKey, preferredAccent);
 
         if (preferredTheme === "light") {
           document.documentElement.classList.remove("dark");
@@ -214,27 +241,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (unlistenChange) unlistenChange();
       if (unlistenRestore) unlistenRestore();
     };
-  }, []);
+  }, [accentKey, prefAccentKey, prefThemeKey, themeKey]);
 
   const setAppMode = (mode: "default" | "no_sidebar" | "portal") => {
     setAppModeState(mode);
-    localStorage.setItem("aegis-app-mode", mode);
-    load("aegis-theme-settings.json", { defaults: {}, autoSave: true }).then(
-      (store) => {
-        store.set("app-mode", mode);
-      },
-    );
+    localStorage.setItem(modeKey, mode);
+    load(storeFileName, { defaults: {}, autoSave: true }).then((store) => {
+      store.set("app-mode", mode);
+    });
   };
 
   const setTheme = (newTheme: ChromaticThemeId) => {
     setThemeState(newTheme);
-    localStorage.setItem("aegis-chromatic-theme", newTheme);
-    localStorage.setItem("aegis-preferred-theme", newTheme); // Salva a preferência definitiva do usuário
-    load("aegis-theme-settings.json", { defaults: {}, autoSave: true }).then(
-      (store) => {
-        store.set("theme", newTheme);
-      },
-    );
+    localStorage.setItem(themeKey, newTheme);
+    localStorage.setItem(prefThemeKey, newTheme); // Salva a preferência definitiva do usuário
+    load(storeFileName, { defaults: {}, autoSave: true }).then((store) => {
+      store.set("theme", newTheme);
+    });
 
     // Gerenciar classe .dark para suporte ao Tailwind Light/Dark
     if (newTheme === "light") {
@@ -252,13 +275,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setAccentColor = (color: ThemeColorKey) => {
     setAccentColorState(color);
-    localStorage.setItem("aegis-accent-color", color);
-    localStorage.setItem("aegis-accent-color-preferred", color); // Salva o destaque preferido definitivo
-    load("aegis-theme-settings.json", { defaults: {}, autoSave: true }).then(
-      (store) => {
-        store.set("accent-color", color);
-      },
-    );
+    localStorage.setItem(accentKey, color);
+    localStorage.setItem(prefAccentKey, color); // Salva o destaque preferido definitivo
+    load(storeFileName, { defaults: {}, autoSave: true }).then((store) => {
+      store.set("accent-color", color);
+    });
   };
 
   const themeStyles = useMemo(() => {

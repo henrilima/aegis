@@ -259,7 +259,8 @@ export function GlobalScheduler() {
 
         const currentLevel = rawProgress.level;
         if (typeof currentLevel === "number") {
-          const lastSeen = localStorage.getItem("aegis_last_seen_level");
+          const lastSeenKey = `aegis_last_seen_level_${user.id}`;
+          const lastSeen = localStorage.getItem(lastSeenKey);
           if (lastSeen) {
             const lastLvl = parseInt(lastSeen, 10);
             if (currentLevel > lastLvl) {
@@ -272,7 +273,7 @@ export function GlobalScheduler() {
               window.dispatchEvent(new Event("aegis-achievements-refresh"));
             }
           }
-          localStorage.setItem("aegis_last_seen_level", String(currentLevel));
+          localStorage.setItem(lastSeenKey, String(currentLevel));
         }
       } catch (err) {
         console.error("[GlobalScheduler] Erro ao monitorar nível:", err);

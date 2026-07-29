@@ -43,7 +43,19 @@ export function LevelUpParticles() {
   };
 
   useEffect(() => {
-    const trigger = (lvl: number) => {
+    const trigger = async (lvl: number) => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const config = await invoke<{ showLevelUpModal?: boolean }>(
+          "global_get_app_config",
+        );
+        if (!config || config.showLevelUpModal !== true) {
+          return;
+        }
+      } catch {
+        return;
+      }
+
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -83,21 +95,10 @@ export function LevelUpParticles() {
       ).aegisTriggerLevelUp = trigger;
     }
 
-    const handleLevelUp = async (e: Event) => {
+    const handleLevelUp = (e: Event) => {
       const customEvent = e as CustomEvent<{ level: number }>;
       const lvl = customEvent.detail?.level;
       if (typeof lvl === "number") {
-        try {
-          const { invoke } = await import("@tauri-apps/api/core");
-          const config = await invoke<{ showLevelUpModal?: boolean }>(
-            "global_get_app_config",
-          );
-          if (config && config.showLevelUpModal === false) {
-            return;
-          }
-        } catch {
-          // ignore
-        }
         trigger(lvl);
       }
     };

@@ -174,6 +174,14 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
   }, []);
 
   useEffect(() => {
+    if (user?.id) {
+      prevLevelRef.current = null;
+    } else {
+      prevLevelRef.current = null;
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!user?.id) return;
 
     const loadRankAndConfig = async () => {
@@ -203,12 +211,6 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                 detail: { level: progressState.level },
               }),
             );
-            const win = window as unknown as {
-              aegisTriggerLevelUp?: (lvl: number) => void;
-            };
-            if (typeof window !== "undefined" && win.aegisTriggerLevelUp) {
-              win.aegisTriggerLevelUp(progressState.level);
-            }
           }
           prevLevelRef.current = progressState.level;
           setLevel(progressState.level);

@@ -188,7 +188,7 @@ export function useSettingsLogic() {
     () => globalCachedConfig?.showSidebarRankBorder ?? true,
   );
   const [showLevelUpModal, setShowLevelUpModal] = useState(
-    () => globalCachedConfig?.showLevelUpModal ?? true,
+    () => globalCachedConfig?.showLevelUpModal ?? false,
   );
   const [isConfigLoading, setIsConfigLoading] = useState(
     () => !globalCachedConfig,
@@ -200,7 +200,7 @@ export function useSettingsLogic() {
   const loadConfig = useCallback(async () => {
     try {
       const [config, audioOpts] = await Promise.all([
-        invoke<AppConfig>("global_get_app_config"),
+        invoke<AppConfig>("global_get_app_config", { userId: user?.id }),
         getAudioOptions().catch(() => []),
       ]);
       globalCachedConfig = config;
@@ -240,9 +240,10 @@ export function useSettingsLogic() {
         if (resolved !== activeSound) {
           activeSound = resolved;
           const updatedConfig = { ...config, notificationSound: activeSound };
-          invoke("global_set_app_config", { config: updatedConfig }).catch(
-            console.error,
-          );
+          invoke("global_set_app_config", {
+            config: updatedConfig,
+            userId: user?.id,
+          }).catch(console.error);
         }
       }
       setNotificationSound(activeSound);
@@ -410,7 +411,10 @@ export function useSettingsLogic() {
     globalCachedConfig = newConfig;
 
     try {
-      await invoke("global_set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", {
+        config: newConfig,
+        userId: user?.id,
+      });
       window.dispatchEvent(new Event("aegis-config-changed"));
       if (key === "notifSleepBedtime") setNotifSleepBedtime(value as boolean);
       if (key === "notifSleepBedtimeTime")
@@ -544,7 +548,10 @@ export function useSettingsLogic() {
     };
 
     try {
-      await invoke("global_set_app_config", { config: newConfig });
+      await invoke("global_set_app_config", {
+        config: newConfig,
+        userId: user?.id,
+      });
       window.dispatchEvent(new Event("aegis-config-changed"));
 
       Object.entries(fields).forEach(([key, value]) => {

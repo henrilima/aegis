@@ -110,7 +110,7 @@ impl Default for AppConfig {
             selected_rank_title: "".to_string(),
             show_profile_rank_border: true,
             show_sidebar_rank_border: true,
-            show_level_up_modal: true,
+            show_level_up_modal: false,
             alarm_default_snooze_minutes: 5,
         }
     }
@@ -337,7 +337,7 @@ impl ConfigManager {
             selected_rank_title: get_s("selected_rank_title", ""),
             show_profile_rank_border: get_b("show_profile_rank_border", true),
             show_sidebar_rank_border: get_b("show_sidebar_rank_border", true),
-            show_level_up_modal: get_b("show_level_up_modal", true),
+            show_level_up_modal: get_b("show_level_up_modal", false),
             alarm_default_snooze_minutes: get_i("alarm_default_snooze_minutes", 5),
         }
     }

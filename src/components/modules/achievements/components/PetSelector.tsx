@@ -42,9 +42,7 @@ export function PetSelector({
         const key = uid
           ? `aegis_pet_custom_name_${uid}_${pet.id}`
           : `aegis_pet_custom_name_${pet.id}`;
-        const saved =
-          localStorage.getItem(key) ??
-          localStorage.getItem(`aegis_pet_custom_name_${pet.id}`);
+        const saved = localStorage.getItem(key);
         if (saved) {
           names[pet.id] = saved;
         }

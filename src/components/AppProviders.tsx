@@ -42,10 +42,10 @@ function AppRuntimeEffects() {
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
-      <TooltipProvider>
-        <TimeProvider>
-          <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <TimeProvider>
             <ModuleProvider>
               <TaskTimerProvider>
                 <AppRuntimeEffects />
@@ -55,9 +55,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                 <Toaster />
               </TaskTimerProvider>
             </ModuleProvider>
-          </AuthProvider>
-        </TimeProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+          </TimeProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

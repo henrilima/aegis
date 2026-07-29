@@ -71,8 +71,12 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Carrega módulos ativos
-    const savedModules = localStorage.getItem("aegis_enabled_modules");
+    // Carrega módulos ativos por perfil
+    const modulesKey =
+      userId !== "default"
+        ? `aegis_enabled_modules_${userId}`
+        : "aegis_enabled_modules";
+    const savedModules = localStorage.getItem(modulesKey);
     if (savedModules) {
       try {
         const modules = JSON.parse(savedModules) as ModuleId[];
@@ -102,8 +106,12 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   }, [userId]);
 
   useEffect(() => {
+    const modulesKey =
+      userId !== "default"
+        ? `aegis_enabled_modules_${userId}`
+        : "aegis_enabled_modules";
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === "aegis_enabled_modules" && e.newValue) {
+      if (e.key === modulesKey && e.newValue) {
         try {
           setEnabledModules(JSON.parse(e.newValue));
         } catch {}
@@ -122,12 +130,13 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem(
-        "aegis_enabled_modules",
-        JSON.stringify(enabledModules),
-      );
+      const modulesKey =
+        userId !== "default"
+          ? `aegis_enabled_modules_${userId}`
+          : "aegis_enabled_modules";
+      localStorage.setItem(modulesKey, JSON.stringify(enabledModules));
     }
-  }, [enabledModules, mounted]);
+  }, [enabledModules, mounted, userId]);
 
   useEffect(() => {
     if (mounted) {
