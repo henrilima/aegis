@@ -107,24 +107,61 @@ export default function StudiesPage() {
     return true;
   });
 
+  const syncTabFromUrl = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (
+        tabParam &&
+        [
+          "visao-geral",
+          "materias",
+          "horarios",
+          "metas",
+          "historico",
+          "relatorio",
+        ].includes(tabParam)
+      ) {
+        setTab(tabParam as TabId);
+        return true;
+      }
+    }
+    return false;
+  }, []);
+
+  useEffect(() => {
+    syncTabFromUrl();
+  }, [syncTabFromUrl]);
+
   useEffect(() => {
     const handleOpenGrades = () => setShowGrades(true);
     const handleSidebarNavigate = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
       if (customEvent.detail === "studies") {
         setShowGrades(false);
-        setTab("visao-geral");
+        const updated = syncTabFromUrl();
+        if (!updated) {
+          setTab("visao-geral");
+        }
       }
+    };
+
+    const handleUrlChange = () => {
+      syncTabFromUrl();
     };
 
     window.addEventListener("open-grades-module", handleOpenGrades);
     window.addEventListener("aegis-route-click", handleSidebarNavigate);
+    window.addEventListener("popstate", handleUrlChange);
+    window.addEventListener("aegis-navigate", handleUrlChange);
 
     return () => {
       window.removeEventListener("open-grades-module", handleOpenGrades);
       window.removeEventListener("aegis-route-click", handleSidebarNavigate);
+      window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener("aegis-navigate", handleUrlChange);
     };
-  }, []);
+  }, [syncTabFromUrl]);
 
   const [goalVals, setGoalVals] = useState<Record<string, string>>({});
   const [isSavingGoals, setIsSavingGoals] = useState(false);

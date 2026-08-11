@@ -266,9 +266,6 @@ export function RelatorioTab({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Constância de Estudos Anual */}
-      <StudiesHeatmap sessions={sessions} />
-
       {/* Controles de Período */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-card/50 p-2 rounded-xl border border-border">
         <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
@@ -449,6 +446,9 @@ export function RelatorioTab({
           goalValue={goalValue}
         />
       </div>
+
+      {/* Constância de Estudos Anual (Heatmap) */}
+      <StudiesHeatmap sessions={sessions} />
 
       {/* Desempenho (KPIs + Composição + Rankings) */}
       <DesempenhoTab

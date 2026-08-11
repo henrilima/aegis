@@ -14,6 +14,7 @@ import { useTime } from "@/context/TimeContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Habit } from "../types";
+import { HabitsHeatmap } from "./HabitsHeatmap";
 import { HabitsReportCanvas } from "./HabitsReportCanvas";
 
 interface HabitsReportsTabProps {
@@ -364,6 +365,9 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
           </div>
         </div>
       </div>
+
+      {/* Mapa de Calor Anual (Heatmap) */}
+      <HabitsHeatmap habits={habits} />
 
       {/* Taxas de Conclusão Individuais */}
       {activePositive.length > 0 && (
