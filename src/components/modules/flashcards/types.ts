@@ -1,3 +1,13 @@
+export interface FlashcardFolder {
+  id?: number;
+  userId: string;
+  name: string;
+  parentId?: number | null;
+  color?: string | null;
+  icon?: string | null;
+  createdAt: string;
+}
+
 export interface FlashcardDeck {
   id?: number;
   userId: string;
@@ -6,6 +16,7 @@ export interface FlashcardDeck {
   color: string;
   createdAt: string;
   icon?: string | null;
+  folderId?: number | null;
 }
 
 export interface Flashcard {

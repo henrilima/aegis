@@ -1,101 +1,137 @@
 "use client";
 
-import { Brain, Calendar, Info } from "lucide-react";
+import { Brain, Info, Layers } from "lucide-react";
 import { useMemo } from "react";
-import { cn, getColorTheme } from "@/lib/utils";
+import { getSystemIcon } from "@/components/global/IconSelect";
+import { cn, getColorTheme, type ThemeColorKey } from "@/lib/utils";
 import type { Flashcard, FlashcardDeck } from "../types";
 
 interface ForgettingCurveChartProps {
   decks: (FlashcardDeck & { cards: Flashcard[] })[];
 }
 
-// Algoritmo de repetição espaçada existente para calcular a estabilidade (S) em dias
 function getMemoryStability(card: Flashcard): number {
   const success = card.successCount || 0;
   const review = card.reviewCount || 1;
   return Math.round(1 + success * 2 * (success / Math.max(1, review)));
 }
 
-// Retorna quantos dias se passaram desde a data fornecida até hoje
-function getDaysSince(dateStr?: string | null): number {
-  if (!dateStr) return 999; // Se nunca revisado, consideramos muito tempo atrás
+function getDaysSince(dateStr?: string | null): number | null {
+  if (!dateStr) return null;
   const lastDate = new Date(dateStr);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - lastDate.getTime());
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// Calcula a retenção baseada no tempo decorrido t e estabilidade S
 function calculateRetention(t: number, S: number): number {
-  if (t === 999) return 0;
   return Math.round(100 * Math.exp(-t / S));
 }
 
 export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
-  const _theme = getColorTheme("cyan");
-
-  const allCards = useMemo(() => {
+  // Lista de todos os cartões que já foram revisados ao menos uma vez
+  const reviewedCardsList = useMemo(() => {
     return decks.flatMap((d) =>
-      (d.cards || []).map((c) => ({
-        ...c,
-        deckName: d.name,
-        deckColor: d.color,
-      })),
+      (d.cards || [])
+        .filter((c) => Boolean(c.lastReviewed))
+        .map((c) => ({
+          ...c,
+          deckName: d.name,
+          deckColor: d.color,
+        })),
     );
   }, [decks]);
 
-  // Projeta a curva de retenção global média nos próximos 7 dias (0 a 7)
+  // Estatísticas de retenção calculadas por Baralho
+  const deckRetentionStats = useMemo(() => {
+    return decks.map((deck) => {
+      const cards = deck.cards || [];
+      const reviewedCards = cards.filter((c) => Boolean(c.lastReviewed));
+
+      if (reviewedCards.length === 0) {
+        return {
+          id: deck.id,
+          name: deck.name,
+          color: deck.color,
+          icon: deck.icon,
+          totalCards: cards.length,
+          reviewedCount: 0,
+          retention: null as number | null,
+        };
+      }
+
+      let sumRetention = 0;
+      reviewedCards.forEach((c) => {
+        const days = getDaysSince(c.lastReviewed) || 0;
+        const S = getMemoryStability(c);
+        sumRetention += calculateRetention(days, S);
+      });
+
+      const avgRetention = Math.round(sumRetention / reviewedCards.length);
+
+      return {
+        id: deck.id,
+        name: deck.name,
+        color: deck.color,
+        icon: deck.icon,
+        totalCards: cards.length,
+        reviewedCount: reviewedCards.length,
+        retention: avgRetention,
+      };
+    });
+  }, [decks]);
+
+  // Curva de retenção global projetada nos próximos 7 dias (com base em cartões revisados)
   const projectionData = useMemo(() => {
-    if (allCards.length === 0) return [];
+    if (reviewedCardsList.length === 0) return [];
 
     return Array.from({ length: 8 }).map((_, dayIndex) => {
       let totalRetention = 0;
 
-      allCards.forEach((card) => {
+      reviewedCardsList.forEach((card) => {
         const S = getMemoryStability(card);
-        const daysSince = getDaysSince(card.lastReviewed);
+        const daysSince = getDaysSince(card.lastReviewed) || 0;
         const projectedDays = daysSince + dayIndex;
         totalRetention += calculateRetention(projectedDays, S);
       });
 
       return {
         day: dayIndex === 0 ? "Hoje" : `+${dayIndex}d`,
-        retention: Math.round(totalRetention / allCards.length),
+        retention: Math.round(totalRetention / reviewedCardsList.length),
       };
     });
-  }, [allCards]);
+  }, [reviewedCardsList]);
 
-  // Encontra os cartões com menor retenção atual
-  const urgentCards = useMemo(() => {
-    return allCards
-      .map((card) => {
-        const S = getMemoryStability(card);
-        const t = getDaysSince(card.lastReviewed);
-        const currentRetention = calculateRetention(t, S);
-        return {
-          ...card,
-          retention: currentRetention,
-        };
+  // Baralhos prioritários para revisão (ordenados pela menor retenção dos baralhos iniciados)
+  const priorityDecks = useMemo(() => {
+    return [...deckRetentionStats]
+      .filter((d) => d.totalCards > 0)
+      .sort((a, b) => {
+        if (a.retention !== null && b.retention !== null) {
+          return a.retention - b.retention;
+        }
+        if (a.retention !== null) return -1;
+        if (b.retention !== null) return 1;
+        return 0;
       })
-      .sort((a, b) => a.retention - b.retention)
-      .slice(0, 3);
-  }, [allCards]);
+      .slice(0, 4);
+  }, [deckRetentionStats]);
 
   const currentAverageRetention = useMemo(() => {
     if (projectionData.length === 0) return 0;
     return projectionData[0].retention;
   }, [projectionData]);
 
-  if (allCards.length === 0) {
+  if (decks.length === 0 || reviewedCardsList.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-xl p-6 text-center flex flex-col items-center justify-center min-h-[300px]">
-        <Brain className="w-8 h-8 text-neutral-500 mb-3" />
+      <div className="bg-card border border-border rounded-xl p-6 text-center flex flex-col items-center justify-center min-h-[240px]">
+        <Brain className="w-8 h-8 text-muted-foreground mb-3" />
         <p className="text-sm font-bold text-foreground">
           Sem dados de retenção
         </p>
-        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-          Adicione cartões aos seus baralhos para começar a ver a projeção da
-          curva de esquecimento.
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">
+          Realize sessões de estudo nos seus baralhos para visualizar a projeção
+          da curva de retenção por baralho.
         </p>
       </div>
     );
@@ -120,28 +156,28 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
         <div>
           <h3 className="text-sm font-bold text-foreground">
-            Projeção de Retenção (Ebbinghaus)
+            Projeção de retenção por baralho
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Retenção de memória projetada nos próximos 7 dias sem novas revisões
+            Retenção média estimada da memória com base nos baralhos já
+            estudados
           </p>
         </div>
-        <div className="flex items-center gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 px-2.5 py-1 rounded-lg text-xs font-bold shrink-0">
+        <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-3 py-1 rounded-lg text-xs font-bold shrink-0 self-start sm:self-auto">
           <span>Retenção média: {currentAverageRetention}%</span>
         </div>
       </div>
 
-      {/* Gráfico SVG minimalista e flat */}
+      {/* Gráfico SVG */}
       <div className="w-full relative">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="w-full h-auto overflow-visible"
         >
-          <title>Curva de Esquecimento de Ebbinghaus</title>
-          {/* Linhas de Grade de fundo */}
+          <title>Projeção de retenção de memória</title>
           {[0, 25, 50, 75, 100].map((level) => {
             const y = height - padding - (level / 100) * chartHeight;
             return (
@@ -154,7 +190,7 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
                   stroke="currentColor"
                   strokeWidth="1"
                   strokeDasharray="4,4"
-                  className="text-neutral-500"
+                  className="text-muted-foreground"
                 />
                 <text
                   x={padding - 5}
@@ -169,16 +205,14 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
             );
           })}
 
-          {/* Curva de Retenção */}
           <path
             d={pathD}
             fill="none"
             stroke="currentColor"
             strokeWidth="3"
-            className="text-cyan-500"
+            className="text-blue-500"
           />
 
-          {/* Pontos interativos */}
           {points.map((p) => (
             <g key={p.label} className="group/node cursor-pointer">
               <circle
@@ -186,7 +220,7 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
                 cy={p.y}
                 r="4"
                 fill="currentColor"
-                className="text-cyan-500 transition-all group-hover/node:r-6"
+                className="text-blue-500 transition-all group-hover/node:r-6"
               />
               <text
                 x={p.x}
@@ -202,7 +236,7 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
                 y={p.y - 8}
                 textAnchor="middle"
                 fontSize="9"
-                className="fill-foreground font-black opacity-0 group-hover/node:opacity-100 transition-opacity bg-neutral-900"
+                className="fill-foreground font-bold opacity-0 group-hover/node:opacity-100 transition-opacity"
               >
                 {p.val}%
               </text>
@@ -212,56 +246,77 @@ export function ForgettingCurveChart({ decks }: ForgettingCurveChartProps) {
       </div>
 
       {/* Informativo */}
-      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/20 border border-border/50">
-        <Info className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
-        <p className="text-[10px] text-muted-foreground leading-normal">
-          A curva projeta como a estabilidade da sua memória (com base nas
-          revisões bem-sucedidas) decai ao longo do tempo. Revisar cartões antes
-          de atingirem 50% de retenção garante melhor memorização no longo
-          prazo.
+      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/20 border border-border/50">
+        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground leading-normal font-medium">
+          A retenção projeta a estabilidade de memória dos baralhos que você já
+          estudou. Baralhos com retenção abaixo de 60% são prioritários para
+          revisão.
         </p>
       </div>
 
-      {/* Cartões que precisam de revisão urgente */}
-      <div className="flex flex-col gap-3">
+      {/* Baralhos com menor retenção (Prioritários) */}
+      <div className="flex flex-col gap-3 pt-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-muted-foreground">
-            Prioridade de Revisão
+          <span className="text-xs font-bold text-foreground">
+            Baralhos prioritários para revisão
           </span>
-          <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+          <Layers className="w-3.5 h-3.5 text-muted-foreground" />
         </div>
-        <div className="flex flex-col gap-2">
-          {urgentCards.map((card) => {
-            const _mDeck = getColorTheme(card.deckColor || "cyan");
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {priorityDecks.map((deck) => {
+            const DeckIcon = getSystemIcon(deck.icon || "book-open");
+            const deckTheme = getColorTheme(
+              (deck.color || "blue") as ThemeColorKey,
+            );
+
             return (
               <div
-                key={card.id}
-                className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/50 hover:bg-muted/10 transition-colors gap-4"
+                key={deck.id}
+                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors gap-3"
               >
-                <div className="flex flex-col min-w-0 flex-1 gap-1">
-                  <span className="text-xs font-bold text-foreground truncate">
-                    {card.front}
-                  </span>
-                  <span className="text-[9px] font-medium text-neutral-500 uppercase leading-none">
-                    Baralho: {card.deckName}
-                  </span>
-                </div>
-                <div className="shrink-0 flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-neutral-500">
-                    Retenção:
-                  </span>
-                  <span
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div
                     className={cn(
-                      "text-[10px] font-bold px-1.5 py-0.5 rounded-md border",
-                      card.retention < 30
-                        ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                        : card.retention < 60
-                          ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                          : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+                      "p-2 rounded-lg border shrink-0",
+                      deckTheme.bg,
+                      deckTheme.text,
+                      deckTheme.border,
                     )}
                   >
-                    {card.retention}%
-                  </span>
+                    <DeckIcon className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-xs font-bold text-foreground truncate">
+                      {deck.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      {deck.reviewedCount > 0
+                        ? `${deck.reviewedCount} de ${deck.totalCards} cartões revisados`
+                        : `${deck.totalCards} cartões`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0">
+                  {deck.retention !== null ? (
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-md border",
+                        deck.retention < 50
+                          ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          : deck.retention < 75
+                            ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                            : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+                      )}
+                    >
+                      {deck.retention}% retenção
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-muted/40 text-muted-foreground border-border/40">
+                      Não iniciado
+                    </span>
+                  )}
                 </div>
               </div>
             );

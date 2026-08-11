@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Flashcard, FlashcardDeck } from "../types";
+import { FlashcardsHeatmap } from "./FlashcardsHeatmap";
 import { FlashcardsReportCanvas } from "./FlashcardsReportCanvas";
 import { FlashcardsTextReport } from "./FlashcardsTextReport";
 import { ForgettingCurveChart } from "./ForgettingCurveChart";
@@ -503,6 +504,9 @@ export function ReportsTab({ decks }: ReportsTabProps) {
           </div>
         </div>
       </div>
+
+      {/* Mapa de Calor Anual (Heatmap) */}
+      <FlashcardsHeatmap decks={decks} />
 
       {/* Curva de Esquecimento Visual */}
       <ForgettingCurveChart decks={decks} />

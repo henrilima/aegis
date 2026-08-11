@@ -1,8 +1,19 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { AlertCircle, Award, RefreshCcw, Smile, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  AlertCircle,
+  Award,
+  Clock,
+  Flame,
+  RefreshCcw,
+  RotateCcw,
+  Smile,
+  X,
+  Zap,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { cn, getColorTheme } from "@/lib/utils";
 import type { Flashcard, FlashcardDeck } from "./types";
@@ -11,9 +22,11 @@ interface StudyModalProps {
   isOpen: boolean;
   onClose: () => void;
   deck: FlashcardDeck;
-  customCards?: Flashcard[]; // Lista de cartões personalizada para Revisão Diária Global
+  customCards?: Flashcard[];
   onSessionComplete?: () => void;
 }
+
+export type StudyMode = "standard" | "inverted" | "sprint";
 
 export function StudyModal({
   isOpen,
@@ -27,18 +40,27 @@ export function StudyModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estado de configuração pré-estudo
+  // Referência para controlar a transição de abertura do modal
+  const prevIsOpenRef = useRef(false);
+
+  // Configurações da Sessão
   const [isConfiguring, setIsConfiguring] = useState(true);
+  const [studyMode, setStudyMode] = useState<StudyMode>("standard");
+  const [filterOnlyErrors, setFilterOnlyErrors] = useState(false);
   const [limitOption, setLimitOption] = useState<string>("all");
+  const [customLimitInput, setCustomLimitInput] = useState<string>("15");
   const [orderOption, setOrderOption] = useState<"shuffle" | "chrono">(
     "shuffle",
   );
 
-  // Estado da sessão
+  // Estado da sessão de estudos
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+
+  // Cronômetro do Modo Sprint (60s)
+  const [timeLeft, setTimeLeft] = useState(60);
 
   const m = getColorTheme(deck?.color || "indigo");
 
@@ -53,7 +75,6 @@ export function StudyModal({
   };
 
   const startSession = useCallback(async () => {
-    // Se cartões personalizados foram fornecidos (ex: Fila de Revisão Global)
     if (customCards) {
       if (customCards.length === 0) {
         setError("Não há cartões devidos para revisão hoje!");
@@ -88,24 +109,72 @@ export function StudyModal({
   }, [deck?.id, customCards]);
 
   useEffect(() => {
-    if (isOpen && (deck?.id || customCards)) {
+    const isJustOpened = isOpen && !prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (isJustOpened && (deck?.id || customCards)) {
       startSession();
     }
-  }, [isOpen, deck, customCards, startSession]);
+  }, [isOpen, deck?.id, customCards, startSession]);
+
+  // Efeito do cronômetro do Modo Sprint
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (
+      !isConfiguring &&
+      !isFinished &&
+      studyMode === "sprint" &&
+      timeLeft > 0
+    ) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsFinished(true);
+            if (onSessionComplete) onSessionComplete();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isConfiguring, isFinished, studyMode, timeLeft, onSessionComplete]);
 
   const handleStartStudy = () => {
     let processed = [...rawCards];
+
+    // Aplicar filtro de foco em erros/críticos se ativado
+    if (filterOnlyErrors) {
+      processed = processed.filter((card) => {
+        if (!card.lastReviewed || card.reviewCount === 0) return true;
+        const rate = (card.successCount / card.reviewCount) * 100;
+        return rate < 50;
+      });
+      if (processed.length === 0) {
+        toast.info(
+          "Nenhum cartão crítico com taxa de acerto baixa encontrado! Exibindo todos os cartões.",
+        );
+        processed = [...rawCards];
+      }
+    }
+
     if (orderOption === "shuffle") {
       processed = shuffleArray(processed);
     } else {
-      // Cronológico (mais antigo primeiro)
       processed.sort(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
-    if (limitOption !== "all") {
+    if (limitOption === "custom") {
+      const parsed = parseInt(customLimitInput, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        processed = processed.slice(0, parsed);
+      }
+    } else if (limitOption !== "all") {
       const limit = parseInt(limitOption, 10);
       processed = processed.slice(0, limit);
     }
@@ -115,6 +184,7 @@ export function StudyModal({
     setCorrectCount(0);
     setIsFlipped(false);
     setIsFinished(false);
+    setTimeLeft(60);
     setIsConfiguring(false);
   };
 
@@ -128,7 +198,6 @@ export function StudyModal({
     if (!currentCard || !currentCard.id) return;
 
     try {
-      // Registra a revisão no SQLite do Tauri
       await invoke("flashcards_record_review", {
         id: currentCard.id,
         success,
@@ -139,10 +208,8 @@ export function StudyModal({
         setCorrectCount((prev) => prev + 1);
       }
 
-      // Fluxo para o próximo cartão
       if (currentIndex + 1 < cards.length) {
         setIsFlipped(false);
-        // Aguarda a animação de flip terminar para mostrar o próximo cartão
         setTimeout(() => {
           setCurrentIndex((prev) => prev + 1);
         }, 200);
@@ -186,18 +253,20 @@ export function StudyModal({
             </span>
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Memorização ativa com repetição espaçada
+            {studyMode === "sprint"
+              ? "Modo Sprint — 60 Segundos"
+              : studyMode === "inverted"
+                ? "Modo Invertido (Verso → Frente)"
+                : "Memorização ativa com repetição espaçada"}
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Main Container */}
@@ -223,15 +292,92 @@ export function StudyModal({
             </button>
           </div>
         ) : isConfiguring ? (
-          /* Pre-Study Configuration Screen */
+          /* Configurações Pré-Estudo */
           <div className="grow flex flex-col gap-6 py-2 animate-in fade-in zoom-in-95 duration-300">
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-bold text-foreground">
-                Configurações de Estudo
+                Modo e Configurações de Estudo
               </h3>
               <p className="text-xs text-muted-foreground">
-                Personalize os cartões e a ordem antes de iniciar sua sessão
+                Escolha o modo de jogo e personalize a ordem antes de começar
               </p>
+            </div>
+
+            {/* Modo de Estudo */}
+            <div className="flex flex-col gap-2.5">
+              <span className="text-xs font-semibold text-muted-foreground">
+                Modo de estudo
+              </span>
+              <div className="grid grid-cols-3 gap-2 bg-background p-1.5 rounded-xl border border-border">
+                {[
+                  {
+                    key: "standard" as const,
+                    label: "Tradicional",
+                    desc: "Frente → Verso",
+                    icon: Zap,
+                  },
+                  {
+                    key: "inverted" as const,
+                    label: "Invertido",
+                    desc: "Verso → Frente",
+                    icon: RotateCcw,
+                  },
+                  {
+                    key: "sprint" as const,
+                    label: "Sprint 60s",
+                    desc: "Contra o tempo",
+                    icon: Clock,
+                  },
+                ].map((opt) => {
+                  const Icon = opt.icon;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setStudyMode(opt.key)}
+                      className={cn(
+                        "p-3 rounded-lg text-left flex flex-col gap-1 transition-all cursor-pointer border border-transparent",
+                        studyMode === opt.key
+                          ? `${m.bg} ${m.textSub} ${m.border}`
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Icon className="w-3.5 h-3.5" />
+                        {opt.label}
+                      </div>
+                      <span className="text-[10px] opacity-75">{opt.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Filtro Foco em Erros */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-card/40">
+              <div className="flex items-center gap-2.5">
+                <Flame className="w-4 h-4 text-orange-400" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-foreground">
+                    Foco em Erros / Cartões Críticos
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    Filtrar apenas cartões com aproveitamento inferior a 50%
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterOnlyErrors(!filterOnlyErrors)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border",
+                  filterOnlyErrors
+                    ? "bg-orange-500/20 text-orange-400 border-orange-500/40"
+                    : "bg-muted/40 text-muted-foreground border-border/40 hover:text-foreground",
+                )}
+              >
+                {filterOnlyErrors ? "Ativado" : "Desativado"}
+              </button>
             </div>
 
             {/* Quantidade de Cartões */}
@@ -239,27 +385,21 @@ export function StudyModal({
               <span className="text-xs font-semibold text-muted-foreground">
                 Quantidade de cartões
               </span>
-              <div className="grid grid-cols-4 gap-2 bg-background p-1.5 rounded-xl border border-border">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 bg-background p-1.5 rounded-xl border border-border">
                 {[
                   { key: "5", label: "5" },
                   { key: "10", label: "10" },
                   { key: "20", label: "20" },
                   { key: "30", label: "30" },
-                  { key: "40", label: "40" },
-                  { key: "50", label: "50" },
-                  { key: "60", label: "60" },
-                  { key: "70", label: "70" },
-                  { key: "80", label: "80" },
-                  { key: "90", label: "90" },
-                  { key: "100", label: "100" },
                   { key: "all", label: "Todos" },
+                  { key: "custom", label: "Outro" },
                 ].map((opt) => (
                   <button
                     key={opt.key}
                     type="button"
                     onClick={() => setLimitOption(opt.key)}
                     className={cn(
-                      "py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border",
+                      "py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border text-center",
                       limitOption === opt.key
                         ? `${m.bg} ${m.textSub} ${m.border}`
                         : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/30",
@@ -269,6 +409,26 @@ export function StudyModal({
                   </button>
                 ))}
               </div>
+
+              {limitOption === "custom" && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card/40 animate-in fade-in duration-200">
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Digite a quantidade exata:
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={rawCards.length || 999}
+                    value={customLimitInput}
+                    onChange={(e) => setCustomLimitInput(e.target.value)}
+                    className="w-24 px-3 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Ex: 15"
+                  />
+                  <span className="text-[10px] text-muted-foreground">
+                    (de {rawCards.length} disponíveis)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Ordem de Exibição */}
@@ -300,34 +460,6 @@ export function StudyModal({
               </div>
             </div>
 
-            {/* Informação do resumo */}
-            <div
-              className={cn(
-                "rounded-xl p-4 flex flex-col gap-1.5 mt-2 border",
-                m.bg,
-                m.border,
-              )}
-            >
-              <span className={cn("text-xs font-bold", m.textSub)}>
-                Resumo da sessão
-              </span>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Você revisará{" "}
-                <span className="font-bold text-foreground">
-                  {limitOption === "all"
-                    ? rawCards.length
-                    : Math.min(parseInt(limitOption, 10), rawCards.length)}
-                </span>{" "}
-                cartões no total, exibidos em ordem{" "}
-                <span className="font-bold text-foreground">
-                  {orderOption === "shuffle"
-                    ? "aleatória"
-                    : "cronológica de criação"}
-                </span>
-                .
-              </p>
-            </div>
-
             <button
               type="button"
               onClick={handleStartStudy}
@@ -341,12 +473,13 @@ export function StudyModal({
             </button>
           </div>
         ) : isFinished ? (
-          /* Summary Screen */
+          /* Resumo Final */
           <div className="grow flex flex-col items-center justify-center text-center py-6 animate-in fade-in zoom-in-95 duration-300">
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-neutral-500/5 blur-3xl rounded-full scale-150" />
-              <div className="relative p-6 rounded-2xl bg-card/40 border border-border">
-                {successRate >= 60 ? (
+              <div className="p-6 rounded-2xl bg-card/40 border border-border">
+                {studyMode === "sprint" ? (
+                  <Clock className="w-14 h-14 text-blue-400 animate-bounce" />
+                ) : successRate >= 60 ? (
                   <Award className={`w-14 h-14 ${m.text}`} />
                 ) : (
                   <Smile className="w-14 h-14 text-yellow-500/80" />
@@ -355,17 +488,20 @@ export function StudyModal({
             </div>
 
             <h3 className="text-xl font-bold text-foreground">
-              Estudo concluído!
+              {studyMode === "sprint"
+                ? "Tempo Esgotado / Sprint Concluído!"
+                : "Estudo Concluído!"}
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-6 leading-relaxed">
-              Você concluiu a revisão de todos os cartões deste baralho.
+              {studyMode === "sprint"
+                ? `Você respondeu ${correctCount} cartões corretamente em 60 segundos!`
+                : "Você concluiu a revisão de todos os cartões agendados."}
             </p>
 
-            {/* Score circle-like panel */}
             <div className="w-full max-w-xs bg-card/30 border border-border rounded-2xl p-6 flex flex-col gap-4 mb-8">
               <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-                <span>Total de cartões</span>
-                <span className="text-foreground">{cards.length}</span>
+                <span>Cartões revisados</span>
+                <span className="text-foreground">{currentIndex + 1}</span>
               </div>
               <div className="h-px bg-border/40" />
               <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
@@ -376,7 +512,7 @@ export function StudyModal({
               </div>
               <div className="h-px bg-border/40" />
               <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-                <span>Taxa de aproveitamento</span>
+                <span>Taxa de precisão</span>
                 <span
                   className={`font-bold ${successRate >= 60 ? "text-emerald-400" : "text-yellow-500"}`}
                 >
@@ -386,7 +522,7 @@ export function StudyModal({
             </div>
 
             <p className="text-xs font-medium text-muted-foreground max-w-xs leading-relaxed italic mb-8">
-              "{getMotivationalMessage(successRate)}"
+              &quot;{getMotivationalMessage(successRate)}&quot;
             </p>
 
             <div className="flex gap-3 w-full max-w-xs mt-auto">
@@ -412,28 +548,40 @@ export function StudyModal({
             </div>
           </div>
         ) : (
-          /* Active Review Screen */
+          /* Sessão Ativa de Estudo */
           <div className="flex-1 flex flex-col gap-6 select-none animate-in fade-in duration-300">
-            {/* Progress Header */}
+            {/* Header de Progresso & Cronômetro Sprint */}
             <div className="flex flex-col gap-2 shrink-0">
               <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground">
-                <span>Progresso</span>
+                {studyMode === "sprint" ? (
+                  <span className="text-blue-400 flex items-center gap-1 font-bold">
+                    <Clock className="w-3 h-3 animate-spin" /> Tempo restante:{" "}
+                    {timeLeft}s
+                  </span>
+                ) : (
+                  <span>Progresso</span>
+                )}
                 <span>
                   {currentIndex + 1} de {cards.length}
                 </span>
               </div>
-              {/* Linear Progress Bar */}
               <div className="w-full h-1.5 bg-muted border border-border/10 rounded-full overflow-hidden shrink-0">
                 <div
-                  className={cn("h-full transition-all duration-300", m.solid)}
+                  className={cn(
+                    "h-full transition-all duration-300",
+                    studyMode === "sprint" ? "bg-blue-500" : m.solid,
+                  )}
                   style={{
-                    width: `${((currentIndex + 1) / cards.length) * 100}%`,
+                    width:
+                      studyMode === "sprint"
+                        ? `${(timeLeft / 60) * 100}%`
+                        : `${((currentIndex + 1) / cards.length) * 100}%`,
                   }}
                 />
               </div>
             </div>
 
-            {/* 3D Flip Card Container */}
+            {/* Container 3D do Cartão */}
             <div className="flex-1 flex items-center justify-center py-4">
               <button
                 type="button"
@@ -448,90 +596,93 @@ export function StudyModal({
                     transform: isFlipped ? "rotateY(180deg)" : "none",
                   }}
                 >
-                  {/* Card Front */}
+                  {/* Frente do Cartão */}
                   <div
                     className={cn(
-                      "absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8 border rounded-2xl transition-all text-center",
-                      "bg-card/45 border-border group-hover:border-border/80 text-foreground",
+                      "absolute inset-0 w-full h-full rounded-2xl border bg-card/90 p-8 flex flex-col justify-between transition-colors",
+                      m.borderHover,
                     )}
                     style={{ backfaceVisibility: "hidden" }}
                   >
-                    <span className="text-[10px] font-bold text-muted-foreground mb-4">
-                      Frente
-                    </span>
-                    <p
-                      className={cn(
-                        "text-base whitespace-pre-wrap wrap-break-word leading-relaxed max-w-full overflow-y-auto max-h-[140px] custom-scrollbar",
-                        "text-foreground font-semibold",
-                      )}
-                    >
-                      {cards[currentIndex]?.front}
-                    </p>
-                    <span className="text-[9px] text-neutral-600 mt-auto flex items-center gap-1">
-                      <RefreshCcw className="w-2.5 h-2.5" />
-                      Clique para virar o cartão
-                    </span>
+                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+                      <span>
+                        {studyMode === "inverted"
+                          ? "Verso (Definição)"
+                          : "Frente"}
+                      </span>
+                      <span className="text-muted-foreground/60">
+                        Clique para virar
+                      </span>
+                    </div>
+                    <div className="my-auto text-center">
+                      <p className="text-base font-semibold text-foreground whitespace-pre-line leading-relaxed">
+                        {studyMode === "inverted"
+                          ? cards[currentIndex]?.back
+                          : cards[currentIndex]?.front}
+                      </p>
+                    </div>
+                    <div className="text-center text-[10px] text-muted-foreground">
+                      Toque no cartão para revelar a{" "}
+                      {studyMode === "inverted" ? "pergunta" : "resposta"}
+                    </div>
                   </div>
 
-                  {/* Card Back */}
+                  {/* Verso do Cartão */}
                   <div
                     className={cn(
-                      "absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8 border rounded-2xl transition-all text-center",
-                      "bg-card/45 border-border text-foreground",
+                      "absolute inset-0 w-full h-full rounded-2xl border bg-card/90 p-8 flex flex-col justify-between transition-colors",
+                      m.borderHover,
                     )}
                     style={{
                       backfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
                     }}
                   >
-                    <span className="text-[10px] font-bold text-muted-foreground mb-4">
-                      Verso
-                    </span>
-                    <p
-                      className={cn(
-                        "text-base whitespace-pre-wrap wrap-break-word leading-relaxed max-w-full overflow-y-auto max-h-[140px] custom-scrollbar",
-                        "text-foreground/90 font-semibold",
-                      )}
-                    >
-                      {cards[currentIndex]?.back}
-                    </p>
-                    <span className="text-[9px] text-neutral-600 mt-auto">
-                      Como foi o seu desempenho?
-                    </span>
+                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+                      <span>
+                        {studyMode === "inverted" ? "Frente (Termo)" : "Verso"}
+                      </span>
+                      <span className="text-muted-foreground/60">
+                        Responda abaixo
+                      </span>
+                    </div>
+                    <div className="my-auto text-center">
+                      <p className="text-base font-semibold text-foreground whitespace-pre-line leading-relaxed">
+                        {studyMode === "inverted"
+                          ? cards[currentIndex]?.front
+                          : cards[currentIndex]?.back}
+                      </p>
+                    </div>
+                    <div className="text-center text-[10px] text-muted-foreground">
+                      Avalie sua lembrança para registrar no sistema
+                    </div>
                   </div>
                 </div>
               </button>
             </div>
 
-            {/* Answer Buttons: Shows only if Flipped */}
-            <div className="h-14 shrink-0 flex items-center justify-center">
-              {isFlipped ? (
-                <div className="flex gap-4 w-full max-w-md animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <button
-                    type="button"
-                    onClick={() => handleAnswer(false)}
-                    className="flex-1 py-3 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 hover:border-red-500/40 text-red-400 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    Errei
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleAnswer(true)}
-                    className="flex-1 py-3 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 hover:border-emerald-500/40 text-emerald-400 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    Acertei
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleFlip}
-                  className="w-full max-w-md py-3 px-4 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <RefreshCcw className="w-3.5 h-3.5" />
-                  Virar cartão para responder
-                </button>
-              )}
+            {/* Botoes de Ação / Resposta */}
+            <div className="flex gap-3 shrink-0">
+              <button
+                type="button"
+                disabled={!isFlipped}
+                onClick={() => handleAnswer(false)}
+                className={cn(
+                  "flex-1 py-3 px-4 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+                )}
+              >
+                Errei
+              </button>
+              <button
+                type="button"
+                disabled={!isFlipped}
+                onClick={() => handleAnswer(true)}
+                className={cn(
+                  "flex-1 py-3 px-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+                )}
+              >
+                Acertei
+              </button>
             </div>
           </div>
         )}
