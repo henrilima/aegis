@@ -1,4 +1,4 @@
-[version]:["4.0.0"]
+[version]:["4.1.0"]
 
 [automations]("Novo")
 [1]:["Crie regras automáticas entre módulos sem código (ex: conectar sessões de estudo ou tarefas concluídas para marcar hábitos de apoio)."]
