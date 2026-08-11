@@ -1,9 +1,15 @@
-/** * Configurações estáticas do projeto Aegis. */
+import type { VersionStage } from "@/lib/versionHelper";
+import versionConfig from "../../version.config.json";
+
+/** Configurações estáticas do projeto Aegis. */
 export const APP_CONFIG = {
   name: "Aegis",
-  version: "4.0.11",
-  codename: "vitalis",
-  stage: "stable",
+  version: versionConfig.version,
+  codename: versionConfig.codename,
+  stage: (versionConfig.stage || "stable") as VersionStage,
+  isPreRelease: versionConfig.isPreRelease ?? false,
+  allowDowngrade: versionConfig.allowDowngrade ?? true,
+  channel: versionConfig.channel || "stable",
   get versionLabel() {
     return `${this.stage}-${this.version} (${this.codename})`;
   },

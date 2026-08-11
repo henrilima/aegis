@@ -7,6 +7,7 @@ import { check } from "@tauri-apps/plugin-updater";
 import {
   Activity,
   AlarmClock,
+  ArrowDownCircle,
   Bell,
   CheckCheck,
   CheckCircle2,
@@ -40,6 +41,11 @@ import { useTheme } from "@/context/ThemeContext";
 import { useLog } from "@/hooks/useLog";
 import type { AppNotification } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
+import {
+  evaluateVersionCheck,
+  parseVersionStage,
+  STAGE_DETAILS,
+} from "@/lib/versionHelper";
 import { PERSISTENT_NOTIFICATIONS } from "@/persistentNotifications.config";
 
 interface NotificationsPanelProps {
@@ -129,11 +135,13 @@ function formatDate(dateStr: string) {
 interface GithubRelease {
   tag_name: string;
   html_url: string;
+  prerelease?: boolean;
 }
 type VersionState =
   | "loading"
   | "up-to-date"
   | "update-available"
+  | "downgrade-available"
   | "downloading"
   | "ready"
   | "beta"
@@ -142,22 +150,21 @@ type VersionState =
 // Cache global para evitar múltiplas chamadas à API ao abrir/fechar o painel
 let cachedRelease: GithubRelease | null = null;
 let cachedVState: VersionState = "loading";
-let cachedVDiff = 0;
 let lastCheckTime = 0;
 
 function VersionCard({
   vState,
-  vDiff,
-  release: _,
+  release,
   setShowUpdateDialog,
 }: {
   vState: VersionState;
-  vDiff: number;
   release: GithubRelease | null;
   setShowUpdateDialog: (v: boolean) => void;
 }) {
   const { themeStyles: theme } = useTheme();
-  const isCaveMode = vDiff >= 1.0;
+  const targetStage = parseVersionStage(release?.tag_name, release?.prerelease);
+  const currentStage =
+    STAGE_DETAILS[APP_CONFIG.stage || "stable"] || STAGE_DETAILS.stable;
 
   let icon: React.ReactNode = null;
   let title = "";
@@ -178,25 +185,44 @@ function VersionCard({
 
     case "up-to-date":
       title = "Sistema atualizado";
-      subtitle =
-        "Ainda não temos novas versões disponíveis, mas aproveite para tomar um bom café.";
+      subtitle = `Canal ${currentStage.label} ativo (v${APP_CONFIG.version}).`;
       iconClass = cn("w-4 h-4", theme.text);
       icon = <Coffee className={iconClass} />;
       iconContainerClass = theme.bg;
       break;
 
     case "update-available":
-      title = "Atualização disponível";
-      subtitle =
-        "Há novidades prontas para você. Clique aqui para iniciar a instalação.";
-      iconClass = isCaveMode
-        ? "text-amber-500 w-4 h-4 animate-pulse"
-        : cn("w-4 h-4 animate-pulse", theme.text);
+      title = `Nova versão (${targetStage.label})`;
+      subtitle = `Versão ${release?.tag_name || ""} pronta para você. Clique para instalar.`;
+      iconClass = cn("w-4 h-4 animate-pulse", targetStage.badgeText);
       icon = <Package className={iconClass} />;
-      iconContainerClass = isCaveMode ? "bg-amber-500/20" : theme.bg;
+      iconContainerClass = targetStage.badgeBg;
       onClick = () => setShowUpdateDialog(true);
       extraElement = (
-        <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+        <span
+          className={cn(
+            "px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0",
+            targetStage.badgeBg,
+            targetStage.badgeText,
+            targetStage.badgeBorder,
+          )}
+        >
+          {targetStage.label}
+        </span>
+      );
+      break;
+
+    case "downgrade-available":
+      title = `Downgrade disponível (${targetStage.label})`;
+      subtitle = `Clique para retornar para a versão ${release?.tag_name || "estável"}.`;
+      iconClass = "w-4 h-4 text-blue-500 animate-pulse";
+      icon = <ArrowDownCircle className={iconClass} />;
+      iconContainerClass = "bg-blue-500/10";
+      onClick = () => setShowUpdateDialog(true);
+      extraElement = (
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 bg-blue-500/10 text-blue-500 border-blue-500/20">
+          Downgrade
+        </span>
       );
       break;
 
@@ -226,8 +252,7 @@ function VersionCard({
 
     case "beta":
       title = "Versão experimental ativa";
-      subtitle =
-        "Você está utilizando uma build beta em desenvolvimento do sistema.";
+      subtitle = `Canal ${currentStage.label} ativo. Aproveite as novidades antecipadas.`;
       iconClass = cn("w-4 h-4 animate-pulse", theme.text);
       icon = <Ghost className={iconClass} />;
       iconContainerClass = theme.bg;
@@ -250,8 +275,8 @@ function VersionCard({
 
   const containerStyles = cn(
     "w-[calc(100%-2.5rem)] mx-5 mb-3 p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-all text-left",
-    isCaveMode
-      ? "bg-amber-500/5 border-amber-500/15"
+    vState === "downgrade-available"
+      ? "bg-blue-500/5 border-blue-500/15"
       : "bg-card/45 border-border/30",
     isClickable
       ? "cursor-pointer hover:scale-[1.01] active:scale-[0.99] hover:bg-muted/20 hover:border-border/50"
@@ -420,23 +445,37 @@ export function NotificationsPanel({
   // Estado de Atualização
   const [release, setRelease] = useState<GithubRelease | null>(cachedRelease);
   const [vState, setVState] = useState<VersionState>(cachedVState);
-  const [vDiff, setVDiff] = useState(cachedVDiff);
   const [_errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const log = useLog("Updater");
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const isUpdatingRef = useRef(false);
+
+  const vStateRef = useRef(vState);
+  useEffect(() => {
+    vStateRef.current = vState;
+  }, [vState]);
+
+  const updateVState = useCallback((newState: VersionState) => {
+    cachedVState = newState;
+    setVState(newState);
+  }, []);
 
   useEffect(() => {
     const checkUpdate = async () => {
       if (!isOpen) return;
+
+      const currentVState = vStateRef.current;
+      // Se já está baixando ou pronto para reiniciar, não substitui o estado
+      if (currentVState === "downloading" || currentVState === "ready") return;
 
       // Se já verificamos há menos de 1 hora, usamos o cache
       const oneHour = 60 * 60 * 1000;
       if (
         lastCheckTime > 0 &&
         Date.now() - lastCheckTime < oneHour &&
-        vState !== "error" &&
-        vState !== "loading"
+        currentVState !== "error" &&
+        currentVState !== "loading"
       ) {
         return;
       }
@@ -451,11 +490,10 @@ export function NotificationsPanel({
               tag_name: update.version,
               html_url: "https://github.com/henrilima/aegis/releases/latest",
             };
-            setVState(newState);
+            updateVState(newState);
             setRelease(newRelease);
 
             // Salva no cache
-            cachedVState = newState;
             cachedRelease = newRelease;
             lastCheckTime = Date.now();
             return;
@@ -469,50 +507,25 @@ export function NotificationsPanel({
         setRelease(data);
         cachedRelease = data;
 
-        const cur = APP_CONFIG.version.split(".").map(Number);
-        const lat = data.tag_name
-          .replace(/[^0-9.]/g, "")
-          .split(".")
-          .map(Number);
+        const targetStageDetails = parseVersionStage(
+          data.tag_name,
+          data.prerelease,
+        );
+        const evalResult = evaluateVersionCheck(
+          APP_CONFIG.version,
+          data.tag_name,
+          targetStageDetails,
+          APP_CONFIG.stage,
+        );
 
-        const weights = [1, 0.1, 0.01];
-        let diff = 0;
-        for (
-          let i = 0;
-          i < Math.max(cur.length, lat.length, weights.length);
-          i++
-        ) {
-          const d = (lat[i] || 0) - (cur[i] || 0);
-          if (d !== 0) {
-            diff = Math.abs(d) * (weights[i] ?? 0.001);
-            break;
-          }
-        }
-        setVDiff(diff);
-        cachedVDiff = diff;
-
-        let state: VersionState = "up-to-date";
-        for (let i = 0; i < Math.max(cur.length, lat.length); i++) {
-          const c = cur[i] || 0;
-          const l = lat[i] || 0;
-          if (c > l) {
-            state = "beta";
-            break;
-          }
-          if (c < l) {
-            state = "update-available";
-            break;
-          }
-        }
-        setVState(state);
-        cachedVState = state;
+        updateVState(evalResult.action as VersionState);
         lastCheckTime = Date.now();
         setErrorMsg(null);
       } catch (err) {
         log.warn(
           `Erro no updater visual (possível limite de requisição ou offline) | ${err instanceof Error ? err.message : String(err)}`,
         );
-        setVState("error");
+        updateVState("error");
         setErrorMsg(
           typeof err === "string"
             ? err
@@ -521,10 +534,18 @@ export function NotificationsPanel({
       }
     };
     checkUpdate();
-  }, [log.warn, isOpen, vState]);
+  }, [log.warn, isOpen, updateVState]);
 
   const handleUpdate = async () => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+
     try {
+      if (vState === "ready") {
+        await relaunch();
+        return;
+      }
+
       let update = null;
       try {
         update = await check();
@@ -547,7 +568,7 @@ export function NotificationsPanel({
         return;
       }
 
-      setVState("downloading");
+      updateVState("downloading");
 
       // Realiza o backup preventivo antes de baixar
       try {
@@ -570,23 +591,40 @@ export function NotificationsPanel({
             if (total > 0) setDownloadProgress((downloaded / total) * 100);
             break;
           case "Finished":
-            setVState("ready");
+            updateVState("ready");
             break;
         }
       });
 
+      updateVState("ready");
+
       // Reinicia o app para aplicar
-      await relaunch();
+      try {
+        await relaunch();
+      } catch (relaunchErr) {
+        log.error("Erro ao reiniciar aplicativo automaticamente", relaunchErr);
+        toast.info(
+          "Download concluído! Clique em Reiniciar Agora para aplicar a atualização.",
+        );
+      }
     } catch (err) {
       log.error("Falha na instalação automática", err);
       toast.error("Erro ao baixar atualização. Tente baixar manualmente.");
-      setVState("error");
+      updateVState("error");
+    } finally {
+      isUpdatingRef.current = false;
     }
   };
 
   function UpdateDialog() {
-    const isCaveMode = vDiff >= 1.0;
-    const isBeta = vState === "beta";
+    const targetStage = parseVersionStage(
+      release?.tag_name,
+      release?.prerelease,
+    );
+    const currentStage =
+      STAGE_DETAILS[APP_CONFIG.stage || "stable"] || STAGE_DETAILS.stable;
+
+    const isDowngrade = vState === "downgrade-available";
     const isDownloading = vState === "downloading";
     const isReady = vState === "ready";
 
@@ -604,41 +642,38 @@ export function NotificationsPanel({
           <div
             className={cn(
               "h-24 flex items-center justify-center relative overflow-hidden",
-              isCaveMode
-                ? "bg-amber-500/10"
-                : isBeta
-                  ? "bg-purple-500/10"
-                  : theme.bg,
+              isDowngrade ? "bg-blue-500/10" : targetStage.badgeBg,
             )}
           >
             <div className="absolute inset-0 opacity-20" />
-            <Package
-              className={cn(
-                "w-10 h-10 relative z-10",
-                isCaveMode
-                  ? "text-amber-500"
-                  : isBeta
-                    ? "text-purple-500"
-                    : theme.text,
-              )}
-            />
+            {isDowngrade ? (
+              <ArrowDownCircle className="w-10 h-10 relative z-10 text-blue-500 animate-bounce" />
+            ) : (
+              <Package
+                className={cn("w-10 h-10 relative z-10", targetStage.badgeText)}
+              />
+            )}
           </div>
 
           <div className="p-6 space-y-6">
             <div className="text-center space-y-1">
               <h3 className="text-lg font-bold text-foreground">
                 {isDownloading
-                  ? "Baixando Atualização"
+                  ? "Baixando atualização"
                   : isReady
-                    ? "Tudo Pronto!"
-                    : "Nova Versão Disponível"}
+                    ? "Tudo pronto!"
+                    : isDowngrade
+                      ? "Downgrade disponível"
+                      : `Nova versão (${targetStage.label})`}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {isDownloading
-                  ? "Aguarde enquanto preparamos os novos recursos."
+                  ? "Aguarde enquanto preparamos os arquivos."
                   : isReady
                     ? "O Aegis precisa reiniciar para aplicar."
-                    : "Uma nova versão do Aegis está pronta para você."}
+                    : isDowngrade
+                      ? "Você pode retornar para a versão estável se desejar."
+                      : `Uma nova compilação em canal ${targetStage.label.toLowerCase()} está pronta.`}
               </p>
             </div>
 
@@ -647,22 +682,41 @@ export function NotificationsPanel({
                 <span className="text-muted-foreground font-medium">
                   Sua versão atual
                 </span>
-                <span className="text-foreground font-bold">
-                  {APP_CONFIG.version}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-foreground font-bold">
+                    v{APP_CONFIG.version}
+                  </span>
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.5 rounded text-[9px] font-bold border",
+                      currentStage.badgeBg,
+                      currentStage.badgeText,
+                      currentStage.badgeBorder,
+                    )}
+                  >
+                    {currentStage.label}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-muted-foreground font-medium">
-                  Nova versão
+                  {isDowngrade ? "Versão estável" : "Nova versão"}
                 </span>
-                <span
-                  className={cn(
-                    "font-bold",
-                    isCaveMode ? "text-amber-500" : theme.text,
-                  )}
-                >
-                  {release?.tag_name || "v2.1.x"}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("font-bold", targetStage.badgeText)}>
+                    {release?.tag_name || "v2.1.x"}
+                  </span>
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.5 rounded text-[9px] font-bold border",
+                      targetStage.badgeBg,
+                      targetStage.badgeText,
+                      targetStage.badgeBorder,
+                    )}
+                  >
+                    {targetStage.label}
+                  </span>
+                </div>
               </div>
               {isDownloading && (
                 <div className="space-y-2 pt-2">
@@ -696,8 +750,8 @@ export function NotificationsPanel({
                 disabled={isDownloading}
                 className={cn(
                   "flex-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2",
-                  isCaveMode
-                    ? "bg-amber-600 hover:bg-amber-500"
+                  isDowngrade
+                    ? "bg-blue-600 hover:bg-blue-500"
                     : `${theme.solid} ${theme.solidHover}`,
                 )}
               >
@@ -707,11 +761,16 @@ export function NotificationsPanel({
                     Baixando...
                   </>
                 ) : isReady ? (
-                  "Reiniciar Agora"
+                  "Reiniciar agora"
+                ) : isDowngrade ? (
+                  <>
+                    <ArrowDownCircle className="w-3.5 h-3.5" />
+                    Fazer downgrade
+                  </>
                 ) : (
                   <>
                     <Download className="w-3.5 h-3.5" />
-                    Atualizar Agora
+                    Atualizar ({targetStage.label})
                   </>
                 )}
               </button>
@@ -909,7 +968,7 @@ export function NotificationsPanel({
         aria-label="Painel de notificações"
         tabIndex={-1}
         className={cn(
-          "relative flex flex-col h-full w-[350px] bg-background/95 backdrop-blur-xl border-r border-border z-10 outline-none",
+          "relative flex flex-col h-full w-87.5 bg-background/95 backdrop-blur-xl border-r border-border z-10 outline-none",
           isClosing
             ? "animate-out slide-out-to-left duration-280 ease-in"
             : "animate-in slide-in-from-left duration-300 ease-out",
@@ -1006,7 +1065,6 @@ export function NotificationsPanel({
             </div>
             <VersionCard
               vState={vState}
-              vDiff={vDiff}
               release={release}
               setShowUpdateDialog={setShowUpdateDialog}
             />

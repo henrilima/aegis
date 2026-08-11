@@ -36,6 +36,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAvatar } from "@/hooks/useAvatar";
 import { cn, formatDateLocal } from "@/lib/utils";
+import { STAGE_DETAILS } from "@/lib/versionHelper";
 import type { UserProgressState } from "../achievements/types";
 import { useSettingsLogic } from "./useSettingsLogic";
 
@@ -69,6 +70,8 @@ export function ProfileTab({
   const hexColor =
     HEX_COLORS[theme.name as keyof typeof HEX_COLORS] || HEX_COLORS.blue;
   const { user, updateUsername } = useAuth();
+  const stageInfo =
+    STAGE_DETAILS[APP_CONFIG.stage || "stable"] || STAGE_DETAILS.stable;
   const {
     avatarSrc,
     loading: avatarLoading,
@@ -391,7 +394,7 @@ export function ProfileTab({
             <div className="w-10 h-10 rounded-full bg-[#e7e7e7] flex items-center justify-center shrink-0 border border-black/10">
               <span
                 className={cn(
-                  "w-[24px] h-[24px] block transition-all duration-300",
+                  "w-6 h-6 block transition-all duration-300",
                   RANK_BORDERS[getRankForLevel(level).name]?.gemColor,
                 )}
                 style={{
@@ -503,8 +506,20 @@ export function ProfileTab({
         />
         <InfoCard
           icon={Cpu}
-          label="Versão do Núcleo"
-          value={`v${APP_CONFIG.version}-${APP_CONFIG.stage}`}
+          label="Versão do Sistema"
+          value={`v${APP_CONFIG.version}`}
+          badge={
+            <span
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[9px] font-bold border",
+                stageInfo.badgeBg,
+                stageInfo.badgeText,
+                stageInfo.badgeBorder,
+              )}
+            >
+              {stageInfo.label}
+            </span>
+          }
           themeTextClass={theme.text}
         />
         <InfoCard
@@ -522,21 +537,24 @@ function InfoCard({
   icon: Icon,
   label,
   value,
+  badge,
   themeTextClass,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
+  badge?: React.ReactNode;
   themeTextClass: string;
 }) {
   return (
     <div className="p-5 bg-card border border-border rounded-2xl flex flex-col items-center text-center gap-2">
       <Icon className={cn("w-5 h-5 text-muted-foreground", themeTextClass)} />
-      <div className="w-full">
+      <div className="w-full flex flex-col items-center">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-bold text-foreground mt-1 truncate">
-          {value}
-        </p>
+        <div className="flex items-center gap-1.5 mt-1 justify-center">
+          <p className="text-sm font-bold text-foreground truncate">{value}</p>
+          {badge}
+        </div>
       </div>
     </div>
   );

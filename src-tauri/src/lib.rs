@@ -1539,7 +1539,9 @@ pub fn run() {
 
             // Flashcards
             flashcards::flashcards_list_decks, flashcards::flashcards_add_deck, flashcards::flashcards_update_deck, 
-            flashcards::flashcards_delete_deck, flashcards::flashcards_list_cards, flashcards::flashcards_add_card, 
+            flashcards::flashcards_delete_deck, flashcards::flashcards_list_folders, flashcards::flashcards_add_folder,
+            flashcards::flashcards_update_folder, flashcards::flashcards_delete_folder, flashcards::flashcards_move_deck,
+            flashcards::flashcards_list_cards, flashcards::flashcards_add_card, 
             flashcards::flashcards_update_card, flashcards::flashcards_delete_card, flashcards::flashcards_record_review, 
             flashcards::flashcards_export_json, flashcards::flashcards_import_json
         ])

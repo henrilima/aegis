@@ -12,18 +12,32 @@ import { APP_CONFIG } from "@/app.config";
 import { FeedbackSection, TermsContent } from "@/components/auth/TermsContent";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
+import { STAGE_DETAILS } from "@/lib/versionHelper";
 
 export function AboutTab() {
   const { themeStyles: theme } = useTheme();
+  const stageInfo =
+    STAGE_DETAILS[APP_CONFIG.stage || "stable"] || STAGE_DETAILS.stable;
 
   return (
     <div className="space-y-10 w-full animate-in fade-in duration-500">
       {/* Grid de Informações da Versão */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <AboutCard
-          label="Versão"
-          value={APP_CONFIG.version}
-          subtext={`${APP_CONFIG.stage} • ${APP_CONFIG.codename}`}
+          label="Versão do Sistema"
+          value={`v${APP_CONFIG.version}`}
+          badge={stageInfo.label}
+          badgeStyle={`${stageInfo.badgeBg} ${stageInfo.badgeText} ${stageInfo.badgeBorder}`}
+          subtext={`Codinome ${APP_CONFIG.codename}`}
+        />
+        <AboutCard
+          label="Canal Ativo"
+          value={stageInfo.label}
+          subtext={
+            APP_CONFIG.isPreRelease
+              ? "Canal de pré-lançamento"
+              : "Canal oficial estável"
+          }
         />
         <AboutCard
           label="Desenvolvedor"
@@ -105,16 +119,32 @@ export function AboutTab() {
 function AboutCard({
   label,
   value,
+  badge,
+  badgeStyle,
   subtext,
 }: {
   label: string;
   value: string;
+  badge?: string;
+  badgeStyle?: string;
   subtext: string;
 }) {
   return (
     <div className="p-6 bg-card border border-border rounded-2xl space-y-2">
       <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
-      <p className="text-xl font-black text-foreground">{value}</p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className="text-xl font-black text-foreground">{value}</p>
+        {badge && (
+          <span
+            className={cn(
+              "px-2 py-0.5 rounded-full text-[10px] font-bold border",
+              badgeStyle,
+            )}
+          >
+            {badge}
+          </span>
+        )}
+      </div>
       <p className="text-xs text-muted-foreground">{subtext}</p>
     </div>
   );

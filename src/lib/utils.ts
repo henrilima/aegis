@@ -49,9 +49,19 @@ export function getThemeColor(themeId?: string) {
   };
 }
 
-// Formata data para YYYY-MM-DD (local)
-export function formatDateLocal(date?: Date): string {
-  const d = date || new Date();
+// Formata data para YYYY-MM-DD no fuso horário local do usuário
+export function formatDateLocal(date?: Date | string | number | null): string {
+  if (!date) return formatDateLocal(new Date());
+
+  // Se for string no formato YYYY-MM-DD puro (ex: "2026-08-02"), retorna diretamente
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+
+  const d =
+    typeof date === "object" && date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "";
+
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
