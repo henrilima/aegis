@@ -12,6 +12,7 @@ interface BaseWidgetProps {
   icon: LucideIcon;
   color?: ThemeColorKey;
   route?: AppRoute;
+  searchParams?: string;
   children: React.ReactNode;
   className?: string;
   isEditMode?: boolean;
@@ -24,6 +25,7 @@ export function BaseWidget({
   icon: Icon,
   color = "blue",
   route,
+  searchParams,
   children,
   className,
   isEditMode = false,
@@ -39,7 +41,7 @@ export function BaseWidget({
       e.stopPropagation();
       return;
     }
-    if (route) navigate(route);
+    if (route) navigate(route, searchParams);
   };
 
   return (

@@ -59,9 +59,27 @@ export function DashboardConfigModal({
   onStartVisualEdit,
 }: DashboardConfigModalProps) {
   const { themeStyles: theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<
-    "relogio" | "cabecalho" | "estetica" | "widgets"
-  >("relogio");
+  type ConfigTab = "relogio" | "cabecalho" | "estetica" | "widgets";
+
+  const [activeTab, setActiveTab] = useState<ConfigTab>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("aegis_dashboard_config_active_tab");
+      if (
+        saved &&
+        ["relogio", "cabecalho", "estetica", "widgets"].includes(saved)
+      ) {
+        return saved as ConfigTab;
+      }
+    }
+    return "relogio";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aegis_dashboard_config_active_tab", activeTab);
+    }
+  }, [activeTab]);
+
   const [internalActiveIds, setInternalActiveIds] =
     useState<string[]>(activeWidgetIds);
 
