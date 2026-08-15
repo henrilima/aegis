@@ -1,6 +1,6 @@
 [package]
 name = "Aegis"
-version = "4.1.0"
+version = "4.1.1"
 description = "Aegis is a productivity-focused desktop application designed to help users manage their daily tasks, notes, and goals with a modern, intuitive interface."
 authors = ["José Henrique da Silva Lima"]
 license = "MIT"

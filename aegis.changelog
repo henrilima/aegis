@@ -1,4 +1,4 @@
-[version]:["4.1.0"]
+[version]:["4.1.1"]
 
 [updates]
 [1]:["Capas em Vídeo Animado (MP4/WebM) na Dashboard: Suporte a vídeos animados locais com pausa automática ao minimizar ou rolar a página."]
@@ -7,6 +7,9 @@
 [4]:["Módulo de Tarefas 2.0: Quadro Kanban visual por colunas de status e temporizador ativo por tarefa com acúmulo automático de tempo."]
 [5]:["Ritmo Circadiano e Janelas de Energia: Análise visual das janelas diárias de pico de alerta, queda de energia e pressão de sono nos últimos 14 dias."]
 [6]:["Automações Inteligentes sem Código: Crie regras entre módulos para disparar ações e notificações instantâneas na tela."]
+[7]:["Agendamento de Horários em Hábitos: Possibilidade de definir horários específicos para a realização de hábitos com envio de lembretes automáticos no momento exato."]
+[8]:["Estudos e Desempenho - Registro Direto de Aulas da Grade: Botão de estudo e registro de presença em cada aula da grade horária com preenchimento automático de matéria e duração."]
+[9]:["Estudos e Desempenho - Intervalos na Grade Horária: Configuração de horários de intervalo em aulas agendadas, com visualização no mural e dedução automática do tempo de descanso ao registrar horas estudadas."]
 
 [fixes]
 [1]:["Módulo de Alarmes - Resposta Imediata ao Desligar: Encerramento instantâneo do som ao clicar no botão ou ao fechar a janela pela barra de tarefas."]
@@ -18,3 +21,5 @@
 [7]:["Otimização de Build no CI/CD: Remoção de empacotadores redundantes e correção na geração de artefatos de atualização do Tauri."]
 [8]:["Estudos e Desempenho - Quebra de Linhas em Matérias: Nomes de matérias longos no card de Domínio por Matéria agora realizam quebra de linha fluida sem truncar com reticências."]
 [9]:["Cabeçalho dos Módulos - Ajuste de Opacidade: Padronização na opacidade do fundo colorido em glassmorphic nos headers da aplicação."]
+[10]:["Módulo de Hábitos - Registro e Atualização de Conclusões: Correção no salvamento de hábitos para garantir a alternância de dias sem falha no banco de dados."]
+[11]:["Configurações do Sistema - Zoom da Interface em Tempo Real: Correção no controle de escala permitindo redimensionar o aplicativo entre 75% e 125% sem travamentos."]

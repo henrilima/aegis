@@ -1,8 +1,8 @@
 {
-  "version": "4.1.0",
-  "stage": "stable",
+  "version": "4.1.1",
+  "stage": "hotfix",
   "codename": "vitalis",
-  "channel": "stable",
+  "channel": "hotfix",
   "isPreRelease": false,
   "allowDowngrade": true
 }
