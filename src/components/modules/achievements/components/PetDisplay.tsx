@@ -7,6 +7,7 @@ import {
   COMPLETED_TODAY_PHRASES,
   GENERAL_MOTIVATIONAL_PHRASES,
   getPetPhrases,
+  normalizePetId,
   PARTICLES_CONFIG,
 } from "@/config/pets.config";
 import { useAuth } from "@/context/AuthContext";
@@ -48,7 +49,7 @@ interface ParticleInstance {
 }
 
 export function PetDisplay({
-  selectedPet,
+  selectedPet: rawSelectedPet,
   selectedParticle,
   selectedBgMode,
   treeLevel,
@@ -58,6 +59,10 @@ export function PetDisplay({
   completedToday,
   lastCompletedDate,
 }: PetDisplayProps) {
+  const selectedPet = useMemo(
+    () => normalizePetId(rawSelectedPet),
+    [rawSelectedPet],
+  );
   const { now } = useTime();
   // Estado e persistência local para o nome personalizado do pet
   const [customName, setCustomName] = useState<string>("");
@@ -402,7 +407,7 @@ export function PetDisplay({
 
   // Verifica se o pet atual possui animação de ataque (Mascotes 1 a 4)
   const hasAttackAnimation = useMemo(() => {
-    const attackPets = ["doberman", "shiba", "gato_cerveja", "gato_preto"];
+    const attackPets = ["doberman", "shiba", "beer_cat", "black_cat"];
     return attackPets.includes(selectedPet);
   }, [selectedPet]);
 
@@ -648,12 +653,12 @@ export function PetDisplay({
     const names: Record<string, string> = {
       doberman: "Doberman",
       shiba: "Shiba",
-      gato_cerveja: "Gato Cerveja",
-      gato_preto: "Gato Preto",
-      rato_marrom: "Rato Marrom",
-      rato_azul: "Rato Azul",
-      passaro: "Pássaro",
-      pombo: "Pombo",
+      beer_cat: "Gato Cerveja",
+      black_cat: "Gato Preto",
+      brown_rat: "Rato Marrom",
+      blue_rat: "Rato Azul",
+      bird: "Pássaro",
+      pigeon: "Pombo",
       slime: "Slime",
     };
     return names[selectedPet] || "Mascote";
@@ -667,14 +672,13 @@ export function PetDisplay({
     }
     if (animationState === "Attack") return 4;
     if (animationState === "Walk") {
-      if (selectedPet === "rato_marrom" || selectedPet === "rato_azul")
-        return 4;
+      if (selectedPet === "brown_rat" || selectedPet === "blue_rat") return 4;
       if (selectedPet === "slime") return 8;
       return 6;
     }
 
     if (animationState === "Death") {
-      if (selectedPet === "rato_azul") return 2;
+      if (selectedPet === "blue_rat") return 2;
       if (selectedPet === "slime") return 10;
       return 4;
     }

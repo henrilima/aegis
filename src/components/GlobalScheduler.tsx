@@ -11,11 +11,15 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import type { UserProgressState } from "@/components/modules/achievements/types";
+import type { AppConfig } from "@/components/modules/settings/useSettingsLogic";
 import {
   ACHIEVEMENTS,
   checkAchievementsToUnlock,
   type RealtimeGlobalStats,
 } from "@/config/achievements.config";
+import { RANK_TITLES } from "@/config/ranks.config";
+import { REMOTE_CONFIG, resolveRemoteApiUrl } from "@/config/remote.config";
 import { useAuth } from "@/context/AuthContext";
 import { useModules } from "@/context/ModuleContext";
 import { useNavigation } from "@/context/NavigationContext";
@@ -24,6 +28,7 @@ import type { AppNotification } from "@/hooks/useNotifications";
 import { formatDateLocal } from "@/lib/utils";
 
 let isPrompting = false;
+let isRestartPrompting = false;
 
 /**
  * GlobalScheduler
@@ -401,13 +406,115 @@ export function GlobalScheduler() {
     const syncWithServer = async () => {
       if (!active) return;
 
-      const baseUrl =
-        localStorage.getItem("aegis_remote_api_url") ||
-        "https://aegiswebpainel.vercel.app";
-      const apiKey = localStorage.getItem("aegis_remote_api_key") || "96421340";
+      const baseUrl = await resolveRemoteApiUrl();
+      const apiKey =
+        localStorage.getItem("aegis_remote_api_key") || REMOTE_CONFIG.apiKey;
+
+      const triggerRestartPrompt = async () => {
+        if (isRestartPrompting) return;
+        isRestartPrompting = true;
+        try {
+          const { ask } = await import("@tauri-apps/plugin-dialog");
+          const shouldRestart = await ask(
+            "O painel de controle web solicitou a reinicialização do Aegis para aplicar alterações. Deseja reiniciar o aplicativo agora?",
+            { title: "Aegis - Reinicialização do aplicativo", kind: "info" },
+          );
+
+          // Limpa o sinalizador no servidor para não re-perguntar
+          await fetch(`${baseUrl}/api/users/${user.id}/clear-restart`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+            },
+          }).catch(console.error);
+
+          if (shouldRestart) {
+            const { relaunch } = await import("@tauri-apps/plugin-process");
+            await relaunch();
+          }
+        } catch (restartErr) {
+          console.error(
+            "[GlobalScheduler] Erro ao processar reinicialização remota:",
+            restartErr,
+          );
+        } finally {
+          isRestartPrompting = false;
+        }
+      };
 
       // 1. Heartbeat - Cadastra/Atualiza o status ativo do usuário local no servidor
       try {
+        const uid = user?.id ? String(user.id) : "";
+        const savedActive =
+          localStorage.getItem(`aegis_pet_active_${uid}`) ??
+          localStorage.getItem("aegis_pet_active");
+        // O mascote permanece ativo por padrão, a não ser que tenha sido explicitamente desativado ("false")
+        const isPetDisabled = savedActive === "false";
+        const savedPet =
+          localStorage.getItem(`aegis_selected_pet_${uid}`) ||
+          localStorage.getItem("aegis_selected_pet") ||
+          localStorage.getItem("aegis_active_pet") ||
+          "doberman";
+        const localPet = isPetDisabled ? "none" : savedPet;
+
+        let localTitle = "";
+        try {
+          const appConfig = await invoke<AppConfig>("global_get_app_config", {
+            userId: user?.id ? String(user.id) : undefined,
+          });
+          if (
+            appConfig?.selectedRankTitle &&
+            appConfig.selectedRankTitle !== "none" &&
+            appConfig.selectedRankTitle !== "Sem Título" &&
+            appConfig.selectedRankTitle !== "Sem título"
+          ) {
+            localTitle = appConfig.selectedRankTitle.trim();
+          }
+        } catch {}
+
+        let localLevel = 1;
+        let localXp = 0;
+        let localTreeLevel = 1;
+        let localTreeXp = 0;
+
+        try {
+          const threeDaysAgo = new Date();
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+          const progressState = await invoke<UserProgressState>(
+            "achievements_get_user_state",
+            {
+              userId: user.id,
+              today: todayStr,
+              threeDaysAgo: formatDateLocal(threeDaysAgo),
+            },
+          );
+          if (progressState) {
+            localLevel = progressState.level;
+            localTreeLevel = progressState.treeLevel;
+            localTreeXp = progressState.treeXp;
+
+            // Se o usuário ainda não tiver escolhido um título customizado nas configurações,
+            // atribuímos o título padrão desbloqueado correspondente ao seu nível atual
+            if (!localTitle) {
+              for (const t of RANK_TITLES) {
+                if (localLevel >= t.minLevel && t.title !== "Sem Título") {
+                  localTitle = t.title;
+                }
+              }
+              if (!localTitle) localTitle = "Sem Título";
+            }
+
+            // XP do nível atual conforme visível no aplicativo
+            localXp = progressState.xp;
+          }
+        } catch (progErr) {
+          console.warn(
+            "[GlobalScheduler] Falha ao ler status de XP/nível para heartbeat:",
+            progErr,
+          );
+        }
+
         const heartbeatRes = await fetch(`${baseUrl}/api/users`, {
           method: "POST",
           headers: {
@@ -418,15 +525,34 @@ export function GlobalScheduler() {
             id: user.id,
             username: user.username,
             email: user.email || "Não informado",
+            level: localLevel,
+            xp: localXp,
+            treeLevel: localTreeLevel,
+            treeXp: localTreeXp,
+            rankTitle: localTitle,
+            activePet: localPet,
           }),
         });
 
         if (heartbeatRes.ok) {
           const data = await heartbeatRes.json();
-          const { managementStatus, managedModules } = data;
+          const {
+            managementStatus,
+            managedModules,
+            managedProfile,
+            managedRank,
+            managedPet,
+            restartRequested,
+          } = data;
+
           localStorage.setItem("aegis_management_status", managementStatus);
 
-          // Se a solicitação está pendente e não há nenhum prompt aberto, pergunta ao usuário
+          // 1.1 Processa solicitação de reinicialização remota disparada pelo painel web
+          if (restartRequested) {
+            triggerRestartPrompt();
+          }
+
+          // 1.2 Solicitação de permissão de gerenciamento
           if (managementStatus === "pending" && !isPrompting) {
             isPrompting = true;
             try {
@@ -449,6 +575,12 @@ export function GlobalScheduler() {
                 body: JSON.stringify({
                   status: statusVal,
                   modules: localStorage.getItem("aegis_enabled_modules"),
+                  level: localLevel,
+                  xp: localXp,
+                  treeLevel: localTreeLevel,
+                  treeXp: localTreeXp,
+                  rankTitle: localTitle,
+                  activePet: localPet,
                 }),
               });
             } catch (promptErr) {
@@ -461,15 +593,16 @@ export function GlobalScheduler() {
             }
           }
 
-          // Se o gerenciamento for aprovado, sincroniza os módulos ativos localmente
-          if (managementStatus === "approved" && managedModules) {
+          // 1.3 Sincroniza dados gerenciados (Módulos, Perfil, Nível, Título e Pet)
+          // Sincroniza módulos gerenciados
+          if (managedModules) {
             try {
               const remoteModules =
                 typeof managedModules === "string"
                   ? JSON.parse(managedModules)
                   : managedModules;
 
-              if (Array.isArray(remoteModules)) {
+              if (Array.isArray(remoteModules) && remoteModules.length > 0) {
                 const localModulesStr = localStorage.getItem(
                   "aegis_enabled_modules",
                 );
@@ -496,6 +629,119 @@ export function GlobalScheduler() {
                 modulesErr,
               );
             }
+          }
+
+          // Sincroniza perfil (nome e e-mail)
+          if (managedProfile) {
+            let authUpdated = false;
+            if (
+              managedProfile.username &&
+              managedProfile.username !== user.username
+            ) {
+              try {
+                await invoke("global_change_username", {
+                  userId: user.id,
+                  newUsername: managedProfile.username,
+                });
+                authUpdated = true;
+              } catch (userErr) {
+                console.error(
+                  "[GlobalScheduler] Falha ao atualizar username remoto:",
+                  userErr,
+                );
+              }
+            }
+
+            if (
+              managedProfile.email &&
+              managedProfile.email !== "Não informado" &&
+              managedProfile.email !== user.email
+            ) {
+              try {
+                await invoke("global_change_email", {
+                  userId: user.id,
+                  newEmail: managedProfile.email,
+                });
+                authUpdated = true;
+              } catch (emailErr) {
+                console.error(
+                  "[GlobalScheduler] Falha ao atualizar email remoto:",
+                  emailErr,
+                );
+              }
+            }
+
+            if (authUpdated) {
+              window.dispatchEvent(new Event("aegis-auth-update"));
+            }
+          }
+
+          // Sincroniza nível e XP
+          if (managedRank?.level !== undefined && managedRank.level > 0) {
+            try {
+              await invoke("achievements_set_level", {
+                userId: user.id,
+                level: managedRank.level,
+                xp:
+                  typeof managedRank.xp === "number"
+                    ? managedRank.xp
+                    : undefined,
+              });
+              window.dispatchEvent(new Event("aegis-achievements-refresh"));
+            } catch (levelErr) {
+              console.error(
+                "[GlobalScheduler] Falha ao atualizar nível/XP remoto:",
+                levelErr,
+              );
+            }
+          }
+
+          // Sincroniza título honorífico do rank
+          if (managedRank?.rankTitle !== undefined) {
+            try {
+              const currentConfig = await invoke<AppConfig>(
+                "global_get_app_config",
+                { userId: user.id },
+              );
+              const targetTitle =
+                managedRank.rankTitle === "Sem Título" ||
+                managedRank.rankTitle === "none"
+                  ? ""
+                  : managedRank.rankTitle;
+              if (
+                currentConfig &&
+                (currentConfig.selectedRankTitle || "") !== targetTitle
+              ) {
+                await invoke("global_set_app_config", {
+                  config: {
+                    ...currentConfig,
+                    selectedRankTitle: targetTitle,
+                  },
+                  userId: user.id,
+                });
+                window.dispatchEvent(new Event("aegis-config-changed"));
+              }
+            } catch (rankErr) {
+              console.error(
+                "[GlobalScheduler] Falha ao atualizar título remoto:",
+                rankErr,
+              );
+            }
+          }
+
+          // Sincroniza mascote ativo
+          if (managedPet) {
+            const uid = user?.id ? String(user.id) : "";
+            if (managedPet === "none") {
+              localStorage.setItem(`aegis_pet_active_${uid}`, "false");
+              localStorage.setItem("aegis_pet_active", "false");
+            } else {
+              localStorage.setItem(`aegis_pet_active_${uid}`, "true");
+              localStorage.setItem("aegis_pet_active", "true");
+              localStorage.setItem(`aegis_selected_pet_${uid}`, managedPet);
+              localStorage.setItem("aegis_selected_pet", managedPet);
+            }
+            window.dispatchEvent(new Event("aegis-pet-changed"));
           }
         }
       } catch (err) {
@@ -535,6 +781,15 @@ export function GlobalScheduler() {
         for (const rn of remoteNotifs) {
           // Filtra pelo usuário ativo (pode ser direcionado ou broadcast)
           if (rn.userId !== "todos" && rn.userId !== user.id) continue;
+
+          // Comando especial de reinicialização disparado pelo painel
+          if (
+            rn.category === "system_command" ||
+            rn.tag?.startsWith("restart_req_")
+          ) {
+            triggerRestartPrompt();
+            continue;
+          }
 
           // Se já foi excluída ou cadastrada localmente, ignora
           if (rn.tag && locallyDeletedTags.has(rn.tag)) continue;
@@ -626,7 +881,7 @@ export function GlobalScheduler() {
       active = false;
       clearInterval(interval);
     };
-  }, [user, user?.id]);
+  }, [user, user?.id, todayStr]);
 
   return null;
 }

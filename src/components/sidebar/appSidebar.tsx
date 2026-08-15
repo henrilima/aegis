@@ -216,11 +216,13 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
           setLevel(progressState.level);
         }
 
-        const config = await invoke<AppConfig>("global_get_app_config");
+        const config = await invoke<AppConfig>("global_get_app_config", {
+          userId: user?.id ? String(user.id) : undefined,
+        });
         if (config && typeof config.selectedRankTitle === "string") {
           setSelectedTitle(config.selectedRankTitle);
         }
-        if (config && typeof config.showSidebarRankBorder === "boolean") {
+        if (config && config.showSidebarRankBorder !== undefined) {
           setShowSidebarRankBorder(config.showSidebarRankBorder);
         }
       } catch (err) {
@@ -354,14 +356,13 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
       <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
         <AvatarRankWrapper
           level={level}
-          rounded="xl"
           size="sm"
           badgePosition="bottom-right"
           showBorder={showSidebarRankBorder}
           className="shrink-0"
         >
           <div
-            className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold overflow-hidden ${themeStyles.bg} ${themeStyles.text}`}
+            className={`flex h-9 w-9 items-center justify-center text-sm font-bold overflow-hidden ${themeStyles.bg} ${themeStyles.text}`}
           >
             {avatarSrc ? (
               <img

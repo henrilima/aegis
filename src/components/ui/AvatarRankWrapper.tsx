@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 
 interface AvatarRankWrapperProps {
   level: number;
-  rounded?: "full" | "xl";
   size?: "sm" | "lg"; // 'sm' para sidebar, 'lg' para página de perfil
   badgePosition?: "bottom" | "right" | "bottom-right"; // posicionamento da insígnia
   showBorder?: boolean;
@@ -15,70 +14,75 @@ interface AvatarRankWrapperProps {
 
 export function AvatarRankWrapper({
   level,
-  rounded = "full",
   size = "sm",
   badgePosition = "bottom",
   showBorder = true,
   className,
   children,
 }: AvatarRankWrapperProps) {
-  const rank = getRankForLevel(level);
-  const borderConfig = RANK_BORDERS[rank.name];
+  const rank = getRankForLevel(level || 1);
+  const borderConfig = RANK_BORDERS[rank.name] || RANK_BORDERS.Ferro;
 
-  if (!borderConfig || !showBorder) {
-    return <div className={cn("relative", className)}>{children}</div>;
+  if (!showBorder) {
+    return (
+      <div
+        className={cn(
+          "relative shrink-0 overflow-hidden flex items-center justify-center rounded-full",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    );
   }
-
-  const roundedClass = rounded === "full" ? "rounded-full" : "rounded-xl";
 
   // Contêiner da badge
   const containerSizeClass =
     badgePosition === "right"
-      ? "w-[13px] h-[13px]"
+      ? "w-3.5 h-3.5"
       : badgePosition === "bottom-right"
-        ? "w-[13px] h-[13px]"
+        ? "w-3.5 h-3.5"
         : size === "sm"
-          ? "w-[16px] h-[16px]"
-          : "w-[24px] h-[24px]";
+          ? "w-4 h-4"
+          : "w-6 h-6";
 
   // Tamanho da gema interna
   const gemSizeClass =
     badgePosition === "right"
-      ? "w-[8px] h-[8px]"
+      ? "w-2 h-2"
       : badgePosition === "bottom-right"
-        ? "w-[8px] h-[8px]"
+        ? "w-2 h-2"
         : size === "sm"
-          ? "w-[10px] h-[10px]"
-          : "w-[15px] h-[15px]";
+          ? "w-2.5 h-2.5"
+          : "w-3.5 h-3.5";
 
   // Posicionamento
   const gemPositionClass =
     badgePosition === "right"
       ? "right-0 top-1/2 -translate-y-1/2 translate-x-1/2"
       : badgePosition === "bottom-right"
-        ? "bottom-1 right-1 translate-x-1/2 translate-y-1/2"
-        : "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2";
-
-  const borderThickness = size === "sm" ? "border-2" : "border-[5px]";
+        ? "-bottom-0.5 -right-0.5"
+        : "-bottom-1 left-1/2 -translate-x-1/2";
 
   return (
-    <div
-      className={cn(
-        "relative transition-all duration-300",
-        borderThickness,
-        borderConfig.borderColor,
-        roundedClass,
-        className,
-      )}
-    >
-      <div className={cn("w-full h-full overflow-hidden", roundedClass)}>
-        {children}
+    <div className={cn("relative shrink-0 inline-flex", className)}>
+      {/* Contêiner da borda do rank com estilo sólido visível e preenchimento */}
+      <div
+        className={cn(
+          "relative flex items-center justify-center transition-all duration-300 border-solid rounded-full",
+          size === "sm" ? "border-2 p-0.5" : "border-4 p-0.75",
+          borderConfig.borderColor,
+        )}
+      >
+        <div className="w-full h-full overflow-hidden flex items-center justify-center rounded-full">
+          {children}
+        </div>
       </div>
 
-      {/* Contêiner da Badge (Círculo cinza claro) */}
+      {/* Contêiner da Badge sem borda preta, harmonizado com o tema */}
       <span
         className={cn(
-          "absolute rounded-full bg-[#e7e7e7] flex items-center justify-center transition-all duration-300 z-20 group-hover/avatar:scale-0 group-hover/avatar:opacity-0 shadow-[0_2px_6px_rgba(0,0,0,0.15)] border border-black/5",
+          "absolute rounded-full bg-background border border-border flex items-center justify-center transition-all duration-300 z-20 group-hover/avatar:scale-0 group-hover/avatar:opacity-0",
           containerSizeClass,
           gemPositionClass,
         )}
@@ -87,7 +91,7 @@ export function AvatarRankWrapper({
         {/* Detalhe de Pedra / Gem do Rank */}
         <span
           className={cn(
-            "transition-all duration-300 block",
+            "transition-all duration-300 block shrink-0",
             borderConfig.gemColor,
             gemSizeClass,
           )}

@@ -50,56 +50,56 @@ export const RANK_TITLES: RankTitle[] = [
 export const RANK_BORDERS: Record<string, RankBorderConfig> = {
   Ferro: {
     rankName: "Ferro",
-    borderColor: "border-neutral-500/70",
+    borderColor: "border-neutral-400 dark:border-neutral-500",
     gemColor: "bg-neutral-500",
     clipPath: "circle(50% at 50% 50%)", // Redonda
   },
   Bronze: {
     rankName: "Bronze",
-    borderColor: "border-amber-700/80",
+    borderColor: "border-amber-600 dark:border-amber-500",
     gemColor: "bg-amber-600",
     clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)", // Triangular
   },
   Prata: {
     rankName: "Prata",
-    borderColor: "border-slate-300/80",
+    borderColor: "border-slate-400 dark:border-slate-300",
     gemColor: "bg-slate-400",
     clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)", // Losangular
   },
   Ouro: {
     rankName: "Ouro",
-    borderColor: "border-yellow-500/80",
+    borderColor: "border-yellow-500 dark:border-yellow-400",
     gemColor: "bg-yellow-400",
     clipPath: "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)", // Pentagonal
   },
   Platina: {
     rankName: "Platina",
-    borderColor: "border-cyan-400/80",
+    borderColor: "border-cyan-500 dark:border-cyan-400",
     gemColor: "bg-cyan-400",
     clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)", // Hexagonal
   },
   Esmeralda: {
     rankName: "Esmeralda",
-    borderColor: "border-emerald-400/80",
+    borderColor: "border-emerald-500 dark:border-emerald-400",
     gemColor: "bg-emerald-500",
     clipPath:
       "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)", // Octogonal
   },
   Diamante: {
     rankName: "Diamante",
-    borderColor: "border-blue-400/80",
+    borderColor: "border-blue-500 dark:border-blue-400",
     gemColor: "bg-blue-400",
     clipPath: "polygon(20% 0%, 80% 0%, 100% 40%, 50% 100%, 0% 40%)", // Joia lapidada
   },
   Titânio: {
     rankName: "Titânio",
-    borderColor: "border-purple-400/80",
+    borderColor: "border-purple-500 dark:border-purple-400",
     gemColor: "bg-purple-500",
     clipPath: "polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%)", // Escudo
   },
   Grafeno: {
     rankName: "Grafeno",
-    borderColor: "border-stone-400/80",
+    borderColor: "border-stone-500 dark:border-stone-400",
     gemColor: "bg-stone-500",
     clipPath:
       "polygon(50% 0%, 65% 35%, 100% 50%, 65% 65%, 50% 100%, 35% 65%, 0% 50%, 35% 35%)", // Estrela/Spark

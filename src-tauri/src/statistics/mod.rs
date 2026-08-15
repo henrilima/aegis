@@ -1849,6 +1849,23 @@ pub async fn achievements_reset_xp_and_resync(
 }
 
 #[tauri::command]
+pub async fn achievements_set_level(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    level: i32,
+    xp: Option<i32>,
+) -> Result<(), String> {
+    let conn = state.stats.conn();
+    let current_xp = xp.unwrap_or(0);
+    conn.execute(
+        "INSERT INTO user_xp (user_id, xp, level, tree_xp, tree_level) VALUES (?1, ?3, ?2, 0, 1)
+         ON CONFLICT(user_id) DO UPDATE SET level = ?2, xp = ?3",
+        rusqlite::params![user_id, level, current_xp],
+    ).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn stats_export_xp_history_csv(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,

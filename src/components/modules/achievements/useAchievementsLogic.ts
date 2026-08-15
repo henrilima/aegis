@@ -15,6 +15,7 @@ import {
   type RealtimeGlobalStats,
 } from "@/config/achievements.config";
 import { getModuleColor } from "@/config/modules.config";
+import { normalizePetId } from "@/config/pets.config";
 import { useAuth } from "@/context/AuthContext";
 import { useModules } from "@/context/ModuleContext";
 import { useTime } from "@/context/TimeContext";
@@ -93,7 +94,7 @@ export function useAchievementsLogic() {
 
       const petKey = uid ? `aegis_selected_pet_${uid}` : "aegis_selected_pet";
       const saved = localStorage.getItem(petKey);
-      setSelectedPet(saved || "doberman");
+      setSelectedPet(normalizePetId(saved));
 
       const particleKey = uid
         ? `aegis_selected_pet_particle_${uid}`

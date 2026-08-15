@@ -92,6 +92,20 @@ const BASE_SLIME: PetPhrases = {
   ],
 };
 
+export const LEGACY_PET_ID_MAP: Record<string, string> = {
+  gato_cerveja: "beer_cat",
+  gato_preto: "black_cat",
+  passaro: "bird",
+  pombo: "pigeon",
+  rato_azul: "blue_rat",
+  rato_marrom: "brown_rat",
+};
+
+export function normalizePetId(id: string | null | undefined): string {
+  if (!id) return "doberman";
+  return LEGACY_PET_ID_MAP[id] || id;
+}
+
 export const PETS_CONFIG: Record<string, PetConfig> = {
   doberman: {
     petId: "doberman",
@@ -104,8 +118,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
       Idle: ["Au au! Sou o Doberman mais leal!", "*alerta*", "Proteger cofre!"],
     },
   },
-  gato_cerveja: {
-    petId: "gato_cerveja",
+  beer_cat: {
+    petId: "beer_cat",
     name: "Gato Cerveja",
     minLevel: 1,
     rankName: "Ferro",
@@ -129,8 +143,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
       Idle: ["Woof! Sou um Shiba muito fofo!", "*sorri*", "Muito doge, uau!"],
     },
   },
-  gato_preto: {
-    petId: "gato_preto",
+  black_cat: {
+    petId: "black_cat",
     name: "Gato Preto",
     minLevel: 15,
     rankName: "Prata",
@@ -148,8 +162,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
     type: "slime",
     basePhrases: BASE_SLIME,
   },
-  rato_marrom: {
-    petId: "rato_marrom",
+  brown_rat: {
+    petId: "brown_rat",
     name: "Rato Marrom",
     minLevel: 25,
     rankName: "Platina",
@@ -162,8 +176,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
       ],
     },
   },
-  rato_azul: {
-    petId: "rato_azul",
+  blue_rat: {
+    petId: "blue_rat",
     name: "Rato Azul",
     minLevel: 30,
     rankName: "Esmeralda",
@@ -173,8 +187,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
       Idle: ["Eek! Um rato azul do futuro!", "Vroom vroom!"],
     },
   },
-  passaro: {
-    petId: "passaro",
+  bird: {
+    petId: "bird",
     name: "Pássaro",
     minLevel: 35,
     rankName: "Diamante",
@@ -184,8 +198,8 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
       Idle: ["Piu piu! Cantando para o seu sucesso!", "Voar alto!"],
     },
   },
-  pombo: {
-    petId: "pombo",
+  pigeon: {
+    petId: "pigeon",
     name: "Pombo",
     minLevel: 40,
     rankName: "Titânio",
@@ -199,9 +213,10 @@ export const PETS_CONFIG: Record<string, PetConfig> = {
 
 // Retorna a lista mesclada (base + overrides) de frases para um pet e estado específicos
 export function getPetPhrases(
-  petId: string,
+  rawPetId: string,
   state: "Idle" | "Walk" | "Attack" | "Death",
 ): string[] {
+  const petId = normalizePetId(rawPetId);
   const config = PETS_CONFIG[petId];
   if (!config) {
     return ["..."];

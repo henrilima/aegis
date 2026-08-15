@@ -2,7 +2,7 @@
 
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PETS_CONFIG } from "@/config/pets.config";
+import { normalizePetId, PETS_CONFIG } from "@/config/pets.config";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -10,13 +10,13 @@ const petOrder = Object.keys(PETS_CONFIG);
 
 export const PETS_LIST = [
   { id: "doberman", name: "Doberman", size: 48, frames: 4 },
-  { id: "gato_cerveja", name: "Gato Cerveja", size: 48, frames: 4 },
+  { id: "beer_cat", name: "Gato Cerveja", size: 48, frames: 4 },
   { id: "shiba", name: "Shiba", size: 48, frames: 4 },
-  { id: "gato_preto", name: "Gato Preto", size: 48, frames: 4 },
-  { id: "rato_marrom", name: "Rato Marrom", size: 32, frames: 4 },
-  { id: "rato_azul", name: "Rato Azul", size: 32, frames: 4 },
-  { id: "passaro", name: "Pássaro", size: 32, frames: 4 },
-  { id: "pombo", name: "Pombo", size: 32, frames: 4 },
+  { id: "black_cat", name: "Gato Preto", size: 48, frames: 4 },
+  { id: "brown_rat", name: "Rato Marrom", size: 32, frames: 4 },
+  { id: "blue_rat", name: "Rato Azul", size: 32, frames: 4 },
+  { id: "bird", name: "Pássaro", size: 32, frames: 4 },
+  { id: "pigeon", name: "Pombo", size: 32, frames: 4 },
   { id: "slime", name: "Slime", size: 32, frames: 8 },
 ].sort((a, b) => petOrder.indexOf(a.id) - petOrder.indexOf(b.id));
 
@@ -69,7 +69,7 @@ export function PetSelector({
       <div className="p-5 rounded-2xl border border-border/70 bg-card/30">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {PETS_LIST.map((pet) => {
-            const isSelected = selectedPet === pet.id;
+            const isSelected = normalizePetId(selectedPet) === pet.id;
             const rule = PETS_CONFIG[pet.id];
             const isUnlocked = userLevel >= (rule?.minLevel ?? 1);
 
