@@ -26,16 +26,18 @@ import { getModuleColor } from "@/modules.config";
 import { GradesModal } from "../grades";
 import type { StudyGrade, SubjectGroup, SubjectMeta } from "../grades/types";
 import type { AppConfig } from "../settings/useSettingsLogic";
+import { GoalsTab as MetasTab } from "./components/goalsTab";
 import { HistoryTab } from "./components/historyTab";
-import { MateriasTab } from "./components/materiasTab";
-import { MetasTab } from "./components/metasTab";
 import { OverviewTab } from "./components/overviewTab";
-import { RelatorioTab } from "./components/reportTab";
+import { ReportsTab as RelatorioTab } from "./components/reportTab";
 import { ScheduleTab } from "./components/scheduleTab";
 import { SessionModal } from "./components/studiesModals";
+import { SubjectsTab as MateriasTab } from "./components/subjectsTab";
 import { GOAL_LABELS } from "./goalPanel";
 import type { StudyGoal, StudySchedule, StudySession, TabId } from "./types";
 import {
+  calcScheduleBreakMinutes,
+  calcScheduleNetHours,
   computeStats,
   computeSubjectMap,
   isoDate,
@@ -309,17 +311,17 @@ export default function StudiesPage() {
     if (!uid) return;
     try {
       const results = await Promise.allSettled([
-        invoke<StudySession[]>("estudos_list_sessions", {
+        invoke<StudySession[]>("studies_list_sessions", {
           userId: uid,
           monthsBack: 5,
         }),
-        invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
+        invoke<StudyGoal[]>("studies_list_goals", { userId: uid }),
         invoke<SubjectMeta[]>("subjects_list", { userId: uid }),
         invoke<StudyGrade[]>("grades_list", { userId: uid }),
         invoke<SubjectGroup[]>("subject_groups_list", { userId: uid }),
         invoke<Habit[]>("habit_list_habits", { userId: uid }),
         invoke<AutomationRule[]>("automation_list_rules", { userId: uid }),
-        invoke<StudySchedule[]>("estudos_list_schedules", { userId: uid }),
+        invoke<StudySchedule[]>("studies_list_schedules", { userId: uid }),
       ]);
 
       if (results[0].status === "fulfilled") {
@@ -384,10 +386,10 @@ export default function StudiesPage() {
     try {
       setIsSaving(true);
       if (s.id) {
-        await invoke("estudos_update_session", { session: s });
+        await invoke("studies_update_session", { session: s });
         toast.success("Sessão atualizada!");
       } else {
-        await invoke("estudos_add_session", { session: s });
+        await invoke("studies_add_session", { session: s });
         toast.success("Sessão registrada!");
       }
       setShowForm(false);
@@ -403,7 +405,7 @@ export default function StudiesPage() {
   const handleGoalSave = async (gs: StudyGoal[]) => {
     try {
       await Promise.all(
-        gs.map((g) => invoke("estudos_upsert_goal", { goal: g })),
+        gs.map((g) => invoke("studies_upsert_goal", { goal: g })),
       );
       await load();
     } catch (err) {
@@ -414,7 +416,7 @@ export default function StudiesPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await invoke("estudos_delete_session", { id, userId: uid });
+      await invoke("studies_delete_session", { id, userId: uid });
       toast.success("Sessão removida");
       setDeleteConfirm(null);
       await load();
@@ -489,6 +491,91 @@ export default function StudiesPage() {
         return matchSearch && matchMonth && matchSubject;
       }),
     [sessions, search, filterMonth, filterSubject],
+  );
+
+  const handleStudyScheduleClass = useCallback(
+    (schedule: StudySchedule) => {
+      const durationHours = calcScheduleNetHours(schedule);
+      const breakMin = calcScheduleBreakMinutes(
+        schedule.breakStartTime,
+        schedule.breakEndTime,
+      );
+
+      const y = simulatedNow.getFullYear();
+      const m = String(simulatedNow.getMonth() + 1).padStart(2, "0");
+      const d = String(simulatedNow.getDate()).padStart(2, "0");
+      const dateStr = `${y}-${m}-${d}`;
+
+      const breakInfo =
+        breakMin > 0
+          ? ` (intervalo: ${schedule.breakStartTime} às ${schedule.breakEndTime})`
+          : "";
+
+      setEditSession({
+        userId: uid,
+        date: dateStr,
+        subject: schedule.subject,
+        hours: durationHours,
+        topic: schedule.teacher ? `Aula com ${schedule.teacher}` : "",
+        note: schedule.location
+          ? `Local: ${schedule.location}${breakInfo}`
+          : breakInfo
+            ? `Intervalo de ${breakMin} min descontado`
+            : "",
+        questionsNew: 0,
+        questionsReview: 0,
+        correctNew: 0,
+        correctReview: 0,
+        pagesRead: 0,
+        custom_metric_label: "",
+        custom_metric_value: 0,
+        focusScore: 0,
+      });
+      setShowForm(true);
+    },
+    [uid, simulatedNow],
+  );
+
+  const handleQuickRegisterScheduleClass = useCallback(
+    async (schedule: StudySchedule) => {
+      const durationHours = calcScheduleNetHours(schedule);
+      const breakMin = calcScheduleBreakMinutes(
+        schedule.breakStartTime,
+        schedule.breakEndTime,
+      );
+
+      const y = simulatedNow.getFullYear();
+      const m = String(simulatedNow.getMonth() + 1).padStart(2, "0");
+      const d = String(simulatedNow.getDate()).padStart(2, "0");
+      const dateStr = `${y}-${m}-${d}`;
+
+      const breakNote =
+        breakMin > 0 ? ` (intervalo de ${breakMin} min descontado)` : "";
+
+      const newSession: StudySession = {
+        userId: uid,
+        date: dateStr,
+        subject: schedule.subject,
+        hours: durationHours,
+        questionsNew: 0,
+        questionsReview: 0,
+        correctNew: 0,
+        correctReview: 0,
+        note: schedule.teacher
+          ? `Presença registrada na aula de ${schedule.subject} com ${schedule.teacher}${breakNote}`
+          : `Presença registrada na aula de ${schedule.subject}${breakNote}`,
+      };
+
+      try {
+        await invoke("studies_add_session", { session: newSession });
+        toast.success(`Aula de ${schedule.subject} registrada no histórico!`);
+        await load();
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao registrar aula.");
+      }
+    },
+    [uid, simulatedNow, load],
   );
 
   if (loading)
@@ -614,6 +701,8 @@ export default function StudiesPage() {
           userId={uid}
           showSaturday={showSaturday}
           showSunday={showSunday}
+          onStudyClass={handleStudyScheduleClass}
+          onQuickRegisterClass={handleQuickRegisterScheduleClass}
         />
       )}
 

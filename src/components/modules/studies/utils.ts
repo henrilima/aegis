@@ -41,6 +41,57 @@ export function formatHours(h: number) {
   return `${hrs}h ${mins}min`;
 }
 
+// Converte horário no formato "HH:MM" para minutos do dia
+export function timeToMinutes(t?: string | null): number {
+  if (!t) return 0;
+  const [h, m] = t.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+// Calcula os minutos de intervalo configurados para a aula
+export function calcScheduleBreakMinutes(
+  breakStart?: string | null,
+  breakEnd?: string | null,
+): number {
+  if (!breakStart || !breakEnd) return 0;
+  const bStart = timeToMinutes(breakStart);
+  const bEnd = timeToMinutes(breakEnd);
+  return Math.max(0, bEnd - bStart);
+}
+
+// Calcula a duração líquida da aula em minutos (descontando o intervalo se houver)
+export function calcScheduleNetMinutes(schedule: {
+  startTime: string;
+  endTime: string;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
+}): number {
+  const start = timeToMinutes(schedule.startTime);
+  const end = timeToMinutes(schedule.endTime);
+  const rawMin = end - start;
+  if (rawMin <= 0) return 60;
+
+  const breakMin = calcScheduleBreakMinutes(
+    schedule.breakStartTime,
+    schedule.breakEndTime,
+  );
+  if (breakMin > 0 && breakMin < rawMin) {
+    return Math.max(15, rawMin - breakMin);
+  }
+  return rawMin;
+}
+
+// Calcula a duração líquida da aula em horas com arredondamento
+export function calcScheduleNetHours(schedule: {
+  startTime: string;
+  endTime: string;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
+}): number {
+  const netMin = calcScheduleNetMinutes(schedule);
+  return Math.round((netMin / 60) * 100) / 100;
+}
+
 // Lógica de Computação
 
 export function computeStats(arr: StudySession[]) {

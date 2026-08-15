@@ -43,9 +43,9 @@ interface ReportTabProps {
 }
 
 /**
- * Aba de Desempenho: Exibe KPIs, gráficos de composição e rankings de matérias
+ * Performance Tab: Displays KPIs, composition charts and subject rankings
  */
-export function DesempenhoTab({
+export function PerformanceTab({
   allStats,
   subjectMap,
   reportMode = "monthly",
@@ -125,9 +125,9 @@ export function DesempenhoTab({
 }
 
 /**
- * Aba de Relatório: Visualização gráfica para compartilhamento e texto formatado
+ * Reports Tab: Visual chart for sharing and formatted text
  */
-export function RelatorioTab({
+export function ReportsTab({
   sessions,
   allStats,
   goalValue,
@@ -324,7 +324,7 @@ export function RelatorioTab({
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <div className="flex flex-col items-center min-w-[160px]">
+          <div className="flex flex-col items-center min-w-40">
             <span className={cn("text-[10px] font-black", currentTheme.accent)}>
               {periodTitle}
             </span>
@@ -450,8 +450,8 @@ export function RelatorioTab({
       {/* Constância de Estudos Anual (Heatmap) */}
       <StudiesHeatmap sessions={sessions} />
 
-      {/* Desempenho (KPIs + Composição + Rankings) */}
-      <DesempenhoTab
+      {/* Performance (KPIs + Composition + Rankings) */}
+      <PerformanceTab
         allStats={periodStats}
         subjectMap={periodSubjectMap}
         reportMode={reportMode}
@@ -459,3 +459,5 @@ export function RelatorioTab({
     </div>
   );
 }
+
+export { ReportsTab as RelatorioTab, PerformanceTab as DesempenhoTab };

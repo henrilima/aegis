@@ -1,8 +1,12 @@
 "use client";
 
-import { BookOpen, Clock, MapPin, Play, User } from "lucide-react";
+import { BookOpen, Clock, Coffee, MapPin, Play, User } from "lucide-react";
 import { useMemo } from "react";
 import type { SubjectMeta } from "@/components/modules/grades/types";
+import {
+  calcScheduleBreakMinutes,
+  calcScheduleNetHours,
+} from "@/components/modules/studies/utils";
 import { Button } from "@/components/ui/button";
 import { cn, getColorTheme, type ThemeColorKey } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
@@ -80,6 +84,15 @@ export function ScheduleWidget({
     });
   }, [todaySchedules, currentMinutes]);
 
+  // Verifica se o momento atual está dentro do intervalo da aula ativa
+  const isCurrentlyInBreak = useMemo(() => {
+    if (!activeClass?.breakStartTime || !activeClass?.breakEndTime)
+      return false;
+    const bStart = timeToMinutes(activeClass.breakStartTime);
+    const bEnd = timeToMinutes(activeClass.breakEndTime);
+    return currentMinutes >= bStart && currentMinutes < bEnd;
+  }, [activeClass, currentMinutes]);
+
   // Próximas aulas de hoje que ainda não começaram
   const upcomingTodaySchedules = useMemo(() => {
     return todaySchedules.filter(
@@ -143,7 +156,9 @@ export function ScheduleWidget({
 
       return {
         primaryClass: activeClass,
-        primaryBadgeText: "Aula de agora",
+        primaryBadgeText: isCurrentlyInBreak
+          ? `Intervalo até ${activeClass.breakEndTime}`
+          : "Aula de agora",
         isActiveClass: true,
         secondaryClass: secClass,
         secondaryBadgeText: secText,
@@ -199,20 +214,24 @@ export function ScheduleWidget({
       secondaryClass: null,
       secondaryBadgeText: "",
     };
-  }, [activeClass, upcomingTodaySchedules, nextDayInfo]);
+  }, [activeClass, upcomingTodaySchedules, nextDayInfo, isCurrentlyInBreak]);
 
   const handleQuickRegister = async (item: StudySchedule) => {
     if (!onAddSession) return;
-    const start = timeToMinutes(item.startTime);
-    const end = timeToMinutes(item.endTime);
-    const durationHours =
-      Math.round((Math.max(15, end - start) / 60) * 100) / 100;
+    const durationHours = calcScheduleNetHours(item);
+    const breakMin = calcScheduleBreakMinutes(
+      item.breakStartTime,
+      item.breakEndTime,
+    );
 
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, "0");
     const d = String(today.getDate()).padStart(2, "0");
     const dateStr = `${y}-${m}-${d}`;
+
+    const breakNote =
+      breakMin > 0 ? ` (intervalo de ${breakMin} min descontado)` : "";
 
     const newSession = {
       userId: item.userId || "",
@@ -223,7 +242,7 @@ export function ScheduleWidget({
       questionsReview: 0,
       correctNew: 0,
       correctReview: 0,
-      note: "Presença registrada via grade de horários.",
+      note: `Presença registrada via grade de horários${breakNote}.`,
     };
 
     await onAddSession(newSession);
@@ -288,12 +307,16 @@ export function ScheduleWidget({
             <span
               className={cn(
                 "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold border",
-                isActiveClass
-                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                  : `${moduleTheme.bg} ${moduleTheme.text} ${moduleTheme.border}`,
+                isCurrentlyInBreak
+                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                  : isActiveClass
+                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                    : `${moduleTheme.bg} ${moduleTheme.text} ${moduleTheme.border}`,
               )}
             >
-              {isActiveClass ? (
+              {isCurrentlyInBreak ? (
+                <Coffee className="w-3 h-3 text-amber-500" />
+              ) : isActiveClass ? (
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -310,15 +333,15 @@ export function ScheduleWidget({
             </span>
           </div>
 
-          {/* Nome da Matéria */}
-          <div>
-            <h4 className="text-base font-bold text-foreground leading-snug truncate">
+          {/* Nome da Matéria e Informações */}
+          <div className="space-y-2">
+            <h4 className="text-base font-bold text-foreground leading-snug wrap-break-word">
               {primaryClass.subject}
             </h4>
 
-            {/* Informações de Horário, Local e Professor */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground font-medium">
-              <span className="flex items-center gap-1.5 font-bold text-foreground">
+            {/* Informações de Horário e Local */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+              <span className="flex items-center gap-1.5 font-bold text-foreground shrink-0">
                 <Clock className="w-3.5 h-3.5 text-muted-foreground/70" />
                 <span>
                   {primaryClass.startTime} - {primaryClass.endTime}
@@ -338,19 +361,33 @@ export function ScheduleWidget({
               </span>
 
               {primaryClass.location && (
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1 text-muted-foreground font-medium shrink-0">
                   <MapPin className="w-3.5 h-3.5 text-muted-foreground/70" />
-                  <span className="truncate">{primaryClass.location}</span>
-                </span>
-              )}
-
-              {primaryClass.teacher && (
-                <span className="flex items-center gap-1 truncate">
-                  <User className="w-3.5 h-3.5 text-muted-foreground/70" />
-                  <span className="truncate">{primaryClass.teacher}</span>
+                  <span>{primaryClass.location}</span>
                 </span>
               )}
             </div>
+
+            {/* Professor(es) - permite quebra de linha suave para múltiplos nomes */}
+            {primaryClass.teacher && (
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground font-medium pt-0.5">
+                <User className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0 mt-0.5" />
+                <span className="leading-relaxed wrap-break-word">
+                  {primaryClass.teacher}
+                </span>
+              </div>
+            )}
+
+            {/* Intervalo */}
+            {primaryClass.breakStartTime && primaryClass.breakEndTime && (
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 pt-0.5">
+                <Coffee className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  Intervalo: {primaryClass.breakStartTime} -{" "}
+                  {primaryClass.breakEndTime}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Barra de Progresso se estiver acontecendo agora */}
@@ -380,7 +417,7 @@ export function ScheduleWidget({
 
         {/* Seção da Aula Secundária ("Aula seguinte") */}
         {secondaryClass && (
-          <div className="pt-2.5 border-t border-border/40 flex flex-col gap-1">
+          <div className="pt-2.5 border-t border-border/40 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <span className={cn("text-[10px] font-bold", moduleTheme.text)}>
                 {secondaryBadgeText}
@@ -389,22 +426,30 @@ export function ScheduleWidget({
                 {secondaryClass.startTime} - {secondaryClass.endTime}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span
                 className={cn(
                   "w-2 h-2 rounded-full shrink-0",
                   secondaryTheme.solid,
                 )}
               />
-              <span className="text-xs font-bold text-foreground truncate">
+              <span className="text-xs font-bold text-foreground wrap-break-word">
                 {secondaryClass.subject}
               </span>
               {secondaryClass.location && (
-                <span className="text-[10px] text-muted-foreground truncate">
+                <span className="text-[10px] text-muted-foreground shrink-0">
                   ({secondaryClass.location})
                 </span>
               )}
             </div>
+            {secondaryClass.teacher && (
+              <div className="flex items-start gap-1 text-[11px] text-muted-foreground">
+                <User className="w-3 h-3 text-muted-foreground/60 shrink-0 mt-0.5" />
+                <span className="leading-snug wrap-break-word">
+                  {secondaryClass.teacher}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

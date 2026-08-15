@@ -24,7 +24,7 @@ interface StudiesWidgetProps {
   onToggleInteractive?: () => void;
 }
 
-export function EstudosWidget({
+export function StudiesWidget({
   sessions,
   weekHours,
   weekQuestions,
@@ -139,7 +139,7 @@ export function EstudosWidget({
                       {s.subject}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[120px]">
+                      <span className="text-[10px] font-bold text-muted-foreground truncate max-w-30">
                         {s.topic || "Sessão de estudo"}
                       </span>
                       {(s.questionsNew ?? 0) + (s.questionsReview ?? 0) > 0 && (
@@ -169,7 +169,7 @@ export function EstudosWidget({
                 <p className="text-xs text-neutral-600 font-bold">
                   Sem Registros
                 </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
                   Registre suas sessões de estudo para acompanhar seu progresso
                   semanal.
                 </p>
@@ -192,3 +192,5 @@ export function EstudosWidget({
     </>
   );
 }
+
+export { StudiesWidget as EstudosWidget };

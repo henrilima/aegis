@@ -51,6 +51,8 @@ export interface StudySchedule {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
+  breakStartTime?: string;
+  breakEndTime?: string;
   location?: string;
   teacher?: string;
   createdAt?: string;

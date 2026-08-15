@@ -56,7 +56,7 @@ import type { StudySession } from "../types";
 import { formatHours, isoDate, startOfWeek } from "../utils";
 import { SubjectEditModal } from "./SubjectEditModal";
 
-interface MateriasTabProps {
+interface SubjectsTabProps {
   /** Matérias existentes das sessões de estudo ou avaliações */
   studySubjects: string[];
   userId: string;
@@ -103,7 +103,7 @@ const itemVariants = {
   },
 };
 
-export function MateriasTab({
+export function SubjectsTab({
   studySubjects,
   userId,
   onRefresh,
@@ -113,7 +113,7 @@ export function MateriasTab({
   onDeleteGrade,
   activeSubjects,
   onToggleActiveSubject,
-}: MateriasTabProps) {
+}: SubjectsTabProps) {
   const color = getModuleColor(moduleMode);
   const theme = getColorTheme(color);
   const _focusBorderClass = theme.text
@@ -200,7 +200,7 @@ export function MateriasTab({
         invoke<SubjectMeta[]>("subjects_list", { userId }),
         invoke<SubjectGroup[]>("subject_groups_list", { userId }),
         invoke<SubjectFormula[]>("subject_formulas_list", { userId }),
-        invoke<StudySession[]>("estudos_list_sessions", {
+        invoke<StudySession[]>("studies_list_sessions", {
           userId,
           monthsBack: 1,
         }),
@@ -224,8 +224,8 @@ export function MateriasTab({
 
   // Combina as matérias passadas com as registradas nas metas
   const allSubjects = useMemo(() => {
-    const fromMetas = subjectMetas.map((m) => m.name);
-    return Array.from(new Set([...studySubjects, ...fromMetas])).sort();
+    const fromGoals = subjectMetas.map((m) => m.name);
+    return Array.from(new Set([...studySubjects, ...fromGoals])).sort();
   }, [studySubjects, subjectMetas]);
 
   const validActiveSubjects = useMemo(() => {
@@ -1797,3 +1797,9 @@ function GroupEditModal({
     </ModalShell>
   );
 }
+
+export {
+  SubjectsTab as MateriasTab,
+  type SubjectsTabProps as MateriasTabProps,
+  type SubjectsTabProps,
+};

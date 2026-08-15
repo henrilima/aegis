@@ -97,7 +97,7 @@ export function ReportCanvas({
       const hasPages = periodStats.pages > 0;
 
       // Rótulo da meta para modo diário
-      const metaPrefix = reportMode === "daily" ? "META SEM." : "META";
+      const goalLabelPrefix = reportMode === "daily" ? "META SEM." : "META";
 
       // Horas: posição Y muda conforme se há páginas ou não
       const hoursY = hasPages ? 640 : 700;
@@ -120,7 +120,7 @@ export function ReportCanvas({
       ctx.fillStyle = accent;
       const perfText =
         hrGoal > 0
-          ? `PERFORMANCE: ${Math.round((periodStats.hours / hrGoal) * 100)}% DA ${metaPrefix}`
+          ? `PERFORMANCE: ${Math.round((periodStats.hours / hrGoal) * 100)}% DA ${goalLabelPrefix}`
           : reportMode === "monthly"
             ? "ESTUDOS DO MÊS"
             : reportMode === "daily"
@@ -280,7 +280,7 @@ export function ReportCanvas({
           "q",
           "Questões Resolvidas",
           `${periodStats.questions}`,
-          qGoal > 0 ? `${metaPrefix}: ${qGoal}` : "",
+          qGoal > 0 ? `${goalLabelPrefix}: ${qGoal}` : "",
         );
 
         drawFullCard(
@@ -288,7 +288,7 @@ export function ReportCanvas({
           "p",
           "Páginas Lidas",
           `${periodStats.pages}`,
-          pGoal > 0 ? `${metaPrefix}: ${pGoal}` : "",
+          pGoal > 0 ? `${goalLabelPrefix}: ${pGoal}` : "",
         );
 
         const subCardY = startY + spacing * 2;
@@ -316,7 +316,7 @@ export function ReportCanvas({
           "q",
           "Questões Resolvidas",
           `${periodStats.questions}`,
-          qGoal > 0 ? `${metaPrefix}: ${qGoal}` : "",
+          qGoal > 0 ? `${goalLabelPrefix}: ${qGoal}` : "",
         );
 
         drawHalfCard(
@@ -429,7 +429,7 @@ export function ReportCanvas({
       </div>
 
       <div className="p-4 flex-1 flex items-center justify-center bg-background/20">
-        <div className="relative aspect-9/16 w-full max-w-[303px] mx-auto rounded-xl border border-border overflow-hidden bg-black">
+        <div className="relative aspect-9/16 w-full max-w-75.75 mx-auto rounded-xl border border-border overflow-hidden bg-black">
           <canvas
             ref={canvasRef}
             className="w-full h-full object-cover"

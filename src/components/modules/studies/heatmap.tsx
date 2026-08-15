@@ -17,7 +17,10 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
 
   const { activityData, totalSessions, totalQuestions, totalHours } =
     useMemo(() => {
-      const data: Record<string, HeatmapItem> = {};
+      const data: Record<
+        string,
+        { count: number; hours: number; questions: number }
+      > = {};
       let sessionsCount = 0;
       let questionsCount = 0;
       let hoursCount = 0;
@@ -27,12 +30,14 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
         if (!dateStr) continue;
 
         if (!data[dateStr]) {
-          data[dateStr] = { count: 0, details: "" };
+          data[dateStr] = { count: 0, hours: 0, questions: 0 };
         }
         data[dateStr].count += 1;
 
         const q = sess.questionsNew + sess.questionsReview;
         const h = sess.hours;
+        data[dateStr].questions += q;
+        data[dateStr].hours += h;
 
         if (dateStr.startsWith(String(currentYear))) {
           sessionsCount += 1;
@@ -41,26 +46,17 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
         }
       }
 
-      // Detalhes amigáveis para tooltip
-      for (const sess of sessions) {
-        const dateStr = formatDateLocal(sess.date);
-        if (!dateStr) continue;
-
-        const daySessions = sessions.filter(
-          (s) => formatDateLocal(s.date) === dateStr,
-        );
-        const q = daySessions.reduce(
-          (acc, curr) => acc + curr.questionsNew + curr.questionsReview,
-          0,
-        );
-        const h = daySessions.reduce((acc, curr) => acc + curr.hours, 0);
-
-        data[dateStr].details =
-          `${daySessions.length} ${daySessions.length === 1 ? "sessão" : "sessões"} · ${h.toFixed(1)}h · ${q} questões`;
+      // Converte para HeatmapItem com detalhes
+      const finalData: Record<string, HeatmapItem> = {};
+      for (const [dateStr, info] of Object.entries(data)) {
+        finalData[dateStr] = {
+          count: info.count,
+          details: `${info.count} ${info.count === 1 ? "sessão" : "sessões"} · ${info.hours.toFixed(1)}h · ${info.questions} questões`,
+        };
       }
 
       return {
-        activityData: data,
+        activityData: finalData,
         totalSessions: sessionsCount,
         totalQuestions: questionsCount,
         totalHours: hoursCount,
@@ -76,10 +72,10 @@ export function StudiesHeatmap({ sessions }: { sessions: StudySession[] }) {
       data={activityData}
       unitLabel="sessões"
       stats={[
-        { label: "SESSÕES", value: totalSessions, colorClass: theme.text },
-        { label: "QUESTÕES", value: totalQuestions },
+        { label: "Sessões", value: totalSessions, colorClass: theme.text },
+        { label: "Questões", value: totalQuestions },
         {
-          label: "ESTUDO",
+          label: "Horas de estudo",
           value: `${totalHours.toFixed(1)}h`,
           colorClass: "text-foreground",
         },

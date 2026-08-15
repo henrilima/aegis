@@ -4,8 +4,10 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   Calendar,
   Clock,
+  Coffee,
   MapPin,
   Pencil,
+  Play,
   Plus,
   Trash2,
   User,
@@ -30,6 +32,11 @@ import {
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { StudySchedule } from "../types";
+import {
+  calcScheduleBreakMinutes,
+  calcScheduleNetHours,
+  formatHours,
+} from "../utils";
 import { SubjectInput } from "./modals/subjectInput";
 
 interface ScheduleTabProps {
@@ -40,6 +47,8 @@ interface ScheduleTabProps {
   userId: string;
   showSaturday: boolean;
   showSunday: boolean;
+  onStudyClass?: (schedule: StudySchedule) => void;
+  onQuickRegisterClass?: (schedule: StudySchedule) => void;
 }
 
 export function ScheduleTab({
@@ -50,6 +59,8 @@ export function ScheduleTab({
   userId,
   showSaturday,
   showSunday,
+  onStudyClass,
+  onQuickRegisterClass: _onQuickRegisterClass,
 }: ScheduleTabProps) {
   const color = getModuleColor("studies");
   const theme = getColorTheme(color);
@@ -76,6 +87,8 @@ export function ScheduleTab({
   const [dayOfWeek, setDayOfWeek] = useState("1");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [breakStartTime, setBreakStartTime] = useState("");
+  const [breakEndTime, setBreakEndTime] = useState("");
   const [location, setLocation] = useState("");
   const [teacher, setTeacher] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -95,6 +108,8 @@ export function ScheduleTab({
     setDayOfWeek("1");
     setStartTime("");
     setEndTime("");
+    setBreakStartTime("");
+    setBreakEndTime("");
     setLocation("");
     setTeacher("");
     setShowModal(true);
@@ -106,6 +121,8 @@ export function ScheduleTab({
     setDayOfWeek(String(item.dayOfWeek));
     setStartTime(item.startTime);
     setEndTime(item.endTime);
+    setBreakStartTime(item.breakStartTime ?? "");
+    setBreakEndTime(item.breakEndTime ?? "");
     setLocation(item.location ?? "");
     setTeacher(item.teacher ?? "");
     setShowModal(true);
@@ -118,6 +135,14 @@ export function ScheduleTab({
       return;
     }
 
+    if (
+      (breakStartTime && !breakEndTime) ||
+      (!breakStartTime && breakEndTime)
+    ) {
+      toast.error("Por favor, preencha o início e o fim do intervalo.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const payload: StudySchedule = {
@@ -127,11 +152,13 @@ export function ScheduleTab({
         dayOfWeek: Number(dayOfWeek),
         startTime,
         endTime,
+        breakStartTime: breakStartTime.trim() || undefined,
+        breakEndTime: breakEndTime.trim() || undefined,
         location: location.trim() || undefined,
         teacher: teacher.trim() || undefined,
       };
 
-      await invoke("estudos_add_schedule", { schedule: payload });
+      await invoke("studies_add_schedule", { schedule: payload });
       toast.success(
         editingItem
           ? "Aula atualizada com sucesso!"
@@ -144,6 +171,8 @@ export function ScheduleTab({
       setDayOfWeek("1");
       setStartTime("");
       setEndTime("");
+      setBreakStartTime("");
+      setBreakEndTime("");
       setLocation("");
       setTeacher("");
       setEditingItem(null);
@@ -160,7 +189,7 @@ export function ScheduleTab({
   const confirmDelete = async () => {
     if (deleteId === null) return;
     try {
-      await invoke("estudos_delete_schedule", { id: deleteId, userId });
+      await invoke("studies_delete_schedule", { id: deleteId, userId });
       toast.success("Aula removida da grade.");
       setDeleteId(null);
       onRefresh();
@@ -212,7 +241,7 @@ export function ScheduleTab({
             return (
               <div
                 key={day.id}
-                className="flex flex-col gap-4 min-h-[160px] pb-4 md:border-r border-border md:pr-4 last:pr-0 last:border-r-0"
+                className="flex flex-col gap-4 min-h-40 pb-4 md:border-r border-border md:pr-4 last:pr-0 last:border-r-0"
               >
                 <div className="border-b border-border pb-2.5">
                   <p className="text-sm font-bold text-foreground">
@@ -238,45 +267,76 @@ export function ScheduleTab({
                           style={{ borderLeftColor: hex }}
                           className="group relative flex flex-col gap-1.5 pl-3 py-2 border-l-[3px] hover:bg-muted/15 rounded-r-xl transition-all text-left w-full"
                         >
-                          {/* Painel de Ações no hover */}
-                          <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button
-                              type="button"
-                              onClick={() => handleEditClick(item)}
-                              className="p-1 hover:text-neutral-900 dark:hover:text-white text-neutral-500 hover:bg-muted/50 rounded-md transition-all cursor-pointer"
-                              title="Editar aula"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (item.id !== undefined) setDeleteId(item.id);
-                              }}
-                              className="p-1 hover:text-red-500 text-neutral-500 hover:bg-red-500/10 rounded-md transition-all cursor-pointer"
-                              title="Excluir aula"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                          {/* Cabeçalho do Card: Matéria + Ações */}
+                          <div className="flex items-start justify-between gap-1.5 w-full">
+                            <span className="text-sm font-bold text-foreground leading-tight whitespace-normal wrap-break-word flex-1">
+                              {item.subject}
+                            </span>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0 -mt-0.5 -mr-1">
+                              {onStudyClass && (
+                                <button
+                                  type="button"
+                                  onClick={() => onStudyClass(item)}
+                                  className="p-1 hover:text-indigo-500 text-neutral-500 hover:bg-indigo-500/10 rounded-md transition-all cursor-pointer"
+                                  title="Estudar aula"
+                                >
+                                  <Play className="w-3 h-3 fill-current" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleEditClick(item)}
+                                className="p-1 hover:text-neutral-900 dark:hover:text-white text-neutral-500 hover:bg-muted/50 rounded-md transition-all cursor-pointer"
+                                title="Editar aula"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (item.id !== undefined)
+                                    setDeleteId(item.id);
+                                }}
+                                className="p-1 hover:text-red-500 text-neutral-500 hover:bg-red-500/10 rounded-md transition-all cursor-pointer"
+                                title="Excluir aula"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
-
-                          <span className="text-sm font-bold text-foreground pr-10 leading-tight whitespace-normal break-words">
-                            {item.subject}
-                          </span>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground font-semibold">
-                            <Clock className="w-2.5 h-2.5 shrink-0" />
-                            <span>
-                              {item.startTime} - {item.endTime}
+                          <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground font-semibold">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5 shrink-0" />
+                              <span>
+                                {item.startTime} - {item.endTime}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground font-bold">
+                              {formatHours(calcScheduleNetHours(item))}
                             </span>
                           </div>
+                          {item.breakStartTime && item.breakEndTime && (
+                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-semibold">
+                              <Coffee className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+                              <span>
+                                Intervalo: {item.breakStartTime} -{" "}
+                                {item.breakEndTime} (
+                                {calcScheduleBreakMinutes(
+                                  item.breakStartTime,
+                                  item.breakEndTime,
+                                )}
+                                min)
+                              </span>
+                            </div>
+                          )}
                           {item.location && (
-                            <div className="flex items-center gap-1 text-xs text-neutral-500 font-medium whitespace-normal break-words text-left">
+                            <div className="flex items-center gap-1 text-xs text-neutral-500 font-medium whitespace-normal wrap-break-word text-left">
                               <MapPin className="w-2.5 h-2.5 shrink-0" />
                               <span>{item.location}</span>
                             </div>
                           )}
                           {item.teacher && (
-                            <div className="flex items-center gap-1 text-xs text-neutral-500 font-medium whitespace-normal break-words text-left">
+                            <div className="flex items-center gap-1 text-xs text-neutral-500 font-medium whitespace-normal wrap-break-word text-left">
                               <User className="w-2.5 h-2.5 shrink-0" />
                               <span>{item.teacher}</span>
                             </div>
@@ -296,10 +356,10 @@ export function ScheduleTab({
       <ModalShell
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        size="md"
+        size="xl"
       >
         <form onSubmit={handleAddSchedule} className="flex flex-col h-full">
-          <div className="p-6 border-b border-border/50 flex items-center justify-between">
+          <div className="p-6 border-b border-border/50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div
                 className={cn("p-2 rounded-xl border", theme.bg, theme.border)}
@@ -326,95 +386,179 @@ export function ScheduleTab({
             </button>
           </div>
 
-          <div className="p-6 space-y-4 flex-1">
-            {/* Seleção de Matéria */}
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-muted-foreground">
-                Matéria / Disciplina
-              </Label>
-              <SubjectInput
-                value={subject}
-                onChange={setSubject}
-                existingSubjects={existingSubjects}
-                inputClass="bg-card border border-border rounded-xl h-11 text-xs w-full px-4 animate-none"
-              />
-            </div>
-
-            {/* Dia da Semana */}
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-muted-foreground">
-                Dia da Semana
-              </Label>
-              <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                <SelectTrigger className="w-full bg-card border border-border rounded-xl h-11 text-xs">
-                  <SelectValue placeholder="Selecione o dia" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  {DAYS_OF_WEEK.map((d) => (
-                    <SelectItem
-                      key={d.id}
-                      value={String(d.id)}
-                      className="text-xs"
-                    >
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Horário Início / Fim */}
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-y-auto custom-scrollbar">
+            {/* Coluna 1: Dados Gerais da Aula */}
+            <div className="space-y-4">
+              {/* Seleção de Matéria */}
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-bold text-muted-foreground">
-                  Início
+                  Matéria / Disciplina
+                </Label>
+                <SubjectInput
+                  value={subject}
+                  onChange={setSubject}
+                  existingSubjects={existingSubjects}
+                  inputClass="bg-card border border-border rounded-xl h-11 text-xs w-full px-4 animate-none"
+                />
+              </div>
+
+              {/* Dia da Semana */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-bold text-muted-foreground">
+                  Dia da Semana
+                </Label>
+                <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
+                  <SelectTrigger className="w-full bg-card border border-border rounded-xl h-11 text-xs">
+                    <SelectValue placeholder="Selecione o dia" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {DAYS_OF_WEEK.map((d) => (
+                      <SelectItem
+                        key={d.id}
+                        value={String(d.id)}
+                        className="text-xs"
+                      >
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sala / Local */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-bold text-muted-foreground">
+                  Local / Sala de Aula
                 </Label>
                 <Input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  type="text"
+                  placeholder="Ex: Bloco B, Sala 302 (opcional)"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
                   className="bg-card border-border rounded-xl h-11 text-xs px-4"
                 />
               </div>
+
+              {/* Professor */}
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-bold text-muted-foreground">
-                  Término
+                  Professor(a)
                 </Label>
                 <Input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  type="text"
+                  placeholder="Nome do docente (opcional)"
+                  value={teacher}
+                  onChange={(e) => setTeacher(e.target.value)}
                   className="bg-card border-border rounded-xl h-11 text-xs px-4"
                 />
               </div>
             </div>
 
-            {/* Sala / Local */}
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-muted-foreground">
-                Local / Sala de Aula
-              </Label>
-              <Input
-                type="text"
-                placeholder="Ex: Bloco B, Sala 302 (opcional)"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="bg-card border-border rounded-xl h-11 text-xs px-4"
-              />
-            </div>
+            {/* Coluna 2: Horários & Intervalo */}
+            <div className="space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                {/* Horário Início / Fim */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground">
+                      Início da aula
+                    </Label>
+                    <Input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="bg-card border-border rounded-xl h-11 text-xs px-4"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground">
+                      Término da aula
+                    </Label>
+                    <Input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="bg-card border-border rounded-xl h-11 text-xs px-4"
+                    />
+                  </div>
+                </div>
 
-            {/* Professor */}
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-bold text-muted-foreground">
-                Professor(a)
-              </Label>
-              <Input
-                type="text"
-                placeholder="Nome do docente (opcional)"
-                value={teacher}
-                onChange={(e) => setTeacher(e.target.value)}
-                className="bg-card border-border rounded-xl h-11 text-xs px-4"
-              />
+                {/* Intervalo (Opcional) */}
+                <div className="rounded-xl border border-border/70 bg-card/40 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Coffee className={cn("w-3.5 h-3.5", theme.text)} />
+                      <span className="text-xs font-bold text-foreground">
+                        Intervalo (Opcional)
+                      </span>
+                    </div>
+                    {(breakStartTime || breakEndTime) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBreakStartTime("");
+                          setBreakEndTime("");
+                        }}
+                        className="text-[10px] font-bold text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-bold text-muted-foreground">
+                        Início do intervalo
+                      </Label>
+                      <Input
+                        type="time"
+                        value={breakStartTime}
+                        onChange={(e) => setBreakStartTime(e.target.value)}
+                        className="bg-card border-border rounded-xl h-10 text-xs px-3"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-bold text-muted-foreground">
+                        Fim do intervalo
+                      </Label>
+                      <Input
+                        type="time"
+                        value={breakEndTime}
+                        onChange={(e) => setBreakEndTime(e.target.value)}
+                        className="bg-card border-border rounded-xl h-10 text-xs px-3"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Resumo de Duração Líquida */}
+                  {startTime && endTime && (
+                    <div className="pt-2.5 border-t border-border/40 flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
+                      <span>Duração líquida de estudo:</span>
+                      <span className={cn("font-bold", theme.text)}>
+                        {formatHours(
+                          calcScheduleNetHours({
+                            startTime,
+                            endTime,
+                            breakStartTime,
+                            breakEndTime,
+                          }),
+                        )}
+                        {breakStartTime && breakEndTime && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            (descontado{" "}
+                            {calcScheduleBreakMinutes(
+                              breakStartTime,
+                              breakEndTime,
+                            )}{" "}
+                            min)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

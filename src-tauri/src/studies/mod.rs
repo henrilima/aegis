@@ -102,6 +102,8 @@ pub struct StudySchedule {
     pub day_of_week: i32,
     pub start_time: String,
     pub end_time: String,
+    pub break_start_time: Option<String>,
+    pub break_end_time: Option<String>,
     pub location: Option<String>,
     pub teacher: Option<String>,
     pub created_at: Option<String>,
@@ -195,6 +197,8 @@ impl StudiesManager {
                 day_of_week  INTEGER NOT NULL,
                 start_time   TEXT NOT NULL,
                 end_time     TEXT NOT NULL,
+                break_start_time TEXT,
+                break_end_time   TEXT,
                 location     TEXT,
                 teacher      TEXT,
                 created_at   TEXT NOT NULL DEFAULT (datetime('now'))
@@ -234,6 +238,14 @@ impl StudiesManager {
         );
         let _ = conn.execute(
             "ALTER TABLE study_subjects ADD COLUMN weekly_target_hours REAL",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE study_schedules ADD COLUMN break_start_time TEXT",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE study_schedules ADD COLUMN break_end_time TEXT",
             [],
         );
 
@@ -840,13 +852,15 @@ impl StudiesManager {
         if let Some(id) = s.id {
             conn.execute(
                 "UPDATE study_schedules
-                 SET subject=?1, day_of_week=?2, start_time=?3, end_time=?4, location=?5, teacher=?6
-                 WHERE id=?7 AND user_id=?8",
+                 SET subject=?1, day_of_week=?2, start_time=?3, end_time=?4, break_start_time=?5, break_end_time=?6, location=?7, teacher=?8
+                 WHERE id=?9 AND user_id=?10",
                 params![
                     s.subject,
                     s.day_of_week,
                     s.start_time,
                     s.end_time,
+                    s.break_start_time,
+                    s.break_end_time,
                     s.location,
                     s.teacher,
                     id,
@@ -857,14 +871,16 @@ impl StudiesManager {
             Ok(id)
         } else {
             conn.execute(
-                "INSERT INTO study_schedules (user_id, subject, day_of_week, start_time, end_time, location, teacher)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                "INSERT INTO study_schedules (user_id, subject, day_of_week, start_time, end_time, break_start_time, break_end_time, location, teacher)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                 params![
                     s.user_id,
                     s.subject,
                     s.day_of_week,
                     s.start_time,
                     s.end_time,
+                    s.break_start_time,
+                    s.break_end_time,
                     s.location,
                     s.teacher
                 ],
@@ -890,7 +906,7 @@ impl StudiesManager {
         let conn = self.conn();
         let mut stmt = conn
             .prepare(
-                "SELECT id, subject, day_of_week, start_time, end_time, location, teacher, created_at 
+                "SELECT id, subject, day_of_week, start_time, end_time, break_start_time, break_end_time, location, teacher, created_at 
                  FROM study_schedules WHERE user_id=?1 ORDER BY day_of_week, start_time",
             )
             .unwrap();
@@ -902,9 +918,11 @@ impl StudiesManager {
                 day_of_week: row.get(2)?,
                 start_time: row.get(3)?,
                 end_time: row.get(4)?,
-                location: row.get(5)?,
-                teacher: row.get(6)?,
-                created_at: Some(row.get(7)?),
+                break_start_time: row.get(5)?,
+                break_end_time: row.get(6)?,
+                location: row.get(7)?,
+                teacher: row.get(8)?,
+                created_at: Some(row.get(9)?),
             })
         })
         .unwrap()
@@ -914,7 +932,7 @@ impl StudiesManager {
 }
 
 #[tauri::command]
-pub async fn estudos_add_session(
+pub async fn studies_add_session(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     session: StudySession,
@@ -935,7 +953,16 @@ pub async fn estudos_add_session(
 }
 
 #[tauri::command]
-pub async fn estudos_update_session(
+pub async fn estudos_add_session(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    session: StudySession,
+) -> Result<i64, String> {
+    studies_add_session(app_handle, state, session).await
+}
+
+#[tauri::command]
+pub async fn studies_update_session(
     state: tauri::State<'_, crate::AppState>,
     session: StudySession,
 ) -> Result<(), String> {
@@ -943,7 +970,15 @@ pub async fn estudos_update_session(
 }
 
 #[tauri::command]
-pub async fn estudos_delete_session(
+pub async fn estudos_update_session(
+    state: tauri::State<'_, crate::AppState>,
+    session: StudySession,
+) -> Result<(), String> {
+    studies_update_session(state, session).await
+}
+
+#[tauri::command]
+pub async fn studies_delete_session(
     state: tauri::State<'_, crate::AppState>,
     id: i64,
     user_id: String,
@@ -958,7 +993,16 @@ pub async fn estudos_delete_session(
 }
 
 #[tauri::command]
-pub async fn estudos_list_sessions(
+pub async fn estudos_delete_session(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+) -> Result<(), String> {
+    studies_delete_session(state, id, user_id).await
+}
+
+#[tauri::command]
+pub async fn studies_list_sessions(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     months_back: i32,
@@ -968,7 +1012,16 @@ pub async fn estudos_list_sessions(
 }
 
 #[tauri::command]
-pub async fn estudos_upsert_goal(
+pub async fn estudos_list_sessions(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    months_back: i32,
+) -> Result<Vec<StudySession>, String> {
+    studies_list_sessions(state, user_id, months_back).await
+}
+
+#[tauri::command]
+pub async fn studies_upsert_goal(
     state: tauri::State<'_, crate::AppState>,
     goal: StudyGoal,
 ) -> Result<(), String> {
@@ -976,7 +1029,15 @@ pub async fn estudos_upsert_goal(
 }
 
 #[tauri::command]
-pub async fn estudos_list_goals(
+pub async fn estudos_upsert_goal(
+    state: tauri::State<'_, crate::AppState>,
+    goal: StudyGoal,
+) -> Result<(), String> {
+    studies_upsert_goal(state, goal).await
+}
+
+#[tauri::command]
+pub async fn studies_list_goals(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
 ) -> Result<Vec<StudyGoal>, String> {
@@ -984,7 +1045,15 @@ pub async fn estudos_list_goals(
 }
 
 #[tauri::command]
-pub async fn estudos_export_csv(
+pub async fn estudos_list_goals(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<StudyGoal>, String> {
+    studies_list_goals(state, user_id).await
+}
+
+#[tauri::command]
+pub async fn studies_export_csv(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     dest_path: String,
@@ -994,7 +1063,16 @@ pub async fn estudos_export_csv(
 }
 
 #[tauri::command]
-pub async fn estudos_import_csv(
+pub async fn estudos_export_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    dest_path: String,
+) -> Result<(), String> {
+    studies_export_csv(state, user_id, dest_path).await
+}
+
+#[tauri::command]
+pub async fn studies_import_csv(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     file_path: String,
@@ -1003,7 +1081,16 @@ pub async fn estudos_import_csv(
 }
 
 #[tauri::command]
-pub async fn estudos_add_schedule(
+pub async fn estudos_import_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    file_path: String,
+) -> Result<usize, String> {
+    studies_import_csv(state, user_id, file_path).await
+}
+
+#[tauri::command]
+pub async fn studies_add_schedule(
     state: tauri::State<'_, crate::AppState>,
     schedule: StudySchedule,
 ) -> Result<i64, String> {
@@ -1011,7 +1098,15 @@ pub async fn estudos_add_schedule(
 }
 
 #[tauri::command]
-pub async fn estudos_delete_schedule(
+pub async fn estudos_add_schedule(
+    state: tauri::State<'_, crate::AppState>,
+    schedule: StudySchedule,
+) -> Result<i64, String> {
+    studies_add_schedule(state, schedule).await
+}
+
+#[tauri::command]
+pub async fn studies_delete_schedule(
     state: tauri::State<'_, crate::AppState>,
     id: i64,
     user_id: String,
@@ -1020,11 +1115,28 @@ pub async fn estudos_delete_schedule(
 }
 
 #[tauri::command]
-pub async fn estudos_list_schedules(
+pub async fn estudos_delete_schedule(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+) -> Result<(), String> {
+    studies_delete_schedule(state, id, user_id).await
+}
+
+#[tauri::command]
+pub async fn studies_list_schedules(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
 ) -> Result<Vec<StudySchedule>, String> {
     Ok(state.studies.list_schedules(&user_id))
+}
+
+#[tauri::command]
+pub async fn estudos_list_schedules(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<StudySchedule>, String> {
+    studies_list_schedules(state, user_id).await
 }
 
 // --- COMANDOS TAURI PARA SIMULADOS & NOTAS ---

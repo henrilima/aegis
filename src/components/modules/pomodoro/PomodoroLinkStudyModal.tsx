@@ -140,7 +140,7 @@ export function PomodoroLinkStudyModal({
         isPomodoro: true,
       };
 
-      await invoke("estudos_add_session", { session: sessionData });
+      await invoke("studies_add_session", { session: sessionData });
       toast.success("Sessão de estudos do Pomodoro vinculada com sucesso!");
       onSuccess?.();
       onClose();
