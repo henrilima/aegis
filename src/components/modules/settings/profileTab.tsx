@@ -175,7 +175,6 @@ export function ProfileTab({
         <div className="relative group/avatar mb-6">
           <AvatarRankWrapper
             level={level}
-            rounded="full"
             size="lg"
             showBorder={showProfileRankBorder}
             className="relative z-10"

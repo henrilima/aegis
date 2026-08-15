@@ -229,16 +229,16 @@ export function useDashboardData() {
         invoke<Habit[]>("habit_list_habits", { userId: uid }),
         invoke<Note[]>("note_list_notes", { userId: uid }),
         invoke<PomodoroState>("pomodoro_get_pomodoro_state", { userId: uid }),
-        invoke<StudySession[]>("estudos_list_sessions", {
+        invoke<StudySession[]>("studies_list_sessions", {
           userId: uid,
           monthsBack: 1,
         }),
-        invoke<StudyGoal[]>("estudos_list_goals", { userId: uid }),
-        invoke<SleepEntry[]>("sono_list_entries", {
+        invoke<StudyGoal[]>("studies_list_goals", { userId: uid }),
+        invoke<SleepEntry[]>("sleep_list_entries", {
           userId: uid,
           monthsBack: 1,
         }),
-        invoke<SleepGoal>("sono_get_goal", { userId: uid }),
+        invoke<SleepGoal>("sleep_get_goal", { userId: uid }),
         invoke<PasswordEntry[]>("password_list_passwords", { userId: uid }),
         invoke<boolean>("password_check_vault", { userId: uid }),
         invoke<AppAlarm[]>("alarm_list_alarms", { userId: uid }),
@@ -255,7 +255,7 @@ export function useDashboardData() {
         invoke<ReadingGoal[]>("reading_list_goals", { userId: uid }),
         invoke<Movie[]>("movies_list", { userId: uid }),
         invoke<GlossaryWord[]>("dictionary_list", { userId: uid }),
-        invoke<StudySchedule[]>("estudos_list_schedules", { userId: uid }),
+        invoke<StudySchedule[]>("studies_list_schedules", { userId: uid }),
         invoke<SubjectMeta[]>("subjects_list", { userId: uid }),
       ]);
 

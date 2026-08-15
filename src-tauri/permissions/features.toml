@@ -90,6 +90,17 @@ commands.allow = [
 identifier = "study-management"
 description = "Permissões do módulo de Estudos e estatísticas locais"
 commands.allow = [
+    "studies_add_session",
+    "studies_update_session",
+    "studies_delete_session",
+    "studies_list_sessions",
+    "studies_upsert_goal",
+    "studies_list_goals",
+    "studies_export_csv",
+    "studies_import_csv",
+    "studies_add_schedule",
+    "studies_delete_schedule",
+    "studies_list_schedules",
     "estudos_add_session",
     "estudos_update_session",
     "estudos_delete_session",
@@ -120,6 +131,17 @@ commands.allow = [
 identifier = "sleep-management"
 description = "Permissões do módulo de Sono e metas locais"
 commands.allow = [
+    "sleep_upsert_entry",
+    "sleep_delete_entry",
+    "sleep_list_entries",
+    "sleep_upsert_goal",
+    "sleep_get_goal",
+    "sleep_export_csv",
+    "sleep_import_csv",
+    "sleep_get_dream",
+    "sleep_upsert_dream",
+    "sleep_delete_dream",
+    "sleep_list_dreams",
     "sono_upsert_entry",
     "sono_delete_entry",
     "sono_list_entries",
@@ -157,6 +179,7 @@ commands.allow = [
     "achievements_complete_challenge",
     "achievements_undo_challenge",
     "achievements_add_xp",
+    "achievements_set_level",
     "achievements_sync_ledger",
     "achievements_reset_xp_and_resync",
     "stats_get_xp_history",
@@ -262,6 +285,7 @@ commands.allow = [
     "global_delete_account",
     "global_change_account_password",
     "global_change_username",
+    "global_change_email",
     "global_get_app_config",
     "global_set_app_config",
     "global_quit_app",

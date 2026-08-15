@@ -12,36 +12,32 @@ export function useZoom() {
   useEffect(() => {
     const applyZoom = async () => {
       try {
+        if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) {
+          return;
+        }
+
+        const userId =
+          typeof window !== "undefined"
+            ? localStorage.getItem("aegis_session_user_id") || undefined
+            : undefined;
+
         const config = await invoke<{ appZoom: number }>(
           "global_get_app_config",
+          { userId },
         );
         const zoom = config.appZoom || 100;
-
-        // Converte para fator decimal (ex: 1.25)
         const factor = zoom / 100;
 
-        // Em Tauri 2, o zoom é controlado pelo Webview
-        const webview = getCurrentWebview();
-
-        // Aplica o zoom nativo do Webview com tratamento de fallback real
-        if (webview && typeof webview.setZoom === "function") {
-          try {
-            await webview.setZoom(factor);
-            // Garante que o zoom CSS está limpo se a API nativa funcionou
-            document.documentElement.style.zoom = "";
-          } catch (err) {
-            console.warn(
-              "Native webview.setZoom failed, falling back to CSS zoom:",
-              err,
-            );
-            (
-              document.documentElement.style as unknown as { zoom: string }
-            ).zoom = `${zoom}%`;
-          }
-        } else {
-          // Fallback para CSS se a API nativa não estiver disponível
+        // Garante que a propriedade CSS zoom seja desfeita para evitar distorções de layout
+        if (typeof document !== "undefined") {
           (document.documentElement.style as unknown as { zoom: string }).zoom =
-            `${zoom}%`;
+            "";
+        }
+
+        // Aplica o zoom nativo do Webview do Tauri
+        const webview = getCurrentWebview();
+        if (webview && typeof webview.setZoom === "function") {
+          await webview.setZoom(factor);
         }
       } catch (e) {
         console.error("Failed to apply native zoom:", e);

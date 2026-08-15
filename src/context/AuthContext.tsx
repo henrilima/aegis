@@ -29,6 +29,7 @@ interface AuthContextType {
   login: (userId: string) => Promise<void>;
   logout: () => void;
   updateUsername: (newUsername: string) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,6 +113,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = useCallback(async () => {
+    if (user?.id) {
+      try {
+        const userData = await invoke<User>("global_get_local_user", {
+          userId: user.id,
+        });
+        if (userData) {
+          setUser({ ...userData, id: user.id });
+        }
+      } catch (err) {
+        console.error("[AuthContext] Erro ao atualizar usuário:", err);
+      }
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handleAuthUpdate = () => {
+      refreshUser();
+    };
+    window.addEventListener("aegis-auth-update", handleAuthUpdate);
+    return () => {
+      window.removeEventListener("aegis-auth-update", handleAuthUpdate);
+    };
+  }, [refreshUser]);
+
   useEffect(() => {
     const restoreSession = async () => {
       try {
@@ -135,7 +161,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, isAuthenticated, login, logout, updateUsername }}
+      value={{
+        user,
+        loading,
+        isAuthenticated,
+        login,
+        logout,
+        updateUsername,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -92,7 +92,7 @@ export function SleepDreamTab() {
   const fetchDreams = useCallback(async () => {
     if (!uid) return;
     try {
-      const list = await invoke<SleepDream[]>("sono_list_dreams", {
+      const list = await invoke<SleepDream[]>("sleep_list_dreams", {
         userId: uid,
       });
       setDreams(list);
@@ -108,7 +108,7 @@ export function SleepDreamTab() {
   // Carrega relato de sonho existente para a data selecionada
   useEffect(() => {
     if (!uid || !date) return;
-    invoke<SleepDream | null>("sono_get_dream", { userId: uid, date })
+    invoke<SleepDream | null>("sleep_get_dream", { userId: uid, date })
       .then((res) => {
         if (res) {
           setTitle(res.title || "");
@@ -141,7 +141,7 @@ export function SleepDreamTab() {
   const handleDelete = async (targetDate: string) => {
     if (!uid) return;
     try {
-      await invoke("sono_delete_dream", { userId: uid, date: targetDate });
+      await invoke("sleep_delete_dream", { userId: uid, date: targetDate });
       toast.success("Sonho excluído do diário!");
       if (date === targetDate) {
         setTitle("");
@@ -162,7 +162,7 @@ export function SleepDreamTab() {
     if (!content.trim() || !uid || !date) return;
     setLoading(true);
     try {
-      await invoke("sono_upsert_dream", {
+      await invoke("sleep_upsert_dream", {
         dream: {
           userId: uid,
           date,

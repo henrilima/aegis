@@ -79,10 +79,10 @@ export function FlashcardsHeatmap({ decks }: FlashcardsHeatmapProps) {
       data={activityData}
       unitLabel="cartões"
       stats={[
-        { label: "CARTÕES", value: totalCards, colorClass: theme.text },
-        { label: "DIAS ATIVOS", value: activeDays },
+        { label: "Cartões", value: totalCards, colorClass: theme.text },
+        { label: "Dias ativos", value: activeDays },
         {
-          label: "PRECISÃO",
+          label: "Precisão",
           value: `${accuracyRate}%`,
           colorClass: "text-emerald-400",
         },

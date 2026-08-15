@@ -134,7 +134,7 @@ export function ufpeMissing(count: number): number {
  * Calcula a nota necessária nas avaliações restantes para atingir a média.
  * Retorna null se já aprovado ou impossível.
  */
-export function calcMetaNota(
+export function calcTargetGrade(
   grades: StudyGrade[],
   formula: SubjectFormula | undefined,
   totalAvaliacoes: number,
@@ -145,18 +145,20 @@ export function calcMetaNota(
   if (done >= totalAvaliacoes) return null;
 
   const remaining = totalAvaliacoes - done;
-  const isMeta = formula.formulaType === "meta";
+  const isGoal = formula.formulaType === "meta";
   const currentSum = grades.reduce((a, g) => {
     const val = g.halfGrade ? g.grade / 2 : g.grade;
     return a + val;
   }, 0);
   // Nota necessária nas restantes
-  const needed = isMeta
+  const needed = isGoal
     ? (passingGrade - currentSum) / remaining
     : (passingGrade * totalAvaliacoes - currentSum) / remaining;
   if (needed <= 0) return 0; // Já aprovado
   return Math.round(needed * 10) / 10;
 }
+
+export const calcMetaNota = calcTargetGrade;
 
 //  Status de aprovação
 

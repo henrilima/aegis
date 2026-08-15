@@ -474,6 +474,11 @@ async fn global_change_username(state: State<'_, AppState>, user_id: String, new
 }
 
 #[tauri::command]
+async fn global_change_email(state: State<'_, AppState>, user_id: String, new_email: String) -> Result<(), String> {
+    state.pm.change_email(&user_id, &new_email)
+}
+
+#[tauri::command]
 async fn global_change_vault_password(state: State<'_, AppState>, user_id: String, current_vault_password: String, new_vault_password: String) -> Result<(), String> {
     state.pm.change_vault_password(&user_id, &current_vault_password, Some(&new_vault_password))
 }
@@ -1226,34 +1231,60 @@ pub fn run() {
                                     if let Some(uid) = uid_val.as_str() {
                                         // Lembretes de Hábitos Pendentes
                                         let config = config_clone.get_config();
-                                        if config.notif_habit_uncompleted && now_str == config.notif_habit_time {
+                                        if config.notif_habit_uncompleted {
                                             let now_utc = config_clone.get_now();
                                             let habits = habit_clone.list_habits(uid, now_utc);
                                             
-                                            let pending = habits.iter().filter(|h| {
-                                                let is_pos = h.habit_type.to_lowercase() == "positive" || h.habit_type.to_lowercase() == "good";
-                                                if !is_pos { return false; }
+                                            // 1. Notificação global de hábitos pendentes no horário configurado do sistema
+                                            if now_str == config.notif_habit_time {
+                                                let pending = habits.iter().filter(|h| {
+                                                    let is_pos = h.habit_type.to_lowercase() == "positive" || h.habit_type.to_lowercase() == "good";
+                                                    if !is_pos || h.archived.unwrap_or(false) { return false; }
 
-                                                match &h.last_done {
-                                                    // Converte o timestamp UTC para data local antes de comparar.
-                                                    // Sem isso, hábitos feitos às 23h local (02h UTC do dia seguinte)
-                                                    // aparecem como pendentes no dia seguinte.
-                                                    Some(ld) => {
-                                                        let done_local_date = chrono::DateTime::parse_from_rfc3339(ld)
-                                                            .map(|dt| dt.with_timezone(&Local).date_naive())
-                                                            .ok();
-                                                        done_local_date.map_or(true, |d| d != now_aegis.date_naive())
+                                                    match &h.last_done {
+                                                        Some(ld) => {
+                                                            let done_local_date = chrono::DateTime::parse_from_rfc3339(ld)
+                                                                .map(|dt| dt.with_timezone(&Local).date_naive())
+                                                                .ok();
+                                                            done_local_date.map_or(true, |d| d != now_aegis.date_naive())
+                                                        }
+                                                        None => true
                                                     }
-                                                    None => true
-                                                }
-                                            }).count();
+                                                }).count();
 
-                                            if pending > 0 {
-                                                let title = "Aegis: Hábitos Pendentes";
-                                                let body = format!("Você ainda tem {} hábitos para concluir hoje. Não quebre sua sequência!", pending);
-                                                notify_critical(&app_handle, title, &body);
-                                                let _ = notif_clone.push(uid, title, &body, "habits", None, Some("orange"), Some("Activity"));
-                                                let _ = app_handle.emit("new-notification", ());
+                                                if pending > 0 {
+                                                    let title = "Aegis: Hábitos Pendentes";
+                                                    let body = format!("Você ainda tem {} hábitos para concluir hoje. Não quebre sua sequência!", pending);
+                                                    notify_critical(&app_handle, title, &body);
+                                                    let _ = notif_clone.push(uid, title, &body, "habits", None, Some("orange"), Some("Activity"));
+                                                    let _ = app_handle.emit("new-notification", ());
+                                                }
+                                            }
+
+                                            // 2. Notificações individuais para hábitos com horário agendado específico
+                                            for h in &habits {
+                                                let is_pos = h.habit_type.to_lowercase() == "positive" || h.habit_type.to_lowercase() == "good";
+                                                if !is_pos || h.archived.unwrap_or(false) { continue; }
+                                                if let Some(target) = &h.target_time {
+                                                    if !target.is_empty() && target == &now_str {
+                                                        let is_done_today = match &h.last_done {
+                                                            Some(ld) => {
+                                                                let done_local_date = chrono::DateTime::parse_from_rfc3339(ld)
+                                                                    .map(|dt| dt.with_timezone(&Local).date_naive())
+                                                                    .ok();
+                                                                done_local_date.map_or(false, |d| d == now_aegis.date_naive())
+                                                            }
+                                                            None => false
+                                                        };
+                                                        if !is_done_today {
+                                                            let title = "Aegis: Lembrete de Hábito";
+                                                            let body = format!("Está na hora de: {} ({})!", h.name, target);
+                                                            notify_critical(&app_handle, title, &body);
+                                                            let _ = notif_clone.push(uid, title, &body, "habits", None, Some("orange"), Some("Activity"));
+                                                            let _ = app_handle.emit("new-notification", ());
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
 
@@ -1433,7 +1464,7 @@ pub fn run() {
             // Infra/Globais
             global_test_notification, global_open_notification_settings, global_send_critical_notification, global_verify_master,
             global_local_register, global_check_user_availability, global_local_login, global_get_local_user, global_list_local_users, 
-            global_delete_account, global_change_account_password, global_change_username, global_change_vault_password, 
+            global_delete_account, global_change_account_password, global_change_username, global_change_email, global_change_vault_password, 
             global_revert_vault_to_master, global_has_separate_vault_password,
             global_get_app_config, global_set_app_config, global_apply_internal_command, global_get_simulation_status, global_quit_app, global_set_custom_data_dir,
             global_set_custom_icon, global_has_custom_icon, global_get_custom_icon_path, global_update_shortcut_icon,
@@ -1478,6 +1509,10 @@ pub fn run() {
             notes::note_update_note_color, notes::note_update_folder_color, notes::note_open_notes_folder,
 
             // Studies
+            studies::studies_add_session, studies::studies_update_session, studies::studies_delete_session, 
+            studies::studies_list_sessions, studies::studies_upsert_goal, studies::studies_list_goals, 
+            studies::studies_export_csv, studies::studies_import_csv,
+            studies::studies_add_schedule, studies::studies_delete_schedule, studies::studies_list_schedules,
             studies::estudos_add_session, studies::estudos_update_session, studies::estudos_delete_session, 
             studies::estudos_list_sessions, studies::estudos_upsert_goal, studies::estudos_list_goals, 
             studies::estudos_export_csv, studies::estudos_import_csv,
@@ -1490,6 +1525,9 @@ pub fn run() {
             studies::subject_formulas_upsert, studies::subject_formulas_list,
 
             // Sleep
+            sleep::sleep_upsert_entry, sleep::sleep_delete_entry, sleep::sleep_list_entries, 
+            sleep::sleep_upsert_goal, sleep::sleep_get_goal, sleep::sleep_export_csv, sleep::sleep_import_csv,
+            sleep::sleep_get_dream, sleep::sleep_upsert_dream, sleep::sleep_delete_dream, sleep::sleep_list_dreams,
             sleep::sono_upsert_entry, sleep::sono_delete_entry, sleep::sono_list_entries, 
             sleep::sono_upsert_goal, sleep::sono_get_goal, sleep::sono_export_csv, sleep::sono_import_csv,
             sleep::sono_get_dream, sleep::sono_upsert_dream, sleep::sono_delete_dream, sleep::sono_list_dreams,
@@ -1510,6 +1548,7 @@ pub fn run() {
             statistics::achievements_complete_challenge,
             statistics::achievements_undo_challenge,
             statistics::achievements_add_xp,
+            statistics::achievements_set_level,
             statistics::achievements_sync_ledger,
             statistics::achievements_reset_xp_and_resync,
             statistics::stats_get_xp_history,

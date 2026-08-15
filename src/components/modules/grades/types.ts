@@ -22,13 +22,15 @@ export interface StudyGrade {
   halfGrade?: boolean;
 }
 
-export interface SubjectMeta {
+export interface SubjectGoal {
   id?: number;
   userId: string;
   name: string;
   color: string;
   weeklyTargetHours?: number;
 }
+
+export type SubjectMeta = SubjectGoal;
 
 export interface SubjectGroup {
   id?: number;

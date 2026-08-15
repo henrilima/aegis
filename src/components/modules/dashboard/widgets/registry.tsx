@@ -5,7 +5,7 @@ import type React from "react";
 
 // Skeleton de loading padrão para carregamento assíncrono dos widgets
 const WidgetSkeleton = () => (
-  <div className="h-full w-full bg-card/50 animate-pulse rounded-2xl min-h-[300px] border border-border/30" />
+  <div className="h-full w-full bg-card/50 animate-pulse rounded-2xl min-h-75 border border-border/30" />
 );
 
 // Imports dinâmicos (Dynamic Imports) para otimizar o bundle size e evitar carregamento de componentes inativos
@@ -37,15 +37,15 @@ const TasksWidget = dynamic(
     ssr: false,
   },
 );
-const EstudosWidget = dynamic(
-  () => import("./studies/StudiesWidget").then((m) => m.EstudosWidget),
+const StudiesWidget = dynamic(
+  () => import("./studies/StudiesWidget").then((m) => m.StudiesWidget),
   {
     loading: WidgetSkeleton,
     ssr: false,
   },
 );
-const SonoWidget = dynamic(
-  () => import("./sleep/SleepWidget").then((m) => m.SonoWidget),
+const SleepWidget = dynamic(
+  () => import("./sleep/SleepWidget").then((m) => m.SleepWidget),
   {
     loading: WidgetSkeleton,
     ssr: false,
@@ -114,8 +114,8 @@ export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   pomodoro: PomodoroWidget,
   notes: NotesWidget,
   tasks: TasksWidget,
-  studies: EstudosWidget,
-  sleep: SonoWidget,
+  studies: StudiesWidget,
+  sleep: SleepWidget,
   calendar: CalendarWidget,
   alarms: AlarmsWidget,
   statistics: StatisticsWidget,

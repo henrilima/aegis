@@ -816,7 +816,7 @@ export default function Dashboard() {
                         session: StudySession,
                       ) => {
                         try {
-                          await invoke("estudos_add_session", {
+                          await invoke("studies_add_session", {
                             session: { ...session, userId: String(user?.id) },
                           });
                           fetchAll();
@@ -833,7 +833,7 @@ export default function Dashboard() {
                         session: StudySession,
                       ) => {
                         try {
-                          await invoke("estudos_add_session", {
+                          await invoke("studies_add_session", {
                             session: { ...session, userId: String(user?.id) },
                           });
                           fetchAll();
@@ -863,7 +863,7 @@ export default function Dashboard() {
                             quality: Number(entry.quality || 5),
                             note: entry.note || "",
                           };
-                          await invoke("sono_upsert_entry", {
+                          await invoke("sleep_upsert_entry", {
                             entry: entryData,
                           });
                           fetchAll();

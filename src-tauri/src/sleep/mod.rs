@@ -429,7 +429,7 @@ impl SleepManager {
 }
 
 #[tauri::command]
-pub async fn sono_upsert_entry(
+pub async fn sleep_upsert_entry(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     entry: SleepEntry,
@@ -454,7 +454,16 @@ pub async fn sono_upsert_entry(
 }
 
 #[tauri::command]
-pub async fn sono_delete_entry(
+pub async fn sono_upsert_entry(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    entry: SleepEntry,
+) -> Result<i64, String> {
+    sleep_upsert_entry(app_handle, state, entry).await
+}
+
+#[tauri::command]
+pub async fn sleep_delete_entry(
     state: tauri::State<'_, crate::AppState>,
     id: i64,
     user_id: String,
@@ -469,7 +478,16 @@ pub async fn sono_delete_entry(
 }
 
 #[tauri::command]
-pub async fn sono_list_entries(
+pub async fn sono_delete_entry(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+    user_id: String,
+) -> Result<(), String> {
+    sleep_delete_entry(state, id, user_id).await
+}
+
+#[tauri::command]
+pub async fn sleep_list_entries(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     months_back: i32,
@@ -479,7 +497,16 @@ pub async fn sono_list_entries(
 }
 
 #[tauri::command]
-pub async fn sono_upsert_goal(
+pub async fn sono_list_entries(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    months_back: i32,
+) -> Result<Vec<SleepEntry>, String> {
+    sleep_list_entries(state, user_id, months_back).await
+}
+
+#[tauri::command]
+pub async fn sleep_upsert_goal(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     goal: SleepGoal,
@@ -488,7 +515,16 @@ pub async fn sono_upsert_goal(
 }
 
 #[tauri::command]
-pub async fn sono_get_goal(
+pub async fn sono_upsert_goal(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    goal: SleepGoal,
+) -> Result<(), String> {
+    sleep_upsert_goal(app_handle, state, goal).await
+}
+
+#[tauri::command]
+pub async fn sleep_get_goal(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
@@ -497,7 +533,16 @@ pub async fn sono_get_goal(
 }
 
 #[tauri::command]
-pub async fn sono_export_csv(
+pub async fn sono_get_goal(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<SleepGoal, String> {
+    sleep_get_goal(app_handle, state, user_id).await
+}
+
+#[tauri::command]
+pub async fn sleep_export_csv(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     dest_path: String,
@@ -507,7 +552,16 @@ pub async fn sono_export_csv(
 }
 
 #[tauri::command]
-pub async fn sono_import_csv(
+pub async fn sono_export_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    dest_path: String,
+) -> Result<(), String> {
+    sleep_export_csv(state, user_id, dest_path).await
+}
+
+#[tauri::command]
+pub async fn sleep_import_csv(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     file_path: String,
@@ -516,7 +570,16 @@ pub async fn sono_import_csv(
 }
 
 #[tauri::command]
-pub async fn sono_get_dream(
+pub async fn sono_import_csv(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    file_path: String,
+) -> Result<usize, String> {
+    sleep_import_csv(state, user_id, file_path).await
+}
+
+#[tauri::command]
+pub async fn sleep_get_dream(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     date: String,
@@ -525,7 +588,16 @@ pub async fn sono_get_dream(
 }
 
 #[tauri::command]
-pub async fn sono_upsert_dream(
+pub async fn sono_get_dream(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    date: String,
+) -> Result<Option<SleepDream>, String> {
+    sleep_get_dream(state, user_id, date).await
+}
+
+#[tauri::command]
+pub async fn sleep_upsert_dream(
     state: tauri::State<'_, crate::AppState>,
     dream: SleepDream,
 ) -> Result<(), String> {
@@ -533,7 +605,15 @@ pub async fn sono_upsert_dream(
 }
 
 #[tauri::command]
-pub async fn sono_delete_dream(
+pub async fn sono_upsert_dream(
+    state: tauri::State<'_, crate::AppState>,
+    dream: SleepDream,
+) -> Result<(), String> {
+    sleep_upsert_dream(state, dream).await
+}
+
+#[tauri::command]
+pub async fn sleep_delete_dream(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
     date: String,
@@ -542,9 +622,26 @@ pub async fn sono_delete_dream(
 }
 
 #[tauri::command]
-pub async fn sono_list_dreams(
+pub async fn sono_delete_dream(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    date: String,
+) -> Result<(), String> {
+    sleep_delete_dream(state, user_id, date).await
+}
+
+#[tauri::command]
+pub async fn sleep_list_dreams(
     state: tauri::State<'_, crate::AppState>,
     user_id: String,
 ) -> Result<Vec<SleepDream>, String> {
     state.sleep.list_dreams(&user_id)
+}
+
+#[tauri::command]
+pub async fn sono_list_dreams(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<SleepDream>, String> {
+    sleep_list_dreams(state, user_id).await
 }

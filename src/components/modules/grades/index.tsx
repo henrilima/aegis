@@ -11,8 +11,8 @@ import { ModalShell } from "@/components/ui/ModalShell";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
-import { MateriasTab } from "../studies/components/materiasTab";
 import { SubjectEditModal } from "../studies/components/SubjectEditModal";
+import { SubjectsTab as MateriasTab } from "../studies/components/subjectsTab";
 import { GradesGuidePanel } from "./components/GradesInfoModal";
 import { GradeForm } from "./components/gradeForm";
 import { GradesHistory } from "./components/gradesHistory";
@@ -101,9 +101,9 @@ export function GradesModal({
   // Matérias: combina as do módulo de estudos com as das próprias grades e as criadas na tab de matérias
   const allSubjects = useMemo(() => {
     const fromGrades = grades.map((g) => g.subject);
-    const fromMetas = subjectMetas.map((m) => m.name);
+    const fromGoals = subjectMetas.map((m) => m.name);
     const merged = Array.from(
-      new Set([...existingSubjects, ...fromGrades, ...fromMetas]),
+      new Set([...existingSubjects, ...fromGrades, ...fromGoals]),
     ).sort();
     return merged;
   }, [grades, existingSubjects, subjectMetas]);

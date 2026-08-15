@@ -23,6 +23,7 @@ export function TimeProvider({ children }: { children: ReactNode }) {
   const [isSimulated, setIsSimulated] = useState(false);
 
   const refreshSimulation = useCallback(async () => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     try {
       const status = await invoke<{
         isActive: boolean;

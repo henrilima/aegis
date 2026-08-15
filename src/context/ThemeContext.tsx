@@ -56,19 +56,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadSavedThemes = async () => {
       try {
-        const store = await load(storeFileName, {
-          defaults: {},
-          autoSave: true,
-        });
+        if (typeof window === "undefined") return;
 
-        // Tenta pegar do Store primeiro (mais confiável em saídas abruptas)
-        let savedTheme = await store.get<ChromaticThemeId>("theme");
-        let savedAccent = await store.get<ThemeColorKey>("accent-color");
-        let savedAppMode = await store.get<"default" | "no_sidebar" | "portal">(
-          "app-mode",
-        );
+        let savedTheme: ChromaticThemeId | null = null;
+        let savedAccent: ThemeColorKey | null = null;
+        let savedAppMode: "default" | "no_sidebar" | "portal" | null = null;
 
-        // Se não tiver no Store, pega do localStorage
+        if (window.__TAURI_INTERNALS__) {
+          const store = await load(storeFileName, {
+            defaults: {},
+            autoSave: true,
+          });
+          savedTheme = (await store.get<ChromaticThemeId>("theme")) ?? null;
+          savedAccent =
+            (await store.get<ThemeColorKey>("accent-color")) ?? null;
+          savedAppMode =
+            (await store.get<"default" | "no_sidebar" | "portal">(
+              "app-mode",
+            )) ?? null;
+        }
+
+        // Se não tiver no Store ou estiver sem Tauri, pega do localStorage
         if (!savedTheme) {
           savedTheme =
             (localStorage.getItem(themeKey) as ChromaticThemeId | null) ||
@@ -115,9 +123,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(prefAccentKey, savedAccent);
         localStorage.setItem(modeKey, savedAppMode);
 
-        await store.set("theme", finalTheme);
-        await store.set("accent-color", savedAccent);
-        await store.set("app-mode", savedAppMode);
+        if (window.__TAURI_INTERNALS__) {
+          const store = await load(storeFileName, {
+            defaults: {},
+            autoSave: true,
+          });
+          await store.set("theme", finalTheme);
+          await store.set("accent-color", savedAccent);
+          await store.set("app-mode", savedAppMode);
+        }
       } catch (err) {
         console.error("Erro ao carregar configurações de tema:", err);
       }
@@ -135,6 +149,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Ouvintes de eventos Tauri para automação de alteração temporária de temas
   useEffect(() => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
+
     let unlistenChange: (() => void) | null = null;
     let unlistenRestore: (() => void) | null = null;
 

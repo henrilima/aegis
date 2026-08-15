@@ -14,12 +14,18 @@ export const BUILTIN_AUDIO_OPTIONS: AudioOption[] = [
   { value: "alarm_3.mp3", label: "Alarme 3" },
   { value: "alarm_4.mp3", label: "Alarme 4" },
   { value: "Plin.mp3", label: "Plin" },
-  { value: "Sinos.mp3", label: "Sinos" },
+  { value: "bells.mp3", label: "Sinos" },
   { value: "Tlin.mp3", label: "Tlin" },
   { value: "Tudum.mp3", label: "Tudum" },
-  { value: "Bolhas.mp3", label: "Bolhas" },
-  { value: "Vibrar.mp3", label: "Vibrar" },
+  { value: "bubbles.mp3", label: "Bolhas" },
+  { value: "vibrate.mp3", label: "Vibrar" },
 ];
+
+export const LEGACY_SOUND_MAP: Record<string, string> = {
+  "Bolhas.mp3": "bubbles.mp3",
+  "Sinos.mp3": "bells.mp3",
+  "Vibrar.mp3": "vibrate.mp3",
+};
 
 let activeAudioInstance: HTMLAudioElement | null = null;
 let cachedCustomMediaMap: Map<string, string> = new Map();
@@ -45,10 +51,11 @@ export async function fetchCustomMediaMap(): Promise<Map<string, string>> {
 }
 
 export function soundLabel(
-  soundFile: string | null | undefined,
+  rawSoundFile: string | null | undefined,
   customMap?: Map<string, string> | AudioOption[],
 ): string {
-  if (!soundFile) return "";
+  if (!rawSoundFile) return "";
+  const soundFile = LEGACY_SOUND_MAP[rawSoundFile] || rawSoundFile;
 
   if (customMap instanceof Map) {
     const customVal = customMap.get(soundFile);
@@ -131,12 +138,13 @@ export async function listNotificationSounds(): Promise<string[]> {
 }
 
 export function resolveNotificationSound(
-  soundFile: string | null | undefined,
+  rawSoundFile: string | null | undefined,
   availableOptions: AudioOption[] | string[],
 ): string {
-  if (!soundFile || soundFile.trim().length === 0) {
+  if (!rawSoundFile || rawSoundFile.trim().length === 0) {
     return DEFAULT_NOTIFICATION_SOUND;
   }
+  const soundFile = LEGACY_SOUND_MAP[rawSoundFile] || rawSoundFile;
 
   const values = availableOptions.map((o) =>
     typeof o === "string" ? o : o.value,

@@ -183,6 +183,27 @@ impl PasswordManager {
         Ok(())
     }
 
+    pub fn change_email(&self, user_id: &str, new_email: &str) -> Result<(), String> {
+        let conn = self.get_connection();
+        
+        let exists_email: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?1 AND id != ?2)",
+            params![new_email, user_id],
+            |row| row.get(0),
+        ).unwrap_or(false);
+
+        if exists_email {
+            return Err("Este e-mail já está sendo usado por outra conta.".to_string());
+        }
+
+        conn.execute(
+            "UPDATE users SET email = ?1 WHERE id = ?2",
+            params![new_email, user_id],
+        ).map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
     pub fn delete_user(&self, user_id: &str) -> Result<(), String> {
         let conn = self.get_connection();
         let _ = conn.execute("DELETE FROM passwords WHERE user_id = ?1", params![user_id]);

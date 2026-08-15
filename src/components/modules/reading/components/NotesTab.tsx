@@ -179,7 +179,7 @@ export function NotesTab({ books }: NotesTabProps) {
 
           <form onSubmit={handleAddNote} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase leading-none">
+              <Label className="text-xs font-bold text-muted-foreground leading-none">
                 Livro
               </Label>
               <BookSelect
@@ -200,7 +200,7 @@ export function NotesTab({ books }: NotesTabProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase leading-none">
+                <Label className="text-xs font-bold text-muted-foreground leading-none">
                   Capítulo
                 </Label>
                 <Input
@@ -211,7 +211,7 @@ export function NotesTab({ books }: NotesTabProps) {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase leading-none">
+                <Label className="text-xs font-bold text-muted-foreground leading-none">
                   Página
                 </Label>
                 <Input
@@ -225,7 +225,7 @@ export function NotesTab({ books }: NotesTabProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase leading-none">
+              <Label className="text-xs font-bold text-muted-foreground leading-none">
                 Conteúdo
               </Label>
               <Textarea

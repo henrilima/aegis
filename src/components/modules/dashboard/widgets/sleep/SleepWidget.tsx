@@ -11,7 +11,7 @@ import { formatDateShort, formatDurationMin } from "../../helpers";
 import type { SleepEntry } from "../../types";
 import { BaseWidget } from "../BaseWidget";
 
-interface SonoWidgetProps {
+interface SleepWidgetProps {
   recentSleep: SleepEntry[];
   avgSleepMin: number;
   avgQuality: number;
@@ -24,7 +24,7 @@ interface SonoWidgetProps {
   onToggleInteractive?: () => void;
 }
 
-export function SonoWidget({
+export function SleepWidget({
   recentSleep,
   avgSleepMin,
   avgQuality,
@@ -35,7 +35,7 @@ export function SonoWidget({
   isEditMode,
   isInteractive,
   onToggleInteractive,
-}: SonoWidgetProps) {
+}: SleepWidgetProps) {
   const { user } = useAuth();
   const color = getModuleColor("sleep");
   const theme = getColorTheme(color);
@@ -203,7 +203,7 @@ export function SonoWidget({
                 <p className="text-xs text-neutral-600 font-bold">
                   Sem Noites Registradas
                 </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
                   Adicione seus registros de sono para acompanhar sua qualidade
                   de descanso.
                 </p>
@@ -225,3 +225,5 @@ export function SonoWidget({
     </>
   );
 }
+
+export { SleepWidget as SonoWidget, type SleepWidgetProps as SonoWidgetProps };

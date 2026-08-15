@@ -71,6 +71,8 @@
         { "url": "https://api.themoviedb.org/*" },
         { "url": "https://www.googleapis.com/*" },
         { "url": "https://aegiswebpainel.vercel.app/*" },
+        { "url": "http://localhost:3000/*" },
+        { "url": "http://127.0.0.1:3000/*" },
         { "url": "http://localhost:3001/*" },
         { "url": "http://127.0.0.1:3001/*" }
       ]

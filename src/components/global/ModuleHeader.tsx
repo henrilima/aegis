@@ -233,7 +233,15 @@ export function ModuleHeader({
           <h1
             className={cn(
               "text-xl sm:text-2xl font-bold tracking-tight leading-tight flex items-center gap-2 transition-colors duration-200 text-foreground",
-              onTitleClick && "group-hover:text-primary",
+              onTitleClick &&
+                m.text
+                  .split(" ")
+                  .map((c) =>
+                    c.startsWith("dark:")
+                      ? `dark:group-hover:${c.replace("dark:", "")}`
+                      : `group-hover:${c}`,
+                  )
+                  .join(" "),
             )}
           >
             {title}

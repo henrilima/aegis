@@ -129,6 +129,7 @@ export default function LoginComponent() {
 
   // Carrega configurações de diretório de dados
   const loadConfig = useCallback(async () => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     try {
       const config = await invoke<{ customDataDir: string }>(
         "global_get_app_config",
@@ -141,6 +142,7 @@ export default function LoginComponent() {
 
   // Carrega usuários locais
   const loadUsers = useCallback(async () => {
+    if (typeof window === "undefined" || !window.__TAURI_INTERNALS__) return;
     setFetchingUsers(true);
     try {
       const list = await invoke<LocalUser[]>("global_list_local_users");

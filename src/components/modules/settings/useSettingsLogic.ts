@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -437,7 +438,22 @@ export function useSettingsLogic() {
       if (key === "notificationSound") setNotificationSound(value as string);
       if (key === "weatherLocation") setWeatherLocation(value as string);
       if (key === "showWeatherWidget") setShowWeatherWidget(value as boolean);
-      if (key === "appZoom") setAppZoom(value as number);
+      if (key === "appZoom") {
+        const z = value as number;
+        setAppZoom(z);
+        if (typeof document !== "undefined") {
+          (document.documentElement.style as unknown as { zoom: string }).zoom =
+            "";
+        }
+        try {
+          const webview = getCurrentWebview();
+          if (webview && typeof webview.setZoom === "function") {
+            webview.setZoom(z / 100);
+          }
+        } catch (err) {
+          console.warn("Failed to set native webview zoom:", err);
+        }
+      }
       if (key === "showSidebarTrigger") setShowSidebarTrigger(value as boolean);
       if (key === "showFloatingTrigger")
         setShowFloatingTrigger(value as boolean);

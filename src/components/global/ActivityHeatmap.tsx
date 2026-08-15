@@ -6,13 +6,7 @@ import {
   Flame,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useMemo, useRef, useState } from "react";
 import { cn, getColorTheme } from "@/lib/utils";
 
 export interface HeatmapItem {
@@ -116,27 +110,33 @@ export function ActivityHeatmap({
 }: ActivityHeatmapProps) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<{
+    date: string;
+    left: number;
+    top: number;
+  } | null>(null);
 
+  const gridContainerRef = useRef<HTMLDivElement>(null);
   const theme = getColorTheme(color);
 
   const dates = useMemo(() => getYearDates(selectedYear), [selectedYear]);
 
+  // Informações do dia sob o cursor calculadas sob demanda (apenas 1 por hover, super rápido)
   const hoveredInfo = useMemo(() => {
-    if (!hoveredDate) return null;
-    const [y, m, d] = hoveredDate.split("-").map(Number);
+    if (!hoveredCell?.date) return null;
+    const [y, m, d] = hoveredCell.date.split("-").map(Number);
     const dateObj = new Date(y, m - 1, d);
     const dateLabel = dateObj.toLocaleDateString("pt-BR", {
-      weekday: "short",
+      weekday: "long",
       day: "2-digit",
       month: "long",
     });
-    const item = data[hoveredDate];
+    const item = data[hoveredCell.date];
     const count = item?.count || 0;
     const details =
       item?.details || (count > 0 ? `${count} ${unitLabel}` : "Sem registros");
     return { dateLabel, details };
-  }, [hoveredDate, data, unitLabel]);
+  }, [hoveredCell?.date, data, unitLabel]);
 
   // Estatísticas calculadas se não forem fornecidas explicitamente
   const computedStats = useMemo(() => {
@@ -155,12 +155,12 @@ export function ActivityHeatmap({
 
     return [
       {
-        label: unitLabel.toUpperCase(),
+        label: unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1),
         value: totalCount,
         colorClass: theme.text,
       },
       {
-        label: "DIAS ATIVOS",
+        label: "Dias ativos",
         value: activeDays,
         colorClass: "text-foreground",
       },
@@ -183,6 +183,25 @@ export function ActivityHeatmap({
     return labels;
   }, [dates]);
 
+  const handleCellMouseEnter = (
+    date: string,
+    e: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (!gridContainerRef.current) return;
+    const containerRect = gridContainerRef.current.getBoundingClientRect();
+    const targetRect = e.currentTarget.getBoundingClientRect();
+
+    setHoveredCell({
+      date,
+      left: targetRect.left - containerRect.left + targetRect.width / 2,
+      top: targetRect.top - containerRect.top,
+    });
+  };
+
+  const handleCellMouseLeave = () => {
+    setHoveredCell(null);
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-6 w-full relative overflow-hidden">
       {/* Header */}
@@ -194,12 +213,12 @@ export function ActivityHeatmap({
             <HeaderIcon className={cn("w-5 h-5", theme.text)} />
           </div>
           <div>
-            <h2 className="text-lg font-black text-foreground leading-none">
+            <h2 className="text-lg font-bold text-foreground leading-none">
               {title}
             </h2>
             {hoveredInfo ? (
-              <p className="text-xs font-bold mt-1 animate-in fade-in duration-150 flex items-center gap-1.5">
-                <span className={cn("capitalize font-extrabold", theme.text)}>
+              <p className="text-xs font-bold mt-1 flex items-center gap-1.5 transition-all">
+                <span className={cn("capitalize font-bold", theme.text)}>
                   {hoveredInfo.dateLabel}:
                 </span>
                 <span className="text-foreground">{hoveredInfo.details}</span>
@@ -222,7 +241,7 @@ export function ActivityHeatmap({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className={cn("text-xs font-black px-2", theme.text)}>
+            <span className={cn("text-xs font-bold px-2", theme.text)}>
               {selectedYear}
             </span>
             <button
@@ -243,13 +262,13 @@ export function ActivityHeatmap({
               <div key={st.label} className="flex flex-col items-end">
                 <span
                   className={cn(
-                    "font-black leading-none text-sm",
+                    "font-bold leading-none text-sm",
                     st.colorClass || "text-foreground",
                   )}
                 >
                   {st.value}
                 </span>
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                <span className="text-[10px] font-bold text-muted-foreground">
                   {st.label}
                 </span>
               </div>
@@ -259,119 +278,99 @@ export function ActivityHeatmap({
       </div>
 
       {/* Grade do Heatmap */}
-      <TooltipProvider delayDuration={0}>
-        <div className="w-full overflow-x-auto py-2">
-          <div className="min-w-[700px] flex flex-col gap-2">
-            {/* Rótulos dos Meses */}
-            <div className="h-4 relative w-full pl-[36px]">
-              {monthLabels.map((ml) => (
+      <div className="w-full overflow-x-auto py-2">
+        <div
+          ref={gridContainerRef}
+          className="min-w-175 flex flex-col gap-2 relative"
+        >
+          {/* Tooltip flutuante ultrarrápido com pointer-events-none (o mouse nunca trava ou interage com ela) */}
+          {hoveredCell && hoveredInfo && (
+            <div
+              style={{
+                left: `${hoveredCell.left}px`,
+                top: `${hoveredCell.top - 8}px`,
+                transform: "translate(-50%, -100%)",
+              }}
+              className="pointer-events-none select-none absolute z-50 flex flex-col gap-0.5 max-w-xs bg-popover/95 backdrop-blur-md border border-border text-foreground text-xs p-2.5 rounded-xl transition-all duration-75"
+            >
+              <span className={cn("font-bold capitalize", theme.text)}>
+                {hoveredInfo.dateLabel}
+              </span>
+              <span className="text-muted-foreground leading-snug">
+                {hoveredInfo.details}
+              </span>
+            </div>
+          )}
+
+          {/* Rótulos dos Meses */}
+          <div className="h-4 relative w-full pl-9">
+            {monthLabels.map((ml) => (
+              <div
+                key={ml.label + ml.colIdx}
+                className="absolute text-[10px] text-muted-foreground font-bold"
+                style={{
+                  left: `${(ml.colIdx / (dates.length / 7)) * 100}%`,
+                }}
+              >
+                {ml.label}
+              </div>
+            ))}
+          </div>
+
+          {/* Grid dos Dias */}
+          <div className="grid grid-cols-[28px_1fr] gap-2 items-stretch">
+            {/* Rótulos dos Dias da Semana */}
+            <div className="flex flex-col gap-1 text-[9px] text-muted-foreground font-bold py-px">
+              {WEEK_LABELS.map((day) => (
                 <div
-                  key={ml.label + ml.colIdx}
-                  className="absolute text-[10px] text-muted-foreground font-bold"
-                  style={{
-                    left: `${(ml.colIdx / (dates.length / 7)) * 100}%`,
-                  }}
+                  key={day.id}
+                  className="flex-1 flex items-center justify-end pr-1.5 min-h-0"
                 >
-                  {ml.label}
+                  <span className="leading-none">{day.label}</span>
                 </div>
               ))}
             </div>
 
-            {/* Grid dos Dias */}
-            <div className="grid grid-cols-[28px_1fr] gap-2 items-stretch">
-              {/* Rótulos dos Dias da Semana */}
-              <div className="flex flex-col gap-1 text-[9px] text-muted-foreground font-bold py-[1px]">
-                {WEEK_LABELS.map((day) => (
+            {/* Colunas por semana */}
+            <div className="flex gap-1 flex-1">
+              {Array.from({ length: Math.ceil(dates.length / 7) }).map(
+                (_, ci) => (
                   <div
-                    key={day.id}
-                    className="flex-1 flex items-center justify-end pr-1.5 min-h-0"
+                    key={dates[ci * 7]}
+                    className="flex-1 flex flex-col gap-1"
                   >
-                    <span className="leading-none">{day.label}</span>
+                    {dates.slice(ci * 7, (ci + 1) * 7).map((date) => {
+                      const isSameYear = date.startsWith(String(selectedYear));
+                      const item = data[date];
+                      const count = item?.count || 0;
+                      const intensity = isSameYear ? getIntensity(count) : 0;
+
+                      return (
+                        // biome-ignore lint/a11y/noStaticElementInteractions: Interatividade de hover do mapa de calor
+                        <div
+                          key={date}
+                          onMouseEnter={(e) =>
+                            isSameYear && handleCellMouseEnter(date, e)
+                          }
+                          onMouseLeave={handleCellMouseLeave}
+                          className={cn(
+                            "aspect-square w-full rounded-[2px] transition-all hover:scale-150 hover:z-20 cursor-pointer",
+                            !isSameYear
+                              ? "opacity-0 pointer-events-none"
+                              : intensity === 0
+                                ? INTENSITY_LEVELS[0]
+                                : cn(theme.solid, INTENSITY_LEVELS[intensity]),
+                          )}
+                        />
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-
-              {/* Colunas por semana */}
-              <div className="flex gap-1 flex-1">
-                {Array.from({ length: Math.ceil(dates.length / 7) }).map(
-                  (_, ci) => (
-                    <div
-                      key={dates[ci * 7]}
-                      className="flex-1 flex flex-col gap-1"
-                    >
-                      {dates.slice(ci * 7, (ci + 1) * 7).map((date) => {
-                        const isSameYear = date.startsWith(
-                          String(selectedYear),
-                        );
-                        const item = data[date];
-                        const count = item?.count || 0;
-                        const intensity = isSameYear ? getIntensity(count) : 0;
-
-                        const [y, m, d] = date.split("-").map(Number);
-                        const dateObj = new Date(y, m - 1, d);
-                        const dateLabel = dateObj.toLocaleDateString("pt-BR", {
-                          weekday: "long",
-                          day: "2-digit",
-                          month: "long",
-                        });
-
-                        const tooltipText =
-                          item?.details ||
-                          (count > 0
-                            ? `${count} ${unitLabel}`
-                            : "Sem registros");
-
-                        return (
-                          <Tooltip key={date}>
-                            <TooltipTrigger asChild>
-                              {/* biome-ignore lint/a11y/noStaticElementInteractions: Interatividade de hover do mapa de calor */}
-                              <div
-                                onMouseEnter={() => setHoveredDate(date)}
-                                onMouseLeave={() => setHoveredDate(null)}
-                                className={cn(
-                                  "aspect-square w-full rounded-[2px] transition-all hover:scale-150 hover:z-20 cursor-pointer",
-                                  !isSameYear
-                                    ? "opacity-0 pointer-events-none"
-                                    : intensity === 0
-                                      ? INTENSITY_LEVELS[0]
-                                      : cn(
-                                          theme.solid,
-                                          INTENSITY_LEVELS[intensity],
-                                        ),
-                                )}
-                              />
-                            </TooltipTrigger>
-                            {isSameYear && (
-                              <TooltipContent
-                                side="top"
-                                sideOffset={8}
-                                style={{ pointerEvents: "none" }}
-                                className="pointer-events-none select-none z-[9999] flex flex-col gap-0.5 max-w-xs bg-popover/95 backdrop-blur-md border border-border text-foreground text-xs p-2 rounded-xl shadow-xl"
-                              >
-                                <span
-                                  className={cn(
-                                    "font-bold capitalize",
-                                    theme.text,
-                                  )}
-                                >
-                                  {dateLabel}
-                                </span>
-                                <span className="text-muted-foreground leading-snug">
-                                  {tooltipText}
-                                </span>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                  ),
-                )}
-              </div>
+                ),
+              )}
             </div>
           </div>
         </div>
-      </TooltipProvider>
+      </div>
 
       {/* Legenda de Intensidade */}
       <div className="flex items-center justify-end gap-2 text-[10px] text-muted-foreground font-semibold pt-3 border-t border-border/40">

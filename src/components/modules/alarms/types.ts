@@ -23,11 +23,11 @@ export const ALARM_SOUND_OPTIONS = [
   { value: "alarm_3.mp3", label: "Alarme 3" },
   { value: "alarm_4.mp3", label: "Alarme 4" },
   { value: "Plin.mp3", label: "Plin" },
-  { value: "Sinos.mp3", label: "Sinos" },
+  { value: "bells.mp3", label: "Sinos" },
   { value: "Tlin.mp3", label: "Tlin" },
   { value: "Tudum.mp3", label: "Tudum" },
-  { value: "Bolhas.mp3", label: "Bolhas" },
-  { value: "Vibrar.mp3", label: "Vibrar" },
+  { value: "bubbles.mp3", label: "Bolhas" },
+  { value: "vibrate.mp3", label: "Vibrar" },
 ];
 
 export const ALARM_COLOR_OPTIONS = SELECTABLE_COLORS;

@@ -73,11 +73,11 @@ export default function SleepPage() {
     if (!uid) return;
     try {
       const results = await Promise.allSettled([
-        invoke<SleepEntry[]>("sono_list_entries", {
+        invoke<SleepEntry[]>("sleep_list_entries", {
           userId: uid,
           monthsBack: 3,
         }),
-        invoke<SleepGoal>("sono_get_goal", { userId: uid }),
+        invoke<SleepGoal>("sleep_get_goal", { userId: uid }),
         invoke<AppConfig>("global_get_app_config"),
       ]);
 
@@ -113,7 +113,7 @@ export default function SleepPage() {
 
   const handleSave = async (e: SleepEntry) => {
     try {
-      await invoke<number>("sono_upsert_entry", { entry: e });
+      await invoke<number>("sleep_upsert_entry", { entry: e });
       toast.success(
         editEntry ? "Dados atualizados!" : "Ciclo registrado com sucesso!",
       );
@@ -127,7 +127,7 @@ export default function SleepPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await invoke("sono_delete_entry", { id, userId: uid });
+      await invoke("sleep_delete_entry", { id, userId: uid });
       toast.success("Registro removido");
       setDeleteConfirm(null);
       await loadData();
@@ -143,7 +143,7 @@ export default function SleepPage() {
       return;
     }
     try {
-      await invoke("sono_upsert_goal", {
+      await invoke("sleep_upsert_goal", {
         goal: {
           userId: uid,
           targetHours: h,
