@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, CheckCircle2, Circle, Flame } from "lucide-react";
+import { Activity, CheckCircle2, Circle, Clock, Flame } from "lucide-react";
 import type { Habit } from "@/components/modules/habits/types";
 import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
@@ -174,9 +174,15 @@ export function HabitsWidget({
                   >
                     {h.name}
                   </span>
-                  <span className="text-[10px] font-bold text-muted-foreground">
-                    {done ? "Concluído hoje" : "Pendente"}
-                  </span>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                    <span>{done ? "Concluído hoje" : "Pendente"}</span>
+                    {h.targetTime && (
+                      <span className="flex items-center gap-0.5 text-muted-foreground/80 font-semibold">
+                        • <Clock className="w-2.5 h-2.5 ml-0.5" />
+                        {h.targetTime}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

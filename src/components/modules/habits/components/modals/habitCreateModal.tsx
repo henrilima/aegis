@@ -22,6 +22,7 @@ interface HabitCreateModalProps {
     goalDays: number,
     frequency?: "daily" | "weekdays",
     weekdays?: string,
+    targetTime?: string,
   ) => void;
   onClose: () => void;
 }
@@ -48,6 +49,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
   const [chargesAmount, setChargesAmount] = useState(0);
   const [chargesInterval, setChargesInterval] = useState(7);
   const [goalDays, setGoalDays] = useState(0);
+  const [targetTime, setTargetTime] = useState("");
 
   const minCooldown = type === "Negative" ? 2 : 1;
 
@@ -71,6 +73,7 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
       goalDays,
       frequency,
       type !== "Negative" ? weekdays.join(",") : "",
+      targetTime || undefined,
     );
   };
 
@@ -175,6 +178,19 @@ export function HabitCreateModal({ onAdd, onClose }: HabitCreateModalProps) {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              {/* Horário Agendado */}
+              <div className="space-y-1.5">
+                <label htmlFor="hcm-time" className={lc}>
+                  Horário agendado (opcional)
+                </label>
+                <input
+                  id="hcm-time"
+                  type="time"
+                  value={targetTime}
+                  onChange={(e) => setTargetTime(e.target.value)}
+                  className={ic}
+                />
               </div>
             </div>
 

@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Edit2,
   MoreVertical,
   RotateCcw,
@@ -192,7 +193,7 @@ export function HabitsWeeklyBoard({
       </div>
 
       {/* Grid de Dias da Semana */}
-      <div className="grid grid-cols-7 gap-3 w-full overflow-x-auto min-w-[950px] pb-4 select-none">
+      <div className="grid grid-cols-7 gap-3 w-full overflow-x-auto min-w-237.5 pb-4 select-none">
         {weekDates.map((date) => {
           const formatted = getFormattedDate(date);
           const wDay = date.getDay(); // 0 = Domingo, 1 = Segunda...
@@ -238,7 +239,7 @@ export function HabitsWeeklyBoard({
               {/* Card do Dia */}
               <div
                 className={cn(
-                  "bg-card border border-border rounded-xl p-4 flex flex-col justify-between min-h-[360px] transition-all shadow-none",
+                  "bg-card border border-border rounded-xl p-4 flex flex-col justify-between min-h-90 transition-all shadow-none",
                   isToday && "border-2 border-border/80",
                 )}
               >
@@ -314,12 +315,20 @@ export function HabitsWeeklyBoard({
                                 >
                                   {h.name}
                                 </button>
-                                {h.goalDays && h.goalDays > 0 ? (
-                                  <span className="text-[9px] text-muted-foreground/50 font-bold leading-none mt-1">
-                                    Meta: {h.completedDates?.length || 0}/
-                                    {h.goalDays}d
-                                  </span>
-                                ) : null}
+                                <div className="flex items-center gap-2 mt-1">
+                                  {h.targetTime ? (
+                                    <span className="text-[9px] text-muted-foreground/70 font-semibold leading-none flex items-center gap-0.5">
+                                      <Clock className="w-2.5 h-2.5" />
+                                      {h.targetTime}
+                                    </span>
+                                  ) : null}
+                                  {h.goalDays && h.goalDays > 0 ? (
+                                    <span className="text-[9px] text-muted-foreground/50 font-bold leading-none">
+                                      Meta: {h.completedDates?.length || 0}/
+                                      {h.goalDays}d
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
                             </div>
 

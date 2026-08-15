@@ -79,13 +79,13 @@ export function HabitsHeatmap({ habits }: HabitsHeatmapProps) {
       unitLabel="hábitos"
       stats={[
         {
-          label: "CONCLUSÕES",
+          label: "Conclusões",
           value: totalCompletions,
           colorClass: theme.text,
         },
-        { label: "DIAS ATIVOS", value: activeDays },
+        { label: "Dias ativos", value: activeDays },
         {
-          label: "RECORDE",
+          label: "Recorde diário",
           value: `${maxRecord}`,
           colorClass: "text-amber-400",
         },

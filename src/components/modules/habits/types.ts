@@ -20,6 +20,7 @@ export interface Habit {
   weekdays?: string;
   completedDates?: string[];
   archived?: boolean;
+  targetTime?: string | null;
 }
 
 export interface SoberLog {

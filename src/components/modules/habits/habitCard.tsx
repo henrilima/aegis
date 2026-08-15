@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  Clock,
   Edit2,
   Flame,
   RotateCcw,
@@ -102,8 +103,16 @@ export function HabitCard({
             <h3 className="font-bold text-base leading-tight text-foreground">
               {name}
             </h3>
-            <p className={`text-xs font-medium ${accentColor} opacity-70`}>
-              Controle de Vício
+            <p
+              className={`text-xs font-medium ${accentColor} opacity-70 flex items-center gap-1.5`}
+            >
+              <span>Controle de Vício</span>
+              {habit.targetTime && (
+                <span className="flex items-center gap-0.5 text-muted-foreground font-semibold">
+                  • <Clock className="w-3 h-3 ml-0.5 text-red-500" />
+                  {habit.targetTime}
+                </span>
+              )}
             </p>
           </div>
         </div>

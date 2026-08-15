@@ -28,6 +28,7 @@ pub struct Habit {
     pub weekdays: Option<String>,
     pub completed_dates: Option<Vec<String>>,
     pub archived: Option<bool>,
+    pub target_time: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -127,6 +128,7 @@ impl HabitManager {
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN frequency TEXT NOT NULL DEFAULT 'daily'", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN weekdays TEXT", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN archived INTEGER DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE habits ADD COLUMN target_time TEXT", []);
 
 
         Self { db_path }
@@ -244,7 +246,7 @@ impl HabitManager {
 
     pub fn list_habits(&self, user_id: &str, now: DateTime<Utc>) -> Vec<Habit> {
         let conn = self.get_connection();
-        let mut stmt = match conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived FROM habits WHERE user_id = ?1") {
+        let mut stmt = match conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived, target_time FROM habits WHERE user_id = ?1") {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("list_habits prepare error: {}", e);
@@ -274,6 +276,7 @@ impl HabitManager {
                 weekdays: row.get::<_, Option<String>>(18).unwrap_or(None),
                 completed_dates: None,
                 archived: Some(row.get::<_, Option<i32>>(19)?.unwrap_or(0) != 0),
+                target_time: row.get::<_, Option<String>>(20).unwrap_or(None),
             })
         }) {
             Ok(r) => r,
@@ -313,7 +316,7 @@ impl HabitManager {
         if let Some(id) = existing_id {
             // Se existir, reativa (unarchive = 0) e mescla as novas configurações enviadas
             conn.execute(
-                "UPDATE habits SET habit_type = ?1, cooldown_days = ?2, charges_amount = ?3, charges_interval_days = ?4, accumulates = ?5, goal_days = ?6, frequency = ?7, weekdays = ?8, archived = 0 WHERE id = ?9",
+                "UPDATE habits SET habit_type = ?1, cooldown_days = ?2, charges_amount = ?3, charges_interval_days = ?4, accumulates = ?5, goal_days = ?6, frequency = ?7, weekdays = ?8, target_time = ?9, archived = 0 WHERE id = ?10",
                 params![
                     habit.habit_type,
                     habit.cooldown_days,
@@ -323,6 +326,7 @@ impl HabitManager {
                     habit.goal_days,
                     habit.frequency.unwrap_or_else(|| "daily".to_string()),
                     habit.weekdays,
+                    habit.target_time,
                     id
                 ]
             ).map_err(|e| e.to_string())?;
@@ -330,7 +334,7 @@ impl HabitManager {
         }
 
         conn.execute(
-            "INSERT INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+            "INSERT INTO habits (user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived, target_time) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
             params![
                 habit.user_id, 
                 habit.name, 
@@ -351,6 +355,7 @@ impl HabitManager {
                 habit.frequency.unwrap_or_else(|| "daily".to_string()),
                 habit.weekdays,
                 if habit.archived.unwrap_or(false) { 1 } else { 0 },
+                habit.target_time,
             ],
         ).map_err(|e| {
             let err_msg = format!("SQL insert error: {}", e);
@@ -363,7 +368,7 @@ impl HabitManager {
     pub fn update_habit(&self, habit: Habit) -> Result<(), String> {
         let conn = self.get_connection();
         conn.execute(
-            "UPDATE habits SET name = ?1, habit_type = ?2, cooldown_days = ?3, charges_amount = ?4, charges_interval_days = ?5, accumulates = ?6, goal_days = ?7, frequency = ?8, weekdays = ?9, archived = ?10 WHERE id = ?11",
+            "UPDATE habits SET name = ?1, habit_type = ?2, cooldown_days = ?3, charges_amount = ?4, charges_interval_days = ?5, accumulates = ?6, goal_days = ?7, frequency = ?8, weekdays = ?9, archived = ?10, target_time = ?11 WHERE id = ?12",
             params![
                 habit.name, 
                 habit.habit_type, 
@@ -375,6 +380,7 @@ impl HabitManager {
                 habit.frequency.unwrap_or_else(|| "daily".to_string()),
                 habit.weekdays,
                 if habit.archived.unwrap_or(false) { 1 } else { 0 },
+                habit.target_time,
                 habit.id
             ],
         ).map_err(|e| e.to_string())?;
@@ -388,7 +394,7 @@ impl HabitManager {
     }
 
     fn get_habit_by_id(&self, conn: &Connection, id: i32) -> Result<Habit, String> {
-        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived FROM habits WHERE id = ?1").map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare("SELECT id, user_id, name, habit_type, last_slip, created_at, max_streak, cooldown_days, last_done, charges_used, charges_amount, charges_interval_days, accumulates, last_charge_refill, current_charges, current_streak, goal_days, frequency, weekdays, archived, target_time FROM habits WHERE id = ?1").map_err(|e| e.to_string())?;
         stmt.query_row(params![id], |row| {
             Ok(Habit {
                 id: Some(row.get(0)?),
@@ -412,6 +418,7 @@ impl HabitManager {
                 weekdays: row.get::<_, Option<String>>(18).unwrap_or(None),
                 completed_dates: None,
                 archived: Some(row.get::<_, Option<i32>>(19)?.unwrap_or(0) != 0),
+                target_time: row.get::<_, Option<String>>(20).unwrap_or(None),
             })
         }).map_err(|e| e.to_string())
     }
@@ -532,7 +539,7 @@ impl HabitManager {
 
         if completed {
             conn.execute(
-                "INSERT OR IGNORE INTO habit_logs (habit_id, completed_date, value) VALUES (?1, ?2, 1.0)",
+                "INSERT OR IGNORE INTO habit_logs (habit_id, completed_date) VALUES (?1, ?2)",
                 params![id, date],
             ).map_err(|e| e.to_string())?;
 
@@ -782,6 +789,7 @@ impl HabitManager {
                 weekdays: None,
                 completed_dates: None,
                 archived: Some(false),
+                target_time: None,
             };
             let _ = self.add_habit(habit);
             count += 1;

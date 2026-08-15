@@ -95,6 +95,7 @@ export default function HabitsPage() {
     goalDays: number,
     frequency?: "daily" | "weekdays",
     weekdays?: string,
+    targetTime?: string,
   ) => {
     if (!uid || isAdding) return;
     setIsAdding(true);
@@ -120,6 +121,7 @@ export default function HabitsPage() {
           goalDays: goalDays > 0 ? goalDays : 0,
           frequency: frequency || "daily",
           weekdays: weekdays || null,
+          targetTime: targetTime || null,
         },
       });
       fetchHabits();

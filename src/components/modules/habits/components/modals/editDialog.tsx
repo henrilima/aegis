@@ -67,7 +67,7 @@ export function EditHabitDialog({
         tabIndex={-1}
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-[850px]! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-212.5! bg-background border border-border rounded-xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between p-6 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-3">
@@ -126,6 +126,22 @@ export function EditHabitDialog({
                   }
                   disabled
                   className={cn(ic, "opacity-60 cursor-not-allowed")}
+                />
+              </div>
+
+              {/* Horário Agendado */}
+              <div className="space-y-1.5">
+                <label htmlFor="ed-time" className={lc}>
+                  Horário agendado (opcional)
+                </label>
+                <input
+                  id="ed-time"
+                  type="time"
+                  value={habit.targetTime || ""}
+                  onChange={(e) =>
+                    setHabit({ ...habit, targetTime: e.target.value || null })
+                  }
+                  className={ic}
                 />
               </div>
             </div>
