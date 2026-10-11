@@ -32,6 +32,7 @@
     "flashcard-management",
     "global-management",
     "automation-management",
+    "discord-management",
     "autostart:default",
     "notification:default",
     "notification:allow-notify",

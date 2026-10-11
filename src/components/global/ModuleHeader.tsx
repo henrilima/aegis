@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   Search,
   Timer,
+  X,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { THEME_COLORS_CONFIG } from "@/colors.config";
@@ -446,10 +447,10 @@ export function ModuleHeader({
       {/* Linha Inferior: Abas com generoso Padding + Pesquisa + Children */}
       {(tabs || onSearchChange || children) && (
         <div className="flex items-center justify-between gap-4 flex-wrap pt-1">
-          {/* Abas com padding e visual de Segmented Control refinado */}
+          {/* Abas com visual de Segmented Control e pílula deslizante */}
           {tabs && onTabChange && (
-            <div className="flex items-center p-1.5 bg-muted/60 dark:bg-muted/40 border border-border/70 rounded-2xl max-w-full overflow-x-auto scrollbar-none shrink-0 h-11">
-              <div className="flex items-center gap-1.5 min-w-max h-full">
+            <div className="flex items-center p-1 bg-muted/60 dark:bg-muted/40 border border-border/70 rounded-2xl max-w-full overflow-x-auto scrollbar-none shrink-0 h-10">
+              <div className="flex items-center gap-1 min-w-max h-full">
                 {tabs.map((t) => {
                   const isActive = activeTab === t.id;
                   return (
@@ -458,7 +459,7 @@ export function ModuleHeader({
                       type="button"
                       onClick={() => onTabChange(t.id)}
                       className={cn(
-                        "relative flex items-center justify-center gap-2 px-4 h-8 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none focus:outline-none z-10",
+                        "relative flex items-center justify-center gap-2 px-3.5 h-8 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none focus:outline-none z-10",
                         isActive
                           ? "text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-background/40",
@@ -466,9 +467,13 @@ export function ModuleHeader({
                     >
                       {isActive && (
                         <motion.div
-                          layoutId="activeModuleHeaderTab"
+                          layoutId={
+                            moduleId
+                              ? `activeModuleHeaderTab-${moduleId}`
+                              : "activeModuleHeaderTab"
+                          }
                           className={cn(
-                            "absolute inset-0 rounded-xl -z-10 border transition-colors bg-card shadow-none",
+                            "absolute inset-0 rounded-xl -z-10 border transition-colors bg-card",
                             m.border,
                           )}
                           transition={{
@@ -481,7 +486,7 @@ export function ModuleHeader({
                       {t.icon && (
                         <t.icon
                           className={cn(
-                            "w-4 h-4 transition-colors",
+                            "w-3.5 h-3.5 transition-colors",
                             isActive ? m.text : "text-muted-foreground",
                           )}
                         />
@@ -490,7 +495,7 @@ export function ModuleHeader({
                       {t.count !== undefined && (
                         <span
                           className={cn(
-                            "ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold min-w-5 text-center flex items-center justify-center transition-all border",
+                            "ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold min-w-4.5 text-center flex items-center justify-center transition-all border",
                             isActive
                               ? cn(m.text, m.bg, m.border)
                               : "bg-muted text-muted-foreground border-border/60",
@@ -508,8 +513,8 @@ export function ModuleHeader({
 
           {/* Barra de Pesquisa Elegante e Espaçosa */}
           {onSearchChange && (
-            <div className="relative flex-1 min-w-50 max-w-xs h-10">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <div className="relative flex-1 min-w-50 max-w-xs h-9">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 value={searchValue ?? ""}
@@ -517,19 +522,26 @@ export function ModuleHeader({
                 onKeyDown={(e) => e.key === "Escape" && onSearchChange("")}
                 placeholder={searchPlaceholder}
                 className={cn(
-                  "w-full h-full pl-10 pr-9 text-xs font-medium bg-card border border-border/70 rounded-2xl text-foreground placeholder:text-muted-foreground/70 transition-all outline-none focus:border-primary focus:bg-background/95 focus:ring-1 focus:ring-primary/20",
+                  "w-full h-full pl-9 pr-14 text-xs font-medium bg-card border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground/70 transition-all outline-none focus:border-primary focus:bg-background/95 focus:ring-1 focus:ring-primary/20",
                   m.borderHover.replace("hover:", "focus:"),
                 )}
               />
-              {searchValue && (
+              {searchValue ? (
                 <button
                   type="button"
                   onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center justify-center cursor-pointer"
+                  title="Limpar (Esc)"
                   aria-label="Limpar pesquisa"
                 >
-                  ×
+                  <X className="w-3 h-3" />
                 </button>
+              ) : (
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <Kbd className="text-[9px] px-1 py-0.2 text-muted-foreground/60 border-border/50">
+                    Esc
+                  </Kbd>
+                </div>
               )}
             </div>
           )}

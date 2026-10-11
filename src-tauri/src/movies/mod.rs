@@ -19,6 +19,9 @@ pub struct Movie {
     pub created_at: Option<String>,
     #[serde(default)]
     pub is_favorite: bool,
+    pub watched_at: Option<String>,
+    #[serde(default)]
+    pub rewatchable: bool,
 }
 
 pub struct MovieManager {
@@ -44,13 +47,23 @@ impl MovieManager {
                 thumbnail    TEXT,
                 category     TEXT NOT NULL DEFAULT 'Filme',
                 created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-                is_favorite  INTEGER NOT NULL DEFAULT 0
+                is_favorite  INTEGER NOT NULL DEFAULT 0,
+                watched_at   TEXT,
+                rewatchable  INTEGER NOT NULL DEFAULT 0
             )",
             [],
         );
-        // Migration for existing databases
+        // Migrations for existing databases
         let _ = conn.execute(
             "ALTER TABLE movies ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE movies ADD COLUMN watched_at TEXT",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE movies ADD COLUMN rewatchable INTEGER NOT NULL DEFAULT 0",
             [],
         );
 
@@ -67,7 +80,7 @@ impl MovieManager {
     pub fn list_movies(&self, user_id: &str) -> Vec<Movie> {
         let conn = self.conn();
         let mut stmt = conn.prepare(
-            "SELECT id, title, director, year, status, review, stars, thumbnail, category, created_at, is_favorite 
+            "SELECT id, title, director, year, status, review, stars, thumbnail, category, created_at, is_favorite, watched_at, rewatchable 
              FROM movies WHERE user_id=?1 ORDER BY created_at DESC"
         ).unwrap();
 
@@ -85,6 +98,8 @@ impl MovieManager {
                 category: row.get(8)?,
                 created_at: row.get(9)?,
                 is_favorite: row.get::<_, i32>(10).unwrap_or(0) != 0,
+                watched_at: row.get(11)?,
+                rewatchable: row.get::<_, i32>(12).unwrap_or(0) != 0,
             })
         })
         .unwrap()
@@ -96,9 +111,9 @@ impl MovieManager {
         let conn = self.conn();
         if let Some(id) = m.id {
             conn.execute(
-                "UPDATE movies SET title=?2, director=?3, year=?4, status=?5, review=?6, stars=?7, thumbnail=?8, category=?9, is_favorite=?11 
+                "UPDATE movies SET title=?2, director=?3, year=?4, status=?5, review=?6, stars=?7, thumbnail=?8, category=?9, is_favorite=?11, watched_at=?12, rewatchable=?13 
                  WHERE id=?1 AND user_id=?10",
-                params![id, m.title, m.director, m.year, m.status, m.review, m.stars, m.thumbnail, m.category, m.user_id, m.is_favorite as i32],
+                params![id, m.title, m.director, m.year, m.status, m.review, m.stars, m.thumbnail, m.category, m.user_id, m.is_favorite as i32, m.watched_at, m.rewatchable as i32],
             ).map_err(|e| e.to_string())?;
             Ok((id, false))
         } else {
@@ -117,9 +132,9 @@ impl MovieManager {
             }
 
             conn.execute(
-                "INSERT INTO movies (user_id, title, director, year, status, review, stars, thumbnail, category, is_favorite) 
-                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
-                params![m.user_id, m.title, m.director, m.year, m.status, m.review, m.stars, m.thumbnail, m.category, m.is_favorite as i32],
+                "INSERT INTO movies (user_id, title, director, year, status, review, stars, thumbnail, category, is_favorite, watched_at, rewatchable) 
+                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
+                params![m.user_id, m.title, m.director, m.year, m.status, m.review, m.stars, m.thumbnail, m.category, m.is_favorite as i32, m.watched_at, m.rewatchable as i32],
             ).map_err(|e| e.to_string())?;
             Ok((conn.last_insert_rowid(), true))
         }

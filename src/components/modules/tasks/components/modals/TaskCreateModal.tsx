@@ -10,11 +10,14 @@ import { TaskForm } from "./TaskForm";
 interface TaskCreateModalProps {
   isOpen: boolean;
   task?: Task;
+  defaultPriority?: number;
   onAdd: (
     title: string,
     priority: number,
     category: string,
     color?: string,
+    recurrence?: "none" | "daily" | "weekly" | "monthly",
+    dueDate?: string,
   ) => void;
   onClose: () => void;
 }
@@ -26,6 +29,7 @@ interface TaskCreateModalProps {
 export function TaskCreateModal({
   isOpen,
   task,
+  defaultPriority,
   onAdd,
   onClose,
 }: TaskCreateModalProps) {
@@ -61,7 +65,12 @@ export function TaskCreateModal({
 
       {/* Área rolável (Body) */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-        <TaskForm task={task} onSave={onAdd} onCancel={onClose} />
+        <TaskForm
+          task={task}
+          defaultPriority={defaultPriority}
+          onSave={onAdd}
+          onCancel={onClose}
+        />
       </div>
 
       {/* Rodapé Fixo */}

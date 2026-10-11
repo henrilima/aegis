@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Bold,
   Code,
+  FileText,
   Heading1,
   Heading2,
   Heading3,
@@ -11,16 +12,20 @@ import {
   Italic,
   List,
   ListOrdered,
+  Maximize2,
+  Minimize2,
   Minus,
   MoreVertical,
   Palette,
   Pin,
   Quote,
+  Sparkles,
   Strikethrough,
   Trash2,
   Type,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { resolveColor } from "@/colors.config";
 import {
@@ -33,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Note } from "../types";
 import { ColorPicker } from "./ColorPicker";
+import { CreateFlashcardFromNoteModal } from "./modals/CreateFlashcardFromNoteModal";
 
 interface SlashMenuItem {
   tag: string;
@@ -43,12 +49,14 @@ interface SlashMenuItem {
 
 interface NoteEditorProps {
   note: Note;
+  allNotes?: Note[];
   onSave: (note: Note) => Promise<void>;
   onClose: () => void;
   onDelete: (id: number) => Promise<void>;
+  onNavigateWikiLink?: (noteTitle: string) => void;
 }
 
-// Auxiliar para converter formatação inline (negrito, itálico, tachado, código e links)
+// Auxiliar para converter formatação inline (negrito, itálico, tachado, código, links e WikiLinks)
 function formatInline(text: string, isEditMode: boolean): string {
   let formatted = text
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -57,7 +65,13 @@ function formatInline(text: string, isEditMode: boolean): string {
     .replace(/_(.*?)_/g, "<em>$1</em>")
     .replace(/~~(.*?)~~/g, "<del>$1</del>")
     .replace(/`(.*?)`/g, "<code>$1</code>");
+
+  // No modo de edição pura, mantemos [[...]] como texto para não prender o cursor
   if (!isEditMode) {
+    formatted = formatted.replace(
+      /\[\[(.*?)\]\]/g,
+      '<span class="wiki-link inline-flex items-center gap-1 font-bold text-primary hover:underline cursor-pointer bg-primary/10 px-1.5 py-0.5 rounded-md text-[13px]" data-wiki="$1">[[ $1 ]]</span>',
+    );
     formatted = formatted.replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
       '<a href="$2" target="_blank" class="text-primary underline hover:opacity-80">$1</a>',
@@ -178,6 +192,11 @@ function htmlToMarkdown(html: string): string {
 
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
+      if (el.hasAttribute("data-wiki")) {
+        const wiki = el.getAttribute("data-wiki") || el.textContent || "";
+        return `[[${wiki.replace(/^\[\[\s*|\s*\]\]$/g, "").trim()}]]`;
+      }
+
       let content = "";
       el.childNodes.forEach((child) => {
         content += convertNode(child);
@@ -194,7 +213,6 @@ function htmlToMarkdown(html: string): string {
         case "h4":
           return `#### ${content.trim()}\n`;
         case "blockquote": {
-          // Garante que cada linha de paragrafo dentro do blockquote tenha prefixo '> '
           const lines = content.split("\n").filter((l) => l.trim() !== "");
           if (lines.length === 0) return "> \n";
           return `${lines.map((l) => `> ${l}`).join("\n")}\n`;
@@ -253,21 +271,33 @@ function htmlToMarkdown(html: string): string {
 
 export function NoteEditor({
   note,
+  allNotes = [],
   onSave,
   onClose,
   onDelete,
+  onNavigateWikiLink,
 }: NoteEditorProps) {
   const moduleColor = getModuleColor("notes");
 
   const [title, setTitle] = useState(note.title);
   const [noteColor, setNoteColor] = useState(note.color || "");
   const [pinned, setPinned] = useState(note.pinned);
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
+  const [flashcardFront, setFlashcardFront] = useState("");
+  const [flashcardBack, setFlashcardBack] = useState("");
 
   // Menu "/" para comandos
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
   const [slashCoords, setSlashCoords] = useState({ top: 0, left: 0 });
+
+  // Menu "[[" para WikiLinks
+  const [wikiMenuOpen, setWikiMenuOpen] = useState(false);
+  const [wikiQuery, setWikiQuery] = useState("");
+  const [selectedWikiIndex, setSelectedWikiIndex] = useState(0);
+  const [wikiCoords, setWikiCoords] = useState({ top: 0, left: 0 });
 
   // Bubble Toolbar de selecao de text
   const [selectionActive, setSelectionActive] = useState(false);
@@ -289,6 +319,34 @@ export function NoteEditor({
   const slashMenuOpenRef = useRef(false);
   const selectedSlashIndexRef = useRef(0);
   const slashMenuItemsRef = useRef<SlashMenuItem[]>([]);
+
+  const wikiMenuOpenRef = useRef(false);
+  const selectedWikiIndexRef = useRef(0);
+  const filteredWikiNotesRef = useRef<Note[]>([]);
+
+  // Escuta tecla Escape para sair do Modo Zen
+  useEffect(() => {
+    const handleKeyDownGlobal = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isZenMode) {
+        setIsZenMode(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDownGlobal);
+    return () => window.removeEventListener("keydown", handleKeyDownGlobal);
+  }, [isZenMode]);
+
+  const handleOpenFlashcard = () => {
+    const selection = window.getSelection()?.toString().trim();
+    if (selection) {
+      setFlashcardFront(selection);
+      setFlashcardBack("");
+    } else {
+      setFlashcardFront(title || "Conceito");
+      const plain = editorRef.current?.innerText?.trim() || "";
+      setFlashcardBack(plain.slice(0, 400));
+    }
+    setIsFlashcardModalOpen(true);
+  };
 
   // Autofoco no título ao criar nota vazia
   useEffect(() => {
@@ -328,11 +386,9 @@ export function NoteEditor({
   const handleModeChange = async (mode: "edit" | "preview") => {
     if (!editorRef.current) return;
 
-    // Converte o conteúdo atual para markdown
     const html = editorRef.current.innerHTML;
     const markdown = htmlToMarkdown(html);
 
-    // Salva o estado atual imediatamente ao trocar de modo
     setSaveStatus("saving");
     try {
       await onSave({
@@ -347,10 +403,7 @@ export function NoteEditor({
       setSaveStatus("unsaved");
     }
 
-    // Atualiza o modo
     setEditorMode(mode);
-
-    // Repassa o HTML convertido para o editor com a regra do modo novo
     editorRef.current.innerHTML = markdownToHtml(markdown, mode === "edit");
   };
 
@@ -363,35 +416,26 @@ export function NoteEditor({
       const currentHtml = editorRef.current.innerHTML;
       const currentMarkdown = htmlToMarkdown(currentHtml);
 
-      // Só atualiza o HTML se for uma nota diferente (mudou de ID) ou se o conteúdo backend mudou externamente
       if (isDifferentNote || currentMarkdown !== note.content) {
         const html = markdownToHtml(note.content, editorMode === "edit");
         editorRef.current.innerHTML = html;
       }
     }
+  }, [note.id, note.content, editorMode]);
 
-    if (
-      isDifferentNote ||
-      (typeof document !== "undefined" &&
-        document.activeElement !== titleInputRef.current)
-    ) {
-      setTitle(note.title);
-    }
-    setNoteColor(note.color || "");
-    setPinned(note.pinned);
-  }, [note, editorMode]);
-
-  // Salva nota debounced
+  // Salvamento automático com debounce de 1.5s
   useEffect(() => {
     if (saveStatus !== "unsaved") return;
 
     const timer = setTimeout(async () => {
-      if (isSavingRef.current) return;
+      if (!editorRef.current || isSavingRef.current) return;
       isSavingRef.current = true;
       setSaveStatus("saving");
+
       try {
-        const html = editorRef.current?.innerHTML || "";
+        const html = editorRef.current.innerHTML;
         const content = htmlToMarkdown(html);
+
         await onSave({
           ...note,
           title: title.trim() || "Nota sem título",
@@ -400,50 +444,78 @@ export function NoteEditor({
           pinned,
         });
         setSaveStatus("saved");
-      } catch {
+      } catch (_err) {
         setSaveStatus("unsaved");
-        toast.error("Erro ao salvar nota");
       } finally {
         isSavingRef.current = false;
       }
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [title, noteColor, pinned, saveStatus, note, onSave]);
+  }, [saveStatus, title, noteColor, pinned, onSave, note]);
 
-  const triggerChange = () => {
-    setSaveStatus("unsaved");
-  };
-
+  // Salva imediatamente ao fechar / voltar
   const handleBack = async () => {
-    if (saveStatus === "unsaved" || saveStatus === "saving") {
-      setSaveStatus("saving");
-      try {
-        const html = editorRef.current?.innerHTML || "";
-        const content = htmlToMarkdown(html);
-        await onSave({
-          ...note,
-          title: title.trim() || "Nota sem título",
-          content,
-          color: noteColor || undefined,
-          pinned,
-        });
-        setSaveStatus("saved");
-      } catch {
-        toast.error("Erro ao salvar ao sair");
-      }
+    if (saveStatus === "unsaved" && editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      const content = htmlToMarkdown(html);
+      await onSave({
+        ...note,
+        title: title.trim() || "Nota sem título",
+        content,
+        color: noteColor || undefined,
+        pinned,
+      });
     }
     onClose();
   };
 
-  // Converte a linha ativa (bloco) diretamente no DOM de forma 100% robusta
+  const triggerChange = () => {
+    if (saveStatus !== "unsaved") setSaveStatus("unsaved");
+  };
+
+  // Formatação de texto padrão
+  const formatText = (
+    command: string,
+    value: string | undefined = undefined,
+  ) => {
+    document.execCommand(command, false, value);
+    triggerChange();
+  };
+
+  // Formatação inline de código <code>
+  const formatCodeInline = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString();
+
+    if (selectedText.length > 0) {
+      let parent: Node | null = range.commonAncestorContainer;
+      if (parent.nodeType === Node.TEXT_NODE) parent = parent.parentNode;
+
+      if (parent && (parent as HTMLElement).tagName?.toLowerCase() === "code") {
+        const textNode = document.createTextNode(selectedText);
+        parent.parentNode?.replaceChild(textNode, parent);
+      } else {
+        const codeElement = document.createElement("code");
+        codeElement.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(codeElement);
+      }
+      triggerChange();
+    }
+  };
+
+  // Converte o bloco atual para um tipo de cabeçalho ou bloco
   const convertActiveBlockTo = (tagName: string) => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
-    let node: Node | null = selection.anchorNode;
+    const range = selection.getRangeAt(0);
+    let node: Node | null = range.startContainer;
 
-    // Encontra o elemento de bloco ancestral direto
     while (
       node &&
       node !== editorRef.current &&
@@ -462,8 +534,6 @@ export function NoteEditor({
       if (parent) {
         const newBlock = document.createElement(tagName);
         let textContent = node.textContent || "";
-
-        // Remove atalhos Markdown se presentes no inicio do texto
         textContent = textContent.replace(/^(#{1,4}|>|-|\*|1\.)\s*/, "");
 
         if (textContent.trim() === "") {
@@ -472,10 +542,8 @@ export function NoteEditor({
           newBlock.textContent = textContent;
         }
 
-        // Substitui o bloco fisicamente no DOM (sem perder selecao ou focar acima)
         parent.replaceChild(newBlock, node);
 
-        // Reposiciona o cursor no fim do bloco novo
         const newRange = document.createRange();
         if (
           newBlock.firstChild &&
@@ -497,7 +565,7 @@ export function NoteEditor({
     }
   };
 
-  // Monitora digitação e barra "/"
+  // Monitora digitação, menu "/" e WikiLinks "[["
   const handleInput = () => {
     triggerChange();
 
@@ -507,17 +575,38 @@ export function NoteEditor({
       const textNode = range.startContainer;
       const text = textNode.textContent || "";
       const offset = range.startOffset;
-
       const beforeCursor = text.substring(0, offset);
-      const slashIndex = beforeCursor.lastIndexOf("/");
 
+      // 1. Detecta menu WikiLink "[["
+      const lastWikiOpen = beforeCursor.lastIndexOf("[[");
+      const isWikiCommand =
+        lastWikiOpen !== -1 &&
+        !beforeCursor.substring(lastWikiOpen).includes("]]");
+
+      if (isWikiCommand) {
+        const query = beforeCursor.substring(lastWikiOpen + 2);
+        setWikiQuery(query);
+        setWikiMenuOpen(true);
+        setSelectedWikiIndex(0);
+        setSlashMenuOpen(false);
+
+        const rect = range.getBoundingClientRect();
+        setWikiCoords({
+          top: rect.bottom + window.scrollY + 6,
+          left: Math.min(rect.left + window.scrollX, window.innerWidth - 300),
+        });
+        return;
+      }
+      setWikiMenuOpen(false);
+
+      // 2. Detecta menu "/"
+      const slashIndex = beforeCursor.lastIndexOf("/");
       const isSlashCommand =
         slashIndex !== -1 &&
         (slashIndex === 0 || /\s/.test(beforeCursor[slashIndex - 1]));
 
       if (isSlashCommand) {
         const query = beforeCursor.substring(slashIndex + 1);
-        console.log("[handleInput] Slash command detected. Query:", query);
         setSlashQuery(query);
         setSlashMenuOpen(true);
         setSelectedSlashIndex(0);
@@ -533,11 +622,37 @@ export function NoteEditor({
     }
   };
 
+  // Executa inserção de WikiLink a partir do menu
+  const handleWikiSelect = (targetNoteTitle: string) => {
+    setWikiMenuOpen(false);
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const textNode = range.startContainer;
+      const text = textNode.textContent || "";
+      const offset = range.startOffset;
+      const lastOpen = text.substring(0, offset).lastIndexOf("[[");
+
+      if (lastOpen !== -1 && textNode.nodeType === Node.TEXT_NODE) {
+        const before = text.substring(0, lastOpen);
+        const after = text.substring(offset);
+        const insertStr = `[[${targetNoteTitle}]] `;
+        textNode.textContent = before + insertStr + after;
+
+        const newRange = document.createRange();
+        newRange.setStart(textNode, before.length + insertStr.length);
+        newRange.setEnd(textNode, before.length + insertStr.length);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+    }
+    triggerChange();
+  };
+
   // Executa formatação de bloco (H1, H2, blockquote, etc.)
   const handleBlockTypeSelect = (tag: string) => {
     setSlashMenuOpen(false);
 
-    // Remove o caractere "/" digitado antes de formatar
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -577,13 +692,11 @@ export function NoteEditor({
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
 
-        // Remove scripts e estilos colados para segurança e integridade visual
         const scripts = Array.from(doc.body.getElementsByTagName("script"));
         for (const s of scripts) s.remove();
         const styles = Array.from(doc.body.getElementsByTagName("style"));
         for (const s of styles) s.remove();
 
-        // Limpa atributos de estilo, classe e cores de todos os elementos para herdar os do editor
         const allElements = Array.from(doc.body.getElementsByTagName("*"));
         for (const el of allElements) {
           el.removeAttribute("style");
@@ -592,7 +705,6 @@ export function NoteEditor({
           el.removeAttribute("bgcolor");
         }
 
-        // Insere o HTML limpo na posição atual do cursor
         const cleanHtml = doc.body.innerHTML;
         document.execCommand("insertHTML", false, cleanHtml);
         triggerChange();
@@ -610,27 +722,58 @@ export function NoteEditor({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Atalho Ctrl+S para salvar manualmente
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
       handleManualSave();
       return;
     }
 
-    const isMenuOpen = slashMenuOpenRef.current;
-    const items = slashMenuItemsRef.current;
-    const currentIndex = selectedSlashIndexRef.current;
+    // Controle do menu de WikiLinks "[["
+    if (wikiMenuOpenRef.current) {
+      const items = filteredWikiNotesRef.current;
+      const currentIndex = selectedWikiIndexRef.current;
 
-    if (isMenuOpen) {
+      if (e.key === "ArrowDown" && items.length > 0) {
+        e.preventDefault();
+        const next = (currentIndex + 1) % items.length;
+        setSelectedWikiIndex(next);
+        document
+          .getElementById(`wiki-item-${next}`)
+          ?.scrollIntoView({ block: "nearest" });
+        return;
+      }
+      if (e.key === "ArrowUp" && items.length > 0) {
+        e.preventDefault();
+        const next = (currentIndex - 1 + items.length) % items.length;
+        setSelectedWikiIndex(next);
+        document
+          .getElementById(`wiki-item-${next}`)
+          ?.scrollIntoView({ block: "nearest" });
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        if (items[currentIndex]) {
+          e.preventDefault();
+          handleWikiSelect(items[currentIndex].title);
+          return;
+        }
+        setWikiMenuOpen(false);
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setWikiMenuOpen(false);
+        return;
+      }
+    }
+
+    // Controle do menu "/"
+    if (slashMenuOpenRef.current) {
+      const items = slashMenuItemsRef.current;
+      const currentIndex = selectedSlashIndexRef.current;
+
       if (e.key === "ArrowDown" && items.length > 0) {
         e.preventDefault();
         const nextIndex = (currentIndex + 1) % items.length;
-        console.log(
-          "[handleKeyDown] ArrowDown. Current index:",
-          currentIndex,
-          "Next index:",
-          nextIndex,
-        );
         setSelectedSlashIndex(nextIndex);
         document
           .getElementById(`slash-item-${nextIndex}`)
@@ -640,12 +783,6 @@ export function NoteEditor({
       if (e.key === "ArrowUp" && items.length > 0) {
         e.preventDefault();
         const nextIndex = (currentIndex - 1 + items.length) % items.length;
-        console.log(
-          "[handleKeyDown] ArrowUp. Current index:",
-          currentIndex,
-          "Next index:",
-          nextIndex,
-        );
         setSelectedSlashIndex(nextIndex);
         document
           .getElementById(`slash-item-${nextIndex}`)
@@ -659,7 +796,6 @@ export function NoteEditor({
           handleBlockTypeSelect(selected.tag);
           return;
         }
-        // Se não houver comando válido, fecha o menu e permite a quebra de linha normal
         setSlashMenuOpen(false);
       }
       if (e.key === "Escape") {
@@ -669,13 +805,12 @@ export function NoteEditor({
       }
     }
 
-    // Atalhos de Markdown em tempo real ao digitar Espaço (Ex: '# ', '## ', '--- ', '- ', etc.)
+    // Atalhos de Markdown em tempo real ao digitar Espaço
     if (e.key === " ") {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         let node: Node | null = selection.anchorNode;
 
-        // Encontra o elemento de bloco ancestral direto da seleção atual
         while (
           node &&
           node !== editorRef.current &&
@@ -704,161 +839,81 @@ export function NoteEditor({
             tagToApply = "h4";
           } else if (text === ">") {
             tagToApply = "blockquote";
-          } else if (text === "-" || text === "*") {
+          } else if (text === "- " || text === "* ") {
             tagToApply = "ul";
-          } else if (text === "1.") {
-            tagToApply = "ol";
-          } else if (text === "---") {
-            tagToApply = "hr";
           }
 
           if (tagToApply) {
-            e.preventDefault(); // Impede a digitação do caractere de espaço
-
-            // Executa a conversão baseada em manipulação DOM direta de forma 100% segura
-            if (tagToApply === "hr") {
-              document.execCommand("insertHorizontalRule");
-            } else if (tagToApply === "ul") {
-              document.execCommand("insertUnorderedList");
-            } else if (tagToApply === "ol") {
-              document.execCommand("insertOrderedList");
-            } else {
-              convertActiveBlockTo(tagToApply);
-            }
-
-            triggerChange();
+            e.preventDefault();
+            convertActiveBlockTo(tagToApply);
+            return;
           }
-        }
-      }
-    }
-
-    // Intercepta Enter em blocos formatados (H1-H4, Blockquote) para quebrar criando um parágrafo comum <p> fora dele
-    if (e.key === "Enter" && !e.shiftKey) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        let node = selection.anchorNode;
-        let specialBlock: HTMLElement | null = null;
-
-        // Varre a árvore em busca de blockquote ou h1-h4
-        while (node && node !== editorRef.current) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as HTMLElement;
-            const tag = el.tagName.toLowerCase();
-            if (
-              tag === "h1" ||
-              tag === "h2" ||
-              tag === "h3" ||
-              tag === "h4" ||
-              tag === "blockquote"
-            ) {
-              specialBlock = el;
-              break;
-            }
-          }
-          node = node.parentNode;
-        }
-
-        if (specialBlock) {
-          e.preventDefault(); // Evita a duplicidade nativa do estilo
-
-          const p = document.createElement("p");
-          p.innerHTML = "<br>";
-
-          // Insere o parágrafo logo após o bloco especial
-          specialBlock.parentNode?.insertBefore(p, specialBlock.nextSibling);
-
-          // Move o cursor de forma suave para dentro do novo parágrafo
-          const newRange = document.createRange();
-          newRange.setStart(p, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-
-          triggerChange();
         }
       }
     }
   };
 
-  // Monitora selecao de texto
   const handleSelectionChange = () => {
     const selection = window.getSelection();
-    if (selection && selection.toString().trim() !== "") {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      setSelectionActive(false);
+      return;
+    }
 
-      if (rect.width > 0 && rect.height > 0) {
-        setBubbleCoords({
-          top: rect.top - 46,
-          left: rect.left + rect.width / 2 - 100,
-        });
-        setSelectionActive(true);
-      }
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (rect.width > 0) {
+      setBubbleCoords({
+        top: rect.top - 48,
+        left: rect.left + rect.width / 2 - 80,
+      });
+      setSelectionActive(true);
     } else {
       setSelectionActive(false);
     }
   };
 
-  // Formatação rápida via execCommand
-  const formatText = (command: string, value = "") => {
-    document.execCommand(command, false, value);
-    triggerChange();
-  };
-
-  // Código inline customizado
-  const formatCodeInline = () => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const code = document.createElement("code");
-      code.textContent = selection.toString();
-      range.deleteContents();
-      range.insertNode(code);
-      triggerChange();
-    }
-  };
-
-  const rawSlashMenuItems = [
+  const rawSlashMenuItems: SlashMenuItem[] = [
     {
       tag: "p",
-      label: "Texto normal",
-      description: "Escreva texto comum",
+      label: "Texto Normal",
+      description: "Parágrafo de texto simples",
       icon: Type,
     },
     {
       tag: "h1",
       label: "Título 1",
-      description: "Cabeçalho grande",
+      description: "Título principal grande",
       icon: Heading1,
     },
     {
       tag: "h2",
       label: "Título 2",
-      description: "Cabeçalho médio",
+      description: "Subtítulo médio de seção",
       icon: Heading2,
     },
     {
       tag: "h3",
       label: "Título 3",
-      description: "Cabeçalho pequeno",
+      description: "Subtítulo pequeno",
       icon: Heading3,
     },
     {
       tag: "h4",
       label: "Título 4",
-      description: "Cabeçalho minúsculo",
+      description: "Subtítulo menor de tópico",
       icon: Heading4,
     },
     {
       tag: "ul",
-      label: "Lista simples",
-      description: "Lista com marcadores",
+      label: "Lista com Marcadores",
+      description: "Lista simples de tópicos",
       icon: List,
     },
     {
       tag: "ol",
-      label: "Lista numerada",
-      description: "Lista em ordem",
+      label: "Lista Numerada",
+      description: "Lista ordenada com números",
       icon: ListOrdered,
     },
     {
@@ -880,28 +935,39 @@ export function NoteEditor({
       item.label.toLowerCase().includes(slashQuery.toLowerCase()) ||
       item.tag.toLowerCase().includes(slashQuery.toLowerCase()),
   );
-  console.log(
-    "[NoteEditor Render] selectedSlashIndex:",
-    selectedSlashIndex,
-    "slashMenuOpen:",
-    slashMenuOpen,
-    "slashMenuItems count:",
-    slashMenuItems.length,
+
+  const filteredWikiNotes = allNotes.filter(
+    (n) =>
+      n.id !== note.id &&
+      (n.title.toLowerCase().includes(wikiQuery.toLowerCase()) ||
+        n.path?.toLowerCase().includes(wikiQuery.toLowerCase())),
   );
 
   slashMenuOpenRef.current = slashMenuOpen;
   selectedSlashIndexRef.current = selectedSlashIndex;
   slashMenuItemsRef.current = slashMenuItems;
 
-  return (
-    <div className="w-full flex-1 flex flex-col h-full bg-background animate-in fade-in duration-200">
+  wikiMenuOpenRef.current = wikiMenuOpen;
+  selectedWikiIndexRef.current = selectedWikiIndex;
+  filteredWikiNotesRef.current = filteredWikiNotes;
+
+  // Render do Editor (usado tanto normalmente quanto no Portal Zen)
+  const editorBody = (
+    <div
+      className={cn(
+        "w-full flex-1 flex flex-col h-full bg-background animate-in fade-in duration-200",
+        isZenMode &&
+          "fixed inset-0 z-99999 bg-background flex flex-col w-screen h-screen",
+      )}
+    >
       {/*  BARRA COMPACTA SUPERIOR  */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/10 z-20 shrink-0 select-none">
         <div className="flex items-center gap-4 flex-1 min-w-0 mr-4">
           <button
             type="button"
-            onClick={handleBack}
+            onClick={isZenMode ? () => setIsZenMode(false) : handleBack}
             className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer shrink-0"
+            title={isZenMode ? "Sair do modo foco (Esc)" : "Voltar"}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -914,8 +980,8 @@ export function NoteEditor({
               setTitle(e.target.value);
               triggerChange();
             }}
-            placeholder="Digite um título..."
-            className="w-full bg-transparent border-b border-dashed border-border/40 hover:border-border/80 focus:border-solid focus:border-border text-base font-bold outline-none text-foreground placeholder-muted-foreground/30 pb-1 h-auto focus:ring-0 focus-visible:ring-0 truncate transition-colors"
+            placeholder="Digite o título da nota..."
+            className="w-full bg-transparent border-b-2 border-dashed border-border/40 hover:border-border/80 focus:border-solid focus:border-amber-500/80 text-xl font-bold outline-none text-foreground placeholder-muted-foreground/30 py-1.5 px-1 h-auto focus:ring-0 focus-visible:ring-0 transition-all tracking-tight"
             style={colorHex ? { color: colorHex } : {}}
           />
         </div>
@@ -929,7 +995,7 @@ export function NoteEditor({
               className={cn(
                 "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
                 editorMode === "edit"
-                  ? "bg-background text-foreground shadow-xs"
+                  ? "bg-background text-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -941,7 +1007,7 @@ export function NoteEditor({
               className={cn(
                 "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
                 editorMode === "preview"
-                  ? "bg-background text-foreground shadow-xs"
+                  ? "bg-background text-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -969,6 +1035,37 @@ export function NoteEditor({
               </>
             )}
           </span>
+
+          {/* Criar Flashcard da Nota */}
+          <button
+            type="button"
+            onClick={handleOpenFlashcard}
+            title="Criar Flashcard a partir da nota"
+            className="p-2 rounded-xl border border-border/30 text-indigo-500 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
+
+          {/* Modo Zen / Foco Total */}
+          <button
+            type="button"
+            onClick={() => setIsZenMode((z) => !z)}
+            title={
+              isZenMode ? "Sair do modo foco (Esc)" : "Entrar no modo foco zen"
+            }
+            className={cn(
+              "p-2 rounded-xl border border-border/30 transition-colors cursor-pointer",
+              isZenMode
+                ? "bg-primary/15 text-primary border-primary/30"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+            )}
+          >
+            {isZenMode ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+          </button>
 
           {/* Fixar Nota */}
           <button
@@ -1011,12 +1108,27 @@ export function NoteEditor({
                 <MoreVertical className="w-4 h-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-card border-border text-foreground min-w-[150px] rounded-xl">
+            <DropdownMenuContent className="bg-card border-border text-foreground min-w-37.5 rounded-xl">
+              <DropdownMenuItem
+                onClick={handleOpenFlashcard}
+                className="text-xs gap-2 cursor-pointer font-medium"
+              >
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                Criar Flashcard
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setIsZenMode((z) => !z)}
+                className="text-xs gap-2 cursor-pointer font-medium"
+              >
+                <Maximize2 className="w-4 h-4 text-muted-foreground" />
+                {isZenMode ? "Sair do modo foco" : "Modo foco zen"}
+              </DropdownMenuItem>
+              <div className="h-px bg-border/50 my-1" />
               <DropdownMenuItem
                 onClick={() => note.id && onDelete(note.id)}
-                className="text-red-600 dark:text-red-400 hover:bg-red-500/10 cursor-pointer rounded-lg m-1"
+                className="text-red-600 dark:text-red-400 hover:bg-red-500/10 cursor-pointer rounded-lg m-1 text-xs gap-2 font-medium"
               >
-                <Trash2 className="w-4 h-4 mr-2" /> Excluir nota
+                <Trash2 className="w-4 h-4" /> Excluir nota
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1026,7 +1138,7 @@ export function NoteEditor({
       {/*  BUBBLE TOOLBAR FLUTUANTE (SELEÇÃO)  */}
       {selectionActive && (
         <div
-          className="fixed bg-card border border-border text-foreground px-2.5 py-1.5 rounded-xl z-50 flex items-center gap-1 duration-150 animate-in fade-in zoom-in-95 shadow-lg select-none"
+          className="fixed bg-card border border-border text-foreground px-2.5 py-1.5 rounded-xl z-50 flex items-center gap-1 duration-150 animate-in fade-in zoom-in-95 select-none"
           style={{
             top: Math.max(10, bubbleCoords.top),
             left: Math.max(
@@ -1082,21 +1194,51 @@ export function NoteEditor({
           >
             <Code className="w-3.5 h-3.5" />
           </button>
+          <div className="w-px h-4 bg-border mx-0.5" />
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleOpenFlashcard();
+            }}
+            className="p-2 rounded-lg hover:bg-indigo-500/10 text-indigo-500 transition-all cursor-pointer flex items-center gap-1 text-xs font-bold"
+            title="Transformar seleção em Flashcard"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
       {/* Área de edição do conteúdo  */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Click on wrapper area is a focus forwarding convenience helper, keyboard users focus the editor directly */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Click on wrapper area is a focus forwarding convenience helper, keyboard users focus the editor directly */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Click on wrapper area is a focus forwarding convenience helper */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Click on wrapper area is a focus forwarding convenience helper */}
       <div
-        className="flex-1 flex flex-col h-full overflow-y-auto p-6 md:p-10 custom-scrollbar bg-background/5"
+        className={cn(
+          "flex-1 flex flex-col h-full overflow-y-auto p-6 md:p-10 custom-scrollbar bg-background/5",
+          isZenMode && "p-8 md:p-16",
+        )}
         onClick={() => editorRef.current?.focus()}
       >
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: Event propagation interception does not require keyboard events */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: Event propagation interception does not require a specific role */}
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: Event propagation interception for WikiLinks */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: Event propagation interception for WikiLinks */}
         <div
-          className="max-w-4xl mx-auto w-full flex-1 flex flex-col min-h-full"
-          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "max-w-4xl mx-auto w-full flex-1 flex flex-col min-h-full",
+            isZenMode && "max-w-3xl",
+          )}
+          onClick={(e) => {
+            const target = (e.target as HTMLElement).closest("[data-wiki]");
+            if (target) {
+              const wikiTitle = target.getAttribute("data-wiki");
+              if (wikiTitle && onNavigateWikiLink) {
+                e.preventDefault();
+                e.stopPropagation();
+                onNavigateWikiLink(wikiTitle);
+                return;
+              }
+            }
+            e.stopPropagation();
+          }}
         >
           {/* biome-ignore lint/a11y/useSemanticElements: Rich text editor must use contentEditable div instead of native inputs */}
           <div
@@ -1112,7 +1254,7 @@ export function NoteEditor({
             onSelect={handleSelectionChange}
             onMouseUp={handleSelectionChange}
             className={cn(
-              "w-full h-full min-h-[300px] outline-none editor-content select-text font-sans text-foreground pb-20",
+              "w-full h-full min-h-75 outline-none editor-content select-text font-sans text-foreground pb-20",
               editorMode === "preview" && "pointer-events-auto",
             )}
             style={
@@ -1129,14 +1271,14 @@ export function NoteEditor({
       {/*  PALETA DE COMANDOS FLUTUANTE "/"  */}
       {slashMenuOpen && (
         <div
-          className="fixed bg-card/95 backdrop-blur-md border border-border text-foreground w-64 rounded-2xl z-50 overflow-hidden p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 select-none"
+          className="fixed bg-card/95 backdrop-blur-md border border-border text-foreground w-64 rounded-2xl z-50 overflow-hidden p-1.5 animate-in fade-in zoom-in-95 duration-150 select-none"
           style={{
             top: slashCoords.top,
             left: slashCoords.left,
           }}
         >
-          <div className="max-h-[220px] overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
-            <div className="px-2.5 py-1.5 text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider select-none">
+          <div className="max-h-55 overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
+            <div className="px-2.5 py-1.5 text-[9px] font-bold text-muted-foreground/60 select-none">
               Comandos de Formatação
             </div>
             {slashMenuItems.length === 0 ? (
@@ -1188,6 +1330,71 @@ export function NoteEditor({
         </div>
       )}
 
+      {/*  PALETA DE WIKILINKS "[["  */}
+      {wikiMenuOpen && (
+        <div
+          className="fixed bg-card/95 backdrop-blur-md border border-border text-foreground w-72 rounded-2xl z-50 overflow-hidden p-1.5 animate-in fade-in zoom-in-95 duration-150 select-none"
+          style={{
+            top: wikiCoords.top,
+            left: wikiCoords.left,
+          }}
+        >
+          <div className="max-h-60 overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
+            <div className="px-2.5 py-1.5 text-[9px] font-bold text-muted-foreground/60 select-none flex items-center justify-between">
+              <span>Referenciar Nota</span>
+              <span className="text-[8px] text-muted-foreground/40 font-normal">
+                Enter ou Tab para inserir
+              </span>
+            </div>
+            {filteredWikiNotes.length === 0 ? (
+              <div className="px-2.5 py-3 text-xs text-muted-foreground text-center font-medium">
+                Nenhuma nota encontrada com "{wikiQuery}"
+              </div>
+            ) : (
+              filteredWikiNotes.map((item, idx) => (
+                <button
+                  key={item.id}
+                  id={`wiki-item-${idx}`}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                  }}
+                  onClick={() => handleWikiSelect(item.title)}
+                  className={cn(
+                    "w-full flex items-center gap-3 text-left px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer",
+                    idx === selectedWikiIndex
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "hover:bg-muted/40 text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                    <FileText className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[11px] leading-tight text-foreground truncate">
+                      {item.title || "Nota sem título"}
+                    </div>
+                    {item.path && (
+                      <div className="text-[9px] text-muted-foreground/80 leading-tight mt-0.5 truncate">
+                        {item.path}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      <CreateFlashcardFromNoteModal
+        isOpen={isFlashcardModalOpen}
+        initialFront={flashcardFront}
+        initialBack={flashcardBack}
+        noteTitle={title || "Nota"}
+        onClose={() => setIsFlashcardModalOpen(false)}
+      />
+
       <style>{`
         .editor-content {
           font-size: 0.875rem; /* 14px */
@@ -1200,7 +1407,6 @@ export function NoteEditor({
           margin-bottom: 0.5rem;
           line-height: 1.25;
           color: var(--color-hex);
-          letter-spacing: -0.025em;
         }
         .editor-content h2 {
           font-size: 1.5rem; /* 24px */
@@ -1208,7 +1414,6 @@ export function NoteEditor({
           margin-top: 1.25rem;
           margin-bottom: 0.5rem;
           line-height: 1.3;
-          letter-spacing: -0.025em;
         }
         .editor-content h3 {
           font-size: 1.25rem; /* 20px */
@@ -1271,4 +1476,11 @@ export function NoteEditor({
       `}</style>
     </div>
   );
+
+  // Se estiver no Modo Zen, renderiza via Portal no document.body para cobrir 100% da tela (acima da sidebar)
+  if (isZenMode && typeof document !== "undefined") {
+    return createPortal(editorBody, document.body);
+  }
+
+  return editorBody;
 }

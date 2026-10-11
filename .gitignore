@@ -47,6 +47,7 @@ next-env.d.ts
 todo.md
 /dev_commands.md
 /scripts/
+/scratch/
 passwords.db
 config.db
 *.db

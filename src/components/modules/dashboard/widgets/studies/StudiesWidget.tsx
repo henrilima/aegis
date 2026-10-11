@@ -119,31 +119,31 @@ export function StudiesWidget({
             </div>
           )}
 
-          <div className="space-y-[1.5cqw] @sm:space-y-1.5 mt-1">
+          <div className="divide-y divide-border/30">
             {sessions.slice(0, 3).map((s, i) => (
               <div
                 key={s.id ?? i}
-                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
+                className="flex items-center justify-between py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3"
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
                     className={cn(
-                      "shrink-0 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20",
+                      "shrink-0 w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center",
                       theme.text,
                     )}
                   >
-                    <BookOpen className="w-4 h-4" />
+                    <BookOpen className="w-4 h-4 text-violet-500" />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
-                    <span className="text-sm font-bold text-foreground truncate">
+                    <span className="text-xs font-bold text-foreground truncate">
                       {s.subject}
                     </span>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold text-muted-foreground truncate max-w-30">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-medium text-muted-foreground truncate max-w-30">
                         {s.topic || "Sessão de estudo"}
                       </span>
                       {(s.questionsNew ?? 0) + (s.questionsReview ?? 0) > 0 && (
-                        <span className="text-[10px] font-bold text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground/70">
                           · {(s.questionsNew ?? 0) + (s.questionsReview ?? 0)}{" "}
                           questões
                         </span>
@@ -155,7 +155,7 @@ export function StudiesWidget({
                 <div className="shrink-0 flex items-center">
                   <div
                     className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                       "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
                     )}
                   >
@@ -166,12 +166,11 @@ export function StudiesWidget({
             ))}
             {sessions.length === 0 && (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <p className="text-xs text-neutral-600 font-bold">
-                  Sem Registros
+                <p className="text-xs text-foreground font-bold">
+                  Nenhum estudo registrado
                 </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
-                  Registre suas sessões de estudo para acompanhar seu progresso
-                  semanal.
+                <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
+                  Comece uma sessão para acompanhar seu progresso semanal.
                 </p>
               </div>
             )}

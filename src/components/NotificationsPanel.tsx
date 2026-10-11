@@ -185,10 +185,15 @@ function VersionCard({
 
     case "up-to-date":
       title = "Sistema atualizado";
-      subtitle = `Canal ${currentStage.label} ativo (v${APP_CONFIG.version}).`;
+      subtitle = `Você está na versão mais recente do Aegis (v${APP_CONFIG.version}). Tudo em dia!`;
       iconClass = cn("w-4 h-4", theme.text);
       icon = <Coffee className={iconClass} />;
       iconContainerClass = theme.bg;
+      extraElement = (
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+          Estável
+        </span>
+      );
       break;
 
     case "update-available":
@@ -251,11 +256,25 @@ function VersionCard({
       break;
 
     case "beta":
-      title = "Versão experimental ativa";
-      subtitle = `Canal ${currentStage.label} ativo. Aproveite as novidades antecipadas.`;
-      iconClass = cn("w-4 h-4 animate-pulse", theme.text);
+      title = "Versão em desenvolvimento (Beta)";
+      subtitle = release?.tag_name
+        ? `Você está na v${APP_CONFIG.version}, à frente da versão pública do GitHub (${release.tag_name}). Aproveite os novos recursos em primeira mão!`
+        : `Canal ${currentStage.label} ativo (v${APP_CONFIG.version}). Aproveite as novidades antecipadas.`;
+      iconClass = "w-4 h-4 text-purple-500 animate-pulse";
       icon = <Ghost className={iconClass} />;
-      iconContainerClass = theme.bg;
+      iconContainerClass = "bg-purple-500/10 border border-purple-500/20";
+      onClick = () => {
+        if (release?.html_url) {
+          open(release.html_url);
+        } else {
+          open("https://github.com/henrilima/aegis/releases");
+        }
+      };
+      extraElement = (
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 bg-purple-500/10 text-purple-500 border-purple-500/20">
+          Beta
+        </span>
+      );
       break;
 
     case "error":
@@ -274,12 +293,12 @@ function VersionCard({
   const Tag = isClickable ? "button" : "div";
 
   const containerStyles = cn(
-    "w-[calc(100%-2.5rem)] mx-5 mb-3 p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-all text-left",
+    "w-[calc(100%-1.5rem)] mx-3 p-3 rounded-2xl border flex items-center justify-between gap-3 transition-all text-left",
     vState === "downgrade-available"
       ? "bg-blue-500/5 border-blue-500/15"
-      : "bg-card/45 border-border/30",
+      : "bg-card/45 border-border/40",
     isClickable
-      ? "cursor-pointer hover:scale-[1.01] active:scale-[0.99] hover:bg-muted/20 hover:border-border/50"
+      ? "cursor-pointer hover:scale-[1.01] active:scale-[0.99] hover:bg-muted/30 hover:border-border/60"
       : "cursor-default",
   );
 
@@ -518,7 +537,15 @@ export function NotificationsPanel({
           APP_CONFIG.stage,
         );
 
-        updateVState(evalResult.action as VersionState);
+        if (evalResult.action === "upgrade-available") {
+          updateVState("update-available");
+        } else if (evalResult.action === "downgrade-available") {
+          updateVState("downgrade-available");
+        } else if (evalResult.action === "beta-active") {
+          updateVState("beta");
+        } else {
+          updateVState("up-to-date");
+        }
         lastCheckTime = Date.now();
         setErrorMsg(null);
       } catch (err) {
@@ -968,43 +995,50 @@ export function NotificationsPanel({
         aria-label="Painel de notificações"
         tabIndex={-1}
         className={cn(
-          "relative flex flex-col h-full w-87.5 bg-background/95 backdrop-blur-xl border-r border-border z-10 outline-none",
+          "relative flex flex-col h-full w-96 max-w-[90vw] bg-background/95 backdrop-blur-xl border-r border-border z-10 outline-none",
           isClosing
             ? "animate-out slide-out-to-left duration-280 ease-in"
             : "animate-in slide-in-from-left duration-300 ease-out",
         )}
         onKeyDown={handlePanelKeyDown}
       >
-        {/* Cabeçalho do painel */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-border/80 bg-card/20">
+        {/* Cabeçalho do painel redesenhado */}
+        <div className="flex items-center justify-between p-4 border-b border-border/60 bg-card/25">
           <div className="flex items-center gap-3">
             <div
-              className={`p-2 rounded-xl ${theme.bg} border ${theme.border} group`}
+              className={`p-2.5 rounded-2xl ${theme.bg} border ${theme.border} group`}
             >
               <Bell
                 className={`w-4 h-4 ${theme.text} group-hover:rotate-12 transition-transform`}
               />
             </div>
             <div>
-              <h2 className="font-bold text-[15px] text-foreground">
-                Notificações
-              </h2>
-              {totalUnreadCount > 0 ? (
-                <p
-                  className={`text-[11px] font-medium ${theme.text} opacity-80`}
-                >
-                  {totalUnreadCount} não lida{totalUnreadCount !== 1 ? "s" : ""}
-                </p>
-              ) : (
-                <p
-                  className={`text-[11px] font-medium ${theme.text} opacity-80`}
-                >
-                  Nenhuma notificação
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-sm text-foreground">
+                  Notificações
+                </h2>
+                {totalUnreadCount > 0 && (
+                  <span
+                    className={cn(
+                      "px-2 py-0.2 rounded-full text-[10px] font-bold border",
+                      theme.bg,
+                      theme.text,
+                      theme.border,
+                    )}
+                  >
+                    {totalUnreadCount}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                {totalUnreadCount > 0
+                  ? `${totalUnreadCount} não lida${totalUnreadCount !== 1 ? "s" : ""}`
+                  : "Central de avisos"}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+
+          <div className="flex items-center gap-1">
             {vState === "update-available" && (
               <ToolTip content="Nova atualização disponível">
                 <button
@@ -1057,11 +1091,11 @@ export function NotificationsPanel({
         {/* Seção Fixa: Versão e Filtros */}
         <div className="flex flex-col shrink-0">
           {/* Status da versão do software */}
-          <div className="border-b border-border/60 bg-card/30 py-1">
-            <div className="px-5 py-1.5">
-              <p className="text-[10px] font-bold text-muted-foreground">
+          <div className="border-b border-border/40 bg-card/15 py-2">
+            <div className="px-4 pb-1.5 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-muted-foreground">
                 Estado do sistema
-              </p>
+              </span>
             </div>
             <VersionCard
               vState={vState}
@@ -1070,93 +1104,90 @@ export function NotificationsPanel({
             />
           </div>
 
-          {/* Filtros de Categoria */}
+          {/* Filtros de Categoria em Segmented Control Arredondado */}
           {uniqueCategories.length > 0 && (
-            <div className="px-5 py-3 border-b border-border/50 bg-card/20 flex gap-2 overflow-x-auto custom-scrollbar">
-              <button
-                type="button"
-                onClick={() => setActiveFilter("all")}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap",
-                  activeFilter === "all"
-                    ? `${theme.bg} ${theme.text}`
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted",
-                )}
-              >
-                Todas
-              </button>
-              {uniqueCategories.map((cat) => (
+            <div className="p-3 border-b border-border/40 bg-card/10">
+              <div className="flex gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
                 <button
-                  key={cat}
                   type="button"
-                  onClick={() => setActiveFilter(cat)}
+                  onClick={() => setActiveFilter("all")}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-1.5",
-                    activeFilter === cat
-                      ? `${theme.bg} ${theme.text}`
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted",
+                    "px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap",
+                    activeFilter === "all"
+                      ? `${theme.bg} ${theme.text} border ${theme.border}`
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground border border-transparent",
                   )}
                 >
-                  <span>{categoryLabels[cat] || cat}</span>
-                  {cat === "fixas" && fixasStats.unread > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/20">
-                      {fixasStats.unread} não vistas
-                    </span>
-                  )}
+                  Todas
                 </button>
-              ))}
+                {uniqueCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setActiveFilter(cat)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5",
+                      activeFilter === cat
+                        ? `${theme.bg} ${theme.text} border ${theme.border}`
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground border border-transparent",
+                    )}
+                  >
+                    <span>{categoryLabels[cat] || cat}</span>
+                    {cat === "fixas" && fixasStats.unread > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/20">
+                        {fixasStats.unread}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-
-          <div className="px-5 py-3 border-b border-border/10">
-            <p className="text-[10px] font-bold text-muted-foreground">
-              Alertas recentes
-            </p>
-          </div>
         </div>
 
-        {/* Lista de notificações - Única parte rolável */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-          <div className="flex-1 divide-y divide-border/40">
-            {groupedNotifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 px-10 text-center gap-4 animate-in fade-in zoom-in duration-700">
-                <div className="p-5 rounded-xl bg-card/50 border border-border group">
-                  <Bell
-                    className={`w-8 h-8 text-muted-foreground group-hover:${theme.text} opacity-80 transition-colors duration-500`}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">
-                    Tudo limpo por aqui
-                  </p>
-                  <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
-                    Você não tem novas notificações{" "}
-                    {activeFilter !== "all" ? "desta categoria" : "no momento"}.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              groupedNotifications.map((n, idx) => (
-                <NotificationCard
-                  key={`${n.category}-${n.title}-${n.isRead}`}
-                  n={n}
-                  idx={idx}
-                  theme={theme}
-                  exitingIds={exitingIds}
-                  handleMarkRead={handleMarkRead}
-                  handleDeleteGroup={handleDeleteGroup}
-                  onClose={onClose}
+        {/* Lista de notificações - Rolável com cards arredondados */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col py-2">
+          {groupedNotifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-8 text-center gap-4 animate-in fade-in zoom-in duration-500">
+              <div className="p-5 rounded-2xl bg-card/50 border border-border/60">
+                <Bell
+                  className={`w-7 h-7 text-muted-foreground ${theme.text} opacity-70`}
                 />
-              ))
-            )}
-          </div>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  Tudo limpo por aqui
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Você não tem novas notificações{" "}
+                  {activeFilter !== "all" ? "desta categoria" : "no momento"}.
+                </p>
+              </div>
+            </div>
+          ) : (
+            groupedNotifications.map((n, idx) => (
+              <NotificationCard
+                key={`${n.category}-${n.title}-${n.isRead}`}
+                n={n}
+                idx={idx}
+                theme={theme}
+                exitingIds={exitingIds}
+                handleMarkRead={handleMarkRead}
+                handleDeleteGroup={handleDeleteGroup}
+                onClose={onClose}
+              />
+            ))
+          )}
         </div>
 
         {/* Rodapé informativo do sistema */}
-        <div className="px-5 py-4 border-t border-border/80 bg-card/20">
-          <p className="text-[10px] text-muted-foreground/70 text-center font-medium italic">
-            Sistema Aegis - Software para Desktop
-          </p>
+        <div className="px-4 py-3 border-t border-border/60 bg-card/25 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground/70 font-medium">
+            Aegis Desktop
+          </span>
+          <span className="text-[10px] font-semibold text-muted-foreground/70">
+            v{APP_CONFIG.version}
+          </span>
         </div>
 
         {/* Dialog de Atualização */}
@@ -1254,17 +1285,17 @@ function NotificationCard({
   };
   return (
     <div
-      style={{ animationDelay: `${idx * 50}ms` }}
+      style={{ animationDelay: `${idx * 40}ms` }}
       className={cn(
-        "group relative w-full overflow-hidden transition-all duration-300 animate-in slide-in-from-left-2",
+        "group relative mx-3 my-1.5 rounded-2xl border transition-all duration-200 overflow-hidden",
         n.ids.some((id) => exitingIds.has(id))
           ? "opacity-0 -translate-x-4 scale-95 pointer-events-none"
           : n.isRead
-            ? "bg-transparent opacity-60 grayscale-[0.3] hover:opacity-100 hover:grayscale-0 hover:bg-muted/10"
-            : "bg-transparent hover:bg-muted/40",
+            ? "bg-card/20 border-border/30 opacity-70 hover:opacity-100 hover:bg-card/50 hover:border-border/60"
+            : "bg-card/50 border-border/60 hover:bg-card/80 hover:border-border",
       )}
     >
-      {/* Botão de ação principal (Overlay) - Satisfaz a semântica sem aninhar botões */}
+      {/* Botão de ação principal (Overlay) */}
       <button
         type="button"
         onClick={() => !n.isRead && handleMarkRead(n.ids)}
@@ -1273,14 +1304,14 @@ function NotificationCard({
       />
 
       {/* Conteúdo e botões secundários */}
-      <div className="relative z-10 flex gap-3 px-4 py-3.5 pointer-events-none">
+      <div className="relative z-10 flex gap-3 p-3.5 pointer-events-none">
         <div
           className={cn(
-            "mt-0.5 shrink-0 w-10 h-10 rounded-[14px] border flex items-center justify-center transition-transform group-hover:scale-105",
+            "mt-0.5 shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-105",
             n.color && NOTIF_COLORS[n.color]
               ? NOTIF_COLORS[n.color]
               : (CATEGORY_COLOR[n.category] ?? CATEGORY_COLOR.system),
-            n.isRead && "opacity-80",
+            n.isRead && "opacity-75",
           )}
         >
           {(() => {
@@ -1292,13 +1323,13 @@ function NotificationCard({
           })()}
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col gap-2">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p
                   className={cn(
-                    "text-[13px] font-bold leading-tight",
+                    "text-xs font-bold leading-tight truncate",
                     n.isRead ? "text-muted-foreground" : "text-foreground",
                   )}
                 >
@@ -1307,7 +1338,7 @@ function NotificationCard({
                 {!n.isRead && (
                   <span
                     className={cn(
-                      "px-1.5 py-0.5 rounded-md text-[8px] font-bold animate-in fade-in zoom-in border",
+                      "px-1.5 py-0.2 rounded-full text-[8px] font-bold animate-in fade-in zoom-in border",
                       theme.bg,
                       theme.text,
                       theme.border,
@@ -1320,14 +1351,14 @@ function NotificationCard({
               <p className="text-[10px] text-muted-foreground font-medium">
                 {formatDate(n.createdAt)}
                 {n.count > 1 && (
-                  <span className="ml-2 py-0.5 px-1.5 rounded-full bg-accent text-[9px] font-black text-foreground">
+                  <span className="ml-1.5 py-0.2 px-1.5 rounded-full bg-muted text-[9px] font-bold text-foreground border border-border/50">
                     {n.count}x
                   </span>
                 )}
               </p>
 
               {n.category === "enquete" && surveyData ? (
-                <div className="mt-2.5 p-3 rounded-xl bg-muted/20 border border-border/40 pointer-events-auto flex flex-col gap-2.5">
+                <div className="mt-2 p-3 rounded-xl bg-muted/20 border border-border/40 pointer-events-auto flex flex-col gap-2.5">
                   {votedOption ? (
                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-semibold bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
                       <span>✓</span> Voto registrado: {votedOption}
@@ -1361,7 +1392,7 @@ function NotificationCard({
                         disabled={!selectedVote || isSubmittingVote}
                         onClick={handleVoteSubmit}
                         className={cn(
-                          "w-full py-1.5 rounded-lg text-[10px] font-extrabold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-50",
+                          "w-full py-1.5 rounded-xl text-[10px] font-bold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-50",
                           theme.solid,
                           theme.solidHover,
                         )}
@@ -1374,9 +1405,9 @@ function NotificationCard({
               ) : (
                 <p
                   className={cn(
-                    "text-[12px] leading-relaxed mt-1",
+                    "text-[11px] leading-relaxed mt-0.5 font-normal",
                     n.isRead
-                      ? "text-muted-foreground"
+                      ? "text-muted-foreground/80"
                       : "text-muted-foreground",
                   )}
                 >
@@ -1396,7 +1427,7 @@ function NotificationCard({
               )}
             </div>
 
-            <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0 ml-auto self-center pointer-events-auto">
+            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all ml-auto self-start pointer-events-auto">
               {n.persistent && (
                 <span
                   className="p-1 text-muted-foreground/60 cursor-default flex"
@@ -1413,7 +1444,7 @@ function NotificationCard({
                       e.stopPropagation();
                       handleMarkRead(n.ids);
                     }}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-teal-600 dark:text-teal-400 hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="p-1 rounded-lg text-muted-foreground hover:text-teal-600 dark:text-teal-400 hover:bg-muted transition-colors cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                   </button>
@@ -1427,7 +1458,7 @@ function NotificationCard({
                       e.stopPropagation();
                       handleDeleteGroup(n.ids);
                     }}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="p-1 rounded-lg text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-muted transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

@@ -217,6 +217,21 @@ export function ItemCard({
     );
   };
 
+  const handleProtectedNavigate = (e?: React.SyntheticEvent) => {
+    if (typeof window !== "undefined") {
+      const lastConfirmed = (window as unknown as Record<string, unknown>)
+        .__AEGIS_JUST_CONFIRMED__ as number | undefined;
+      if (lastConfirmed && Date.now() - lastConfirmed < 800) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+    }
+    onNavigate();
+  };
+
   // ===========================
   // MODO LISTA
   // ===========================
@@ -235,11 +250,11 @@ export function ItemCard({
               ...(colorHex ? { backgroundColor: `${colorHex}12` } : {}),
             }}
             className={cn(
-              "group relative flex items-center gap-3 px-3 rounded-xl border border-transparent transition-all select-none cursor-pointer hover:bg-muted/30 focus:outline-none focus:ring-1 focus:ring-ring w-full text-left h-[50px]",
+              "group relative flex items-center gap-3 px-3 rounded-xl border border-transparent transition-all select-none cursor-pointer hover:bg-muted/30 focus:outline-none focus:ring-1 focus:ring-ring w-full text-left h-12.5",
               isOver && cn(theme.bg, theme.border.replace("/20", "/40")),
               isDragging && "opacity-30 scale-[0.98] grayscale",
             )}
-            onClick={onNavigate}
+            onClick={(e) => handleProtectedNavigate(e)}
             {...listeners}
             {...attributes}
           >
@@ -264,10 +279,10 @@ export function ItemCard({
             </div>
 
             {/* Nome + preview */}
-            <div className="flex-1 min-w-0 pointer-events-none">
+            <div className="flex-1 min-w-0 pointer-events-none py-0.5">
               <p
                 className={cn(
-                  "font-semibold text-sm truncate leading-tight",
+                  "font-semibold text-sm truncate leading-snug",
                   isDefaultTitle
                     ? "text-muted-foreground/50 italic font-medium"
                     : "text-foreground",
@@ -279,10 +294,10 @@ export function ItemCard({
               {preview && (
                 <p
                   className={cn(
-                    "text-[10px] truncate leading-tight mt-0.5",
+                    "text-[11px] truncate leading-normal mt-0.5",
                     isDefaultContent
                       ? "text-muted-foreground/30 italic"
-                      : "text-muted-foreground",
+                      : "text-muted-foreground/80",
                   )}
                 >
                   {preview}
@@ -310,14 +325,14 @@ export function ItemCard({
                     <MoreVertical className="w-4 h-4" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-card border-border text-foreground min-w-[170px] rounded-xl">
+                <DropdownMenuContent className="bg-card border-border text-foreground min-w-42.5 rounded-xl">
                   {commonMenuItems("dropdown")}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </button>
         </ContextMenuTrigger>
-        <ContextMenuContent className="bg-card border-border text-foreground min-w-[170px] rounded-xl">
+        <ContextMenuContent className="bg-card border-border text-foreground min-w-42.5 rounded-xl">
           {commonMenuItems("context")}
         </ContextMenuContent>
       </ContextMenu>
@@ -349,11 +364,11 @@ export function ItemCard({
               ),
             isDragging && "opacity-30 scale-95 grayscale",
           )}
-          onClick={onNavigate}
+          onClick={(e) => handleProtectedNavigate(e)}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              onNavigate();
+              handleProtectedNavigate(e);
             }
           }}
           {...listeners}
@@ -362,7 +377,7 @@ export function ItemCard({
           {/*  Área de cabeçalho  */}
           <div
             className={cn(
-              "relative flex items-center justify-center h-[72px] transition-all duration-200 group-hover:brightness-105",
+              "relative flex items-center justify-center h-18 transition-all duration-200 group-hover:brightness-105",
               // Fundo padrão (sem cor definida)
               !colorHex && isFolder && cn(theme.bg, "opacity-70"),
               !colorHex && !isFolder && "bg-muted/30",
@@ -398,7 +413,7 @@ export function ItemCard({
             </div>
 
             {/* Botão de ações (3 pontos) — para o clique não propagar para onNavigate */}
-            <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-all duration-150 translate-y-[-2px] group-hover:translate-y-0">
+            <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-all duration-150 -translate-y-0.5 group-hover:translate-y-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -415,7 +430,7 @@ export function ItemCard({
                     <MoreVertical className="w-3.5 h-3.5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-card border-border text-foreground min-w-[170px] rounded-xl">
+                <DropdownMenuContent className="bg-card border-border text-foreground min-w-42.5 rounded-xl">
                   {commonMenuItems("dropdown")}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -424,7 +439,7 @@ export function ItemCard({
 
           {/*  Área de conteúdo  */}
           <div
-            className="flex flex-col justify-between gap-1 px-3 py-2.5 bg-card/80 pointer-events-none h-[82px]"
+            className="flex flex-col justify-between gap-1.5 px-3.5 py-3 bg-card/85 pointer-events-none min-h-24"
             style={
               colorHex
                 ? { borderTop: `1px solid ${colorHex}20` }
@@ -434,7 +449,7 @@ export function ItemCard({
             {/* Título */}
             <p
               className={cn(
-                "font-semibold text-sm truncate leading-snug",
+                "font-semibold text-sm line-clamp-2 leading-snug wrap-break-word",
                 isDefaultTitle
                   ? "text-muted-foreground/50 italic font-medium"
                   : "text-foreground",
@@ -448,7 +463,7 @@ export function ItemCard({
             {preview && (
               <p
                 className={cn(
-                  "text-[10px] line-clamp-2 leading-relaxed",
+                  "text-[11px] line-clamp-3 leading-relaxed wrap-break-word",
                   isDefaultContent
                     ? "text-muted-foreground/30 italic"
                     : "text-muted-foreground/80",
@@ -460,21 +475,21 @@ export function ItemCard({
 
             {/* Preview de busca */}
             {searchQuery && !isFolder && item.note?.content && !preview && (
-              <p className="text-[10px] text-muted-foreground line-clamp-2 w-full leading-tight">
+              <p className="text-[11px] text-muted-foreground line-clamp-3 w-full leading-relaxed wrap-break-word">
                 {item.note.content}
               </p>
             )}
 
             {/* Rodapé: data */}
             {!isFolder && item.note?.createdAt && (
-              <p className="text-[9px] text-muted-foreground/50 font-medium mt-0.5">
+              <p className="text-[9px] text-muted-foreground/50 font-medium mt-1">
                 {new Date(item.note.createdAt).toLocaleDateString("pt-BR")}
               </p>
             )}
           </div>
         </div>
       </ContextMenuTrigger>
-      <ContextMenuContent className="bg-card border-border text-foreground min-w-[170px] rounded-xl">
+      <ContextMenuContent className="bg-card border-border text-foreground min-w-42.5 rounded-xl">
         {commonMenuItems("context")}
       </ContextMenuContent>
     </ContextMenu>

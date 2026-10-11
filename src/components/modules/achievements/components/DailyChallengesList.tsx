@@ -31,11 +31,10 @@ export function DailyChallengesList({
 
   useEffect(() => {
     const updateCountdown = () => {
-      const now = simulatedNow;
       const midnight = new Date(simulatedNow);
       midnight.setHours(24, 0, 0, 0); // Define meia-noite do dia simulado
 
-      const diffMs = midnight.getTime() - now.getTime();
+      const diffMs = midnight.getTime() - simulatedNow.getTime();
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
@@ -43,23 +42,37 @@ export function DailyChallengesList({
     };
 
     updateCountdown();
+    // Atualiza a cada 30 segundos para manter o countdown preciso independente do TimeContext
+    const intervalId = setInterval(updateCountdown, 30_000);
+    return () => clearInterval(intervalId);
   }, [simulatedNow]);
 
   return (
-    <div className="p-6 rounded-2xl border border-border/70 bg-card/30 flex flex-col justify-between gap-4 h-full">
-      <div className="flex items-center justify-between border-b border-border/50 pb-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Target className="w-5 h-5 text-amber-500" />
-          <h2 className="text-sm font-bold text-foreground">
-            Desafios de Hoje ({formattedDate})
-          </h2>
-          <span className="text-[10px] text-muted-foreground font-medium bg-muted/65 px-2 py-0.5 rounded-md border border-border/30">
-            Reseta em {timeLeftToMidnight}
+    <div className="p-6 rounded-2xl border border-border/80 bg-linear-to-b from-card/80 via-card/50 to-muted/20 backdrop-blur-md flex flex-col justify-between gap-5 h-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-xs">
+            <Target className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+              Desafios Diários
+              <span className="text-[11px] font-normal text-muted-foreground">
+                ({formattedDate})
+              </span>
+            </h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+                Reseta em {timeLeftToMidnight}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="shrink-0 flex items-center">
+          <span className="text-[11px] font-mono font-bold text-amber-400 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 shadow-xs">
+            XP Ganho Hoje: +{xpToday} XP
           </span>
         </div>
-        <span className="text-[10px] font-bold text-amber-500 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-          Resgatado hoje: +{xpToday} XP
-        </span>
       </div>
 
       <p className="text-xs text-muted-foreground -mt-1 mb-1 leading-relaxed">
@@ -99,46 +112,53 @@ export function DailyChallengesList({
             return (
               <div
                 key={challenge.id}
-                className="p-4 rounded-xl border border-border/60 bg-muted/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
               >
-                <div className="flex-1 text-left flex flex-col gap-1">
+                <div className="flex-1 text-left flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-foreground">
+                    <span className="font-bold text-sm text-foreground group-hover:text-amber-400 transition-colors">
                       {challenge.title}
                     </span>
-                    <span className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md shadow-xs">
                       +{challenge.xp} XP
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {challenge.description}
                   </p>
 
                   {/* Progresso visual */}
-                  <div className="flex items-center gap-2 mt-2 w-full max-w-md">
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden border border-border/55">
+                  <div className="flex items-center gap-3 mt-1.5 w-full max-w-md">
+                    <div className="flex-1 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-700/60 p-px">
                       <div
-                        className={`h-full transition-all duration-300 ${
-                          isCompleted ? "bg-green-500" : "bg-amber-500"
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isCompleted
+                            ? "bg-linear-to-r from-emerald-500 to-teal-400"
+                            : "bg-linear-to-r from-amber-500 to-yellow-400"
                         }`}
                         style={{ width: `${percent}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-muted-foreground shrink-0 min-w-[32px] text-right">
+                    <span className="text-[10px] font-mono font-bold text-muted-foreground shrink-0 min-w-9 text-right">
                       {current} / {target}
                     </span>
                   </div>
                 </div>
 
                 <div className="shrink-0 flex items-center justify-end">
-                  {isClaimed || isCompleted ? (
-                    <span className="text-xs font-bold text-green-500 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30">
-                      <CheckCircle2 className="w-4 h-4 text-green-550" />{" "}
+                  {isClaimed ? (
+                    <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />{" "}
+                      Resgatado
+                    </span>
+                  ) : isCompleted ? (
+                    <span className="text-xs font-mono font-bold text-teal-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/30">
+                      <CheckCircle2 className="w-4 h-4 text-teal-400" />{" "}
                       Concluído
                     </span>
                   ) : (
-                    <span className="text-xs font-semibold text-muted-foreground border border-border bg-muted/40 px-3 py-1.5 rounded-lg select-none">
-                      Em Progresso
+                    <span className="text-xs font-mono font-semibold text-muted-foreground border border-border/60 bg-muted/50 px-3 py-1.5 rounded-lg select-none">
+                      Em curso
                     </span>
                   )}
                 </div>

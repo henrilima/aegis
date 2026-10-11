@@ -118,7 +118,7 @@ export function HabitsWidget({
         </div>
       </div>
 
-      <div className="w-full space-y-2">
+      <div className="w-full divide-y divide-border/30">
         {positiveHabits.slice(0, limit ?? 3).map((h) => {
           const done = isHabitDoneToday(h, time);
           const streak = h.currentStreak || 0;
@@ -128,8 +128,10 @@ export function HabitsWidget({
               type="button"
               tabIndex={isInteractive && !done ? 0 : undefined}
               className={cn(
-                "flex w-full items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
-                isInteractive && !done && "cursor-pointer",
+                "flex w-full items-center justify-between py-2.5 px-2 rounded-xl transition-colors gap-3 outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
+                isInteractive && !done
+                  ? "cursor-pointer hover:bg-muted/40"
+                  : "hover:bg-muted/30",
               )}
               onClick={(e) => {
                 if (isInteractive) {
@@ -152,14 +154,14 @@ export function HabitsWidget({
                 }
               }}
             >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div className="shrink-0 transition-transform active:scale-90">
                   {done ? (
-                    <CheckCircle2 className={cn("w-5 h-5", theme.text)} />
+                    <CheckCircle2 className={cn("w-4 h-4", theme.text)} />
                   ) : (
                     <Circle
                       className={cn(
-                        "w-5 h-5 text-muted-foreground/50",
+                        "w-4 h-4 text-muted-foreground/40",
                         isInteractive && "hover:text-foreground",
                       )}
                     />
@@ -168,17 +170,17 @@ export function HabitsWidget({
                 <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
                   <span
                     className={cn(
-                      "text-sm font-bold text-foreground truncate",
+                      "text-xs font-bold text-foreground truncate",
                       done && "text-muted-foreground/60 line-through",
                     )}
                   >
                     {h.name}
                   </span>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
                     <span>{done ? "Concluído hoje" : "Pendente"}</span>
                     {h.targetTime && (
-                      <span className="flex items-center gap-0.5 text-muted-foreground/80 font-semibold">
-                        • <Clock className="w-2.5 h-2.5 ml-0.5" />
+                      <span className="flex items-center gap-0.5 text-muted-foreground/80 font-medium">
+                        · <Clock className="w-2.5 h-2.5" />
                         {h.targetTime}
                       </span>
                     )}
@@ -189,13 +191,13 @@ export function HabitsWidget({
               <div className="shrink-0 flex items-center">
                 <div
                   className={cn(
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
-                    done
+                    "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold capitalize shrink-0",
+                    streak > 0
                       ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20"
                       : "bg-muted/40 text-muted-foreground border-border/40",
                   )}
                 >
-                  <Flame className="w-3 h-3 shrink-0" />
+                  <Flame className="w-2.5 h-2.5 shrink-0" />
                   <span>{streak}d</span>
                 </div>
               </div>
@@ -204,12 +206,9 @@ export function HabitsWidget({
         })}
         {positiveHabits.length === 0 && (
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <p className="text-xs text-neutral-600 font-bold">
-              Sem Hábitos Ativos
-            </p>
-            <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
-              Cadastre hábitos saudáveis para acompanhar sua consistência
-              diária.
+            <p className="text-xs text-foreground font-bold">Sem hábitos</p>
+            <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
+              Cadastre hábitos diários para acompanhar sua consistência.
             </p>
           </div>
         )}

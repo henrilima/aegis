@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { resolveTaskStyles } from "@/colors.config";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
 import { cn } from "@/lib/utils";
-import type { Task } from "../types";
+import { formatCompletedAt, type Task } from "../types";
 import { TaskTimerBadge } from "./TaskTimer";
 
 type KanbanStatus = "todo" | "doing" | "done";
@@ -426,6 +426,18 @@ function KanbanCard({
             onTimeSaved={onTimeSaved}
             onStatusChange={onStatusChange}
           />
+        )}
+
+        {/* Tag de tarefa concluída com data/hora */}
+        {task.completed && (
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+            <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
+            <span>
+              {task.completedAt
+                ? `Concluída em ${formatCompletedAt(task.completedAt)}`
+                : "Concluída"}
+            </span>
+          </div>
         )}
 
         {task.category && (

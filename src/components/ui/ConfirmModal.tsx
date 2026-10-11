@@ -77,13 +77,47 @@ export function ConfirmModal({
   const cfg = VARIANT_CONFIG[variant];
   const Icon = icon ?? cfg.icon;
 
+  const handleConfirmAction = () => {
+    if (typeof window !== "undefined") {
+      (window as unknown as Record<string, unknown>).__AEGIS_JUST_CONFIRMED__ =
+        Date.now();
+
+      // Captura e suprime o próximo evento keyup para evitar disparo em elementos focado em segundo plano
+      const suppressKeyUp = (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+        window.removeEventListener("keyup", suppressKeyUp, true);
+      };
+      window.addEventListener("keyup", suppressKeyUp, true);
+      setTimeout(() => {
+        window.removeEventListener("keyup", suppressKeyUp, true);
+      }, 600);
+    }
+
+    if (
+      typeof document !== "undefined" &&
+      document.activeElement instanceof HTMLElement
+    ) {
+      document.activeElement.blur();
+    }
+
+    onConfirm();
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        onConfirm();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleConfirmAction();
       } else if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         onCancel();
       }
     };
@@ -92,7 +126,7 @@ export function ConfirmModal({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onConfirm, onCancel]);
+  }, [onCancel, handleConfirmAction]);
 
   return (
     <ModalShell
@@ -145,7 +179,7 @@ export function ConfirmModal({
 
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={handleConfirmAction}
             className={cn(
               "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-none",
               cfg.confirmBtnClass,

@@ -199,19 +199,20 @@ export function FileManager({
   };
 
   const confirmDelete = async () => {
-    if (!deleteConfirmTarget) return;
+    const target = deleteConfirmTarget;
+    if (!target) return;
+    setDeleteConfirmTarget(null); // Desarma o modal síncronamente antes da IPC
     try {
-      if (deleteConfirmTarget.isDir) {
+      if (target.isDir) {
         await invoke("note_delete_note_folder", {
-          path: deleteConfirmTarget.path,
+          path: target.path,
         });
       } else {
         await invoke("note_delete_note", {
-          id: deleteConfirmTarget.note?.id,
+          id: target.note?.id,
           userId: user?.id,
         });
       }
-      setDeleteConfirmTarget(null);
       fetchItems();
       toast.success("Excluído com sucesso");
     } catch {

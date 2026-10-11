@@ -13,6 +13,14 @@ export interface Movie {
   category: string;
   createdAt?: string;
   isFavorite?: boolean;
+  watchedAt?: string;
+  rewatchable?: boolean;
 }
 
-export type MovieTabId = "all" | "wishlist" | "library" | "favorites" | "guia";
+export type MovieTabId =
+  | "all"
+  | "wishlist"
+  | "library"
+  | "favorites"
+  | "rewatch"
+  | "guia";

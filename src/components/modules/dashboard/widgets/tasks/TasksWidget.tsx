@@ -134,8 +134,8 @@ export function TasksWidget({
             )}
           </div>
 
-          {/* Lista de tarefas */}
-          <div className="space-y-2">
+          {/* Lista de tarefas solta e dividida */}
+          <div className="divide-y divide-border/30">
             {pendingTasks
               .sort((a, b) => (b.priority || 0) - (a.priority || 0))
               .slice(0, limit ?? 3)
@@ -146,21 +146,11 @@ export function TasksWidget({
                   <div
                     key={task.id}
                     className={cn(
-                      "group flex items-center justify-between gap-3 bg-card border border-border transition-all rounded-xl relative overflow-hidden p-3 text-sm cursor-default text-left focus:outline-none",
-                      task.completed
-                        ? "opacity-60 grayscale-[0.5]"
-                        : "hover:bg-muted/30",
+                      "group flex items-center justify-between gap-3 py-2 px-2 rounded-xl transition-colors cursor-default text-left focus:outline-none",
+                      task.completed ? "opacity-60" : "hover:bg-muted/40",
                     )}
                   >
-                    {/* Faixa de cor lateral se definida */}
-                    {task.color && (
-                      <div
-                        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-                        style={{ backgroundColor: styles.iconColor }}
-                      />
-                    )}
-
-                    <div className="flex items-center gap-3 min-w-0 flex-1 pl-1">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       {isInteractive ? (
                         <button
                           type="button"
@@ -168,12 +158,12 @@ export function TasksWidget({
                             e.stopPropagation();
                             onToggleTask?.(task);
                           }}
-                          className="shrink-0 transition-transform active:scale-90"
+                          className="shrink-0 transition-transform active:scale-90 cursor-pointer"
                         >
                           {task.completed ? (
                             <CheckCircle2
                               className={cn(
-                                "w-4.5 h-4.5",
+                                "w-4 h-4",
                                 task.color
                                   ? ""
                                   : "text-red-500 dark:text-red-400",
@@ -187,10 +177,10 @@ export function TasksWidget({
                           ) : (
                             <Circle
                               className={cn(
-                                "w-4.5 h-4.5 transition-colors group-hover:scale-110",
+                                "w-4 h-4 transition-colors group-hover:scale-105",
                                 task.color
                                   ? ""
-                                  : "text-muted-foreground/50 hover:text-red-500/80 dark:hover:text-red-400/80",
+                                  : "text-muted-foreground/40 hover:text-red-500/80 dark:hover:text-red-400/80",
                               )}
                               style={
                                 task.color
@@ -205,7 +195,7 @@ export function TasksWidget({
                           {task.completed ? (
                             <CheckCircle2
                               className={cn(
-                                "w-4.5 h-4.5",
+                                "w-4 h-4",
                                 task.color
                                   ? ""
                                   : "text-red-500 dark:text-red-400",
@@ -219,8 +209,8 @@ export function TasksWidget({
                           ) : (
                             <Circle
                               className={cn(
-                                "w-4.5 h-4.5",
-                                task.color ? "" : "text-muted-foreground/50",
+                                "w-4 h-4",
+                                task.color ? "" : "text-muted-foreground/40",
                               )}
                               style={
                                 task.color
@@ -235,7 +225,7 @@ export function TasksWidget({
                       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                         <span
                           className={cn(
-                            "font-medium transition-all truncate text-sm text-foreground",
+                            "font-medium transition-all truncate text-xs text-foreground",
                             task.completed &&
                               "line-through text-muted-foreground/60",
                           )}
@@ -247,7 +237,7 @@ export function TasksWidget({
                           {Number(task.priority) > 0 && (
                             <div
                               className={cn(
-                                "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-bold capitalize shrink-0",
+                                "flex items-center gap-1 px-1.5 py-0.2 rounded-full border text-[9px] font-bold capitalize shrink-0",
                                 priorityBadgeStyles[task.priority ?? 0],
                               )}
                             >
@@ -257,7 +247,7 @@ export function TasksWidget({
                           )}
                           {task.category && (
                             <div
-                              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold capitalize border shrink-0"
+                              className="flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold capitalize border shrink-0"
                               style={{
                                 backgroundColor: styles.badgeBg,
                                 borderColor: styles.badgeBorder.replace(
@@ -302,7 +292,7 @@ export function TasksWidget({
                           e.stopPropagation();
                           onDeleteTask?.(task);
                         }}
-                        className="p-1.5 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-md shrink-0 self-center"
+                        className="p-1.5 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 rounded-lg shrink-0 self-center cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -312,10 +302,8 @@ export function TasksWidget({
               })}
             {pendingTasks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <p className="text-xs text-neutral-600 font-bold">
-                  Tudo em Dia
-                </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                <p className="text-xs text-foreground font-bold">Tudo em dia</p>
+                <p className="text-[11px] text-muted-foreground font-medium max-w-45 mt-0.5">
                   Todas as suas tarefas pendentes foram concluídas.
                 </p>
               </div>

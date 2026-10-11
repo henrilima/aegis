@@ -257,12 +257,55 @@ export function MovieFormModal({
 
         {/* Avaliação (só se Assistido) */}
         {formData.status === "Watched" && (
-          <div className="space-y-1.5">
-            <Label className={labelClass}>
-              Avaliação - {formData.stars ?? 0}{" "}
-              {(formData.stars ?? 0) === 1 ? "estrela" : "estrelas"}
-            </Label>
-            {renderStarPicker()}
+          <div className="space-y-4 pt-2 border-t border-border/40">
+            <div className="space-y-1.5">
+              <Label className={labelClass}>
+                Avaliação - {formData.stars ?? 0}{" "}
+                {(formData.stars ?? 0) === 1 ? "estrela" : "estrelas"}
+              </Label>
+              {renderStarPicker()}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Data em que assistiu</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                  <Input
+                    type="date"
+                    value={formData.watchedAt ?? ""}
+                    onChange={(e) => set("watchedAt", e.target.value)}
+                    className={cn(inputClass, "pl-9")}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-card/40 mt-auto">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-foreground">
+                    Vale a pena rever?
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    Marque para destacar em "Vale a pena ver de novo"
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => set("rewatchable", !formData.rewatchable)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+                    formData.rewatchable ? theme.solid : "bg-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out",
+                      formData.rewatchable ? "translate-x-4" : "translate-x-0",
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

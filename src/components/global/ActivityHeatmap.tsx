@@ -21,7 +21,7 @@ export interface ActivityHeatmapStat {
 }
 
 export interface ActivityHeatmapProps {
-  /** Cor identitária do módulo (ex: "blue", "orange", "violet", "emerald") */
+  /** Cor identitária do módulo (ex: "emerald", "blue", "orange", "violet", "cyan") */
   color: string;
   title?: string;
   subtitle?: string;
@@ -59,13 +59,63 @@ const MONTH_LABELS = [
   "Dez",
 ];
 
-const INTENSITY_LEVELS: Record<0 | 1 | 2 | 3 | 4, string> = {
-  0: "bg-muted/40 border border-border/20",
-  1: "opacity-30",
-  2: "opacity-55",
-  3: "opacity-80",
-  4: "opacity-100",
+const COLOR_LEVELS: Record<string, Record<0 | 1 | 2 | 3 | 4, string>> = {
+  emerald: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-emerald-500/25 border border-emerald-500/35 text-emerald-400",
+    2: "bg-emerald-500/50 border border-emerald-500/60 text-emerald-300",
+    3: "bg-emerald-500/75 border border-emerald-500/85 text-emerald-200",
+    4: "bg-emerald-500 border border-emerald-400 text-white font-bold",
+  },
+  blue: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-blue-500/25 border border-blue-500/35 text-blue-400",
+    2: "bg-blue-500/50 border border-blue-500/60 text-blue-300",
+    3: "bg-blue-500/75 border border-blue-500/85 text-blue-200",
+    4: "bg-blue-500 border border-blue-400 text-white font-bold",
+  },
+  indigo: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-indigo-500/25 border border-indigo-500/35 text-indigo-400",
+    2: "bg-indigo-500/50 border border-indigo-500/60 text-indigo-300",
+    3: "bg-indigo-500/75 border border-indigo-500/85 text-indigo-200",
+    4: "bg-indigo-500 border border-indigo-400 text-white font-bold",
+  },
+  violet: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-violet-500/25 border border-violet-500/35 text-violet-400",
+    2: "bg-violet-500/50 border border-violet-500/60 text-violet-300",
+    3: "bg-violet-500/75 border border-violet-500/85 text-violet-200",
+    4: "bg-violet-500 border border-violet-400 text-white font-bold",
+  },
+  rose: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-rose-500/25 border border-rose-500/35 text-rose-400",
+    2: "bg-rose-500/50 border border-rose-500/60 text-rose-300",
+    3: "bg-rose-500/75 border border-rose-500/85 text-rose-200",
+    4: "bg-rose-500 border border-rose-400 text-white font-bold",
+  },
+  amber: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-amber-500/25 border border-amber-500/35 text-amber-400",
+    2: "bg-amber-500/50 border border-amber-500/60 text-amber-300",
+    3: "bg-amber-500/75 border border-amber-500/85 text-amber-200",
+    4: "bg-amber-500 border border-amber-400 text-white font-bold",
+  },
+  cyan: {
+    0: "bg-muted/40 border border-border/30",
+    1: "bg-cyan-500/25 border border-cyan-500/35 text-cyan-400",
+    2: "bg-cyan-500/50 border border-cyan-500/60 text-cyan-300",
+    3: "bg-cyan-500/75 border border-cyan-500/85 text-cyan-200",
+    4: "bg-cyan-500 border border-cyan-400 text-white font-bold",
+  },
 };
+
+function getCellLevelStyle(colorKey: string, level: 0 | 1 | 2 | 3 | 4): string {
+  const normColor = colorKey.toLowerCase();
+  const palette = COLOR_LEVELS[normColor] || COLOR_LEVELS.emerald;
+  return palette[level];
+}
 
 function getIntensity(count: number): 0 | 1 | 2 | 3 | 4 {
   if (count === 0) return 0;
@@ -121,7 +171,7 @@ export function ActivityHeatmap({
 
   const dates = useMemo(() => getYearDates(selectedYear), [selectedYear]);
 
-  // Informações do dia sob o cursor calculadas sob demanda (apenas 1 por hover, super rápido)
+  // Informações do dia sob o cursor calculadas sob demanda
   const hoveredInfo = useMemo(() => {
     if (!hoveredCell?.date) return null;
     const [y, m, d] = hoveredCell.date.split("-").map(Number);
@@ -203,9 +253,9 @@ export function ActivityHeatmap({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-6 w-full relative overflow-hidden">
+    <div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-5 w-full relative overflow-hidden backdrop-blur-md">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/50 pb-4">
         <div className="flex items-center gap-3">
           <div
             className={cn("p-2.5 rounded-xl border", theme.bg, theme.border)}
@@ -213,7 +263,7 @@ export function ActivityHeatmap({
             <HeaderIcon className={cn("w-5 h-5", theme.text)} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground leading-none">
+            <h2 className="text-base font-bold text-foreground leading-none">
               {title}
             </h2>
             {hoveredInfo ? (
@@ -233,31 +283,31 @@ export function ActivityHeatmap({
 
         <div className="flex items-center gap-4">
           {/* Seletor de ano */}
-          <div className="flex items-center gap-2 bg-background p-1 border border-border rounded-xl relative z-10">
+          <div className="flex items-center gap-1.5 bg-background p-1 border border-border/60 rounded-xl relative z-10">
             <button
               type="button"
               onClick={() => setSelectedYear((prev) => prev - 1)}
-              className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+              className="p-1 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className={cn("text-xs font-bold px-2", theme.text)}>
+            <span className={cn("text-xs font-bold px-1.5", theme.text)}>
               {selectedYear}
             </span>
             <button
               type="button"
               onClick={() => setSelectedYear((prev) => prev + 1)}
-              className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer"
+              className="p-1 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer"
               disabled={selectedYear >= currentYear}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="h-8 w-px bg-border/60 mx-1 hidden sm:block" />
+          <div className="h-7 w-px bg-border/60 mx-1 hidden sm:block" />
 
           {/* Estatísticas rápidas */}
-          <div className="hidden sm:flex items-center gap-6">
+          <div className="hidden sm:flex items-center gap-5">
             {displayStats.map((st) => (
               <div key={st.label} className="flex flex-col items-end">
                 <span
@@ -268,7 +318,7 @@ export function ActivityHeatmap({
                 >
                   {st.value}
                 </span>
-                <span className="text-[10px] font-bold text-muted-foreground">
+                <span className="text-[10px] font-bold text-muted-foreground mt-0.5">
                   {st.label}
                 </span>
               </div>
@@ -278,12 +328,12 @@ export function ActivityHeatmap({
       </div>
 
       {/* Grade do Heatmap */}
-      <div className="w-full overflow-x-auto py-2">
+      <div className="w-full overflow-x-auto py-1 custom-scrollbar">
         <div
           ref={gridContainerRef}
           className="min-w-175 flex flex-col gap-2 relative"
         >
-          {/* Tooltip flutuante ultrarrápido com pointer-events-none (o mouse nunca trava ou interage com ela) */}
+          {/* Tooltip flutuante ultrarrápido */}
           {hoveredCell && hoveredInfo && (
             <div
               style={{
@@ -303,7 +353,7 @@ export function ActivityHeatmap({
           )}
 
           {/* Rótulos dos Meses */}
-          <div className="h-4 relative w-full pl-9">
+          <div className="h-4 relative w-full pl-8">
             {monthLabels.map((ml) => (
               <div
                 key={ml.label + ml.colIdx}
@@ -318,13 +368,13 @@ export function ActivityHeatmap({
           </div>
 
           {/* Grid dos Dias */}
-          <div className="grid grid-cols-[28px_1fr] gap-2 items-stretch">
+          <div className="grid grid-cols-[24px_1fr] gap-2 items-stretch">
             {/* Rótulos dos Dias da Semana */}
-            <div className="flex flex-col gap-1 text-[9px] text-muted-foreground font-bold py-px">
+            <div className="flex flex-col gap-1.5 text-[9px] text-muted-foreground font-bold py-px">
               {WEEK_LABELS.map((day) => (
                 <div
                   key={day.id}
-                  className="flex-1 flex items-center justify-end pr-1.5 min-h-0"
+                  className="flex-1 flex items-center justify-end pr-1 min-h-0"
                 >
                   <span className="leading-none">{day.label}</span>
                 </div>
@@ -332,12 +382,12 @@ export function ActivityHeatmap({
             </div>
 
             {/* Colunas por semana */}
-            <div className="flex gap-1 flex-1">
+            <div className="flex gap-1.5 flex-1">
               {Array.from({ length: Math.ceil(dates.length / 7) }).map(
                 (_, ci) => (
                   <div
                     key={dates[ci * 7]}
-                    className="flex-1 flex flex-col gap-1"
+                    className="flex-1 flex flex-col gap-1.5"
                   >
                     {dates.slice(ci * 7, (ci + 1) * 7).map((date) => {
                       const isSameYear = date.startsWith(String(selectedYear));
@@ -346,7 +396,6 @@ export function ActivityHeatmap({
                       const intensity = isSameYear ? getIntensity(count) : 0;
 
                       return (
-                        // biome-ignore lint/a11y/noStaticElementInteractions: Interatividade de hover do mapa de calor
                         <div
                           key={date}
                           onMouseEnter={(e) =>
@@ -354,12 +403,10 @@ export function ActivityHeatmap({
                           }
                           onMouseLeave={handleCellMouseLeave}
                           className={cn(
-                            "aspect-square w-full rounded-[2px] transition-all hover:scale-150 hover:z-20 cursor-pointer",
+                            "aspect-square w-full rounded-xs transition-all duration-150 hover:scale-135 hover:z-20 cursor-pointer",
                             !isSameYear
                               ? "opacity-0 pointer-events-none"
-                              : intensity === 0
-                                ? INTENSITY_LEVELS[0]
-                                : cn(theme.solid, INTENSITY_LEVELS[intensity]),
+                              : getCellLevelStyle(color, intensity),
                           )}
                         />
                       );
@@ -375,15 +422,10 @@ export function ActivityHeatmap({
       {/* Legenda de Intensidade */}
       <div className="flex items-center justify-end gap-2 text-[10px] text-muted-foreground font-semibold pt-3 border-t border-border/40">
         <span>Menos</span>
-        {[0, 1, 2, 3, 4].map((lvl) => (
+        {([0, 1, 2, 3, 4] as const).map((lvl) => (
           <div
             key={lvl}
-            className={cn(
-              "w-3 h-3 rounded-[2px]",
-              lvl === 0
-                ? INTENSITY_LEVELS[0]
-                : cn(theme.solid, INTENSITY_LEVELS[lvl as 1 | 2 | 3 | 4]),
-            )}
+            className={cn("w-3 h-3 rounded-xs", getCellLevelStyle(color, lvl))}
           />
         ))}
         <span>Mais</span>

@@ -107,6 +107,13 @@ const ScheduleWidget = dynamic(
     ssr: false,
   },
 );
+const PetWidget = dynamic(
+  () => import("./pet/PetWidget").then((m) => m.PetWidget),
+  {
+    loading: WidgetSkeleton,
+    ssr: false,
+  },
+);
 
 // biome-ignore lint/suspicious/noExplicitAny: Heterogeneous widget registry
 export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
@@ -124,9 +131,15 @@ export const WIDGET_REGISTRY: Record<string, React.ComponentType<any>> = {
   dictionary: DictionaryWidget,
   flashcards: FlashcardsWidget,
   schedule_mural: ScheduleWidget,
+  pet: PetWidget,
 };
 
 export const WIDGET_METADATA = [
+  {
+    id: "pet",
+    name: "Mascote & Missões",
+    description: "Status do mascote e desafios diários",
+  },
   { id: "habits", name: "Hábitos", description: "Progresso diário e recordes" },
   { id: "pomodoro", name: "Pomodoro", description: "Timer de foco e ciclos" },
   { id: "notes", name: "Anotações", description: "Lembretes e notas rápidas" },

@@ -42,6 +42,31 @@ pub struct DecryptedEntry {
     pub note: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PasswordAuditEntry {
+    pub id: i32,
+    pub name: String,
+    pub username: String,
+    pub url: String,
+    pub is_weak: bool,
+    pub is_reused: bool,
+    pub is_old: bool,
+    pub days_since_update: i64,
+    pub weakness_reasons: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultAuditReport {
+    pub health_score: i32,
+    pub total_count: usize,
+    pub weak_count: usize,
+    pub reused_count: usize,
+    pub old_count: usize,
+    pub entries: Vec<PasswordAuditEntry>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct GoogleCsvEntry {
@@ -741,6 +766,120 @@ impl PasswordManager {
         writer.flush().map_err(|e| e.to_string())?;
         Ok(())
     }
+
+    pub fn audit_vault(&self, user_id: &str, master_pwd: &str) -> Result<VaultAuditReport, String> {
+        let entries = self.list_passwords(user_id)?;
+        if entries.is_empty() {
+            return Ok(VaultAuditReport {
+                health_score: 100,
+                total_count: 0,
+                weak_count: 0,
+                reused_count: 0,
+                old_count: 0,
+                entries: Vec::new(),
+            });
+        }
+
+        let key = self.verify_vault_password(user_id, master_pwd)?;
+        let mut decrypted_entries = Vec::new();
+        let mut password_counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+        for entry in &entries {
+            let password = self.decrypt(&entry.password_encrypted, &entry.nonce_password, &key).unwrap_or_default();
+            *password_counts.entry(password.clone()).or_insert(0) += 1;
+            decrypted_entries.push((entry, password));
+        }
+
+        let now = Utc::now();
+        let mut audit_entries = Vec::new();
+        let mut weak_count = 0;
+        let mut reused_count = 0;
+        let mut old_count = 0;
+
+        for (entry, password) in decrypted_entries {
+            let entry_id = entry.id.unwrap_or(0);
+            let mut weakness_reasons = Vec::new();
+            let mut is_weak = false;
+
+            // Análise de comprimento e complexidade
+            if password.len() < 8 {
+                is_weak = true;
+                weakness_reasons.push("Senha muito curta (menos de 8 caracteres)".to_string());
+            } else if password.len() < 12 && (!password.chars().any(|c| !c.is_alphanumeric()) || !password.chars().any(|c| c.is_ascii_digit())) {
+                is_weak = true;
+                weakness_reasons.push("Pouca complexidade (sem símbolos ou números)".to_string());
+            }
+
+            let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
+            let has_upper = password.chars().any(|c| c.is_ascii_uppercase());
+            let has_digit = password.chars().any(|c| c.is_ascii_digit());
+            if !has_lower || !has_upper || !has_digit {
+                if !is_weak && password.len() < 14 {
+                    is_weak = true;
+                    weakness_reasons.push("Ausência de combinação de maiúsculas, minúsculas e números".to_string());
+                }
+            }
+
+            let lower_pw = password.to_lowercase();
+            let common_patterns = ["123456", "password", "senha", "qwerty", "admin", "12345678", "mudar123", "padrao"];
+            for pat in &common_patterns {
+                if lower_pw.contains(pat) {
+                    is_weak = true;
+                    weakness_reasons.push("Contém padrão previsível ou comum".to_string());
+                    break;
+                }
+            }
+
+            // Análise de Reutilização
+            let is_reused = password_counts.get(&password).cloned().unwrap_or(0) > 1;
+            if is_reused {
+                weakness_reasons.push("Senha idêntica utilizada em outras credenciais".to_string());
+            }
+
+            // Análise de Antiguidade (+90 dias)
+            let date_str = if !entry.updated_at.is_empty() { &entry.updated_at } else { &entry.created_at };
+            let days_since_update = chrono::DateTime::parse_from_rfc3339(date_str)
+                .map(|dt| (now - dt.with_timezone(&Utc)).num_days())
+                .unwrap_or(0);
+
+            let is_old = days_since_update >= 90;
+            if is_old {
+                weakness_reasons.push(format!("Não alterada há {} dias (+90 dias sem alteração)", days_since_update));
+            }
+
+            if is_weak { weak_count += 1; }
+            if is_reused { reused_count += 1; }
+            if is_old { old_count += 1; }
+
+            audit_entries.push(PasswordAuditEntry {
+                id: entry_id,
+                name: entry.name.clone(),
+                username: entry.username.clone(),
+                url: entry.url.clone(),
+                is_weak,
+                is_reused,
+                is_old,
+                days_since_update,
+                weakness_reasons,
+            });
+        }
+
+        let total = entries.len();
+        // Cálculo de Saúde do Cofre (Health Score 0-100%)
+        let weak_penalty = (weak_count as f64 / total as f64) * 40.0;
+        let reused_penalty = (reused_count as f64 / total as f64) * 35.0;
+        let old_penalty = (old_count as f64 / total as f64) * 25.0;
+        let score = (100.0 - weak_penalty - reused_penalty - old_penalty).round().clamp(0.0, 100.0) as i32;
+
+        Ok(VaultAuditReport {
+            health_score: score,
+            total_count: total,
+            weak_count,
+            reused_count,
+            old_count,
+            entries: audit_entries,
+        })
+    }
 }
 
 #[tauri::command]
@@ -819,6 +958,26 @@ pub async fn password_setup_local_vault(
     let local_email = format!("{}@aegis.local", username.to_lowercase());
     state.pm.register_user_with_id(&user_id, &username, &local_email, &master_password, &password_hint)
 }
+
+#[tauri::command]
+pub async fn password_verify_vault(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    password: String,
+) -> Result<bool, String> {
+    state.pm.verify_vault_password(&user_id, &password).map(|_| true)
+}
+
+#[tauri::command]
+pub async fn password_audit_vault(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+    master_pwd: String,
+) -> Result<VaultAuditReport, String> {
+    state.pm.audit_vault(&user_id, &master_pwd)
+}
+
+
 
 
 

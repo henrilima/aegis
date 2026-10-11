@@ -45,7 +45,7 @@ export function ParticleSelector({
                 }}
                 disabled={!isUnlocked}
                 className={cn(
-                  "p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all select-none relative overflow-hidden text-center min-h-[56px]",
+                  "p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all select-none relative overflow-hidden text-center min-h-14",
                   isUnlocked
                     ? isSelected
                       ? "border-amber-500/40 bg-amber-500/5 text-amber-500 cursor-pointer"
@@ -55,7 +55,12 @@ export function ParticleSelector({
                 type="button"
               >
                 {isUnlocked ? (
-                  <div className="flex flex-col w-full">
+                  <div className="flex flex-col w-full relative">
+                    {isSelected && (
+                      <span className="absolute -top-1.5 -right-1 bg-amber-500 text-black px-1.5 py-0.2 rounded-full text-[8px] font-bold shadow-xs">
+                        Ativo
+                      </span>
+                    )}
                     <span className="text-[11px] font-bold truncate w-full px-0.5">
                       {particle.name}
                     </span>
@@ -78,18 +83,6 @@ export function ParticleSelector({
             );
           })}
         </div>
-
-        {/* Informações da Partícula Ativa */}
-        {PARTICLES_CONFIG[selectedParticle] && (
-          <div className="mt-4 p-3 rounded-xl border border-border/40 bg-card/20 text-left">
-            <h4 className="text-xs font-bold text-foreground">
-              Efeito ativo: {PARTICLES_CONFIG[selectedParticle].name}
-            </h4>
-            <p className="text-[10px] text-muted-foreground mt-0.5 leading-normal">
-              {PARTICLES_CONFIG[selectedParticle].description}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

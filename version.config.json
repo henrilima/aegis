@@ -1,8 +1,8 @@
 {
-  "version": "4.1.1",
-  "stage": "hotfix",
-  "codename": "vitalis",
-  "channel": "hotfix",
+  "version": "5.0.0",
+  "stage": "stable",
+  "codename": "supernova",
+  "channel": "stable",
   "isPreRelease": false,
   "allowDowngrade": true
 }

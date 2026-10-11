@@ -320,7 +320,7 @@ export function ReportsTab({
           <button
             type="button"
             onClick={() => setPeriodOffset((prev) => prev - 1)}
-            className="p-2 rounded-xl bg-neutral-800 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all cursor-pointer"
+            className="p-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted transition-all cursor-pointer shadow-none"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -337,10 +337,10 @@ export function ReportsTab({
             onClick={() => setPeriodOffset((prev) => prev + 1)}
             disabled={periodOffset >= 0}
             className={cn(
-              "p-2 rounded-xl border transition-all",
+              "p-2 rounded-xl border transition-all shadow-none",
               periodOffset >= 0
-                ? "bg-card border-border text-neutral-700 cursor-not-allowed"
-                : "bg-neutral-800 border-border text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer",
+                ? "bg-card/50 border-border/50 text-muted-foreground/30 cursor-not-allowed"
+                : "bg-card border-border text-foreground hover:bg-muted cursor-pointer",
             )}
           >
             <ChevronRight className="w-5 h-5" />

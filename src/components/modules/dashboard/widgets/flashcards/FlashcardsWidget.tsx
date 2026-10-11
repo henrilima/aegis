@@ -115,24 +115,22 @@ export function FlashcardsWidget({
 
         {/* Baralhos com revisões pendentes */}
         {decksWithDue.length > 0 ? (
-          <div className="flex flex-col gap-2">
+          <div className="divide-y divide-border/30">
             {decksWithDue.slice(0, 3).map((deck) => {
               const due = deck.cards.filter(isCardDue).length;
               const total = deck.cards.length;
               const _pct = total > 0 ? Math.round((due / total) * 100) : 0;
-
-              // Cor personalizada do baralho
               const deckColor = getColorTheme(deck.color || color);
 
               return (
                 <div
                   key={deck.id}
-                  className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
+                  className="flex items-center justify-between py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div
                       className={cn(
-                        "shrink-0 w-2 h-2 rounded-full",
+                        "shrink-0 w-2.5 h-2.5 rounded-full",
                         deckColor.solid,
                       )}
                     />
@@ -142,7 +140,7 @@ export function FlashcardsWidget({
                   </div>
                   <div
                     className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                       due > 0
                         ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20"
                         : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
@@ -157,19 +155,18 @@ export function FlashcardsWidget({
         ) : totalDecks === 0 ? (
           // Estado vazio
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <p className="text-xs text-neutral-600 font-bold">Sem Baralhos</p>
-            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
-              Crie baralhos de flashcards para memorizar seus conteúdos
-              estudados.
+            <p className="text-xs text-foreground font-bold">Sem baralhos</p>
+            <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
+              Crie baralhos de flashcards para memorizar seus conteúdos.
             </p>
           </div>
         ) : (
           // Sem pendências
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
-              Tudo em Dia
+              Tudo em dia
             </p>
-            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+            <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
               Você revisou todos os seus {totalCards} cartões programados.
             </p>
           </div>

@@ -17,12 +17,18 @@ pub struct Task {
     pub priority: Option<i32>,
     pub category: Option<String>,
     pub color: Option<String>,
+    /// Data e hora em que a tarefa foi concluída (ISO 8601)
+    #[serde(default)]
+    pub completed_at: Option<String>,
     /// Status do kanban: "todo" | "doing" | "done"
     #[serde(default)]
     pub status: Option<String>,
     /// Tempo total acumulado em segundos (soma de todas as sessões do temporizador)
     #[serde(default)]
     pub time_spent_seconds: Option<i64>,
+    /// Recorrência da tarefa: "daily" | "weekly" | "monthly" | "none"
+    #[serde(default)]
+    pub recurrence: Option<String>,
 }
 
 pub struct TaskManager {
@@ -61,12 +67,21 @@ impl TaskManager {
         // Migração: campo de status para o kanban (todo | doing | done)
         let _ = conn.execute("ALTER TABLE tasks ADD COLUMN status TEXT", []);
         // Migração: campo de tempo acumulado em segundos para o temporizador
-        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN time_spent_seconds INTEGER DEFAULT 0", []);
+        let _ = conn.execute(
+            "ALTER TABLE tasks ADD COLUMN time_spent_seconds INTEGER DEFAULT 0",
+            [],
+        );
+        // Migração: campo de recorrência da tarefa
+        let _ = conn.execute("ALTER TABLE tasks ADD COLUMN recurrence TEXT", []);
 
         // Remove o índice antigo sem parent_id para recriá-lo com a nova estrutura
         let _ = conn.execute("DROP INDEX IF EXISTS idx_tasks_user_title", []);
         // Evita duplicados (mesmo título para o mesmo usuário)
-        conn.execute(r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title, parent_id)"#, []).ok();
+        conn.execute(
+            r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_user_title ON tasks(user_id, title, parent_id)"#,
+            [],
+        )
+        .ok();
 
         Self { db_path }
     }
@@ -80,7 +95,7 @@ impl TaskManager {
 
     pub fn list_tasks(&self, user_id: &str) -> Vec<Task> {
         let conn = self.get_connection();
-        let mut stmt = match conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, status, time_spent_seconds FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC") {
+        let mut stmt = match conn.prepare("SELECT id, user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, completed_at, status, time_spent_seconds, recurrence FROM tasks WHERE user_id = ?1 ORDER BY completed ASC, created_at DESC") {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("[TaskManager] Erro ao preparar query list_tasks: {}", e);
@@ -101,8 +116,10 @@ impl TaskManager {
                 priority: row.get(8)?,
                 category: row.get(9)?,
                 color: row.get(10)?,
-                status: row.get(11)?,
-                time_spent_seconds: row.get(12)?,
+                completed_at: row.get(11)?,
+                status: row.get(12)?,
+                time_spent_seconds: row.get(13)?,
+                recurrence: row.get(14)?,
             })
         }) {
             Ok(r) => r,
@@ -119,7 +136,7 @@ impl TaskManager {
         let conn = self.get_connection();
         let completed_int = if task.completed { 1 } else { 0 };
         let today_str =
-            today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
+            today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string());
 
         // Determina o status com base no campo ou no completed
         let status = task.status.clone().unwrap_or_else(|| {
@@ -134,9 +151,10 @@ impl TaskManager {
             conn.execute(
                 "UPDATE tasks SET title = ?1, description = ?2, completed = ?3, due_date = ?4, parent_id = ?5, priority = ?6, category = ?7, color = ?8,
                  completed_at = CASE WHEN ?3 = 1 THEN COALESCE(completed_at, ?9) ELSE NULL END,
-                 status = ?10
-                 WHERE id = ?11",
-                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, today_str, status, id],
+                 status = ?10,
+                 recurrence = ?11
+                 WHERE id = ?12",
+                params![task.title, task.description, completed_int, task.due_date, task.parent_id, task.priority, task.category, task.color, today_str, status, task.recurrence, id],
             )
         } else {
             let completed_at = if task.completed {
@@ -145,8 +163,8 @@ impl TaskManager {
                 None
             };
             conn.execute(
-                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, completed_at, status, time_spent_seconds) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0)",
-                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color, completed_at, status],
+                "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, parent_id, priority, category, color, completed_at, status, time_spent_seconds, recurrence) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, ?13)",
+                params![task.user_id, task.title, task.description, completed_int, task.due_date, task.created_at, task.parent_id, task.priority, task.category, task.color, completed_at, status, task.recurrence],
             )
         };
 
@@ -160,6 +178,31 @@ impl TaskManager {
         })
     }
 
+    fn calculate_next_recurrence_date(current_due: Option<&str>, recurrence: &str) -> String {
+        use chrono::{Datelike, Duration, NaiveDate};
+        let base_date = current_due
+            .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+            .unwrap_or_else(|| chrono::Local::now().date_naive());
+
+        let next_date = match recurrence.to_lowercase().as_str() {
+            "daily" | "diaria" | "diária" => base_date + Duration::days(1),
+            "weekly" | "semanal" => base_date + Duration::days(7),
+            "monthly" | "mensal" => {
+                let mut month = base_date.month() + 1;
+                let mut year = base_date.year();
+                if month > 12 {
+                    month = 1;
+                    year += 1;
+                }
+                let day = base_date.day().min(28);
+                NaiveDate::from_ymd_opt(year, month, day).unwrap_or(base_date + Duration::days(30))
+            }
+            _ => base_date + Duration::days(1),
+        };
+
+        next_date.format("%Y-%m-%d").to_string()
+    }
+
     pub fn toggle_task(
         &self,
         id: i32,
@@ -167,9 +210,35 @@ impl TaskManager {
         today: Option<String>,
     ) -> Result<(), String> {
         let conn = self.get_connection();
+
+        // Verifica se a tarefa possui recorrência configurada
+        let task_meta: Option<(Option<String>, Option<String>)> = conn
+            .query_row(
+                "SELECT due_date, recurrence FROM tasks WHERE id = ?1",
+                params![id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .ok();
+
+        if completed {
+            if let Some((due_opt, Some(rec))) = task_meta {
+                if !rec.is_empty() && rec != "none" {
+                    // Tarefa recorrente: avança a data de vencimento e reseta para "todo"
+                    let next_due =
+                        Self::calculate_next_recurrence_date(due_opt.as_deref(), &rec);
+                    conn.execute(
+                        "UPDATE tasks SET due_date = ?1, completed = 0, completed_at = NULL, status = 'todo' WHERE id = ?2",
+                        params![next_due, id],
+                    )
+                    .map_err(|e| e.to_string())?;
+                    return Ok(());
+                }
+            }
+        }
+
         let completed_int = if completed { 1 } else { 0 };
         let completed_at = if completed {
-            Some(today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string()))
+            Some(today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string()))
         } else {
             None
         };
@@ -186,10 +255,34 @@ impl TaskManager {
     /// Atualiza apenas o status do kanban de uma tarefa
     pub fn update_status(&self, id: i32, status: &str) -> Result<(), String> {
         let conn = self.get_connection();
+
+        if status == "done" {
+            let task_meta: Option<(Option<String>, Option<String>)> = conn
+                .query_row(
+                    "SELECT due_date, recurrence FROM tasks WHERE id = ?1",
+                    params![id],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .ok();
+
+            if let Some((due_opt, Some(rec))) = task_meta {
+                if !rec.is_empty() && rec != "none" {
+                    let next_due =
+                        Self::calculate_next_recurrence_date(due_opt.as_deref(), &rec);
+                    conn.execute(
+                        "UPDATE tasks SET due_date = ?1, completed = 0, completed_at = NULL, status = 'todo' WHERE id = ?2",
+                        params![next_due, id],
+                    )
+                    .map_err(|e| e.to_string())?;
+                    return Ok(());
+                }
+            }
+        }
+
         // Quando mover para "done", marca como concluída; caso contrário, desmarca
         let completed = if status == "done" { 1 } else { 0 };
         let completed_at: Option<String> = if status == "done" {
-            Some(chrono::Local::now().format("%Y-%m-%d").to_string())
+            Some(chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string())
         } else {
             None
         };
@@ -221,25 +314,24 @@ impl TaskManager {
         Ok(new_total)
     }
 
+    pub fn delete_task(&self, id: i32) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "DELETE FROM tasks WHERE id = ?1 OR parent_id = ?1",
+            params![id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     pub fn get_user_id_for_task(&self, id: i32) -> Result<String, String> {
         let conn = self.get_connection();
-        let user_id: String = conn.query_row(
+        conn.query_row(
             "SELECT user_id FROM tasks WHERE id = ?1",
             params![id],
             |row| row.get(0),
-        ).map_err(|e| e.to_string())?;
-        Ok(user_id)
-    }
-
-    pub fn delete_task(&self, id: i32) -> Result<(), String> {
-        let conn = self.get_connection();
-        // Remove subtarefas antes
-        conn.execute("DELETE FROM tasks WHERE parent_id = ?1", params![id])
-            .map_err(|e| e.to_string())?;
-        // Remove a tarefa principal
-        conn.execute("DELETE FROM tasks WHERE id = ?1", params![id])
-            .map_err(|e| e.to_string())?;
-        Ok(())
+        )
+        .map_err(|e| e.to_string())
     }
 
     pub fn export_csv(&self, user_id: &str, path: &str) -> Result<(), String> {
@@ -284,8 +376,10 @@ impl TaskManager {
                 priority: None,
                 category: None,
                 color: None,
+                completed_at: None,
                 status: None,
                 time_spent_seconds: None,
+                recurrence: None,
             };
             let _ = self.upsert_task(task, None);
             count += 1;
@@ -311,7 +405,7 @@ pub async fn tasks_upsert(
         .config
         .get_now()
         .with_timezone(&chrono::Local)
-        .format("%Y-%m-%d")
+        .format("%Y-%m-%dT%H:%M:%S")
         .to_string();
     state.tasks.upsert_task(task, Some(today))
 }
@@ -327,7 +421,7 @@ pub async fn tasks_toggle(
         .config
         .get_now()
         .with_timezone(&chrono::Local)
-        .format("%Y-%m-%d")
+        .format("%Y-%m-%dT%H:%M:%S")
         .to_string();
     let res = state.tasks.toggle_task(id, completed, Some(today));
     if res.is_ok() && completed {

@@ -367,13 +367,13 @@ export function SleepDreamTab() {
                 Todos os tipos
               </SelectItem>
               <SelectItem value="comum" className="text-xs">
-                Comum (😊)
+                Comum
               </SelectItem>
               <SelectItem value="lúcido" className="text-xs">
-                Lúcido (✨)
+                Lúcido
               </SelectItem>
               <SelectItem value="pesadelo" className="text-xs">
-                Pesadelo (👻)
+                Pesadelo
               </SelectItem>
             </SelectContent>
           </Select>

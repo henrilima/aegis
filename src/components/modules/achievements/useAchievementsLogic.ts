@@ -38,6 +38,7 @@ export function useAchievementsLogic() {
   const [selectedBgMode, setSelectedBgMode] = useState<
     "cyclic" | "day" | "afternoon" | "night"
   >("cyclic");
+  const [selectedScenario, setSelectedScenario] = useState<string>("default");
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [xpHistory, setXpHistory] = useState<XPHistoryEntry[]>([]);
   const uid = user?.id ? String(user.id) : "";
@@ -109,6 +110,12 @@ export function useAchievementsLogic() {
       setSelectedBgMode(
         (savedBg as "cyclic" | "day" | "afternoon" | "night") || "cyclic",
       );
+
+      const scenarioKey = uid
+        ? `aegis_selected_pet_scenario_${uid}`
+        : "aegis_selected_pet_scenario";
+      const savedScenario = localStorage.getItem(scenarioKey);
+      setSelectedScenario(savedScenario || "default");
     }
   }, [uid]);
 
@@ -139,6 +146,16 @@ export function useAchievementsLogic() {
         ? `aegis_selected_pet_background_mode_${uid}`
         : "aegis_selected_pet_background_mode";
       localStorage.setItem(key, bgMode);
+    }
+  };
+
+  const handleSelectScenario = (scenarioId: string) => {
+    setSelectedScenario(scenarioId);
+    if (typeof window !== "undefined") {
+      const key = uid
+        ? `aegis_selected_pet_scenario_${uid}`
+        : "aegis_selected_pet_scenario";
+      localStorage.setItem(key, scenarioId);
     }
   };
 
@@ -504,6 +521,8 @@ export function useAchievementsLogic() {
     handleSelectParticle,
     selectedBgMode,
     handleSelectBgMode,
+    selectedScenario,
+    handleSelectScenario,
     activeTab,
     setActiveTab,
     xpHistory,

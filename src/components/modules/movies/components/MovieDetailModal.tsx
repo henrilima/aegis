@@ -173,6 +173,12 @@ export function MovieDetailModal({
                     {movie.year}
                   </span>
                 )}
+                {movie.watchedAt && (
+                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border/50 font-medium">
+                    <Calendar className="w-3 h-3" />
+                    Assistido em: {movie.watchedAt}
+                  </span>
+                )}
                 {movie.category && (
                   <span className="text-[11px] text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border/50 font-medium">
                     {movie.category}
@@ -188,6 +194,11 @@ export function MovieDetailModal({
                 >
                   {isWatched ? "Assistido" : "Quero ver"}
                 </span>
+                {!!movie.rewatchable && (
+                  <span className="text-[11px] px-2.5 py-1 rounded-lg font-bold border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                    Vale a pena rever
+                  </span>
+                )}
                 {!!movie.isFavorite && (
                   <span
                     className={cn(

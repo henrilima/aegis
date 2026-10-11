@@ -55,11 +55,22 @@ export function PomoHistory({
               )}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground">
-                  {h.cyclesDone} {h.cyclesDone === 1 ? "ciclo" : "ciclos"}{" "}
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({h.workMinutes * h.cyclesDone} min foco)
-                  </span>
+                <span className="text-xs font-semibold text-foreground">
+                  {h.cyclesDone > 0 ? (
+                    <>
+                      {h.cyclesDone} {h.cyclesDone === 1 ? "ciclo" : "ciclos"}{" "}
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        ({h.workMinutes} min foco)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Sessão parcial{" "}
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        ({h.workMinutes} min foco)
+                      </span>
+                    </>
+                  )}
                 </span>
                 <span className="text-[10px] text-neutral-500 font-medium">
                   {new Date(h.endTime).toLocaleDateString("pt-BR")}

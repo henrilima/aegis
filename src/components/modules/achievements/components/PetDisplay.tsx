@@ -7,6 +7,7 @@ import {
   COMPLETED_TODAY_PHRASES,
   GENERAL_MOTIVATIONAL_PHRASES,
   getPetPhrases,
+  getScenarioBgUrl,
   normalizePetId,
   PARTICLES_CONFIG,
 } from "@/config/pets.config";
@@ -18,7 +19,7 @@ import { formatDateLocal } from "@/lib/utils";
 // day (06h–12h), afternoon (12h–19h), night (19h–06h)
 function getTimePeriod(now: Date): "day" | "afternoon" | "night" {
   const hour = now.getHours();
-  if (hour >= 6 && hour < 16) return "day";
+  if (hour >= 6 && hour < 12) return "day";
   if (hour >= 12 && hour < 19) return "afternoon";
   return "night";
 }
@@ -27,6 +28,7 @@ interface PetDisplayProps {
   selectedPet: string;
   selectedParticle?: string;
   selectedBgMode?: "cyclic" | "day" | "afternoon" | "night";
+  selectedScenario?: string;
   treeLevel: number;
   treeXp: number;
   last3DaysCompletedCount: number;
@@ -52,6 +54,7 @@ export function PetDisplay({
   selectedPet: rawSelectedPet,
   selectedParticle,
   selectedBgMode,
+  selectedScenario,
   treeLevel,
   treeXp,
   last3DaysCompletedCount,
@@ -729,7 +732,7 @@ export function PetDisplay({
     }
     if (daysRemaining === 1) {
       return {
-        label: "⚠ Fraco • 1 dia para o desmaio",
+        label: "Fraco • 1 dia para o desmaio",
         className: "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse",
       };
     }
@@ -752,14 +755,24 @@ export function PetDisplay({
   }, [isDead, daysRemaining]);
 
   return (
-    <div className="p-6 rounded-2xl border border-border/70 bg-card/30 flex flex-col items-center text-center justify-between gap-4 h-full">
-      <div className="flex items-center justify-between w-full border-b border-border/50 pb-3">
-        <span className="text-xs font-semibold text-muted-foreground">
-          Mascote Aegis
-        </span>
+    <div className="relative p-5 rounded-2xl border border-border/80 bg-linear-to-b from-card/80 via-card/50 to-muted/20 backdrop-blur-md flex flex-col justify-between gap-4 h-full overflow-hidden group">
+      {/* Moldura de Console Retro: Header / Barra de Status HUD */}
+      <div className="flex items-center justify-between w-full border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2">
+          {/* LED de Energia do Console */}
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-xs" />
+          </span>
+          <span className="text-[11px] font-mono text-muted-foreground font-bold">
+            Aegis • Console
+          </span>
+        </div>
+
+        {/* Badge de Vitalidade HUD */}
         <div className="flex items-center gap-1.5">
           <span
-            className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${vitalityBadge.className}`}
+            className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold tracking-tight border ${vitalityBadge.className}`}
           >
             {vitalityBadge.label}
           </span>
@@ -769,134 +782,161 @@ export function PetDisplay({
       {/* Indicador de alerta de vitalidade (aparece somente quando em perigo) */}
       {!isDead && daysRemaining <= 2 && (
         <div
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border animate-in fade-in duration-300 ${
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border animate-in fade-in duration-300 ${
             daysRemaining === 1
-              ? "border-red-500/20 bg-red-500/5 text-red-500"
-              : "border-amber-500/20 bg-amber-500/5 text-amber-500"
+              ? "border-red-500/40 bg-red-500/10 text-red-400"
+              : "border-amber-500/40 bg-amber-500/10 text-amber-400"
           }`}
         >
           <AlertTriangle
-            className={`w-3.5 h-3.5 shrink-0 ${daysRemaining === 1 ? "text-red-500" : "text-amber-500"}`}
+            className={`w-4 h-4 shrink-0 ${daysRemaining === 1 ? "text-red-500" : "text-amber-500"}`}
           />
-          <p className="text-[11px] leading-snug text-left">
+          <p className="text-[11px] leading-snug text-left font-medium">
             {daysRemaining === 1
-              ? "Último dia! Conclua uma missão hoje ou seu pet irá desmaiar!"
-              : `Restam apenas ${daysRemaining} dias até o desmaio. Complete uma missão para dar energia ao seu pet!`}
+              ? "Último dia! Complete uma missão hoje para reanimar o pet!"
+              : `Restam ${daysRemaining} dias de energia. Complete missões para nutrir seu mascote.`}
           </p>
         </div>
       )}
 
-      {/* Renderizador do Mascote Pixel-Art com interatividade de clique */}
-      <div className="relative flex items-end justify-center h-48 w-full pb-8 select-none overflow-hidden rounded-xl border border-border/40 bg-muted/5 @container[size]">
-        {/* Imagem de Fundo (pets/backgorunds/pets-background-default-day.jpg) */}
-        <div
-          ref={bgRef}
-          className={`absolute inset-0 transition-all duration-500 ${
-            isDead ? "grayscale-80 brightness-60 contrast-110" : "brightness-85"
-          }`}
-          style={{
-            backgroundImage: `url("/pets/backgrounds/default/background-${timePeriod}.jpg")`,
-            backgroundSize: "auto 160%", // Preenche altura de forma ampliada, repete horizontalmente
-            backgroundRepeat: "repeat-x",
-            backgroundPosition: "bottom",
-            imageRendering: "pixelated",
-            transitionProperty:
-              "filter, opacity, brightness, contrast, saturate",
-          }}
-        />
+      {/* ── TELA DO CONSOLE RETRÔ COM MOLDURA PIXEL-ART ── */}
+      <div className="relative flex flex-col items-center justify-end w-full rounded-xl p-1 bg-neutral-950/80 border-2 border-neutral-800 shadow-inner">
+        {/* Cantos estilizados tipo tela de arcade */}
+        <div className="absolute top-1.5 left-2 w-1.5 h-1.5 rounded-full bg-neutral-700/60" />
+        <div className="absolute top-1.5 right-2 w-1.5 h-1.5 rounded-full bg-neutral-700/60" />
 
-        {/* Camada de Partículas do Mascote */}
-        {particles.map((p, idx) => {
-          const isUndertale = selectedParticle === "undertale";
-          return (
-            <div
-              key={p.id}
-              // Almas Undertale: ref para animação JS via rAF (sem CSS animation)
-              ref={
-                isUndertale
-                  ? (el) => {
-                      soulRefs.current[idx] = el;
-                    }
-                  : undefined
-              }
-              className={`absolute pointer-events-none select-none ${
-                isUndertale ? "" : getAnimationClass()
-              }`}
-              style={
-                {
-                  "--p-duration": `${p.duration}s`,
-                  "--drift": `${Math.sin(p.id) * 8}px`,
-                  "--drift-end": `${Math.cos(p.id) * 12}px`,
-                  "--rot": `${p.angle}deg`,
-                  left: `${p.x}%`,
-                  bottom: `${p.y}%`,
-                  animationDelay: isUndertale ? undefined : `${p.delay}s`,
-                  transform: isUndertale ? undefined : `scale(${p.scale})`,
-                  zIndex: 5,
-                } as React.CSSProperties
-              }
-            >
-              {renderParticleElement(p)}
-            </div>
-          );
-        })}
-
-        {/* Balão de fala pixel-art exibido ao clicar no pet */}
-        {speechText && (
+        {/* Display do Habitat */}
+        <div className="relative flex items-end justify-center h-52 w-full pb-6 select-none overflow-hidden rounded-lg border border-neutral-800/80 bg-black/60 @container[size]">
+          {/* Efeito scanline suave de tela CRT / Retrô */}
           <div
-            className="absolute z-20 bottom-25 left-1/2 -translate-x-1/2 animate-in fade-in zoom-in-75 duration-150 pointer-events-none"
-            style={{ imageRendering: "pixelated" }}
-          >
-            <div
-              className="relative px-2.5 py-1.5 text-[10px] font-bold text-foreground leading-snug max-w-35 text-center"
-              style={{
-                background: "var(--card)",
-                border: "2px solid var(--border)",
-                outline: "2px solid var(--background)",
-                boxShadow: "2px 2px 0 var(--border)",
-                fontFamily: "monospace",
-              }}
-            >
-              {speechText}
-              {/* Ponteiro do balão (estilo pixel-art) */}
-              <span
-                className="absolute left-1/2 -translate-x-1/2 -bottom-2.5 block w-2 h-2"
-                style={{
-                  background: "var(--card)",
-                  borderRight: "2px solid var(--border)",
-                  borderBottom: "2px solid var(--border)",
-                  outlineOffset: "-1px",
-                  transform: "translateX(-50%) rotate(45deg)",
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Área clicável + div animada em pixel-art */}
-        <button
-          type="button"
-          className="relative z-10 cursor-pointer focus:outline-none"
-          onClick={handlePetClick}
-          aria-label="Mascote"
-        >
-          <div
+            className="absolute inset-0 pointer-events-none z-10 opacity-15"
             style={{
-              width: `${DISPLAY_SIZE}px`,
-              height: `${DISPLAY_SIZE}px`,
-              backgroundImage: `url("/pets/${encodeURIComponent(selectedPet)}/${animationState}.png")`,
-              backgroundSize: `${totalWidth}px ${DISPLAY_SIZE}px`,
-              imageRendering: "pixelated",
-              backgroundRepeat: "no-repeat",
-              ...animationStyle,
+              backgroundImage:
+                "linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.5) 50%)",
+              backgroundSize: "100% 4px",
             }}
           />
-        </button>
+
+          {/* Imagem de Fundo do Cenário */}
+          <div
+            ref={bgRef}
+            className={`absolute inset-0 transition-all duration-500 ${
+              isDead
+                ? "grayscale-80 brightness-60 contrast-110"
+                : "brightness-90"
+            }`}
+            style={{
+              backgroundImage: `url("${getScenarioBgUrl(selectedScenario, timePeriod)}")`,
+              backgroundSize: "auto 160%",
+              backgroundRepeat: "repeat-x",
+              backgroundPosition: "bottom",
+              imageRendering: "pixelated",
+              transitionProperty:
+                "filter, opacity, brightness, contrast, saturate",
+            }}
+          />
+
+          {/* Camada de Partículas do Mascote */}
+          {particles.map((p, idx) => {
+            const isUndertale = selectedParticle === "undertale";
+            return (
+              <div
+                key={p.id}
+                ref={
+                  isUndertale
+                    ? (el) => {
+                        soulRefs.current[idx] = el;
+                      }
+                    : undefined
+                }
+                className={`absolute pointer-events-none select-none ${
+                  isUndertale ? "" : getAnimationClass()
+                }`}
+                style={
+                  {
+                    "--p-duration": `${p.duration}s`,
+                    "--drift": `${Math.sin(p.id) * 8}px`,
+                    "--drift-end": `${Math.cos(p.id) * 12}px`,
+                    "--rot": `${p.angle}deg`,
+                    left: `${p.x}%`,
+                    bottom: `${p.y}%`,
+                    animationDelay: isUndertale ? undefined : `${p.delay}s`,
+                    transform: isUndertale ? undefined : `scale(${p.scale})`,
+                    zIndex: 5,
+                  } as React.CSSProperties
+                }
+              >
+                {renderParticleElement(p)}
+              </div>
+            );
+          })}
+
+          {/* Balão de fala pixel-art */}
+          {speechText && (
+            <div
+              className="absolute z-20 bottom-25 left-1/2 -translate-x-1/2 animate-in fade-in zoom-in-75 duration-150 pointer-events-none"
+              style={{ imageRendering: "pixelated" }}
+            >
+              <div
+                className="relative px-2.5 py-1.5 text-[10px] font-bold text-foreground leading-snug max-w-36 text-center"
+                style={{
+                  background: "var(--card)",
+                  border: "2px solid var(--border)",
+                  outline: "2px solid var(--background)",
+                  boxShadow: "2px 2px 0 var(--border)",
+                  fontFamily: "monospace",
+                }}
+              >
+                {speechText}
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-2.5 block w-2 h-2"
+                  style={{
+                    background: "var(--card)",
+                    borderRight: "2px solid var(--border)",
+                    borderBottom: "2px solid var(--border)",
+                    outlineOffset: "-1px",
+                    transform: "translateX(-50%) rotate(45deg)",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Área clicável do Sprite do Mascote (mantém tamanho exato DISPLAY_SIZE) */}
+          <button
+            type="button"
+            className="relative z-10 cursor-pointer focus:outline-none transition-transform hover:scale-105 active:scale-95"
+            onClick={handlePetClick}
+            aria-label="Mascote"
+          >
+            <div
+              style={{
+                width: `${DISPLAY_SIZE}px`,
+                height: `${DISPLAY_SIZE}px`,
+                backgroundImage: `url("/pets/${encodeURIComponent(selectedPet)}/${animationState}.png")`,
+                backgroundSize: `${totalWidth}px ${DISPLAY_SIZE}px`,
+                imageRendering: "pixelated",
+                backgroundRepeat: "no-repeat",
+                ...animationStyle,
+              }}
+            />
+          </button>
+        </div>
+
+        {/* Barra de HUD Inferior da Tela Retrô */}
+        <div className="flex items-center justify-between w-full px-2 py-1 text-[9px] font-mono text-neutral-400">
+          <span>FPS: 60</span>
+          <span className="text-amber-400 font-bold uppercase">
+            {selectedPet}
+          </span>
+          <span>SYNC: OK</span>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 w-full items-center">
+      {/* Nome e Status Interativo */}
+      <div className="flex flex-col gap-1 w-full items-center text-center">
         {isEditingName ? (
-          <div className="flex items-center gap-1.5 max-w-52.5 w-full animate-in fade-in duration-200">
+          <div className="flex items-center gap-1.5 max-w-56 w-full animate-in fade-in duration-200">
             <input
               ref={inputRef}
               type="text"
@@ -909,7 +949,7 @@ export function PetDisplay({
                   setIsEditingName(false);
                 }
               }}
-              className="text-xs px-2.5 py-1 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 w-full text-center"
+              className="text-xs px-2.5 py-1 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 w-full text-center font-bold"
               placeholder="Nome do pet"
             />
             <button
@@ -930,39 +970,38 @@ export function PetDisplay({
             </button>
           </div>
         ) : (
-          <h3>
-            <button
-              type="button"
-              className="text-sm font-bold text-foreground leading-tight flex items-center gap-1.5 cursor-pointer hover:text-amber-500 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-1"
-              onClick={() => {
-                setTempName(customName || petName);
-                setIsEditingName(true);
-              }}
-              title="Clique para renomear seu pet"
-            >
-              {customName || petName}{" "}
-              <Edit2 className="w-2.5 h-2.5 text-muted-foreground" />
-            </button>
-          </h3>
+          <button
+            type="button"
+            className="text-sm font-bold text-foreground leading-tight flex items-center justify-center gap-1.5 cursor-pointer hover:text-amber-500 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2 py-0.5 group/btn"
+            onClick={() => {
+              setTempName(customName || petName);
+              setIsEditingName(true);
+            }}
+            title="Clique para renomear seu pet"
+          >
+            <span>{customName || petName}</span>
+            <Edit2 className="w-3 h-3 text-muted-foreground group-hover/btn:text-amber-500 transition-colors" />
+          </button>
         )}
-        <p className="text-[11px] text-muted-foreground leading-snug px-3">
+        <p className="text-[11px] text-muted-foreground leading-snug px-2">
           {statusMessage}
         </p>
       </div>
 
-      {/* Progresso de XP da Árvore / Pet */}
-      <div className="w-full flex flex-col gap-1.5 px-3 mt-1.5 border-t border-border/40 pt-3">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="font-semibold text-muted-foreground">
-            Progresso do Pet (Nível {treeLevel})
+      {/* Progresso de XP Estilizado em HUD de RPG */}
+      <div className="w-full flex flex-col gap-1.5 p-2.5 rounded-xl border border-border/50 bg-muted/20">
+        <div className="flex items-center justify-between text-[11px] font-mono">
+          <span className="font-bold text-foreground flex items-center gap-1">
+            <span className="text-amber-500">LV.{treeLevel}</span>
+            <span className="text-muted-foreground text-[10px]">PROGRESSO</span>
           </span>
-          <span className="font-bold text-green-500">
+          <span className="font-bold text-emerald-400">
             {treeXp} / {xpNeeded} XP
           </span>
         </div>
-        <div className="w-full h-2 bg-muted rounded-full overflow-hidden border border-border/30">
+        <div className="w-full h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-700/60 p-px">
           <div
-            className="h-full bg-linear-to-r from-green-600 to-emerald-400 transition-all duration-500 ease-out"
+            className="h-full bg-linear-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out shadow-xs"
             style={{ width: `${xpPercent}%` }}
           />
         </div>

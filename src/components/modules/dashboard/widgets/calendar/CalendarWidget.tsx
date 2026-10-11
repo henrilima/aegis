@@ -138,19 +138,19 @@ export function CalendarWidget({
               </Button>
             </div>
           )}
-          <div className="space-y-[1.5cqw] @sm:space-y-2">
+          <div className="divide-y divide-border/30">
             {loading ? (
-              <div className="space-y-2 animate-pulse">
-                <div className="h-10 bg-muted rounded-xl w-full" />
-                <div className="h-10 bg-muted rounded-xl w-full" />
-                <div className="h-10 bg-muted rounded-xl w-full" />
+              <div className="space-y-2 py-2 animate-pulse">
+                <div className="h-8 bg-muted/40 rounded-xl w-full" />
+                <div className="h-8 bg-muted/40 rounded-xl w-full" />
+                <div className="h-8 bg-muted/40 rounded-xl w-full" />
               </div>
             ) : items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-6 text-center">
                 <p className="text-xs text-foreground font-bold">
                   Sem compromissos
                 </p>
-                <p className="text-[10px] text-muted-foreground font-normal max-w-[180px] mt-1">
+                <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
                   Não há eventos ou prazos agendados para as próximas semanas.
                 </p>
               </div>
@@ -163,44 +163,44 @@ export function CalendarWidget({
                 return (
                   <div
                     key={ev.id}
-                    className="group relative flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 overflow-hidden text-left"
+                    className="group relative flex items-center justify-between py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3 overflow-hidden text-left"
                   >
-                    {/* Faixa de cor lateral se definida */}
-                    <div
-                      className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-                      style={{ backgroundColor: eventColorHex }}
-                    />
-
-                    <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left pl-1">
-                      <span className="text-sm font-bold text-foreground truncate">
-                        {ev.title}
-                      </span>
-                      {ev.isHoliday ? (
-                        <span className="text-[10px] font-bold text-amber-500">
-                          Feriado nacional
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div
+                        className="shrink-0 w-2 h-2 rounded-full"
+                        style={{ backgroundColor: eventColorHex }}
+                      />
+                      <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
+                        <span className="text-xs font-bold text-foreground truncate">
+                          {ev.title}
                         </span>
-                      ) : isDeadline && ev.deadlineCategory ? (
-                        <span
-                          className="text-[10px] font-bold opacity-95"
-                          style={{ color: eventColorHex }}
-                        >
-                          {
-                            DEADLINE_LABELS[
-                              ev.deadlineCategory as DeadlineCategory
-                            ]
-                          }
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-muted-foreground">
-                          {ev.time || "Dia todo"}
-                        </span>
-                      )}
+                        {ev.isHoliday ? (
+                          <span className="text-[10px] font-bold text-amber-500">
+                            Feriado nacional
+                          </span>
+                        ) : isDeadline && ev.deadlineCategory ? (
+                          <span
+                            className="text-[10px] font-bold opacity-95"
+                            style={{ color: eventColorHex }}
+                          >
+                            {
+                              DEADLINE_LABELS[
+                                ev.deadlineCategory as DeadlineCategory
+                              ]
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {ev.time || "Dia todo"}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-2">
                       <div
                         className={cn(
-                          "flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[10px] font-bold shrink-0",
+                          "flex items-center gap-1.5 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                           days === 0
                             ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                             : days === 1
@@ -219,10 +219,10 @@ export function CalendarWidget({
                             ? "Hoje"
                             : days === 1
                               ? "Amanhã"
-                              : `Em ${days} dias`}
+                              : `Em ${days}d`}
                         </span>
                       </div>
-                      <span className="text-xs font-bold text-foreground min-w-[42px] text-right">
+                      <span className="text-[11px] font-medium text-muted-foreground min-w-9.5 text-right">
                         {new Date(`${ev.date}T12:00:00`).toLocaleDateString(
                           "pt-BR",
                           {

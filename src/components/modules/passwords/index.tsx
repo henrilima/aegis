@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -22,7 +23,8 @@ import { LockedVault } from "./LockedVault";
 import { PasswordsGuidePanel } from "./PasswordsInfoModal";
 import { PasswordTable } from "./PasswordTable";
 import { ResetModal } from "./ResetModal";
-import type { DecryptedEntry, PasswordEntry } from "./types";
+import type { DecryptedEntry, PasswordEntry, VaultAuditReport } from "./types";
+import { VaultAuditor } from "./VaultAuditor";
 
 export default function PasswordManager() {
   const { user } = useAuth();
@@ -53,6 +55,14 @@ export default function PasswordManager() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showInfo, setShowInfo] = useState(false);
 
+  // Abas do módulo
+  const [activeTab, setActiveTab] = useState<"cofre" | "auditoria">("cofre");
+  const auditRanRef = useRef(false);
+
+  // Estados do Auditor de Segurança
+  const [auditReport, setAuditReport] = useState<VaultAuditReport | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+
   // Verifica se o cofre (database de senhas) já existe para o usuário atual
   const checkVault = useCallback(async () => {
     if (!user) return;
@@ -79,6 +89,23 @@ export default function PasswordManager() {
     }
   }, [user]);
 
+  // Executa auditoria do cofre no backend
+  const runAudit = useCallback(async () => {
+    if (!user || !masterPassword) return;
+    setAuditLoading(true);
+    try {
+      const report = await invoke<VaultAuditReport>("password_audit_vault", {
+        userId: String(user.id),
+        masterPwd: masterPassword,
+      });
+      setAuditReport(report);
+    } catch (error) {
+      console.error("[PasswordManager] Erro na auditoria do cofre:", error);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [user, masterPassword]);
+
   useEffect(() => {
     checkVault();
   }, [checkVault]);
@@ -88,6 +115,14 @@ export default function PasswordManager() {
       loadPasswords();
     }
   }, [isVerified, loadPasswords]);
+
+  // Executa auditoria automaticamente ao abrir a aba pela primeira vez
+  useEffect(() => {
+    if (activeTab === "auditoria" && isVerified && !auditRanRef.current) {
+      auditRanRef.current = true;
+      runAudit();
+    }
+  }, [activeTab, isVerified, runAudit]);
 
   // Realiza a verificação da senha mestre para desbloquear o cofre ou configurá-lo
   const handleVerify = async () => {
@@ -206,6 +241,7 @@ export default function PasswordManager() {
       setNewUsername("");
       setNewPassword("");
       setNewNote("");
+      runAudit();
     } catch (error) {
       toast.error(`Erro ao salvar: ${error}`);
     }
@@ -219,6 +255,7 @@ export default function PasswordManager() {
         entryId: deleteId,
       });
       loadPasswords();
+      runAudit();
       setDeleteId(null);
       toast.success("Credencial removida");
     } catch (error) {
@@ -262,6 +299,7 @@ export default function PasswordManager() {
         });
         toast.success(`${count} senhas importadas com sucesso!`);
         loadPasswords();
+        runAudit();
       }
     } catch (error) {
       toast.error(`Erro na importação: ${error}`);
@@ -352,59 +390,91 @@ export default function PasswordManager() {
             moduleId="passwords"
             color={getModuleColor("passwords")}
             title="Cofre de senhas"
-            subtitle={`${passwords.length} ${passwords.length === 1 ? "credencial protegida" : "credenciais protegidas"} localmente`}
+            subtitle={
+              activeTab === "auditoria" && auditReport
+                ? `Saúde do cofre: ${auditReport.healthScore}% — ${auditReport.totalCount} credencia${auditReport.totalCount !== 1 ? "is" : "l"} avaliada${auditReport.totalCount !== 1 ? "s" : ""}`
+                : `${passwords.length} ${passwords.length === 1 ? "credencial protegida" : "credenciais protegidas"} localmente`
+            }
             icon={ShieldCheck}
             onTitleClick={() => setShowInfo(true)}
             titleHoverIcon={HelpCircle}
             titleTooltip="Visualizar Guia de Senhas"
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
+            tabs={[
+              { id: "cofre", label: "Credenciais" },
+              {
+                id: "auditoria",
+                label: auditReport
+                  ? `Auditoria · ${auditReport.healthScore}%`
+                  : "Auditoria",
+              },
+            ]}
+            activeTab={activeTab}
+            onTabChange={(t) => setActiveTab(t as "cofre" | "auditoria")}
+            searchValue={activeTab === "cofre" ? searchTerm : undefined}
+            onSearchChange={activeTab === "cofre" ? setSearchTerm : undefined}
             searchPlaceholder="Buscar por serviço ou usuário..."
             actions={[
-              {
-                id: "import",
-                label: "Importar",
-                icon: UploadCloud,
-                tooltip: "Importar Senhas (CSV)",
-                onClick: handleImport,
-              },
-              {
-                id: "export",
-                label: "Exportar",
-                icon: DownloadCloud,
-                tooltip: "Exportar Senhas (CSV)",
-                onClick: handleExport,
-              },
-              {
-                id: "new",
-                label: "Nova Senha",
-                icon: Plus,
-                tooltip: "Adicionar nova credencial ao cofre",
-                primary: true,
-                onClick: () => {
-                  setIsEditing(false);
-                  setEditingId(null);
-                  setNewName("");
-                  setNewUrl("");
-                  setNewUsername("");
-                  setNewPassword("");
-                  setNewNote("");
-                  setShowAddModal(true);
-                },
-              },
+              ...(activeTab === "cofre"
+                ? [
+                    {
+                      id: "import",
+                      label: "Importar",
+                      icon: UploadCloud,
+                      tooltip: "Importar Senhas (CSV)",
+                      onClick: handleImport,
+                    },
+                    {
+                      id: "export",
+                      label: "Exportar",
+                      icon: DownloadCloud,
+                      tooltip: "Exportar Senhas (CSV)",
+                      onClick: handleExport,
+                    },
+                    {
+                      id: "new",
+                      label: "Nova Senha",
+                      icon: Plus,
+                      tooltip: "Adicionar nova credencial ao cofre",
+                      primary: true,
+                      onClick: () => {
+                        setIsEditing(false);
+                        setEditingId(null);
+                        setNewName("");
+                        setNewUrl("");
+                        setNewUsername("");
+                        setNewPassword("");
+                        setNewNote("");
+                        setShowAddModal(true);
+                      },
+                    },
+                  ]
+                : []),
             ]}
           />
 
-          <PasswordTable
-            filteredPasswords={filteredPasswords}
-            decryptedId={decryptedId}
-            decryptedData={decryptedData}
-            handleShowPassword={handleShowPassword}
-            handleEditStart={handleEditStart}
-            handleDelete={setDeleteId}
-            openExternal={openExternal}
-            copyToClipboard={copyToClipboard}
-          />
+          {activeTab === "cofre" ? (
+            <PasswordTable
+              filteredPasswords={filteredPasswords}
+              decryptedId={decryptedId}
+              decryptedData={decryptedData}
+              handleShowPassword={handleShowPassword}
+              handleEditStart={handleEditStart}
+              handleDelete={setDeleteId}
+              openExternal={openExternal}
+              copyToClipboard={copyToClipboard}
+            />
+          ) : (
+            <VaultAuditor
+              report={auditReport}
+              loading={auditLoading}
+              onRefresh={runAudit}
+              onEditCredential={(id) => {
+                handleEditStart(id);
+                setActiveTab("cofre");
+              }}
+              openExternal={openExternal}
+            />
+          )}
         </div>
       )}
 

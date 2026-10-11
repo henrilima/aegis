@@ -1,10 +1,12 @@
-# 🛡️ Aegis - Seu Centro de Produtividade & Privacidade (v4.0.0 "Vitalis")
+# 🛡️ Aegis - Seu Centro de Produtividade & Privacidade (v5.0.0 "Supernova")
 
 Aegis é um dashboard de produtividade "all-in-one" desenvolvido para ser rápido, seguro e absolutamente **impecável**. Construído com a robustez inabalável do **Rust (Tauri)** e a agilidade estonteante do **Next.js**, ele oferece um ambiente centralizado para gerenciar sua rotina diretamente no seu desktop com privacidade absoluta e um design que é puro luxo.
 
 ---
 
 ## 🚀 Novidades & Mudanças
+
+**Codinome - Supernova**: Assim como o nascimento de uma supernova marca o colapso dramático de uma estrela para dar origem a elementos fundamentais no cosmos, a versão **v5.0.0** redefine a arquitetura do Aegis, encerrando uma era de transição para uma plataforma definitiva, madura e poderosa de produtividade e bem-estar.
 
 Para conferir o histórico de novidades, melhorias e correções de cada versão, consulte o [changelog.md](changelog.md).
 

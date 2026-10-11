@@ -622,7 +622,7 @@ export default function StudiesPage() {
         tabs={STUDIES_TABS}
         activeTab={tab}
         onTabChange={(id) => setTab(id as TabId)}
-        integrations={["dictionary", "pomodoro", "grades"]}
+        integrations={["dictionary", "grades"]}
         onTitleClick={() => {
           if (tab !== "guia") {
             setPreGuideTab(tab);

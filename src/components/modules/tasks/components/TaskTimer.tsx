@@ -49,6 +49,7 @@ export function TaskTimer({
         onStatusChange,
         taskStatus: task.status ?? (task.completed ? "done" : "todo"),
         onTimeSaved,
+        baseSeconds: Number(task.timeSpentSeconds) || 0,
       });
     }
   };

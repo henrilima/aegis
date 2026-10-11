@@ -85,17 +85,7 @@ export function NotesWidget({
           )}
         </div>
 
-        <div className="space-y-1.5">
-          {pinnedNotes.length > 0 && (
-            <div className="flex items-center gap-1 mb-1 text-left">
-              <Pin className={cn("w-2.5 h-2.5 opacity-60", theme.text)} />
-              <span
-                className={cn("text-[10px] font-bold opacity-60", theme.text)}
-              >
-                Fixadas
-              </span>
-            </div>
-          )}
+        <div className="divide-y divide-border/30">
           {displayedNotes.map((n) => (
             <button
               key={n.id}
@@ -114,24 +104,26 @@ export function NotesWidget({
                 }
               }}
               className={cn(
-                "flex w-full items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 group/note text-left outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
-                isInteractive && "cursor-pointer",
+                "flex w-full items-center justify-between py-2.5 px-2 rounded-xl transition-colors gap-3 group/note text-left outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
+                isInteractive
+                  ? "cursor-pointer hover:bg-muted/40"
+                  : "hover:bg-muted/30",
               )}
             >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div
                   className={cn(
-                    "shrink-0 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20",
+                    "shrink-0 w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center",
                     theme.text,
                   )}
                 >
-                  <StickyNote className="w-4 h-4" />
+                  <StickyNote className="w-4 h-4 text-amber-500" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                  <span className="text-sm font-bold text-foreground truncate group-hover/note:text-foreground transition-colors">
+                  <span className="text-xs font-bold text-foreground truncate transition-colors">
                     {n.title}
                   </span>
-                  <span className="text-[10px] font-bold text-muted-foreground">
+                  <span className="text-[10px] text-muted-foreground font-medium">
                     {n.pinned ? "Nota fixada" : "Nota rápida"}
                   </span>
                 </div>
@@ -141,11 +133,11 @@ export function NotesWidget({
                 {n.pinned && (
                   <div
                     className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                       "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
                     )}
                   >
-                    <Pin className="w-3 h-3 shrink-0" />
+                    <Pin className="w-2.5 h-2.5 shrink-0" />
                     <span>Fixada</span>
                   </div>
                 )}
@@ -154,11 +146,11 @@ export function NotesWidget({
           ))}
           {notes.length === 0 && (
             <div className="flex flex-col items-center justify-center py-6 text-center">
-              <p className="text-xs text-neutral-600 font-bold">
-                Mural de Notas Vazio
+              <p className="text-xs text-foreground font-bold">
+                Mural de notas vazio
               </p>
-              <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
-                Escreva lembretes rápidos ou anotações para visualizar aqui.
+              <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
+                Crie anotações para organizar seus pensamentos e ideias.
               </p>
             </div>
           )}

@@ -122,12 +122,19 @@ export function PetSelector({
                 />
 
                 {isUnlocked ? (
-                  <span
-                    className="text-[11px] font-bold truncate w-full text-center px-1"
-                    title={displayName}
-                  >
-                    {displayName}
-                  </span>
+                  <>
+                    {isSelected && (
+                      <span className="absolute top-1.5 right-1.5 bg-amber-500 text-black px-1.5 py-0.2 rounded-full text-[8px] font-bold shadow-xs">
+                        Ativo
+                      </span>
+                    )}
+                    <span
+                      className="text-[11px] font-bold truncate w-full text-center px-1"
+                      title={displayName}
+                    >
+                      {displayName}
+                    </span>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center w-full">
                     <span className="text-[11px] font-bold truncate w-full text-center text-muted-foreground/45">

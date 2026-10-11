@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { APP_CONFIG } from "@/app.config";
 import type { UserProgressState } from "@/components/modules/achievements/types";
 import type { AppConfig } from "@/components/modules/settings/useSettingsLogic";
 import { AvatarRankWrapper } from "@/components/ui/AvatarRankWrapper";
@@ -65,6 +66,11 @@ export const NAV_GROUPS = [
         title: "Lista de Tarefas",
         route: "tasks" as AppRoute,
         icon: ListTodo,
+      },
+      {
+        title: "Pomodoro",
+        route: "pomodoro" as AppRoute,
+        icon: Timer,
       },
       {
         title: "Calendário",
@@ -276,6 +282,46 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
     };
   }, [user?.id]);
 
+  // Contadores em tempo real para tarefas e flashcards
+  const [pendingTasksCount, setPendingTasksCount] = useState<number>(0);
+  const [_decksCount, setDecksCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === "undefined") return;
+
+    const loadCounts = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const tasks = await invoke<{ completed: boolean }[]>("tasks_list", {
+          userId: user.id,
+        });
+        if (Array.isArray(tasks)) {
+          setPendingTasksCount(tasks.filter((t) => !t.completed).length);
+        }
+
+        const decks = await invoke<unknown[]>("flashcards_list_decks", {
+          userId: user.id,
+        });
+        if (Array.isArray(decks)) {
+          setDecksCount(decks.length);
+        }
+      } catch {}
+    };
+
+    loadCounts();
+
+    const handleRefresh = () => loadCounts();
+    window.addEventListener("tasks-changed", handleRefresh);
+    window.addEventListener("flashcards-changed", handleRefresh);
+    window.addEventListener("focus", handleRefresh);
+
+    return () => {
+      window.removeEventListener("tasks-changed", handleRefresh);
+      window.removeEventListener("flashcards-changed", handleRefresh);
+      window.removeEventListener("focus", handleRefresh);
+    };
+  }, [user?.id]);
+
   const handleToggle = () => {
     window.dispatchEvent(new Event("toggle-sidebar"));
   };
@@ -353,107 +399,105 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
       )}
     >
       <SidebarTrigger isOpen={isOpen} onToggle={handleToggle} />
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
-        <AvatarRankWrapper
-          level={level}
-          size="sm"
-          badgePosition="bottom-right"
-          showBorder={showSidebarRankBorder}
-          className="shrink-0"
-        >
-          <div
-            className={`flex h-9 w-9 items-center justify-center text-sm font-bold overflow-hidden ${themeStyles.bg} ${themeStyles.text}`}
+      <div className="p-3 pb-1 border-b border-sidebar-border/40">
+        <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-card/40 border border-border/50">
+          <AvatarRankWrapper
+            level={level}
+            size="sm"
+            badgePosition="bottom-right"
+            showBorder={showSidebarRankBorder}
+            className="shrink-0"
           >
-            {avatarSrc ? (
-              <img
-                src={avatarSrc}
-                alt="Foto de perfil"
-                width={36}
-                height={36}
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
+            <div
+              className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold overflow-hidden ${themeStyles.bg} ${themeStyles.text}`}
+            >
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="Foto de perfil"
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                (user?.username?.[0] ?? "A").toUpperCase()
+              )}
+            </div>
+          </AvatarRankWrapper>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-foreground truncate leading-snug">
+              {user?.username ?? "Usuário"}
+            </p>
+            {selectedTitle &&
+            selectedTitle !== "Sem Título" &&
+            selectedTitle !== "Sem título" ? (
+              <p className="text-[10px] font-semibold text-primary truncate mt-0.5">
+                {selectedTitle}
+              </p>
             ) : (
-              (user?.username?.[0] ?? "A").toUpperCase()
+              <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                {user?.email || "Sem e-mail"}
+              </p>
             )}
           </div>
-        </AvatarRankWrapper>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate leading-none">
-            {user?.username ?? "Usuário"}
-          </p>
-          {selectedTitle &&
-          selectedTitle !== "Sem Título" &&
-          selectedTitle !== "Sem título" ? (
-            <p className="text-[11px] font-semibold text-primary truncate mt-0.5">
-              {selectedTitle}
-            </p>
-          ) : user?.email ? (
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {user.email}
-            </p>
-          ) : (
-            <p className="text-[11px] text-muted-foreground/50 truncate mt-0.5 italic">
-              Sem e-mail
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-0.5 shrink-0">
-          <ToolTip
-            content={
-              unreadCount > 0
-                ? `${unreadCount} notificações não lidas`
-                : updateAvailable
-                  ? "Atualização Disponível!"
-                  : "Notificações"
-            }
-          >
-            <button
-              type="button"
-              aria-label="Abrir notificações"
-              onClick={() =>
-                window.dispatchEvent(new Event("open-notifications"))
+          <div className="flex items-center gap-0.5 shrink-0">
+            <ToolTip
+              content={
+                unreadCount > 0
+                  ? `${unreadCount} notificações não lidas`
+                  : updateAvailable
+                    ? "Atualização Disponível!"
+                    : "Notificações"
               }
-              className={cn(
-                "relative p-1.5 rounded-lg transition-all cursor-pointer",
-                "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-              )}
             >
-              <Bell className="w-4.5 h-4.5" />
-              {unreadCount > 0 ? (
-                <span
-                  className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 ${themeStyles.solid} text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none border-2 border-background`}
-                >
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              ) : (
-                updateAvailable && (
+              <button
+                type="button"
+                aria-label="Abrir notificações"
+                onClick={() =>
+                  window.dispatchEvent(new Event("open-notifications"))
+                }
+                className={cn(
+                  "relative p-1.5 rounded-xl transition-all cursor-pointer",
+                  "text-muted-foreground hover:text-foreground hover:bg-accent/60",
+                )}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 ? (
                   <span
-                    className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 ${themeStyles.solid} text-white rounded-full border-2 border-background flex items-center justify-center`}
+                    className={`absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 px-0.5 ${themeStyles.solid} text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none border border-background`}
                   >
-                    <ArrowUpCircle className="w-2 h-2" />
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
-                )
-              )}
-            </button>
-          </ToolTip>
+                ) : (
+                  updateAvailable && (
+                    <span
+                      className={`absolute -top-0.5 -right-0.5 w-3 h-3 ${themeStyles.solid} text-white rounded-full border border-background flex items-center justify-center`}
+                    >
+                      <ArrowUpCircle className="w-2 h-2" />
+                    </span>
+                  )
+                )}
+              </button>
+            </ToolTip>
 
-          <ToolTip content="Configurações">
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className={cn(
-                "relative p-1.5 rounded-lg transition-all cursor-pointer",
-                isSettingsOpen
-                  ? `${themeStyles.text} ${themeStyles.bg}`
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-              )}
-            >
-              <Settings className="w-4.5 h-4.5" />
-            </button>
-          </ToolTip>
+            <ToolTip content="Configurações">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className={cn(
+                  "relative p-1.5 rounded-xl transition-all cursor-pointer",
+                  isSettingsOpen
+                    ? `${themeStyles.text} ${themeStyles.bg}`
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/60",
+                )}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </ToolTip>
+          </div>
         </div>
       </div>
 
@@ -594,6 +638,13 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
                       </span>
                     </span>
 
+                    {/* Badge de contagem discreto em tempo real */}
+                    {item.route === "tasks" && pendingTasksCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-muted/80 text-muted-foreground border border-border/50">
+                        {pendingTasksCount}
+                      </span>
+                    )}
+
                     <span
                       className={cn(
                         "ml-auto w-1 rounded-full transition-all duration-300",
@@ -610,93 +661,95 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
         ))}
       </nav>
 
-      <div className="px-4 py-3 border-t border-sidebar-border flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {isPomodoroActive ? (
-            <>
-              <div
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${pomoTheme.bg} border ${pomoTheme.border}`}
-              >
-                <Timer
-                  className={`w-3.5 h-3.5 ${pomoTheme.text}`}
-                  strokeWidth={2.5}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const { invoke } = await import("@tauri-apps/api/core");
-                    await invoke("pomodoro_open_widget");
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }}
-                className="text-xs font-bold text-neutral-600 hover:text-foreground transition-colors bg-transparent border-none p-0 m-0 flex items-center gap-1.5 cursor-pointer select-none"
-              >
-                <span>Foco Ativo</span>
-                <ExternalLink className="w-3 h-3 text-muted-foreground" />
-              </button>
-            </>
-          ) : (
-            <>
-              <div
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${themeStyles.bg} border ${themeStyles.border}`}
-              >
-                <Shield
-                  className={`w-3.5 h-3.5 ${themeStyles.text}`}
-                  strokeWidth={2.5}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleVersionClick}
-                className="text-[11px] text-neutral-600 font-medium cursor-pointer select-none hover:text-foreground transition-colors bg-transparent border-none p-0 m-0"
-              >
-                {updateAvailable ? (
-                  <div
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${themeStyles.border} ${themeStyles.bg} bg-opacity-50`}
-                  >
+      <div className="p-3 pt-1 border-t border-sidebar-border/40">
+        <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-card/40 border border-border/40">
+          <div className="flex items-center gap-2 min-w-0">
+            {isPomodoroActive ? (
+              <>
+                <div
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${pomoTheme.bg} border ${pomoTheme.border}`}
+                >
+                  <Timer
+                    className={`w-3.5 h-3.5 ${pomoTheme.text}`}
+                    strokeWidth={2.5}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const { invoke } = await import("@tauri-apps/api/core");
+                      await invoke("pomodoro_open_widget");
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="text-xs font-bold text-neutral-600 hover:text-foreground transition-colors bg-transparent border-none p-0 m-0 flex items-center gap-1.5 cursor-pointer select-none truncate"
+                >
+                  <span>Foco Ativo</span>
+                  <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                </button>
+              </>
+            ) : (
+              <>
+                <div
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${themeStyles.bg} border ${themeStyles.border}`}
+                >
+                  <Shield
+                    className={`w-3.5 h-3.5 ${themeStyles.text}`}
+                    strokeWidth={2.5}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleVersionClick}
+                  className="text-[11px] text-muted-foreground font-medium cursor-pointer select-none hover:text-foreground transition-colors bg-transparent border-none p-0 m-0 truncate"
+                >
+                  {updateAvailable ? (
                     <div
-                      className={`w-1.5 h-1.5 rounded-full ${themeStyles.solid} opacity-80`}
-                    />
-                    <span
-                      className={`text-[10px] font-bold ${themeStyles.text} opacity-90`}
+                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${themeStyles.border} ${themeStyles.bg} bg-opacity-50`}
                     >
-                      Nova versão disponível!
-                    </span>
-                  </div>
-                ) : (
-                  "Aegis v4.0.0"
+                      <div
+                        className={`w-1.5 h-1.5 rounded-full ${themeStyles.solid} opacity-80`}
+                      />
+                      <span
+                        className={`text-[10px] font-bold ${themeStyles.text} opacity-90`}
+                      >
+                        Nova versão!
+                      </span>
+                    </div>
+                  ) : (
+                    `Aegis v${APP_CONFIG.version}`
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <ToolTip content="Feedback / Reportar Bug">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event("open-feedback"))}
+                className={cn(
+                  "p-1.5 rounded-xl text-muted-foreground transition-all cursor-pointer",
+                  "hover:text-foreground hover:bg-accent/60",
                 )}
+              >
+                <MessageSquare className="w-4 h-4" />
               </button>
-            </>
-          )}
-        </div>
+            </ToolTip>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <ToolTip content="Feedback / Reportar Bug">
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new Event("open-feedback"))}
-              className={cn(
-                "p-1.5 rounded-lg text-muted-foreground transition-all cursor-pointer",
-                "hover:text-foreground hover:bg-accent/50",
-              )}
-            >
-              <MessageSquare className="w-4 h-4" />
-            </button>
-          </ToolTip>
-
-          <ToolTip content="Sair">
-            <button
-              type="button"
-              onClick={logout}
-              className="p-1.5 rounded-lg text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </ToolTip>
+            <ToolTip content="Sair">
+              <button
+                type="button"
+                onClick={logout}
+                className="p-1.5 rounded-xl text-red-600 dark:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </ToolTip>
+          </div>
         </div>
       </div>
     </aside>

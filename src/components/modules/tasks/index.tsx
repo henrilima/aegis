@@ -2,15 +2,20 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import {
+  Calendar,
   CheckCircle2,
   Circle,
+  Eye,
+  EyeOff,
   Flag,
   Hash,
   HelpCircle,
   Kanban,
+  LayoutGrid,
   ListTodo,
   Pencil,
   Plus,
+  Repeat,
   Subtitles,
   Trash2,
 } from "lucide-react";
@@ -22,22 +27,27 @@ import { CardSkeletonGrid } from "@/components/ui/CardSkeletonGrid";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ToolTip } from "@/components/ui/ToolTipHelper";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
 import { cn } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
+import { EisenhowerMatrixView } from "./components/EisenhowerMatrixView";
 import { KanbanView } from "./components/KanbanView";
 import { TaskCreateModal } from "./components/modals/TaskCreateModal";
 import { TasksGuidePanel, TasksInfoModal } from "./components/TasksInfoModal";
 import { TaskTimer } from "./components/TaskTimer";
-import type { Task } from "./types";
+import { formatCompletedAt, formatDueDate, type Task } from "./types";
 
 /** Chave no localStorage para lembrar o modo de visualização preferido */
 const VIEW_MODE_KEY = "tasks_view_mode";
+/** Chave no localStorage para lembrar se tarefas concluídas devem ser ocultadas */
+const HIDE_COMPLETED_KEY = "tasks_hide_completed";
 
 const TASK_TABS: ModuleTab[] = [
   { id: "list", label: "Lista", icon: ListTodo },
   { id: "kanban", label: "Kanban", icon: Kanban },
+  { id: "eisenhower", label: "Matriz", icon: LayoutGrid },
 ];
 
 export default function TasksPage() {
@@ -51,22 +61,44 @@ export default function TasksPage() {
     number | undefined
   >();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
+  const [defaultPriority, setDefaultPriority] = useState<number | undefined>(
+    undefined,
+  );
   const [taskToConfirm, setTaskToConfirm] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [showInfo, setShowInfo] = useState(false);
 
-  // Modo de visualização: "list" | "kanban"
-  const [viewMode, setViewMode] = useState<"list" | "kanban">(() => {
+  // Configuração para ocultar tarefas já concluídas na visão de lista
+  const [hideCompleted, setHideCompleted] = useState(() => {
     if (typeof window !== "undefined") {
-      return (
-        (localStorage.getItem(VIEW_MODE_KEY) as "list" | "kanban") ?? "list"
-      );
+      return localStorage.getItem(HIDE_COMPLETED_KEY) === "true";
     }
-    return "list";
+    return false;
   });
 
-  // Id da tarefa com cronômetro ativo — gerenciado pelo context global
-  // (persiste entre módulos enquanto o app estiver aberto)
+  const toggleHideCompleted = () => {
+    setHideCompleted((prev) => {
+      const next = !prev;
+      localStorage.setItem(HIDE_COMPLETED_KEY, String(next));
+      return next;
+    });
+  };
+
+  // Modo de visualização: "list" | "kanban" | "eisenhower"
+  const [viewMode, setViewMode] = useState<"list" | "kanban" | "eisenhower">(
+    () => {
+      if (typeof window !== "undefined") {
+        return (
+          (localStorage.getItem(VIEW_MODE_KEY) as
+            | "list"
+            | "kanban"
+            | "eisenhower") ?? "list"
+        );
+      }
+      return "list";
+    },
+  );
+
   const uid = user ? String(user.id) : "";
 
   const fetchTasks = useCallback(async () => {
@@ -86,7 +118,7 @@ export default function TasksPage() {
   }, [fetchTasks]);
 
   // Persiste o modo de visualização no localStorage ao mudar
-  const handleViewModeChange = (mode: "list" | "kanban") => {
+  const handleViewModeChange = (mode: "list" | "kanban" | "eisenhower") => {
     setViewMode(mode);
     localStorage.setItem(VIEW_MODE_KEY, mode);
   };
@@ -117,6 +149,8 @@ export default function TasksPage() {
     priority?: number,
     category?: string,
     color?: string,
+    recurrence?: "none" | "daily" | "weekly" | "monthly",
+    dueDate?: string,
   ) => {
     if (!uid) return;
 
@@ -128,15 +162,18 @@ export default function TasksPage() {
           title,
           completed: editingTask?.completed ?? false,
           createdAt: editingTask?.createdAt ?? now.toISOString(),
-          priority,
+          priority: priority ?? defaultPriority ?? 0,
           category,
           color,
           parentId: selectedParentId ?? editingTask?.parentId,
+          recurrence: recurrence ?? editingTask?.recurrence ?? "none",
+          dueDate: dueDate ?? editingTask?.dueDate,
         } satisfies Task,
       });
       setIsModalOpen(false);
       setSelectedParentId(undefined);
       setEditingTask(undefined);
+      setDefaultPriority(undefined);
       fetchTasks();
       toast.success(
         editingTask
@@ -147,6 +184,22 @@ export default function TasksPage() {
       );
     } catch (err) {
       toast.error(typeof err === "string" ? err : "Erro ao processar tarefa");
+    }
+  };
+
+  const handleUpdatePriority = async (task: Task, newPriority: number) => {
+    if (!uid || !task.id) return;
+    try {
+      await invoke("tasks_upsert", {
+        task: {
+          ...task,
+          priority: newPriority,
+        } satisfies Task,
+      });
+      fetchTasks();
+      toast.success("Prioridade atualizada!");
+    } catch {
+      toast.error("Erro ao atualizar prioridade");
     }
   };
 
@@ -215,27 +268,40 @@ export default function TasksPage() {
 
   const priorityBadgeStyles = [
     "",
-    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
     "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
   ];
 
   const priorityLabels = ["", "Baixa", "Média", "Alta"];
 
   const rootTasks = tasks
     .filter((t) => !t.parentId || !tasks.some((p) => p.id === t.parentId))
-    .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    .sort((a, b) => {
+      // Ordena primeiro tarefas pendentes, depois concluídas
+      if (Boolean(a.completed) !== Boolean(b.completed)) {
+        return a.completed ? 1 : -1;
+      }
+      return (b.priority || 0) - (a.priority || 0);
+    });
 
   const filteredRootTasks = rootTasks.filter((t) => {
     if (filter === "pending") return !t.completed;
     if (filter === "completed") return t.completed;
+    // No filtro "all", respeita a configuração de ocultar concluídas
+    if (hideCompleted && t.completed) return false;
     return true;
   });
 
   const getSubtasks = (parentId: number) =>
     tasks
       .filter((t) => t.parentId === parentId)
-      .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+      .sort((a, b) => {
+        if (Boolean(a.completed) !== Boolean(b.completed)) {
+          return a.completed ? 1 : -1;
+        }
+        return (b.priority || 0) - (a.priority || 0);
+      });
 
   const pendingCount = tasks.filter((t) => !t.completed).length;
 
@@ -277,13 +343,13 @@ export default function TasksPage() {
             <button
               type="button"
               onClick={() => handleToggle(task)}
-              className="shrink-0 transition-transform active:scale-90"
+              className="shrink-0 transition-transform active:scale-90 cursor-pointer"
             >
               {task.completed ? (
                 <CheckCircle2
                   className={cn(
                     "w-5 h-5",
-                    task.color ? "" : "text-red-500 dark:text-red-400",
+                    task.color ? "" : "text-emerald-500 dark:text-emerald-400",
                   )}
                   style={task.color ? { color: styles.iconColor } : undefined}
                 />
@@ -293,7 +359,7 @@ export default function TasksPage() {
                     "w-5 h-5 transition-colors group-hover:scale-110",
                     task.color
                       ? ""
-                      : "text-muted-foreground/50 hover:text-red-500/80 dark:hover:text-red-400/80",
+                      : "text-muted-foreground/50 hover:text-emerald-500/80 dark:hover:text-emerald-400/80",
                   )}
                   style={
                     task.color ? { color: styles.iconColorMuted } : undefined
@@ -326,13 +392,47 @@ export default function TasksPage() {
                   </div>
                 )}
 
-                {/* Timer — ao lado da flag de prioridade, antes das tags */}
+                {/* Tag de Recorrência */}
+                {task.recurrence && task.recurrence !== "none" && (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shrink-0">
+                    <Repeat className="w-2.5 h-2.5 shrink-0" />
+                    <span>
+                      {task.recurrence === "daily"
+                        ? "Diária"
+                        : task.recurrence === "weekly"
+                          ? "Semanal"
+                          : "Mensal"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Data de vencimento */}
+                {task.dueDate && (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] text-muted-foreground bg-muted/40 border border-border/40 shrink-0">
+                    <Calendar className="w-2.5 h-2.5" />
+                    <span>{formatDueDate(task.dueDate)}</span>
+                  </div>
+                )}
+
+                {/* Timer — ao lado da flag de prioridade */}
                 {!isSubtask && task.id && (
                   <TaskTimer
                     task={task}
                     onTimeSaved={handleTimeSaved}
                     onStatusChange={handleStatusChange}
                   />
+                )}
+
+                {/* Tag de tarefa concluída com a data/hora */}
+                {task.completed && (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+                    <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
+                    <span>
+                      {task.completedAt
+                        ? `Concluída em ${formatCompletedAt(task.completedAt)}`
+                        : "Concluída"}
+                    </span>
+                  </div>
                 )}
 
                 {task.category && (
@@ -368,7 +468,7 @@ export default function TasksPage() {
             </div>
           </div>
 
-          {/* Ações de gestão — visíveis apenas no hover */}
+          {/* Ações de gestão — visíveis no hover */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
             {!isSubtask && !task.completed && (
               <ToolTip content="Adicionar subtarefa">
@@ -376,9 +476,10 @@ export default function TasksPage() {
                   type="button"
                   onClick={() => {
                     setSelectedParentId(task.id);
+                    setDefaultPriority(task.priority);
                     setIsModalOpen(true);
                   }}
-                  className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                  className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
                 >
                   <Subtitles className="w-4 h-4" />
                 </button>
@@ -391,7 +492,7 @@ export default function TasksPage() {
                   setEditingTask(task);
                   setIsModalOpen(true);
                 }}
-                className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
               >
                 <Pencil className="w-4 h-4" />
               </button>
@@ -400,7 +501,7 @@ export default function TasksPage() {
               <button
                 type="button"
                 onClick={() => handleDelete(task)}
-                className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -435,7 +536,9 @@ export default function TasksPage() {
         icon={ListTodo}
         tabs={TASK_TABS}
         activeTab={viewMode}
-        onTabChange={(id) => handleViewModeChange(id as "list" | "kanban")}
+        onTabChange={(id) =>
+          handleViewModeChange(id as "list" | "kanban" | "eisenhower")
+        }
         onTitleClick={() => setShowInfo(true)}
         titleHoverIcon={HelpCircle}
         titleTooltip="Visualizar Guia de Tarefas"
@@ -449,6 +552,7 @@ export default function TasksPage() {
             onClick: () => {
               setSelectedParentId(undefined);
               setEditingTask(undefined);
+              setDefaultPriority(undefined);
               setIsModalOpen(true);
             },
           },
@@ -463,37 +567,94 @@ export default function TasksPage() {
         />
       ) : (
         <div className="flex flex-col gap-4 pr-2">
-          {/* Filtros da visão de lista */}
-          {viewMode === "list" && (
-            <div className="flex items-center gap-1.5 p-1 bg-muted/30 border border-border/50 rounded-xl max-w-[320px] shrink-0">
-              {[
-                { id: "all", label: "Todas" },
-                { id: "pending", label: "Pendentes" },
-                { id: "completed", label: "Concluídas" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() =>
-                    setFilter(tab.id as "all" | "pending" | "completed")
-                  }
-                  className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none text-center",
-                    filter === tab.id
-                      ? "bg-card text-foreground border border-border/60"
-                      : "text-muted-foreground hover:text-foreground border border-transparent",
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+          {/* Barra de Controles e Filtros para todas as visões */}
+          <div className="flex items-center justify-between gap-3">
+            {viewMode === "list" ? (
+              <Tabs
+                value={filter}
+                onValueChange={(val) =>
+                  setFilter(val as "all" | "pending" | "completed")
+                }
+                className="w-auto"
+              >
+                <TabsList className="h-9">
+                  <TabsTrigger
+                    value="all"
+                    className="text-xs px-3 font-bold cursor-pointer"
+                  >
+                    Todas
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="pending"
+                    className="text-xs px-3 font-bold cursor-pointer"
+                  >
+                    Pendentes
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="completed"
+                    className="text-xs px-3 font-bold cursor-pointer"
+                  >
+                    Concluídas
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : (
+              <div />
+            )}
+
+            {/* Toggle para ocultar tarefas concluídas (disponível em todos os layouts: Lista, Kanban e Matriz) */}
+            <ToolTip
+              content={
+                hideCompleted ? "Mostrar concluídas" : "Ocultar concluídas"
+              }
+            >
+              <button
+                type="button"
+                onClick={toggleHideCompleted}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shrink-0",
+                  hideCompleted
+                    ? "bg-card border-border text-foreground shadow-xs"
+                    : "bg-muted/30 border-border/50 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {hideCompleted ? (
+                  <EyeOff className="w-4 h-4 text-primary" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                <span>
+                  {hideCompleted ? "Mostrar concluídas" : "Ocultar concluídas"}
+                </span>
+              </button>
+            </ToolTip>
+          </div>
+
+          {/* ─── VISÃO MATRIZ DE EISENHOWER ─── */}
+          {viewMode === "eisenhower" && (
+            <EisenhowerMatrixView
+              tasks={hideCompleted ? tasks.filter((t) => !t.completed) : tasks}
+              onToggleTask={handleToggle}
+              onEditTask={(task) => {
+                setEditingTask(task);
+                setIsModalOpen(true);
+              }}
+              onDeleteTask={handleDelete}
+              onUpdatePriority={handleUpdatePriority}
+              onCreateInQuadrant={(priority) => {
+                setSelectedParentId(undefined);
+                setEditingTask(undefined);
+                setDefaultPriority(priority);
+                setIsModalOpen(true);
+              }}
+              onTimeSaved={handleTimeSaved}
+            />
           )}
 
           {/* ─── VISÃO KANBAN ─── */}
           {viewMode === "kanban" && (
             <KanbanView
-              tasks={tasks}
+              tasks={hideCompleted ? tasks.filter((t) => !t.completed) : tasks}
               onTimeSaved={handleTimeSaved}
               onStatusChange={handleStatusChange}
               onToggle={handleToggle}
@@ -530,10 +691,12 @@ export default function TasksPage() {
       <TaskCreateModal
         isOpen={isModalOpen}
         task={editingTask}
+        defaultPriority={defaultPriority}
         onClose={() => {
           setIsModalOpen(false);
           setSelectedParentId(undefined);
           setEditingTask(undefined);
+          setDefaultPriority(undefined);
         }}
         onAdd={handleAddTask}
       />

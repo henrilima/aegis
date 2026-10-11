@@ -7,6 +7,7 @@ export interface Note {
   pinned: boolean;
   path?: string;
   color?: string;
+  isDiary?: boolean;
 }
 
 export interface FileSystemItem {

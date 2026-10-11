@@ -146,7 +146,7 @@ export function SearchableSelect<T>({
       )}
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-card overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 shadow-lg">
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-card overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
           {mode === "combobox" && (
             <div className="p-2 border-b border-border/40 bg-card">
               <div className="relative">

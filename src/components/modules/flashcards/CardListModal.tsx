@@ -2,7 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { AlertCircle, Edit2, Plus, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { cn, getColorTheme } from "@/lib/utils";
 import type { Flashcard, FlashcardDeck } from "./types";
@@ -82,12 +82,56 @@ export function CardListModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estado do formulário
+  // Estado do formulário e formatos de cartão
+  type CardFormat = "standard" | "cloze" | "vf" | "quiz";
+  const [cardFormat, setCardFormat] = useState<CardFormat>("standard");
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
   const [editingCardId, setEditingCardId] = useState<number | null>(null);
 
+  // Estados específicos de V/F e Quiz
+  const [vfAnswer, setVfAnswer] = useState<"Verdadeiro" | "Falso">(
+    "Verdadeiro",
+  );
+  const [vfExplanation, setVfExplanation] = useState("");
+  const [quizQuestion, setQuizQuestion] = useState("");
+  const [quizOptions, setQuizOptions] = useState<
+    [string, string, string, string]
+  >(["", "", "", ""]);
+  const [quizCorrectIndex, setQuizCorrectIndex] = useState<number>(0);
+  const [quizExplanation, setQuizExplanation] = useState("");
+
+  const frontTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   const m = getColorTheme(deck.color || "blue");
+
+  // Ação para envolver seleção do usuário com {{...}} no modo omissão
+  const handleWrapClozeSelection = () => {
+    const textarea = frontTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = front.substring(start, end);
+
+    if (selectedText.trim().length > 0) {
+      const newText = `${front.substring(0, start)}{{${selectedText}}}${front.substring(end)}`;
+      setFront(newText);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + 2, end + 2);
+      }, 0);
+    } else {
+      const placeholder = "{{palavra}}";
+      const newText =
+        front.substring(0, start) + placeholder + front.substring(end);
+      setFront(newText);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + 2, start + 2 + "palavra".length);
+      }, 0);
+    }
+  };
 
   const fetchCards = useCallback(async () => {
     if (!deck.id) return;
@@ -112,33 +156,70 @@ export function CardListModal({
       setFront("");
       setBack("");
       setEditingCardId(null);
+      setCardFormat("standard");
     }
   }, [isOpen, deck, fetchCards]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!front.trim() || !back.trim() || !deck.id) return;
+    if (!deck.id) return;
+
+    let finalFront = front.trim();
+    let finalBack = back.trim();
+
+    if (cardFormat === "vf") {
+      if (!front.trim()) return;
+      finalFront = `[V/F] ${front.trim()}`;
+      finalBack = vfExplanation.trim()
+        ? `${vfAnswer} — ${vfExplanation.trim()}`
+        : vfAnswer;
+    } else if (cardFormat === "quiz") {
+      if (!quizQuestion.trim() || quizOptions.some((opt) => !opt.trim())) {
+        setError("Preencha o enunciado e todas as 4 alternativas do quiz.");
+        return;
+      }
+      finalFront = `[QUIZ] ${quizQuestion.trim()}\nA) ${quizOptions[0].trim()}\nB) ${quizOptions[1].trim()}\nC) ${quizOptions[2].trim()}\nD) ${quizOptions[3].trim()}`;
+      const letters = ["A", "B", "C", "D"];
+      const correctLetter = letters[quizCorrectIndex];
+      const correctText = quizOptions[quizCorrectIndex].trim();
+      finalBack = quizExplanation.trim()
+        ? `Correta: ${correctLetter}) ${correctText} — ${quizExplanation.trim()}`
+        : `Correta: ${correctLetter}) ${correctText}`;
+    } else if (cardFormat === "cloze") {
+      if (!finalFront) return;
+      if (!finalFront.includes("{{") || !finalFront.includes("}}")) {
+        setError(
+          "O modo omissão precisa conter pelo menos um termo entre {{...}}.",
+        );
+        return;
+      }
+      if (!finalBack) {
+        finalBack = "Omissão de palavras fixada";
+      }
+    } else {
+      if (!finalFront || !finalBack) return;
+    }
 
     setError(null);
     try {
       if (editingCardId !== null) {
-        // Edit card
+        // Editar cartão existente
         const cardToUpdate = cards.find((c) => c.id === editingCardId);
         if (cardToUpdate) {
           const updated: Flashcard = {
             ...cardToUpdate,
-            front: front.trim(),
-            back: back.trim(),
+            front: finalFront,
+            back: finalBack,
           };
           await invoke("flashcards_update_card", { card: updated });
         }
         setEditingCardId(null);
       } else {
-        // Create new card
+        // Criar novo cartão
         const newCard: Flashcard = {
           deckId: deck.id,
-          front: front.trim(),
-          back: back.trim(),
+          front: finalFront,
+          back: finalBack,
           reviewCount: 0,
           successCount: 0,
           createdAt: new Date().toISOString(),
@@ -147,6 +228,10 @@ export function CardListModal({
       }
       setFront("");
       setBack("");
+      setVfExplanation("");
+      setQuizQuestion("");
+      setQuizOptions(["", "", "", ""]);
+      setQuizExplanation("");
       fetchCards();
       if (onCardsChanged) onCardsChanged();
     } catch (err) {
@@ -158,14 +243,59 @@ export function CardListModal({
   const handleEditInit = (card: Flashcard) => {
     if (!card.id) return;
     setEditingCardId(card.id);
-    setFront(card.front);
-    setBack(card.back);
+
+    // Detectar formato ao editar
+    if (card.front.startsWith("[QUIZ]")) {
+      setCardFormat("quiz");
+      const lines = card.front.replace("[QUIZ] ", "").split("\n");
+      const q = lines[0] || "";
+      const optA =
+        lines.find((l) => l.startsWith("A) "))?.replace("A) ", "") || "";
+      const optB =
+        lines.find((l) => l.startsWith("B) "))?.replace("B) ", "") || "";
+      const optC =
+        lines.find((l) => l.startsWith("C) "))?.replace("C) ", "") || "";
+      const optD =
+        lines.find((l) => l.startsWith("D) "))?.replace("D) ", "") || "";
+      setQuizQuestion(q);
+      setQuizOptions([optA, optB, optC, optD]);
+
+      if (card.back.includes("Correta: B)")) setQuizCorrectIndex(1);
+      else if (card.back.includes("Correta: C)")) setQuizCorrectIndex(2);
+      else if (card.back.includes("Correta: D)")) setQuizCorrectIndex(3);
+      else setQuizCorrectIndex(0);
+
+      const exp = card.back.split(" — ")[1] || "";
+      setQuizExplanation(exp);
+      setFront(card.front);
+      setBack(card.back);
+    } else if (card.front.startsWith("[V/F]")) {
+      setCardFormat("vf");
+      setFront(card.front.replace("[V/F] ", ""));
+      const isTrue = card.back.startsWith("Verdadeiro");
+      setVfAnswer(isTrue ? "Verdadeiro" : "Falso");
+      const exp = card.back.split(" — ")[1] || "";
+      setVfExplanation(exp);
+      setBack(card.back);
+    } else if (card.front.includes("{{") && card.front.includes("}}")) {
+      setCardFormat("cloze");
+      setFront(card.front);
+      setBack(card.back);
+    } else {
+      setCardFormat("standard");
+      setFront(card.front);
+      setBack(card.back);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingCardId(null);
     setFront("");
     setBack("");
+    setVfExplanation("");
+    setQuizQuestion("");
+    setQuizOptions(["", "", "", ""]);
+    setQuizExplanation("");
   };
 
   const handleDeleteCard = async (id: number) => {
@@ -185,7 +315,7 @@ export function CardListModal({
       isOpen={isOpen}
       onClose={onClose}
       size="xl"
-      className="h-[80vh] max-h-[700px]"
+      className="h-[80vh] max-h-175"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-border/50 bg-card/20 shrink-0">
@@ -194,7 +324,8 @@ export function CardListModal({
             Gerenciar cartões: <span className={m.text}>{deck.name}</span>
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Adicione, edite ou exclua cartões de memorização deste baralho
+            Adicione, edite ou exclua cartões com formatos flexíveis de
+            memorização
           </p>
         </div>
         <button
@@ -209,53 +340,284 @@ export function CardListModal({
       {/* Content Area */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side: Form */}
-        <div className="w-full md:w-[350px] border-r border-border/50 p-6 flex flex-col gap-4 bg-card/5 shrink-0 overflow-y-auto">
-          <h3 className="text-sm font-bold text-foreground">
-            {editingCardId !== null ? "Editar cartão" : "Novo cartão"}
-          </h3>
+        <div className="w-full md:w-96 border-r border-border/50 p-6 flex flex-col gap-4 bg-card/5 shrink-0 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground">
+              {editingCardId !== null ? "Editar cartão" : "Novo cartão"}
+            </h3>
+            <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
+              Formato ativo
+            </span>
+          </div>
+
+          {/* Formato do Cartão */}
+          <div className="grid grid-cols-4 gap-1 p-1 bg-muted/30 border border-border rounded-xl">
+            {(
+              [
+                { id: "standard", label: "Padrão" },
+                { id: "cloze", label: "Omissão" },
+                { id: "vf", label: "V / F" },
+                { id: "quiz", label: "Quiz" },
+              ] as const
+            ).map((fmt) => (
+              <button
+                key={fmt.id}
+                type="button"
+                onClick={() => setCardFormat(fmt.id)}
+                className={cn(
+                  "py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer text-center",
+                  cardFormat === fmt.id
+                    ? `${m.bg} ${m.textSub} ${m.border} border`
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent",
+                )}
+              >
+                {fmt.label}
+              </button>
+            ))}
+          </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="card-front"
-                className="text-xs font-semibold text-muted-foreground"
-              >
-                Frente (pergunta ou termo)
-              </label>
-              <textarea
-                id="card-front"
-                required
-                value={front}
-                onChange={(e) => setFront(e.target.value)}
-                placeholder="O que será mostrado primeiro..."
-                rows={5}
-                className={cn(
-                  "w-full p-3 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none transition-all resize-none",
-                  getFocusBorderClass(deck.color || "blue"),
-                )}
-              />
-            </div>
+            {/* Formato Padrão ou Omissão */}
+            {(cardFormat === "standard" || cardFormat === "cloze") && (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label
+                      htmlFor="card-front"
+                      className="text-xs font-semibold text-muted-foreground"
+                    >
+                      {cardFormat === "cloze"
+                        ? "Texto com omissão"
+                        : "Frente (pergunta ou termo)"}
+                    </label>
+                    {cardFormat === "cloze" && (
+                      <button
+                        type="button"
+                        onClick={handleWrapClozeSelection}
+                        className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors border cursor-pointer",
+                          `${m.bg} ${m.textSub} ${m.border}`,
+                        )}
+                        title="Selecione um trecho de texto e clique para envolver com {{...}}"
+                      >
+                        Omitir seleção &#123;&#123;...&#125;&#125;
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    ref={frontTextareaRef}
+                    id="card-front"
+                    required
+                    value={front}
+                    onChange={(e) => setFront(e.target.value)}
+                    placeholder={
+                      cardFormat === "cloze"
+                        ? "Ex: A capital da França é {{Paris}} e sua moeda é o {{Euro}}."
+                        : "O que será mostrado primeiro..."
+                    }
+                    rows={4}
+                    className={cn(
+                      "w-full p-3 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none transition-all resize-none",
+                      getFocusBorderClass(deck.color || "blue"),
+                    )}
+                  />
+                  {cardFormat === "cloze" && (
+                    <span className="text-[10px] text-muted-foreground">
+                      Dica: Selecione a palavra que deseja ocultar e clique em
+                      &quot;Omitir seleção&quot;.
+                    </span>
+                  )}
+                </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="card-back"
-                className="text-xs font-semibold text-muted-foreground"
-              >
-                Verso (resposta ou definição)
-              </label>
-              <textarea
-                id="card-back"
-                required
-                value={back}
-                onChange={(e) => setBack(e.target.value)}
-                placeholder="A resposta para a pergunta do cartão..."
-                rows={5}
-                className={cn(
-                  "w-full p-3 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none transition-all resize-none",
-                  getFocusBorderClass(deck.color || "blue"),
-                )}
-              />
-            </div>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="card-back"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    {cardFormat === "cloze"
+                      ? "Dica ou explicação (opcional)"
+                      : "Verso (resposta ou definição)"}
+                  </label>
+                  <textarea
+                    id="card-back"
+                    required={cardFormat === "standard"}
+                    value={back}
+                    onChange={(e) => setBack(e.target.value)}
+                    placeholder={
+                      cardFormat === "cloze"
+                        ? "Nota ou explicação complementar sobre os termos..."
+                        : "A resposta para a pergunta do cartão..."
+                    }
+                    rows={4}
+                    className={cn(
+                      "w-full p-3 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none transition-all resize-none",
+                      getFocusBorderClass(deck.color || "blue"),
+                    )}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Formato Verdadeiro ou Falso */}
+            {cardFormat === "vf" && (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="vf-front"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Afirmação
+                  </label>
+                  <textarea
+                    id="vf-front"
+                    required
+                    value={front}
+                    onChange={(e) => setFront(e.target.value)}
+                    placeholder="Ex: A muralha da China é visível da órbita lunar a olho nu."
+                    rows={3}
+                    className={cn(
+                      "w-full p-3 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none transition-all resize-none",
+                      getFocusBorderClass(deck.color || "blue"),
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Resposta correta
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setVfAnswer("Verdadeiro")}
+                      className={cn(
+                        "py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center",
+                        vfAnswer === "Verdadeiro"
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                          : "border-border text-muted-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      Verdadeiro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVfAnswer("Falso")}
+                      className={cn(
+                        "py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center",
+                        vfAnswer === "Falso"
+                          ? "bg-red-500/15 border-red-500/40 text-red-400"
+                          : "border-border text-muted-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      Falso
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="vf-exp"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Justificativa (opcional)
+                  </label>
+                  <input
+                    id="vf-exp"
+                    type="text"
+                    value={vfExplanation}
+                    onChange={(e) => setVfExplanation(e.target.value)}
+                    placeholder="Ex: É um mito popular; a largura média não permite vê-la do espaço sem lentes."
+                    className="w-full p-2.5 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Formato Quiz (Múltipla Escolha) */}
+            {cardFormat === "quiz" && (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="quiz-q"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Pergunta ou Enunciado
+                  </label>
+                  <textarea
+                    id="quiz-q"
+                    required
+                    value={quizQuestion}
+                    onChange={(e) => setQuizQuestion(e.target.value)}
+                    placeholder="Ex: Qual é o elemento químico mais abundante no universo?"
+                    rows={2}
+                    className={cn(
+                      "w-full p-2.5 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none resize-none",
+                      getFocusBorderClass(deck.color || "blue"),
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      Alternativas (marque a correta)
+                    </span>
+                  </div>
+
+                  {(["A", "B", "C", "D"] as const).map((letter, idx) => (
+                    <div key={letter} className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setQuizCorrectIndex(idx)}
+                        className={cn(
+                          "w-7 h-7 rounded-lg text-xs font-bold border shrink-0 transition-all cursor-pointer flex items-center justify-center",
+                          quizCorrectIndex === idx
+                            ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 font-bold"
+                            : "border-border text-muted-foreground hover:bg-muted/50",
+                        )}
+                        title="Marcar como alternativa correta"
+                      >
+                        {letter}
+                      </button>
+                      <input
+                        type="text"
+                        required
+                        value={quizOptions[idx]}
+                        onChange={(e) => {
+                          const updated = [...quizOptions] as [
+                            string,
+                            string,
+                            string,
+                            string,
+                          ];
+                          updated[idx] = e.target.value;
+                          setQuizOptions(updated);
+                        }}
+                        placeholder={`Alternativa ${letter}...`}
+                        className="flex-1 p-2 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="quiz-exp"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Explicação complementar (opcional)
+                  </label>
+                  <input
+                    id="quiz-exp"
+                    type="text"
+                    value={quizExplanation}
+                    onChange={(e) => setQuizExplanation(e.target.value)}
+                    placeholder="Ex: O hidrogênio compõe aproximadamente 75% da massa elemental do universo."
+                    className="w-full p-2 text-xs bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                </div>
+              </>
+            )}
 
             {error && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
@@ -276,7 +638,6 @@ export function CardListModal({
               )}
               <button
                 type="submit"
-                disabled={!front.trim() || !back.trim()}
                 className={cn(
                   "flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5",
                   m.solid,
@@ -316,7 +677,7 @@ export function CardListModal({
               <p className="text-xs font-bold text-muted-foreground">
                 Nenhum cartão cadastrado
               </p>
-              <p className="text-[10px] text-neutral-600 max-w-[200px] mt-1 leading-relaxed">
+              <p className="text-[10px] text-neutral-600 max-w-50 mt-1 leading-relaxed">
                 Use o formulário ao lado para adicionar o primeiro cartão a este
                 baralho.
               </p>

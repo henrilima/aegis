@@ -349,3 +349,54 @@ export const PET_BACKGROUNDS: PetBackgroundConfig[] = [
     description: "Mantém o cenário no período noturno.",
   },
 ];
+
+export interface PetScenarioConfig {
+  id: string;
+  name: string;
+  description: string;
+  requiredLevel: number;
+  folder: string;
+  availablePeriods: ("day" | "afternoon" | "night")[];
+  defaultImage: string;
+}
+
+export const PET_SCENARIOS_CONFIG: Record<string, PetScenarioConfig> = {
+  default: {
+    id: "default",
+    name: "Floresta Aegis",
+    description: "Cenário padrão.",
+    requiredLevel: 1,
+    folder: "default",
+    availablePeriods: ["day", "afternoon", "night"],
+    defaultImage: "/pets/backgrounds/default/background-day.jpg",
+  },
+  beach: {
+    id: "beach",
+    name: "Dia na Praia",
+    description:
+      "Cenário praiano relaxante com brisa tropical e mar cristalino.",
+    requiredLevel: 10,
+    folder: "beach",
+    availablePeriods: ["day", "afternoon", "night"],
+    defaultImage: "/pets/backgrounds/beach/background-day.jpg",
+  },
+};
+
+/** Retorna a URL da imagem de fundo baseada no cenário e período do dia */
+export function getScenarioBgUrl(
+  rawScenarioId: string | null | undefined,
+  timePeriod: "day" | "afternoon" | "night",
+): string {
+  const scenarioId = rawScenarioId || "default";
+  const config = PET_SCENARIOS_CONFIG[scenarioId];
+
+  if (config) {
+    if (config.availablePeriods.includes(timePeriod)) {
+      return `/pets/backgrounds/${config.folder}/background-${timePeriod}.jpg`;
+    }
+    return config.defaultImage;
+  }
+
+  // Fallback para cenários adicionados dinamicamente na pasta
+  return `/pets/backgrounds/${scenarioId}/background-day.jpg`;
+}

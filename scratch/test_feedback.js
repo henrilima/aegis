@@ -1,5 +1,5 @@
-const WEBHOOK_URL =
-  "https://ptb.discord.com/api/webhooks/1497843641698357268/1bbGVSlL5p2aPCiKFNE2O0FidvP_gB5uwQFk5WyY3CE6w2tHUE1HishonfG4Sevp5_oW";
+// Webhook carregado via variável de ambiente para evitar exposição
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "COLE_SEU_WEBHOOK_AQUI";
 
 async function testFeedback() {
   console.log("🚀 Iniciando teste de Feedback...");

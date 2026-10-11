@@ -27,8 +27,7 @@ import { useAvatar } from "@/hooks/useAvatar";
 import { useLog } from "@/hooks/useLog";
 import { cn } from "@/lib/utils";
 
-const WEBHOOK_URL =
-  "https://ptb.discord.com/api/webhooks/1497843641698357268/1bbGVSlL5p2aPCiKFNE2O0FidvP_gB5uwQFk5WyY3CE6w2tHUE1HishonfG4Sevp5_oW";
+const WEBHOOK_URL = process.env.NEXT_PUBLIC_DISCORD_WEBHOOK ?? "";
 
 const MASTER_CODES = [
   "NX7W2Q4",

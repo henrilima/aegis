@@ -147,11 +147,93 @@ export function usePomodoroLogic() {
   }, [fetchState]);
 
   // Recalcula o tempo em tela a cada segundo e avança o ciclo se o contador zerar
+  // Tarefa vinculada para focar
+  const [linkedTaskId, setLinkedTaskIdState] = useState<number | null>(() => {
+    if (typeof window !== "undefined" && user?.id) {
+      const saved = localStorage.getItem(`aegis_pomo_linked_task_${user.id}`);
+      return saved ? Number(saved) : null;
+    }
+    return null;
+  });
+
+  const linkedTaskIdRef = useRef<number | null>(linkedTaskId);
+  useEffect(() => {
+    linkedTaskIdRef.current = linkedTaskId;
+  }, [linkedTaskId]);
+
+  const setLinkedTaskId = useCallback(
+    (id: number | null) => {
+      setLinkedTaskIdState(id);
+      if (typeof window !== "undefined" && user?.id) {
+        if (id !== null) {
+          localStorage.setItem(`aegis_pomo_linked_task_${user.id}`, String(id));
+        } else {
+          localStorage.removeItem(`aegis_pomo_linked_task_${user.id}`);
+        }
+      }
+    },
+    [user?.id],
+  );
+
+  // Contador de segundos decorridos que precisam ser sincronizados com a tarefa
+  const pendingTaskSecondsRef = useRef<number>(0);
+
+  // Sincroniza segundos acumulados com a tarefa vinculada
+  const syncTaskTime = useCallback(async (secondsToCredit: number) => {
+    const taskId = linkedTaskIdRef.current;
+    if (!taskId || secondsToCredit <= 0) return;
+    try {
+      await invoke("tasks_add_time", {
+        id: taskId,
+        seconds: secondsToCredit,
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("task-time-updated", {
+            detail: { taskId, seconds: secondsToCredit },
+          }),
+        );
+      }
+    } catch (e) {
+      console.error("Erro ao sincronizar tempo com tarefa:", e);
+    }
+  }, []);
+
+  // Intervalo a cada 10 segundos para persistir o tempo da tarefa enquanto o foco estiver rodando
+  useEffect(() => {
+    if (state?.isRunning && state?.cycleType === "Work") {
+      const interval = setInterval(() => {
+        if (pendingTaskSecondsRef.current >= 5) {
+          const toSync = pendingTaskSecondsRef.current;
+          pendingTaskSecondsRef.current = 0;
+          syncTaskTime(toSync);
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [state?.isRunning, state?.cycleType, syncTaskTime]);
+
+  // Recalcula o tempo em tela a cada segundo e avança o ciclo se o contador zerar
   useEffect(() => {
     if (state?.isRunning && user) {
       const left = updateDisplayTime(state, simulatedNow);
+
+      // Incrementa tempo para a tarefa quando em ciclo de foco
+      if (state.cycleType === "Work") {
+        pendingTaskSecondsRef.current += 1;
+      }
+
       if (left === 0 && !isAdvancingRef.current) {
         isAdvancingRef.current = true;
+
+        // Se estava em ciclo de foco e concluiu o ciclo, sincroniza o tempo restante da tarefa
+        if (state.cycleType === "Work" && pendingTaskSecondsRef.current > 0) {
+          const toSync = pendingTaskSecondsRef.current;
+          pendingTaskSecondsRef.current = 0;
+          syncTaskTime(toSync);
+        }
+
         invoke<PomodoroState>("pomodoro_next_cycle", {
           userId: String(user.id),
         })
@@ -176,7 +258,14 @@ export function usePomodoroLogic() {
           });
       }
     }
-  }, [simulatedNow, state, updateDisplayTime, user, fetchHistory]);
+  }, [
+    simulatedNow,
+    state,
+    updateDisplayTime,
+    user,
+    fetchHistory,
+    syncTaskTime,
+  ]);
 
   const toggleTimer = useCallback(async () => {
     if (!state || !user) return;
@@ -189,6 +278,13 @@ export function usePomodoroLogic() {
       const startTime = new Date(state.startTime).getTime();
       const elapsed = Math.floor((simulatedNow.getTime() - startTime) / 1000);
       newAccumulated += elapsed;
+
+      // Ao pausar em ciclo de trabalho, sincroniza tempo da tarefa imediatamente
+      if (state.cycleType === "Work" && pendingTaskSecondsRef.current > 0) {
+        const toSync = pendingTaskSecondsRef.current;
+        pendingTaskSecondsRef.current = 0;
+        syncTaskTime(toSync);
+      }
     }
 
     const newState = {
@@ -209,7 +305,7 @@ export function usePomodoroLogic() {
     } catch {
       toast.error("Erro ao salvar");
     }
-  }, [state, user, updateDisplayTime, simulatedNow]);
+  }, [state, user, updateDisplayTime, simulatedNow, syncTaskTime]);
 
   const stopTimer = useCallback(
     async (
@@ -217,13 +313,47 @@ export function usePomodoroLogic() {
     ) => {
       if (!user || !state) return;
       const cyclesCompleted = state.cyclesCompleted;
-      const workMinutes = state.workMinutes;
-      if (cyclesCompleted > 0) {
+
+      // Calcula o tempo decorrido no ciclo atual
+      let currentCycleElapsed = state.accumulatedSeconds;
+      if (state.isRunning && state.startTime) {
+        const startTime = new Date(state.startTime).getTime();
+        const elapsed = Math.max(
+          0,
+          Math.floor((simulatedNow.getTime() - startTime) / 1000),
+        );
+        currentCycleElapsed += elapsed;
+      }
+
+      // Se o ciclo interrompido for de Foco (Work), computa os segundos reais trabalhados
+      const isWorkCycle = state.cycleType === "Work";
+      const maxWorkSeconds = state.workMinutes * 60;
+      const currentWorkSeconds = isWorkCycle
+        ? Math.min(maxWorkSeconds, currentCycleElapsed)
+        : 0;
+
+      // Tempo total de foco acumulado (ciclos inteiros + ciclo parcial interrompido)
+      const totalFocusSeconds =
+        cyclesCompleted * state.workMinutes * 60 + currentWorkSeconds;
+      const effectiveWorkMinutes = Math.max(
+        1,
+        Math.round(totalFocusSeconds / 60),
+      );
+
+      // Sincroniza qualquer tempo restante pendente na tarefa vinculada
+      if (pendingTaskSecondsRef.current > 0) {
+        const toSync = pendingTaskSecondsRef.current;
+        pendingTaskSecondsRef.current = 0;
+        await syncTaskTime(toSync);
+      }
+
+      // Se trabalhou pelo menos 30 segundos de foco, registra no histórico
+      if (totalFocusSeconds >= 30) {
         const historyEntry: PomodoroHistory = {
           userId: String(user.id),
-          workMinutes: state.workMinutes,
+          workMinutes: effectiveWorkMinutes,
           breakMinutes: state.breakMinutes,
-          cyclesDone: state.cyclesCompleted,
+          cyclesDone: cyclesCompleted,
           startTime: simulatedNow.toISOString(),
           endTime: simulatedNow.toISOString(),
         };
@@ -231,11 +361,22 @@ export function usePomodoroLogic() {
           await invoke("pomodoro_record_pomodoro_session", {
             session: historyEntry,
           });
-          toast.success("Log de pomodoro salvo!");
+          if (cyclesCompleted > 0) {
+            toast.success(
+              `Sessão salva: ${cyclesCompleted} ${
+                cyclesCompleted === 1 ? "ciclo" : "ciclos"
+              } (${effectiveWorkMinutes} min foco)`,
+            );
+          } else {
+            toast.success(
+              `Foco registrado: ${effectiveWorkMinutes} min salvos no histórico!`,
+            );
+          }
         } catch (e) {
           console.error(e);
         }
       }
+
       const newState: PomodoroState = {
         ...state,
         isRunning: false,
@@ -252,11 +393,11 @@ export function usePomodoroLogic() {
       updateDisplayTime(newState);
       fetchHistory();
 
-      if (cyclesCompleted > 0 && typeof onSessionEnded === "function") {
-        onSessionEnded(cyclesCompleted, workMinutes);
+      if (totalFocusSeconds >= 30 && typeof onSessionEnded === "function") {
+        onSessionEnded(cyclesCompleted, effectiveWorkMinutes);
       }
     },
-    [user, state, updateDisplayTime, fetchHistory, simulatedNow],
+    [user, state, updateDisplayTime, fetchHistory, simulatedNow, syncTaskTime],
   );
 
   const clearHistory = useCallback(async () => {
@@ -300,12 +441,15 @@ export function usePomodoroLogic() {
     timeLeft,
     formattedTime,
     loading,
+    linkedTaskId,
     actions: {
       toggleTimer,
       stopTimer,
       clearHistory,
       updateConfig,
       fetchState,
+      fetchHistory,
+      setLinkedTaskId,
     },
   };
 }

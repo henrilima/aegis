@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Star,
   StarHalf,
@@ -101,6 +102,9 @@ export default function MoviesPage() {
       watched: movies.filter((m) => m.status === "Watched").length,
       wishlist: movies.filter((m) => m.status === "WantToWatch").length,
       favorites: movies.filter((m) => m.isFavorite).length,
+      rewatch: movies.filter(
+        (m) => m.status === "Watched" && Boolean(m.rewatchable),
+      ).length,
     }),
     [movies],
   );
@@ -144,7 +148,11 @@ export default function MoviesPage() {
           ? movies.filter((m) => m.status === "Watched")
           : activeTab === "favorites"
             ? movies.filter((m) => m.isFavorite)
-            : movies; // "all": wishlist first, then watched
+            : activeTab === "rewatch"
+              ? movies.filter(
+                  (m) => m.status === "Watched" && Boolean(m.rewatchable),
+                )
+              : movies; // "all": wishlist first, then watched
     const sorted =
       activeTab === "all"
         ? [
@@ -188,6 +196,12 @@ export default function MoviesPage() {
       label: "Favoritos",
       count: counts.favorites,
       icon: Heart,
+    },
+    {
+      id: "rewatch" as MovieTabId,
+      label: "Vale a pena ver de novo",
+      count: counts.rewatch,
+      icon: RotateCcw,
     },
   ];
 

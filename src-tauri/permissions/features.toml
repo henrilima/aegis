@@ -15,6 +15,8 @@ commands.allow = [
     "password_check_vault",
     "password_reset_vault",
     "password_setup_local_vault",
+    "password_verify_vault",
+    "password_audit_vault",
     "global_change_vault_password",
     "global_revert_vault_to_master",
     "global_has_separate_vault_password"
@@ -65,7 +67,13 @@ commands.allow = [
     "habit_import_habits_csv",
     "habit_add_sober_log",
     "habit_list_sober_logs",
-    "habit_reset_with_trigger"
+    "habit_reset_with_trigger",
+    "habit_list_goals",
+    "habit_upsert_goal",
+    "habit_delete_goal",
+    "habit_toggle_milestone",
+    "habit_link_milestone_task",
+    "habit_create_task_for_milestone"
 ]
 
 [[permission]]
@@ -344,4 +352,15 @@ commands.allow = [
     "automation_add_rule",
     "automation_delete_rule",
     "automation_toggle_rule"
+]
+
+[[permission]]
+identifier = "discord-management"
+description = "Permissões de integração com Discord Rich Presence"
+commands.allow = [
+    "discord_rpc_set_enabled",
+    "discord_rpc_is_enabled",
+    "discord_rpc_is_connected",
+    "discord_rpc_update_presence",
+    "discord_rpc_clear_presence"
 ]

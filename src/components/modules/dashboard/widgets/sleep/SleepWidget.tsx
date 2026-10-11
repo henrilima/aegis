@@ -143,28 +143,27 @@ export function SleepWidget({
             </div>
           )}
 
-          <div className="space-y-[1.5cqw] @sm:space-y-1.5 mt-1">
-            {" "}
+          <div className="divide-y divide-border/30">
             {recentSleep.slice(0, 3).map((e, i) => (
               <div
                 key={e.id ?? i}
-                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
+                className="flex items-center justify-between py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3"
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
                     className={cn(
-                      "shrink-0 p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20",
+                      "shrink-0 w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center",
                       theme.text,
                     )}
                   >
-                    <Moon className="w-4 h-4" />
+                    <Moon className="w-4 h-4 text-cyan-500" />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
-                    <span className="text-sm font-bold text-foreground truncate">
+                    <span className="text-xs font-bold text-foreground truncate">
                       Registro de sono
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold text-muted-foreground">
+                      <span className="text-[10px] font-medium text-muted-foreground">
                         {formatDateShort(e.date)}
                       </span>
                       <div className="flex items-center gap-0.5">
@@ -178,7 +177,7 @@ export function SleepWidget({
                                 : "text-rose-500",
                           )}
                         />
-                        <span className="text-[10px] font-bold text-muted-foreground">
+                        <span className="text-[10px] font-medium text-muted-foreground">
                           {e.quality}/5
                         </span>
                       </div>
@@ -189,7 +188,7 @@ export function SleepWidget({
                 <div className="shrink-0 flex items-center">
                   <div
                     className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                      "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                       "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
                     )}
                   >
@@ -200,12 +199,12 @@ export function SleepWidget({
             ))}
             {recentSleep.length === 0 && (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <p className="text-xs text-neutral-600 font-bold">
-                  Sem Noites Registradas
+                <p className="text-xs text-foreground font-bold">
+                  Sem noites registradas
                 </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
-                  Adicione seus registros de sono para acompanhar sua qualidade
-                  de descanso.
+                <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
+                  Registre suas noites para monitorar a qualidade do seu
+                  descanso.
                 </p>
               </div>
             )}

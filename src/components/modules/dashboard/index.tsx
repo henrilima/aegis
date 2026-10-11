@@ -226,6 +226,9 @@ export default function Dashboard() {
       if (widgetId === "schedule_mural") {
         return isModuleEnabled("studies");
       }
+      if (widgetId === "pet") {
+        return isModuleEnabled("achievements");
+      }
       return isModuleEnabled(widgetId as ModuleId);
     },
     [isModuleEnabled],
@@ -585,7 +588,7 @@ export default function Dashboard() {
           {/* Biblioteca de Widgets Inativos (Scroll Lateral) */}
           {isVisualEditMode && inactiveWidgets.length > 0 && (
             <div className="w-full flex flex-col gap-3 mb-8 text-left animate-in slide-in-from-top-2 duration-300">
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider pl-1">
+              <span className="text-xs font-bold text-muted-foreground pl-1">
                 Biblioteca de Widgets (Inativos)
               </span>
               <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar snap-x snap-mandatory">

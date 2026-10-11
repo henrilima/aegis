@@ -344,8 +344,10 @@ fn execute_action(
                 priority: Some(2), // Média
                 category: Some("Automação".to_string()),
                 color: Some("#4f46e5".to_string()),
+                completed_at: None,
                 status: Some("todo".to_string()),
                 time_spent_seconds: Some(0),
+                recurrence: None,
             };
             let _ = state.tasks.upsert_task(new_task, Some(today.to_string()));
 

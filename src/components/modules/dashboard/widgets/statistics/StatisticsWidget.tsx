@@ -84,11 +84,11 @@ export function StatisticsWidget({
           </div>
         </div>
 
-        {/* Lista de métricas sem bordas de cards internos */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between py-2 px-1 rounded-lg hover:bg-muted/30 transition-colors gap-4">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="shrink-0 p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+        {/* Lista de métricas solta e dividida */}
+        <div className="divide-y divide-border/30">
+          <div className="flex items-center justify-between py-2 px-2 rounded-xl hover:bg-muted/40 transition-colors gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="shrink-0 w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
                 <Target className="w-4 h-4" />
               </div>
               <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
@@ -101,18 +101,18 @@ export function StatisticsWidget({
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <div className="flex items-center gap-1 px-2 py-0.2 rounded-full text-[9px] font-bold shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <span>{summary.avgHitRate.toFixed(1)}%</span>
               </div>
-              <span className="text-xs font-medium text-muted-foreground min-w-10.5 text-right">
+              <span className="text-[11px] font-medium text-muted-foreground min-w-10 text-right">
                 Acertos
               </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2 px-1 rounded-lg hover:bg-muted/30 transition-colors gap-4">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="shrink-0 p-2 rounded-xl bg-orange-500/10 text-orange-500">
+          <div className="flex items-center justify-between py-2 px-2 rounded-xl hover:bg-muted/40 transition-colors gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="shrink-0 w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center">
                 <BookOpen className="w-4 h-4" />
               </div>
               <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
@@ -125,24 +125,24 @@ export function StatisticsWidget({
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+              <div className="flex items-center gap-1 px-2 py-0.2 rounded-full text-[9px] font-bold shrink-0 bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
                 <span>{summary.avgPpm.toFixed(1)}</span>
               </div>
-              <span className="text-xs font-medium text-muted-foreground min-w-10.5 text-right">
+              <span className="text-[11px] font-medium text-muted-foreground min-w-10 text-right">
                 Pág/Min
               </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2 px-1 rounded-lg hover:bg-muted/30 transition-colors gap-4">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex items-center justify-between py-2 px-2 rounded-xl hover:bg-muted/40 transition-colors gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div
                 className={cn(
-                  "shrink-0 p-2 rounded-xl bg-cyan-500/10",
+                  "shrink-0 w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center",
                   theme.text,
                 )}
               >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="w-4 h-4 text-cyan-500" />
               </div>
               <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
                 <span className="text-xs font-bold text-foreground truncate">
@@ -154,10 +154,10 @@ export function StatisticsWidget({
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 bg-muted/40 text-muted-foreground border border-border/40">
+              <div className="flex items-center gap-1 px-2 py-0.2 rounded-full text-[9px] font-bold shrink-0 bg-muted/40 text-muted-foreground border border-border/40">
                 <span>{summary.totalDaysAnalyzed}d</span>
               </div>
-              <span className="text-xs font-medium text-muted-foreground min-w-10.5 text-right">
+              <span className="text-[11px] font-medium text-muted-foreground min-w-10 text-right">
                 Total
               </span>
             </div>
@@ -171,7 +171,7 @@ export function StatisticsWidget({
             </span>
             <span
               className={cn(
-                "px-2 py-0.5 rounded-md text-xs font-bold bg-cyan-500/10 border border-cyan-500/20",
+                "px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 border border-cyan-500/20",
                 theme.text,
               )}
             >

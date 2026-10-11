@@ -4,12 +4,15 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   AlertCircle,
   Award,
+  Check,
   Clock,
   Flame,
+  Keyboard,
   RefreshCcw,
   RotateCcw,
   Smile,
   X,
+  XCircle,
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,7 +29,100 @@ interface StudyModalProps {
   onSessionComplete?: () => void;
 }
 
-export type StudyMode = "standard" | "inverted" | "sprint";
+export type StudyMode = "standard" | "inverted" | "sprint" | "type";
+export type SrsRating = 1 | 2 | 3 | 4; // 1: Errei, 2: Difícil, 3: Mediano, 4: Fácil
+
+// Renderizador para suporte a Cloze Deletion {{palavra oculta}}
+function renderClozeContent(text: string, isRevealed: boolean) {
+  if (!text.includes("{{") || !text.includes("}}")) {
+    return text;
+  }
+
+  const parts = text.split(/(\{\{.*?\}\})/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("{{") && part.endsWith("}}")) {
+      const hiddenTerm = part.slice(2, -2);
+      if (isRevealed) {
+        return (
+          <span
+            key={`cloze-${index}-${hiddenTerm}`}
+            className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 font-bold border border-indigo-500/30 inline-block mx-0.5"
+          >
+            {hiddenTerm}
+          </span>
+        );
+      }
+      return (
+        <span
+          key={`cloze-${index}-${hiddenTerm}`}
+          className="px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground font-bold border border-border inline-block mx-0.5"
+        >
+          [...]
+        </span>
+      );
+    }
+    return part;
+  });
+}
+
+// Auxiliares para detectar cartões com formatos especiais interativos
+function isSpecialCard(card?: Flashcard): boolean {
+  if (!card) return false;
+  return (
+    card.front.startsWith("[V/F]") ||
+    card.front.startsWith("[QUIZ]") ||
+    (card.front.includes("{{") && card.front.includes("}}"))
+  );
+}
+
+// Extrai respostas válidas para validação no modo digitação
+function checkTypedMatch(
+  typed: string,
+  card?: Flashcard,
+  isInv: boolean = false,
+): { isMatch: boolean; expectedLabel: string } {
+  if (!card) return { isMatch: false, expectedLabel: "" };
+  const cleanInput = typed.trim().toLowerCase();
+
+  // V/F
+  if (card.front.startsWith("[V/F]")) {
+    const isTrue = card.back.startsWith("Verdadeiro");
+    const expectedLabel = isTrue ? "Verdadeiro (V)" : "Falso (F)";
+    const matchesTrue = ["v", "verdadeiro", "true", "t"].includes(cleanInput);
+    const matchesFalse = ["f", "falso", "false"].includes(cleanInput);
+    const isMatch = isTrue ? matchesTrue : matchesFalse;
+    return { isMatch, expectedLabel };
+  }
+
+  // QUIZ
+  if (card.front.startsWith("[QUIZ]")) {
+    const match = card.back.match(/Correta:\s*([A-D])\)\s*([^—\n]+)/i);
+    const correctLetter = match ? match[1].toLowerCase() : "";
+    const correctText = match ? match[2].trim().toLowerCase() : "";
+    const expectedLabel = match
+      ? `${match[1].toUpperCase()}) ${match[2].trim()}`
+      : card.back;
+    const isMatch = cleanInput === correctLetter || cleanInput === correctText;
+    return { isMatch, expectedLabel };
+  }
+
+  // Omissão (Cloze)
+  if (card.front.includes("{{") && card.front.includes("}}")) {
+    const matches = Array.from(card.front.matchAll(/\{\{(.*?)\}\}/g)).map((m) =>
+      m[1].trim(),
+    );
+    const expectedLabel = matches.join(", ");
+    const isMatch =
+      matches.some((term) => term.toLowerCase() === cleanInput) ||
+      cleanInput === matches.map((m) => m.toLowerCase()).join(" ");
+    return { isMatch, expectedLabel };
+  }
+
+  // Cartão padrão
+  const expected = isInv ? card.front.trim() : card.back.trim();
+  const isMatch = cleanInput === expected.toLowerCase();
+  return { isMatch, expectedLabel: expected };
+}
 
 export function StudyModal({
   isOpen,
@@ -58,6 +154,24 @@ export function StudyModal({
   const [correctCount, setCorrectCount] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+
+  // Estatísticas do algoritmo de repetição espaçada (SRS)
+  const [srsRatings, setSrsRatings] = useState<{
+    errei: number;
+    dificil: number;
+    mediano: number;
+    facil: number;
+  }>({
+    errei: 0,
+    dificil: 0,
+    mediano: 0,
+    facil: 0,
+  });
+
+  // Estado do Modo Digitação
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [isAnswerChecked, setIsAnswerChecked] = useState(false);
 
   // Cronômetro do Modo Sprint (60s)
   const [timeLeft, setTimeLeft] = useState(60);
@@ -145,7 +259,6 @@ export function StudyModal({
   const handleStartStudy = () => {
     let processed = [...rawCards];
 
-    // Aplicar filtro de foco em erros/críticos se ativado
     if (filterOnlyErrors) {
       processed = processed.filter((card) => {
         if (!card.lastReviewed || card.reviewCount === 0) return true;
@@ -182,8 +295,12 @@ export function StudyModal({
     setCards(processed);
     setCurrentIndex(0);
     setCorrectCount(0);
+    setSrsRatings({ errei: 0, dificil: 0, mediano: 0, facil: 0 });
+    setSelectedChoice(null);
     setIsFlipped(false);
     setIsFinished(false);
+    setTypedAnswer("");
+    setIsAnswerChecked(false);
     setTimeLeft(60);
     setIsConfiguring(false);
   };
@@ -193,42 +310,120 @@ export function StudyModal({
     setIsFlipped(!isFlipped);
   };
 
-  const handleAnswer = async (success: boolean) => {
-    const currentCard = cards[currentIndex];
-    if (!currentCard || !currentCard.id) return;
-
-    try {
-      await invoke("flashcards_record_review", {
-        id: currentCard.id,
-        success,
-        reviewedAt: new Date().toISOString(),
-      });
-
-      if (success) {
-        setCorrectCount((prev) => prev + 1);
-      }
-
-      if (currentIndex + 1 < cards.length) {
-        setIsFlipped(false);
-        setTimeout(() => {
-          setCurrentIndex((prev) => prev + 1);
-        }, 200);
-      } else {
-        setIsFinished(true);
-        if (onSessionComplete) onSessionComplete();
-      }
-    } catch (err) {
-      console.error("[StudyModal] Erro ao registrar revisão:", err);
-    }
+  const handleVerifyTypedAnswer = () => {
+    setIsAnswerChecked(true);
+    setIsFlipped(true);
   };
+
+  const handleAnswer = useCallback(
+    async (rating: SrsRating) => {
+      const currentCard = cards[currentIndex];
+      if (!currentCard || !currentCard.id) return;
+
+      const isSuccess = rating > 1;
+
+      try {
+        await invoke("flashcards_record_review", {
+          id: currentCard.id,
+          success: isSuccess,
+          reviewedAt: new Date().toISOString(),
+        });
+
+        // Atualiza distribuição SRS e contagem de acertos
+        setSrsRatings((prev) => {
+          if (rating === 1) return { ...prev, errei: prev.errei + 1 };
+          if (rating === 2) return { ...prev, dificil: prev.dificil + 1 };
+          if (rating === 3) return { ...prev, mediano: prev.mediano + 1 };
+          return { ...prev, facil: prev.facil + 1 };
+        });
+
+        if (isSuccess) {
+          setCorrectCount((prev) => prev + 1);
+        }
+
+        // Se errou (rating 1), re-adiciona ao final da lista para repetição imediata
+        if (rating === 1) {
+          setCards((prev) => [...prev, currentCard]);
+        }
+
+        if (currentIndex + 1 < cards.length || rating === 1) {
+          setIsFlipped(false);
+          setSelectedChoice(null);
+          setTypedAnswer("");
+          setIsAnswerChecked(false);
+          setTimeout(() => {
+            setCurrentIndex((prev) => prev + 1);
+          }, 200);
+        } else {
+          setIsFinished(true);
+          if (onSessionComplete) onSessionComplete();
+        }
+      } catch (err) {
+        console.error("[StudyModal] Erro ao registrar revisão:", err);
+      }
+    },
+    [cards, currentIndex, onSessionComplete],
+  );
+
+  // Atalhos de teclado (Espaço para virar, 1-4 para avaliar no SRS)
+  useEffect(() => {
+    if (!isOpen || isConfiguring || isFinished) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInputFocused =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement;
+
+      if (e.code === "Space" && !isInputFocused) {
+        e.preventDefault();
+        setIsFlipped((prev) => !prev);
+        return;
+      }
+
+      if (isFlipped && !isInputFocused) {
+        if (e.key === "1") {
+          e.preventDefault();
+          handleAnswer(1);
+        } else if (e.key === "2") {
+          e.preventDefault();
+          handleAnswer(2);
+        } else if (e.key === "3") {
+          e.preventDefault();
+          handleAnswer(3);
+        } else if (e.key === "4") {
+          e.preventDefault();
+          handleAnswer(4);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isConfiguring, isFinished, isFlipped, handleAnswer]);
 
   const handleRestart = () => {
     setIsConfiguring(true);
     setIsFinished(false);
+    setSelectedChoice(null);
+    setTypedAnswer("");
+    setIsAnswerChecked(false);
+    setSrsRatings({ errei: 0, dificil: 0, mediano: 0, facil: 0 });
   };
 
-  const successRate =
-    cards.length > 0 ? Math.round((correctCount / cards.length) * 100) : 0;
+  const totalReviews =
+    srsRatings.errei +
+    srsRatings.dificil +
+    srsRatings.mediano +
+    srsRatings.facil;
+  const retentionRate =
+    totalReviews > 0
+      ? Math.round(
+          ((srsRatings.dificil + srsRatings.mediano + srsRatings.facil) /
+            totalReviews) *
+            100,
+        )
+      : 0;
 
   const getMotivationalMessage = (rate: number) => {
     if (rate === 100)
@@ -241,10 +436,20 @@ export function StudyModal({
     return "Não desanime! Cada erro é um passo mais próximo do aprendizado.";
   };
 
+  // Comparação de texto para o Modo Digitação
+  const isCardSpecial = isSpecialCard(cards[currentIndex]);
+  const effectiveInverted = studyMode === "inverted" && !isCardSpecial;
+  const typedResult = checkTypedMatch(
+    typedAnswer,
+    cards[currentIndex],
+    effectiveInverted,
+  );
+  const isExactMatch = typedResult.isMatch;
+
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} size="md">
+    <ModalShell isOpen={isOpen} onClose={onClose} size="lg">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-border/50 bg-card/20 shrink-0">
+      <div className="flex items-center justify-between p-6 border-b border-border/50 bg-card/20 shrink-0 select-none">
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             Estudando:{" "}
@@ -257,7 +462,9 @@ export function StudyModal({
               ? "Modo Sprint — 60 Segundos"
               : studyMode === "inverted"
                 ? "Modo Invertido (Verso → Frente)"
-                : "Memorização ativa com repetição espaçada"}
+                : studyMode === "type"
+                  ? "Modo Digitação (Testar precisão de resposta)"
+                  : "Memorização ativa com repetição espaçada"}
           </p>
         </div>
         <button
@@ -293,13 +500,13 @@ export function StudyModal({
           </div>
         ) : isConfiguring ? (
           /* Configurações Pré-Estudo */
-          <div className="grow flex flex-col gap-6 py-2 animate-in fade-in zoom-in-95 duration-300">
+          <div className="grow flex flex-col gap-6 py-2 animate-in fade-in zoom-in-95 duration-300 select-none">
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-bold text-foreground">
                 Modo e Configurações de Estudo
               </h3>
               <p className="text-xs text-muted-foreground">
-                Escolha o modo de jogo e personalize a ordem antes de começar
+                Escolha o modo de aprendizado e personalize a ordem
               </p>
             </div>
 
@@ -308,13 +515,19 @@ export function StudyModal({
               <span className="text-xs font-semibold text-muted-foreground">
                 Modo de estudo
               </span>
-              <div className="grid grid-cols-3 gap-2 bg-background p-1.5 rounded-xl border border-border">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-background p-1.5 rounded-xl border border-border">
                 {[
                   {
                     key: "standard" as const,
                     label: "Tradicional",
                     desc: "Frente → Verso",
                     icon: Zap,
+                  },
+                  {
+                    key: "type" as const,
+                    label: "Digitação",
+                    desc: "Digitar resposta",
+                    icon: Keyboard,
                   },
                   {
                     key: "inverted" as const,
@@ -474,12 +687,12 @@ export function StudyModal({
           </div>
         ) : isFinished ? (
           /* Resumo Final */
-          <div className="grow flex flex-col items-center justify-center text-center py-6 animate-in fade-in zoom-in-95 duration-300">
+          <div className="grow flex flex-col items-center justify-center text-center py-6 animate-in fade-in zoom-in-95 duration-300 select-none">
             <div className="relative mb-6">
               <div className="p-6 rounded-2xl bg-card/40 border border-border">
                 {studyMode === "sprint" ? (
                   <Clock className="w-14 h-14 text-blue-400 animate-bounce" />
-                ) : successRate >= 60 ? (
+                ) : retentionRate >= 60 ? (
                   <Award className={`w-14 h-14 ${m.text}`} />
                 ) : (
                   <Smile className="w-14 h-14 text-yellow-500/80" />
@@ -489,40 +702,76 @@ export function StudyModal({
 
             <h3 className="text-xl font-bold text-foreground">
               {studyMode === "sprint"
-                ? "Tempo Esgotado / Sprint Concluído!"
+                ? timeLeft === 0
+                  ? "Tempo Esgotado!"
+                  : "Sprint Concluído!"
                 : "Estudo Concluído!"}
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-6 leading-relaxed">
               {studyMode === "sprint"
-                ? `Você respondeu ${correctCount} cartões corretamente em 60 segundos!`
+                ? timeLeft === 0
+                  ? `O tempo de 60 segundos acabou! Você respondeu ${correctCount} cartões corretamente.`
+                  : `Parabéns! Você concluiu todos os cartões com ${timeLeft}s restantes (${correctCount} corretos)!`
                 : "Você concluiu a revisão de todos os cartões agendados."}
             </p>
 
-            <div className="w-full max-w-xs bg-card/30 border border-border rounded-2xl p-6 flex flex-col gap-4 mb-8">
+            <div className="w-full max-w-sm bg-card/30 border border-border rounded-2xl p-6 flex flex-col gap-4 mb-6">
               <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                 <span>Cartões revisados</span>
-                <span className="text-foreground">{currentIndex + 1}</span>
-              </div>
-              <div className="h-px bg-border/40" />
-              <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-                <span>Acertos</span>
-                <span className="text-emerald-400 font-bold">
-                  {correctCount}
+                <span className="text-foreground font-bold">
+                  {currentIndex + 1}
                 </span>
               </div>
               <div className="h-px bg-border/40" />
               <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-                <span>Taxa de precisão</span>
+                <span>Taxa de retenção</span>
                 <span
-                  className={`font-bold ${successRate >= 60 ? "text-emerald-400" : "text-yellow-500"}`}
+                  className={cn(
+                    "font-bold",
+                    retentionRate >= 70 ? "text-emerald-400" : "text-amber-400",
+                  )}
                 >
-                  {successRate}%
+                  {retentionRate}%
                 </span>
+              </div>
+              <div className="h-px bg-border/40" />
+
+              {/* Distribuição SRS */}
+              <div className="flex flex-col gap-2 pt-1">
+                <span className="text-[11px] font-semibold text-muted-foreground text-left">
+                  Distribuição de respostas
+                </span>
+                <div className="grid grid-cols-4 gap-1.5 text-center">
+                  <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+                    <div className="text-[10px] font-bold">Errei</div>
+                    <div className="text-sm font-bold mt-0.5">
+                      {srsRatings.errei}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                    <div className="text-[10px] font-bold">Difícil</div>
+                    <div className="text-sm font-bold mt-0.5">
+                      {srsRatings.dificil}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                    <div className="text-[10px] font-bold">Mediano</div>
+                    <div className="text-sm font-bold mt-0.5">
+                      {srsRatings.mediano}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <div className="text-[10px] font-bold">Fácil</div>
+                    <div className="text-sm font-bold mt-0.5">
+                      {srsRatings.facil}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <p className="text-xs font-medium text-muted-foreground max-w-xs leading-relaxed italic mb-8">
-              &quot;{getMotivationalMessage(successRate)}&quot;
+              &quot;{getMotivationalMessage(retentionRate)}&quot;
             </p>
 
             <div className="flex gap-3 w-full max-w-xs mt-auto">
@@ -549,7 +798,7 @@ export function StudyModal({
           </div>
         ) : (
           /* Sessão Ativa de Estudo */
-          <div className="flex-1 flex flex-col gap-6 select-none animate-in fade-in duration-300">
+          <div className="flex-1 flex flex-col gap-5 select-none animate-in fade-in duration-300">
             {/* Header de Progresso & Cronômetro Sprint */}
             <div className="flex flex-col gap-2 shrink-0">
               <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground">
@@ -559,7 +808,7 @@ export function StudyModal({
                     {timeLeft}s
                   </span>
                 ) : (
-                  <span>Progresso</span>
+                  <span>Progresso da sessão</span>
                 )}
                 <span>
                   {currentIndex + 1} de {cards.length}
@@ -582,15 +831,15 @@ export function StudyModal({
             </div>
 
             {/* Container 3D do Cartão */}
-            <div className="flex-1 flex items-center justify-center py-4">
+            <div className="flex-1 flex flex-col items-center justify-center py-2">
               <button
                 type="button"
                 onClick={handleFlip}
-                className="w-full max-w-md h-64 relative cursor-pointer group text-left block focus:outline-none"
+                className="w-full max-w-xl min-h-90 h-auto relative cursor-pointer group text-left block focus:outline-none bg-transparent p-0 border-0"
                 style={{ perspective: "1000px" }}
               >
                 <div
-                  className="w-full h-full relative transition-transform duration-500"
+                  className="w-full h-full relative transition-transform duration-500 min-h-90"
                   style={{
                     transformStyle: "preserve-3d",
                     transform: isFlipped ? "rotateY(180deg)" : "none",
@@ -599,38 +848,143 @@ export function StudyModal({
                   {/* Frente do Cartão */}
                   <div
                     className={cn(
-                      "absolute inset-0 w-full h-full rounded-2xl border bg-card/90 p-8 flex flex-col justify-between transition-colors",
+                      "absolute inset-0 w-full h-full rounded-2xl border bg-card/95 p-6 sm:p-7 flex flex-col justify-between transition-colors overflow-y-auto",
                       m.borderHover,
                     )}
                     style={{ backfaceVisibility: "hidden" }}
                   >
-                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
-                      <span>
-                        {studyMode === "inverted"
-                          ? "Verso (Definição)"
-                          : "Frente"}
-                      </span>
-                      <span className="text-muted-foreground/60">
-                        Clique para virar
+                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        {cards[currentIndex]?.front.startsWith("[V/F]") && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold">
+                            V / F
+                          </span>
+                        )}
+                        {cards[currentIndex]?.front.startsWith("[QUIZ]") && (
+                          <span className="px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 font-bold">
+                            Quiz
+                          </span>
+                        )}
+                        {cards[currentIndex]?.front.includes("{{") &&
+                          cards[currentIndex]?.front.includes("}}") && (
+                            <span className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 border border-purple-500/30 font-bold">
+                              Omissão
+                            </span>
+                          )}
+                        <span>
+                          {effectiveInverted
+                            ? "Verso (Definição)"
+                            : "Frente (Pergunta)"}
+                        </span>
+                      </div>
+                      <span className="text-muted-foreground/60 flex items-center gap-1">
+                        <kbd className="px-1 py-0.5 rounded bg-muted text-[9px] border border-border">
+                          Espaço
+                        </kbd>{" "}
+                        virar
                       </span>
                     </div>
-                    <div className="my-auto text-center">
-                      <p className="text-base font-semibold text-foreground whitespace-pre-line leading-relaxed">
-                        {studyMode === "inverted"
-                          ? cards[currentIndex]?.back
-                          : cards[currentIndex]?.front}
-                      </p>
+
+                    <div className="my-auto py-2 text-center">
+                      <div className="text-sm font-semibold text-foreground whitespace-pre-line leading-relaxed">
+                        {cards[currentIndex]?.front.startsWith("[V/F]") ? (
+                          <div className="flex flex-col gap-4 text-left">
+                            <p className="font-semibold text-foreground text-center sm:text-left text-base">
+                              {cards[currentIndex]?.front.replace("[V/F] ", "")}
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedChoice("Verdadeiro");
+                                }}
+                                className={cn(
+                                  "py-3 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5",
+                                  selectedChoice === "Verdadeiro"
+                                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 ring-2 ring-emerald-500/30"
+                                    : "bg-card/60 border-border/70 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                                )}
+                              >
+                                Verdadeiro
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedChoice("Falso");
+                                }}
+                                className={cn(
+                                  "py-3 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5",
+                                  selectedChoice === "Falso"
+                                    ? "bg-red-500/20 border-red-500/50 text-red-400 ring-2 ring-red-500/30"
+                                    : "bg-card/60 border-border/70 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                                )}
+                              >
+                                Falso
+                              </button>
+                            </div>
+                          </div>
+                        ) : cards[currentIndex]?.front.startsWith("[QUIZ]") ? (
+                          <div className="flex flex-col gap-3 text-left">
+                            <p className="font-semibold text-foreground text-base leading-snug">
+                              {
+                                cards[currentIndex]?.front
+                                  .replace("[QUIZ] ", "")
+                                  .split("\n")[0]
+                              }
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 pt-1">
+                              {cards[currentIndex]?.front
+                                .replace("[QUIZ] ", "")
+                                .split("\n")
+                                .slice(1)
+                                .map((opt) => {
+                                  const letter = opt.trim().slice(0, 2); // "A)" ...
+                                  const isSelected =
+                                    selectedChoice === letter ||
+                                    selectedChoice === opt.trim();
+                                  return (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedChoice(letter);
+                                      }}
+                                      className={cn(
+                                        "p-3 rounded-xl border text-xs text-left transition-all cursor-pointer font-medium leading-relaxed",
+                                        isSelected
+                                          ? "bg-blue-500/20 border-blue-500/50 text-blue-400 ring-2 ring-blue-500/30"
+                                          : "bg-card/60 border-border/70 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                                      )}
+                                    >
+                                      {opt}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        ) : (
+                          renderClozeContent(
+                            effectiveInverted
+                              ? cards[currentIndex]?.back || ""
+                              : cards[currentIndex]?.front || "",
+                            false,
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className="text-center text-[10px] text-muted-foreground">
-                      Toque no cartão para revelar a{" "}
-                      {studyMode === "inverted" ? "pergunta" : "resposta"}
+
+                    <div className="text-center text-[10px] text-muted-foreground pt-1">
+                      Toque fora das opções ou pressione Espaço para revelar
                     </div>
                   </div>
 
                   {/* Verso do Cartão */}
                   <div
                     className={cn(
-                      "absolute inset-0 w-full h-full rounded-2xl border bg-card/90 p-8 flex flex-col justify-between transition-colors",
+                      "absolute inset-0 w-full h-full rounded-2xl border bg-card/95 p-6 sm:p-7 flex flex-col justify-between transition-colors overflow-y-auto",
                       m.borderHover,
                     )}
                     style={{
@@ -638,50 +992,265 @@ export function StudyModal({
                       transform: "rotateY(180deg)",
                     }}
                   >
-                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground">
                       <span>
-                        {studyMode === "inverted" ? "Frente (Termo)" : "Verso"}
+                        {effectiveInverted
+                          ? "Frente (Termo)"
+                          : "Verso (Resposta)"}
                       </span>
-                      <span className="text-muted-foreground/60">
-                        Responda abaixo
+                      <span className="text-emerald-400 font-bold">
+                        Resposta revelada
                       </span>
                     </div>
-                    <div className="my-auto text-center">
-                      <p className="text-base font-semibold text-foreground whitespace-pre-line leading-relaxed">
-                        {studyMode === "inverted"
-                          ? cards[currentIndex]?.front
-                          : cards[currentIndex]?.back}
-                      </p>
+
+                    <div className="my-auto py-2 text-center">
+                      <div className="text-sm font-semibold text-foreground whitespace-pre-line leading-relaxed">
+                        {cards[currentIndex]?.front.startsWith("[V/F]") ? (
+                          <div className="flex flex-col gap-3 text-left">
+                            {selectedChoice && (
+                              <div
+                                className={cn(
+                                  "p-2.5 rounded-xl border flex items-center justify-between text-xs",
+                                  cards[currentIndex]?.back.startsWith(
+                                    selectedChoice,
+                                  )
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                    : "bg-red-500/10 border-red-500/30 text-red-400",
+                                )}
+                              >
+                                <span className="font-semibold">
+                                  Sua escolha: {selectedChoice}
+                                </span>
+                                <span>
+                                  {cards[currentIndex]?.back.startsWith(
+                                    selectedChoice,
+                                  )
+                                    ? "✓ Correto"
+                                    : "✕ Incorreto"}
+                                </span>
+                              </div>
+                            )}
+                            <div className="p-3.5 rounded-xl bg-card/70 border border-border">
+                              <span className="text-xs text-muted-foreground block mb-1">
+                                Gabarito:
+                              </span>
+                              <p className="font-semibold text-foreground text-sm">
+                                {cards[currentIndex]?.back}
+                              </p>
+                            </div>
+                          </div>
+                        ) : cards[currentIndex]?.front.startsWith("[QUIZ]") ? (
+                          <div className="flex flex-col gap-3 text-left">
+                            {selectedChoice && (
+                              <div
+                                className={cn(
+                                  "p-2.5 rounded-xl border flex items-center justify-between text-xs",
+                                  cards[currentIndex]?.back.includes(
+                                    `Correta: ${selectedChoice}`,
+                                  )
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                    : "bg-red-500/10 border-red-500/30 text-red-400",
+                                )}
+                              >
+                                <span className="font-semibold">
+                                  Sua escolha: {selectedChoice}
+                                </span>
+                                <span>
+                                  {cards[currentIndex]?.back.includes(
+                                    `Correta: ${selectedChoice}`,
+                                  )
+                                    ? "✓ Correto"
+                                    : "✕ Incorreto"}
+                                </span>
+                              </div>
+                            )}
+                            <div className="p-3.5 rounded-xl bg-card/70 border border-border">
+                              <span className="text-xs text-muted-foreground block mb-1">
+                                Gabarito:
+                              </span>
+                              <p className="font-semibold text-foreground text-sm">
+                                {cards[currentIndex]?.back}
+                              </p>
+                            </div>
+                          </div>
+                        ) : cards[currentIndex]?.front.includes("{{") &&
+                          cards[currentIndex]?.front.includes("}}") ? (
+                          <div className="flex flex-col gap-3 text-left">
+                            <div className="p-3.5 rounded-xl bg-card/70 border border-border">
+                              <span className="text-xs text-muted-foreground block mb-1.5 font-normal">
+                                Frase completa:
+                              </span>
+                              <div className="leading-relaxed text-sm">
+                                {renderClozeContent(
+                                  cards[currentIndex]?.front || "",
+                                  true,
+                                )}
+                              </div>
+                            </div>
+                            {cards[currentIndex]?.back &&
+                              cards[currentIndex]?.back !==
+                                "Omissão de palavras fixada" && (
+                                <div className="p-2.5 rounded-xl bg-muted/30 border border-border/60 text-xs text-muted-foreground">
+                                  <span className="font-semibold text-foreground block mb-0.5">
+                                    Nota/Dica:
+                                  </span>
+                                  {cards[currentIndex]?.back}
+                                </div>
+                              )}
+                          </div>
+                        ) : (
+                          renderClozeContent(
+                            effectiveInverted
+                              ? cards[currentIndex]?.front || ""
+                              : cards[currentIndex]?.back || "",
+                            true,
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className="text-center text-[10px] text-muted-foreground">
-                      Avalie sua lembrança para registrar no sistema
+
+                    <div className="text-center text-[10px] text-muted-foreground pt-1">
+                      Avalie sua retenção com as teclas 1, 2, 3 ou 4
                     </div>
                   </div>
                 </div>
               </button>
+
+              {/* Campo do Modo Digitação */}
+              {studyMode === "type" && (
+                <div className="w-full max-w-xl mt-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={
+                        cards[currentIndex]?.front.startsWith("[V/F]")
+                          ? "Digite 'V' para Verdadeiro ou 'F' para Falso..."
+                          : cards[currentIndex]?.front.startsWith("[QUIZ]")
+                            ? "Digite a letra correta (A, B, C ou D)..."
+                            : cards[currentIndex]?.front.includes("{{") &&
+                                cards[currentIndex]?.front.includes("}}")
+                              ? "Digite as palavras omitidas..."
+                              : "Digite sua resposta aqui..."
+                      }
+                      value={typedAnswer}
+                      onChange={(e) => setTypedAnswer(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !isAnswerChecked) {
+                          handleVerifyTypedAnswer();
+                        }
+                      }}
+                      disabled={isAnswerChecked}
+                      className="flex-1 bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs font-medium text-foreground outline-none focus:border-primary"
+                    />
+                    {!isAnswerChecked ? (
+                      <button
+                        type="button"
+                        onClick={handleVerifyTypedAnswer}
+                        className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold cursor-pointer hover:opacity-90"
+                      >
+                        Verificar
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {isAnswerChecked && (
+                    <div
+                      className={cn(
+                        "p-3 rounded-xl border flex flex-col gap-1 text-xs animate-in fade-in duration-200",
+                        isExactMatch
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                          : "bg-red-500/10 border-red-500/30 text-red-400",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {isExactMatch ? (
+                            <Check className="w-4 h-4 shrink-0" />
+                          ) : (
+                            <XCircle className="w-4 h-4 shrink-0" />
+                          )}
+                          <span className="font-semibold">
+                            {isExactMatch
+                              ? "Resposta exata! Excelente."
+                              : "Resposta diferente."}
+                          </span>
+                        </div>
+                        <span className="text-[11px] opacity-80">
+                          Esperado: {typedResult.expectedLabel}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Botoes de Ação / Resposta */}
-            <div className="flex gap-3 shrink-0">
+            {/* Botões SRS de Avaliação (4 níveis: Errei, Difícil, Mediano, Fácil) */}
+            <div className="grid grid-cols-4 gap-2 shrink-0">
               <button
                 type="button"
                 disabled={!isFlipped}
-                onClick={() => handleAnswer(false)}
-                className={cn(
-                  "flex-1 py-3 px-4 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
-                )}
+                onClick={() => handleAnswer(1)}
+                className="py-2.5 px-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5"
+                title="Atalho: Tecla 1"
               >
-                Errei
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 rounded bg-red-500/20 text-[9px]">1</kbd>
+                  Errei
+                </span>
+                <span className="text-[9px] opacity-75 font-normal">
+                  Revisar
+                </span>
               </button>
+
               <button
                 type="button"
                 disabled={!isFlipped}
-                onClick={() => handleAnswer(true)}
-                className={cn(
-                  "flex-1 py-3 px-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
-                )}
+                onClick={() => handleAnswer(2)}
+                className="py-2.5 px-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5"
+                title="Atalho: Tecla 2"
               >
-                Acertei
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 rounded bg-amber-500/20 text-[9px]">
+                    2
+                  </kbd>
+                  Difícil
+                </span>
+                <span className="text-[9px] opacity-75 font-normal">1 dia</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={!isFlipped}
+                onClick={() => handleAnswer(3)}
+                className="py-2.5 px-2 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5"
+                title="Atalho: Tecla 3"
+              >
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 rounded bg-sky-500/20 text-[9px]">3</kbd>
+                  Mediano
+                </span>
+                <span className="text-[9px] opacity-75 font-normal">
+                  3 dias
+                </span>
+              </button>
+
+              <button
+                type="button"
+                disabled={!isFlipped}
+                onClick={() => handleAnswer(4)}
+                className="py-2.5 px-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5"
+                title="Atalho: Tecla 4"
+              >
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 rounded bg-emerald-500/20 text-[9px]">
+                    4
+                  </kbd>
+                  Fácil
+                </span>
+                <span className="text-[9px] opacity-75 font-normal">
+                  7 dias
+                </span>
               </button>
             </div>
           </div>

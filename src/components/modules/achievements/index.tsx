@@ -3,27 +3,24 @@
 import {
   ArrowUpRight,
   Award,
+  BookOpen,
   Cat,
   History,
+  Image as ImageIcon,
   Info,
   Medal,
+  Palette,
   Sparkles,
   Trophy,
 } from "lucide-react";
+import { useState } from "react";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getRankForLevel,
   getXPForLevel,
   RANKS,
 } from "@/config/achievements.config";
-import { PET_BACKGROUNDS } from "@/config/pets.config";
 import { cn } from "@/lib/utils";
 // Helpers e Hook do Módulo
 import {
@@ -41,6 +38,7 @@ import { ParticleSelector } from "./components/ParticleSelector";
 import { PetDisplay } from "./components/PetDisplay";
 // Subcomponentes
 import { PetSelector } from "./components/PetSelector";
+import { ScenarioSelector } from "./components/ScenarioSelector";
 import { StatsPanel } from "./components/StatsPanel";
 import { useAchievementsLogic } from "./useAchievementsLogic";
 
@@ -57,6 +55,8 @@ export default function AchievementsModule() {
     handleSelectParticle,
     selectedBgMode,
     handleSelectBgMode,
+    selectedScenario,
+    handleSelectScenario,
     activeTab,
     setActiveTab,
     xpHistory,
@@ -67,6 +67,11 @@ export default function AchievementsModule() {
     claimChallenge,
     getChallengeProgress,
   } = useAchievementsLogic();
+
+  // Sub-aba ativa no estúdio de customização do pet ("pet" | "particles" | "scenarios" | "guide")
+  const [petStudioTab, setPetStudioTab] = useState<
+    "pet" | "particles" | "scenarios" | "guide"
+  >("pet");
 
   // Configuração das abas integradas no cabeçalho do módulo
   const tabs = [
@@ -108,26 +113,9 @@ export default function AchievementsModule() {
     solidBg: "bg-primary",
   };
 
-  const glows: Record<string, string> = {
-    Ferro: "rgba(115, 115, 115, 0.12)",
-    Bronze: "rgba(180, 83, 9, 0.12)",
-    Prata: "rgba(203, 213, 225, 0.18)",
-    Ouro: "rgba(234, 179, 8, 0.18)",
-    Platina: "rgba(34, 211, 238, 0.18)",
-    Esmeralda: "rgba(52, 211, 153, 0.18)",
-    Diamante: "rgba(96, 165, 250, 0.18)",
-    Titânio: "rgba(192, 132, 252, 0.18)",
-    Grafeno: "rgba(214, 211, 209, 0.18)",
-  };
-  const shadowColor = glows[rank.name] || "rgba(255, 255, 255, 0.05)";
-  const glowShadow = {
-    boxShadow: `0 10px 30px -10px ${shadowColor}, inset 0 1px 0 0 rgba(255, 255, 255, 0.05)`,
-  };
-
   const xpProgressCard = (
     <div
       className={`w-full h-full p-6 rounded-2xl border backdrop-blur-md ${rStyle.border} ${rStyle.bg} flex flex-col justify-between gap-6 transition-all duration-300`}
-      style={glowShadow}
     >
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 pb-5 border-b border-border/50">
         <div className="flex items-center gap-4 text-left">
@@ -246,6 +234,7 @@ export default function AchievementsModule() {
                   selectedPet={selectedPet}
                   selectedParticle={selectedParticle}
                   selectedBgMode={selectedBgMode}
+                  selectedScenario={selectedScenario}
                   treeLevel={progress.treeLevel}
                   treeXp={progress.treeXp}
                   last3DaysCompletedCount={progress.last3DaysCompletedCount}
@@ -342,6 +331,7 @@ export default function AchievementsModule() {
                 selectedPet={selectedPet}
                 selectedParticle={selectedParticle}
                 selectedBgMode={selectedBgMode}
+                selectedScenario={selectedScenario}
                 treeLevel={progress.treeLevel}
                 treeXp={progress.treeXp}
                 last3DaysCompletedCount={progress.last3DaysCompletedCount}
@@ -351,91 +341,141 @@ export default function AchievementsModule() {
               />
             </div>
 
-            {/* Coluna Direita: Seleção de Pets e Informações */}
-            <div className="flex flex-col gap-6 lg:col-span-2">
-              <PetSelector
-                selectedPet={selectedPet}
-                onSelectPet={handleSelectPet}
-                userLevel={progress.level}
-              />
+            {/* Coluna Direita: Estúdio de Customização do Mascote com Sub-abas */}
+            <div className="flex flex-col gap-5 lg:col-span-2">
+              <div className="p-5 rounded-2xl border border-border/80 bg-linear-to-b from-card/80 via-card/50 to-muted/20 backdrop-blur-md shadow-lg flex flex-col gap-5">
+                {/* Cabeçalho do Estúdio com Navegação por Sub-Abas */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-xs">
+                      <Palette className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        Estúdio do Mascote
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Personalize espécie, efeitos visuais, cenários e
+                        consulte o guia
+                      </p>
+                    </div>
+                  </div>
 
-              <ParticleSelector
-                selectedParticle={selectedParticle}
-                onSelectParticle={handleSelectParticle}
-                userLevel={progress.level}
-              />
-
-              <div className="flex flex-col gap-4">
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">
-                    Período do Dia
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    Selecione o cenário ou defina para alternar automaticamente.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-border/70 bg-card/30">
-                  <Select
-                    value={selectedBgMode}
+                  {/* Abas do Estúdio */}
+                  <Tabs
+                    value={petStudioTab}
                     onValueChange={(val) =>
-                      handleSelectBgMode(
-                        val as "cyclic" | "day" | "afternoon" | "night",
+                      setPetStudioTab(
+                        val as "pet" | "particles" | "scenarios" | "guide",
                       )
                     }
+                    className="w-auto"
                   >
-                    <SelectTrigger className="w-full sm:w-60 bg-card border-border/50">
-                      <SelectValue placeholder="Selecione o período" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PET_BACKGROUNDS.map((bg) => (
-                        <SelectItem key={bg.id} value={bg.id}>
-                          {bg.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <TabsList className="h-8 p-0.5 bg-muted/60 border border-border/40">
+                      <TabsTrigger
+                        value="pet"
+                        className="text-xs px-2.5 font-bold cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Cat className="w-3.5 h-3.5" />
+                        <span>Mascote</span>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="particles"
+                        className="text-xs px-2.5 font-bold cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Auras</span>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="scenarios"
+                        className="text-xs px-2.5 font-bold cursor-pointer flex items-center gap-1.5"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Cenários</span>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="guide"
+                        className="text-xs px-2.5 font-bold cursor-pointer flex items-center gap-1.5"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Guia</span>
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
-              </div>
 
-              {/* Guia do Mascote Aegis */}
-              <div className="flex flex-col gap-4">
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">
-                    Guia do Mascote Aegis
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    Entenda como funciona o sistema de evolução e vitalidade do
-                    seu companheiro pixelado.
-                  </p>
-                </div>
+                {/* Conteúdo Dinâmico da Sub-Aba Selecionada */}
+                <div className="animate-in fade-in duration-200">
+                  {petStudioTab === "pet" && (
+                    <PetSelector
+                      selectedPet={selectedPet}
+                      onSelectPet={handleSelectPet}
+                      userLevel={progress.level}
+                    />
+                  )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  <div className="p-4 rounded-xl border border-border/40 bg-card/40 flex flex-col gap-1.5">
-                    <span className="font-bold text-foreground text-sm">
-                      Evolução e Nível
-                    </span>
-                    <span className="text-muted-foreground text-xs leading-relaxed">
-                      O seu Mascote possui progressão de XP{" "}
-                      <strong>completamente isolada</strong> do seu Nível
-                      Global. Ele só ganha XP quando você conclui e resgata os
-                      Desafios Diários.
-                    </span>
-                  </div>
-                  <div className="p-4 rounded-xl border border-border/40 bg-card/40 flex flex-col gap-1.5">
-                    <span className="font-bold text-foreground text-sm">
-                      Vitalidade e Reset de XP
-                    </span>
-                    <span className="text-muted-foreground text-xs leading-relaxed">
-                      Mantenha a consistência! A cada{" "}
-                      <strong>
-                        4 dias seguidos sem concluir nenhuma missão
-                      </strong>
-                      , o pet desmaia e todo o seu XP acumulado é resetado para
-                      zero. Ele só voltará a subir de nível quando você retomar
-                      as atividades diárias.
-                    </span>
-                  </div>
+                  {petStudioTab === "particles" && (
+                    <ParticleSelector
+                      selectedParticle={selectedParticle}
+                      onSelectParticle={handleSelectParticle}
+                      userLevel={progress.level}
+                    />
+                  )}
+
+                  {petStudioTab === "scenarios" && (
+                    <ScenarioSelector
+                      selectedScenario={selectedScenario}
+                      onSelectScenario={handleSelectScenario}
+                      selectedBgMode={selectedBgMode}
+                      onSelectBgMode={handleSelectBgMode}
+                      userLevel={progress.level}
+                    />
+                  )}
+
+                  {petStudioTab === "guide" && (
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">
+                          Guia & Mecânicas do Mascote Aegis
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                          Entenda como funciona o sistema de evolução e
+                          vitalidade do seu companheiro pixelado.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+                        <div className="p-4 rounded-xl border border-border/60 bg-muted/20 flex flex-col gap-2">
+                          <span className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                            Evolução e Nível
+                          </span>
+                          <span className="text-muted-foreground text-xs leading-relaxed">
+                            O seu Mascote possui progressão de XP{" "}
+                            <strong>completamente isolada</strong> do seu Nível
+                            Global. Ele só ganha XP quando você conclui e
+                            resgata os Desafios Diários.
+                          </span>
+                        </div>
+
+                        <div className="p-4 rounded-xl border border-border/60 bg-muted/20 flex flex-col gap-2">
+                          <span className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            Vitalidade e Reset de XP
+                          </span>
+                          <span className="text-muted-foreground text-xs leading-relaxed">
+                            Mantenha a consistência! A cada{" "}
+                            <strong>
+                              4 dias seguidos sem concluir nenhuma missão
+                            </strong>
+                            , o pet desmaia e todo o seu XP acumulado é resetado
+                            para zero. Ele só voltará a subir de nível quando
+                            você retomar as atividades diárias.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

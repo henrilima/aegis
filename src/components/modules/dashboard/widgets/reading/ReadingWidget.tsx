@@ -131,7 +131,7 @@ export function ReadingWidget({
 
           {/* Livros atuais em leitura */}
           {readingBooks.length > 0 ? (
-            <div className="flex flex-col gap-2">
+            <div className="divide-y divide-border/30">
               {readingBooks.slice(0, limit ?? 2).map((book) => {
                 const progress =
                   book.totalPages > 0
@@ -143,25 +143,24 @@ export function ReadingWidget({
                 return (
                   <div
                     key={book.id}
-                    className="flex flex-col p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-2"
+                    className="flex flex-col py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-1.5"
                   >
                     <div className="flex items-center justify-between gap-2 min-w-0">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
                           className={cn(
-                            "shrink-0 p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20",
+                            "shrink-0 w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center",
                             theme.text,
                           )}
                         >
-                          <BookOpen className="w-4 h-4" />
+                          <BookOpen className="w-4 h-4 text-indigo-500" />
                         </div>
                         <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
-                          <span className="text-sm font-bold text-foreground truncate">
+                          <span className="text-xs font-bold text-foreground truncate">
                             {book.title}
                           </span>
-                          <span className="text-[10px] font-bold text-muted-foreground">
-                            Lendo atualmente · {book.currentPage}/
-                            {book.totalPages} pág.
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {book.currentPage} de {book.totalPages} pág.
                           </span>
                         </div>
                       </div>
@@ -169,7 +168,7 @@ export function ReadingWidget({
                       <div className="shrink-0 flex items-center">
                         <div
                           className={cn(
-                            "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                            "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                             progress >= 100
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                               : "bg-muted/40 text-muted-foreground border-border/40",
@@ -180,7 +179,7 @@ export function ReadingWidget({
                       </div>
                     </div>
                     {/* Mini barra de progresso do livro */}
-                    <div className="w-full h-1 bg-muted/40 rounded-full overflow-hidden mt-1">
+                    <div className="w-full h-1 bg-muted/40 rounded-full overflow-hidden mt-0.5">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
@@ -199,28 +198,28 @@ export function ReadingWidget({
             </div>
           ) : (
             /* Sessões recentes caso não haja livro atual */
-            <div className="space-y-2">
+            <div className="divide-y divide-border/30">
               {recentSessions
                 .slice(0, limit !== undefined ? limit + 1 : 3)
                 .map((s, i) => (
                   <div
                     key={s.id ?? i}
-                    className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4"
+                    className="flex items-center justify-between py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3"
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div
                         className={cn(
-                          "shrink-0 p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20",
+                          "shrink-0 w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center",
                           theme.text,
                         )}
                       >
-                        <BookOpen className="w-4 h-4" />
+                        <BookOpen className="w-4 h-4 text-indigo-500" />
                       </div>
                       <div className="flex flex-col min-w-0 flex-1 gap-0.5 text-left">
-                        <span className="text-sm font-bold text-foreground truncate">
+                        <span className="text-xs font-bold text-foreground truncate">
                           Sessão de leitura
                         </span>
-                        <span className="text-[10px] font-bold text-muted-foreground">
+                        <span className="text-[10px] font-medium text-muted-foreground">
                           {s.date}
                         </span>
                       </div>
@@ -229,7 +228,7 @@ export function ReadingWidget({
                     <div className="shrink-0 flex items-center">
                       <div
                         className={cn(
-                          "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
+                          "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
                           "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
                         )}
                       >
@@ -243,7 +242,7 @@ export function ReadingWidget({
                   <p className="text-xs text-neutral-600 font-bold">
                     Sem Leituras
                   </p>
-                  <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+                  <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
                     Registre suas sessões de leitura para acompanhar suas metas
                     literárias.
                   </p>

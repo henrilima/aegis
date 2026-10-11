@@ -2,16 +2,25 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import {
+  BookLock,
   FolderOpen,
   FolderPlus,
   HelpCircle,
+  Layout,
+  Network,
   Plus,
   StickyNote,
 } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
+import { DiaryUnlockModal } from "@/components/modules/notes/components/DiaryUnlockModal";
 import { NoteExpandModal } from "@/components/modules/notes/components/modals/noteExpandModal";
+import {
+  NOTE_TEMPLATES,
+  type NoteTemplate,
+  NoteTemplateSelector,
+} from "@/components/modules/notes/components/NoteTemplateSelector";
 import { CONFIRM_PRESETS, ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 import { useTime } from "@/context/TimeContext";
@@ -22,9 +31,13 @@ const FileManager = lazy(() =>
   import("./components/FileManager").then((m) => ({ default: m.FileManager })),
 );
 
+import { DiaryJournalView } from "./components/DiaryJournalView";
 import { NoteEditor } from "./components/NoteEditor";
+import { NotesGraphView } from "./components/NotesGraphView";
 import { NotesGuidePanel } from "./components/NotesInfoModal";
 import type { Note } from "./types";
+
+type NotesTabId = "files" | "diary" | "graph" | "guia";
 
 export default function NotesPage() {
   const { user } = useAuth();
@@ -40,6 +53,13 @@ export default function NotesPage() {
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
+  const [activeTab, setActiveTab] = useState<NotesTabId>("files");
+  const [_preGuideTab, _setPreGuideTab] = useState<NotesTabId>("files");
+
+  // Estado para modal de modelos e desbloqueio do diário
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
+  const [isDiaryUnlocked, setIsDiaryUnlocked] = useState(false);
+  const [isDiaryUnlockModalOpen, setIsDiaryUnlockModalOpen] = useState(false);
 
   const uid = user ? String(user.id) : "";
 
@@ -60,23 +80,31 @@ export default function NotesPage() {
   }, [fetchNotes]);
 
   const handleNoteClick = useCallback((note: Note, edit = false) => {
+    if (typeof window !== "undefined") {
+      const lastConfirmed = (window as unknown as Record<string, unknown>)
+        .__AEGIS_JUST_CONFIRMED__ as number | undefined;
+      if (lastConfirmed && Date.now() - lastConfirmed < 800) {
+        return;
+      }
+    }
     setEditMode(edit);
     setExpandedNote(note);
   }, []);
 
-  const handleCreateEmptyNote = useCallback(
-    async (path?: string) => {
+  const handleCreateNoteFromTemplate = useCallback(
+    async (tmpl: NoteTemplate, isDiary = false) => {
       if (!uid) return;
       try {
-        const targetPath = path !== undefined ? path : currentPath;
+        const targetPath = currentPath;
         const newId = await invoke<number>("note_add_note", {
           note: {
             userId: uid,
-            title: "",
-            content: "",
+            title: tmpl.title,
+            content: tmpl.content,
             createdAt: simulatedNow.toISOString(),
             pinned: false,
             path: targetPath || undefined,
+            isDiary: isDiary,
           },
         });
 
@@ -86,20 +114,70 @@ export default function NotesPage() {
         const newNote: Note = {
           id: newId,
           userId: uid,
-          title: "",
-          content: "",
+          title: tmpl.title,
+          content: tmpl.content,
           createdAt: simulatedNow.toISOString(),
           pinned: false,
           path: targetPath || undefined,
+          isDiary: isDiary,
         };
         setExpandedNote(newNote);
         setEditMode(true);
-        toast.success("Nova nota criada!");
+        toast.success(
+          isDiary ? "Nova página do diário criada!" : "Nova nota criada!",
+        );
       } catch (err) {
         toast.error(typeof err === "string" ? err : "Falha ao criar nota");
       }
     },
     [uid, currentPath, simulatedNow, fetchNotes],
+  );
+
+  const handleCreateEmptyNote = useCallback(
+    async (path?: string) => {
+      if (!uid) return;
+      try {
+        const targetPath = path !== undefined ? path : currentPath;
+        const isDiary = activeTab === "diary";
+        const newId = await invoke<number>("note_add_note", {
+          note: {
+            userId: uid,
+            title: isDiary
+              ? `Diário: ${new Date().toLocaleDateString("pt-BR")}`
+              : "",
+            content: "",
+            createdAt: simulatedNow.toISOString(),
+            pinned: false,
+            path: targetPath || undefined,
+            isDiary: isDiary,
+          },
+        });
+
+        setRefreshTrigger((prev) => prev + 1);
+        await fetchNotes();
+
+        const newNote: Note = {
+          id: newId,
+          userId: uid,
+          title: isDiary
+            ? `Diário: ${new Date().toLocaleDateString("pt-BR")}`
+            : "",
+          content: "",
+          createdAt: simulatedNow.toISOString(),
+          pinned: false,
+          path: targetPath || undefined,
+          isDiary: isDiary,
+        };
+        setExpandedNote(newNote);
+        setEditMode(true);
+        toast.success(
+          isDiary ? "Nova página do diário criada!" : "Nova nota criada!",
+        );
+      } catch (err) {
+        toast.error(typeof err === "string" ? err : "Falha ao criar nota");
+      }
+    },
+    [uid, currentPath, simulatedNow, fetchNotes, activeTab],
   );
 
   useEffect(() => {
@@ -154,6 +232,7 @@ export default function NotesPage() {
   );
 
   const handleDelete = async (id: number) => {
+    setDeletingId(null); // Fecha o modal síncronamente para desarmar UI
     try {
       await invoke("note_delete_note", { id, userId: user?.id });
       setRefreshTrigger((prev) => prev + 1);
@@ -165,10 +244,25 @@ export default function NotesPage() {
       }
     } catch {
       toast.error("Erro ao remover");
-    } finally {
-      setDeletingId(null);
     }
   };
+
+  const handleNavigateWikiLink = useCallback(
+    (targetTitle: string) => {
+      const cleanTitle = targetTitle.trim().toLowerCase();
+      const found = notes.find(
+        (n) => n.title.trim().toLowerCase() === cleanTitle,
+      );
+      if (found) {
+        setExpandedNote(found);
+        setEditMode(false);
+        toast.info(`Abrindo "${found.title}"`);
+      } else {
+        toast.error(`A nota "${targetTitle}" não foi encontrada.`);
+      }
+    },
+    [notes],
+  );
 
   if (loading) {
     return (
@@ -188,6 +282,7 @@ export default function NotesPage() {
       <div className="w-full flex flex-col h-full text-foreground">
         <NoteEditor
           note={expandedNote}
+          allNotes={notes}
           onSave={handleUpdateEditor}
           onClose={() => {
             setExpandedNote(null);
@@ -196,6 +291,7 @@ export default function NotesPage() {
           onDelete={async (id) => {
             setDeletingId(id);
           }}
+          onNavigateWikiLink={handleNavigateWikiLink}
         />
 
         {deletingId !== null && (
@@ -228,6 +324,24 @@ export default function NotesPage() {
     );
   }
 
+  const NOTE_MODULE_TABS = [
+    { id: "files" as NotesTabId, label: "Minhas Notas", icon: StickyNote },
+    { id: "diary" as NotesTabId, label: "Diário Pessoal", icon: BookLock },
+    { id: "graph" as NotesTabId, label: "Grafo de Conexões", icon: Network },
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    const t = tabId as NotesTabId;
+    if (t === "diary" && !isDiaryUnlocked) {
+      setIsDiaryUnlockModalOpen(true);
+      return;
+    }
+    setActiveTab(t);
+  };
+
+  const _diaryNotes = notes.filter((n) => n.isDiary);
+  const _regularNotes = notes.filter((n) => !n.isDiary);
+
   return (
     <div className="w-full flex flex-col gap-6 text-foreground">
       <ModuleHeader
@@ -236,6 +350,9 @@ export default function NotesPage() {
         title="Anotações"
         subtitle={`${notes.length} ${notes.length === 1 ? "item" : "itens"} · ${notes.filter((n) => n.pinned).length} fixadas`}
         icon={StickyNote}
+        tabs={NOTE_MODULE_TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
         onTitleClick={() => setShowInfo(true)}
         titleHoverIcon={HelpCircle}
         titleTooltip="Visualizar Guia de Anotações"
@@ -243,6 +360,13 @@ export default function NotesPage() {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Buscar notas..."
         actions={[
+          {
+            id: "templates",
+            label: "Modelos",
+            icon: Layout,
+            tooltip: "Modelos de Anotações",
+            onClick: () => setIsTemplateSelectorOpen(true),
+          },
           {
             id: "folder-open",
             label: "Abrir Pasta",
@@ -259,9 +383,10 @@ export default function NotesPage() {
           },
           {
             id: "new",
-            label: "Nova Nota",
+            label: activeTab === "diary" ? "Nova Entrada" : "Nova Nota",
             icon: Plus,
-            tooltip: "Nova Nota",
+            tooltip:
+              activeTab === "diary" ? "Nova Entrada no Diário" : "Nova Nota",
             primary: true,
             onClick: () => {
               handleCreateEmptyNote(currentPath);
@@ -282,29 +407,67 @@ export default function NotesPage() {
         />
       )}
 
-      <Suspense
-        fallback={
-          <div className="flex items-center gap-2 text-muted-foreground animate-pulse py-8">
-            <StickyNote className="w-4 h-4" />
-            <span className="text-sm font-medium">
-              Carregando gerenciador...
-            </span>
-          </div>
-        }
-      >
-        <FileManager
-          onNoteClick={handleNoteClick}
-          onNewNote={(path) => {
-            handleCreateEmptyNote(path);
+      {activeTab === "graph" ? (
+        <NotesGraphView
+          notes={notes}
+          onSelectNote={(n) => {
+            setExpandedNote(n);
+            setEditMode(false);
           }}
-          refreshTrigger={refreshTrigger}
-          searchQuery={searchQuery}
-          externalFolderTrigger={isFolderModalOpen}
-          onFolderModalClose={() => setIsFolderModalOpen(false)}
-          currentPath={currentPath}
-          setCurrentPath={setCurrentPath}
         />
-      </Suspense>
+      ) : activeTab === "diary" ? (
+        <DiaryJournalView
+          notes={notes}
+          onNoteClick={handleNoteClick}
+          onCreateEntry={() => {
+            handleCreateNoteFromTemplate(NOTE_TEMPLATES[3], true);
+          }}
+          onDeleteNote={(id) => setDeletingId(id)}
+        />
+      ) : (
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-2 text-muted-foreground animate-pulse py-8">
+              <StickyNote className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Carregando gerenciador...
+              </span>
+            </div>
+          }
+        >
+          <FileManager
+            onNoteClick={handleNoteClick}
+            onNewNote={(path) => {
+              handleCreateEmptyNote(path);
+            }}
+            refreshTrigger={refreshTrigger}
+            searchQuery={searchQuery}
+            externalFolderTrigger={isFolderModalOpen}
+            onFolderModalClose={() => setIsFolderModalOpen(false)}
+            currentPath={currentPath}
+            setCurrentPath={setCurrentPath}
+          />
+        </Suspense>
+      )}
+
+      {/* Modais */}
+      <NoteTemplateSelector
+        isOpen={isTemplateSelectorOpen}
+        onClose={() => setIsTemplateSelectorOpen(false)}
+        onSelectTemplate={(tmpl) =>
+          handleCreateNoteFromTemplate(tmpl, activeTab === "diary")
+        }
+      />
+
+      <DiaryUnlockModal
+        isOpen={isDiaryUnlockModalOpen}
+        onClose={() => setIsDiaryUnlockModalOpen(false)}
+        onUnlocked={() => {
+          setIsDiaryUnlocked(true);
+          setIsDiaryUnlockModalOpen(false);
+          setActiveTab("diary");
+        }}
+      />
 
       {deletingId !== null && (
         <ConfirmModal

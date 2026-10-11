@@ -44,9 +44,11 @@ mod dictionary;
 mod movies;
 mod flashcards;
 mod automation;
+mod discord_rpc;
 
 use passwords::PasswordManager;
 use pomodoro::PomodoroManager;
+use discord_rpc::DiscordRpcManager;
 
 use alarms::AlarmManager;
 use habits::HabitManager;
@@ -79,7 +81,7 @@ pub struct SimulationStatus {
 pub struct AppState {
     pm: PasswordManager,
     pomo: PomodoroManager,
-
+    discord: DiscordRpcManager,
     alarm: AlarmManager,
     habit: HabitManager,
     note: notes::NoteManager,
@@ -1377,7 +1379,9 @@ pub fn run() {
                 }
             });
 
-            app.manage(AppState { pm, pomo, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies, flashcards, automation });
+            let discord = DiscordRpcManager::new();
+
+            app.manage(AppState { pm, pomo, discord, alarm, habit, note, config, studies, sleep, calendar, stats, reading, tasks, notif, dictionary, movies, flashcards, automation });
 
             //  Startup Data Summary 
             {
@@ -1482,7 +1486,7 @@ pub fn run() {
             passwords::password_add_password, passwords::password_list_passwords, passwords::password_decrypt_entry, 
             passwords::password_import_passwords, passwords::password_export_passwords, passwords::password_delete_password, 
             passwords::password_update_password, passwords::password_check_vault, passwords::password_reset_vault, 
-            passwords::password_setup_local_vault,
+            passwords::password_setup_local_vault, passwords::password_verify_vault, passwords::password_audit_vault,
 
             // Pomodoro
             pomodoro::pomodoro_get_pomodoro_state, pomodoro::pomodoro_save_pomodoro_state, 
@@ -1500,7 +1504,9 @@ pub fn run() {
             habits::habit_mark_habit_done, habits::habit_use_habit_charge, habits::habit_reset_habit, 
             habits::habit_hard_reset_habit, habits::habit_delete_habit, habits::habit_export_habits_csv, 
             habits::habit_import_habits_csv, habits::habit_add_sober_log, habits::habit_list_sober_logs,
-            habits::habit_reset_with_trigger,
+            habits::habit_reset_with_trigger, habits::habit_list_goals, habits::habit_upsert_goal,
+            habits::habit_delete_goal, habits::habit_toggle_milestone, habits::habit_link_milestone_task,
+            habits::habit_create_task_for_milestone,
 
             // Notes
             notes::note_list_notes, notes::note_list_note_items, notes::note_add_note, 
@@ -1582,7 +1588,12 @@ pub fn run() {
             flashcards::flashcards_update_folder, flashcards::flashcards_delete_folder, flashcards::flashcards_move_deck,
             flashcards::flashcards_list_cards, flashcards::flashcards_add_card, 
             flashcards::flashcards_update_card, flashcards::flashcards_delete_card, flashcards::flashcards_record_review, 
-            flashcards::flashcards_export_json, flashcards::flashcards_import_json
+            flashcards::flashcards_export_json, flashcards::flashcards_import_json,
+
+            // Discord Rich Presence
+            discord_rpc::discord_rpc_set_enabled, discord_rpc::discord_rpc_is_enabled,
+            discord_rpc::discord_rpc_is_connected, discord_rpc::discord_rpc_update_presence,
+            discord_rpc::discord_rpc_clear_presence
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

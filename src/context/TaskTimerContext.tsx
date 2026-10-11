@@ -15,6 +15,8 @@ interface TaskTimerState {
   activeTimerTaskId: number | null;
   /** Segundos acumulados na sessão atual (não persistidos ainda) */
   sessionSeconds: number;
+  /** Segundos pré-existentes da tarefa antes de iniciar a sessão atual */
+  baseSeconds: number;
   /** Inicia o cronômetro para uma tarefa. Para a anterior automaticamente. */
   startTimer: (
     taskId: number,
@@ -25,6 +27,7 @@ interface TaskTimerState {
       ) => void;
       taskStatus?: string;
       onTimeSaved?: (taskId: number, newTotal: number) => void;
+      baseSeconds?: number;
     },
   ) => Promise<void>;
   /** Para o cronômetro da tarefa ativa e persiste o tempo acumulado. */
@@ -53,6 +56,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
     null,
   );
   const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [baseSeconds, setBaseSeconds] = useState(0);
 
   // Refs para evitar closure stale em callbacks assíncronos
   const sessionSecondsRef = useRef(0);
@@ -80,6 +84,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
         intervalRef.current = null;
       }
       setSessionSeconds(0);
+      setBaseSeconds(0);
     }
 
     return () => {
@@ -123,6 +128,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
         ) => void;
         taskStatus?: string;
         onTimeSaved?: (taskId: number, newTotal: number) => void;
+        baseSeconds?: number;
       },
     ) => {
       // Se havia outra tarefa ativa, persiste o tempo dela antes de trocar
@@ -149,6 +155,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
 
       setSessionSeconds(0);
       sessionSecondsRef.current = 0;
+      setBaseSeconds(opts?.baseSeconds ?? 0);
       setActiveTimerTaskId(taskId);
     },
     [persistSession],
@@ -164,6 +171,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
       const secs = sessionSecondsRef.current;
       await persistSession(taskId, secs, opts);
       setActiveTimerTaskId(null);
+      setBaseSeconds(0);
     },
     [persistSession],
   );
@@ -181,6 +189,7 @@ export function TaskTimerProvider({ children }: { children: React.ReactNode }) {
       value={{
         activeTimerTaskId,
         sessionSeconds,
+        baseSeconds,
         startTimer,
         pauseTimer,
         getDisplayTime,
@@ -201,3 +210,5 @@ export function useTaskTimerContext() {
   }
   return ctx;
 }
+
+export const useTaskTimer = useTaskTimerContext;

@@ -60,7 +60,7 @@ export function BaseWidget({
         <div className="flex items-center gap-[3cqw] @sm:gap-3.5">
           <div
             className={cn(
-              "p-[2cqw] @sm:p-2 rounded-lg border transition-colors",
+              "p-[2cqw] @sm:p-2 rounded-xl border transition-colors",
               theme.bg,
               theme.border,
             )}

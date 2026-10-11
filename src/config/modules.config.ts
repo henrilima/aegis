@@ -164,3 +164,80 @@ export function getModuleConfig(route: string): ModuleConfig {
 export function getModuleColor(route: string): ThemeColorKey {
   return getModuleConfig(route).color;
 }
+
+/**
+ * Mapeamento direto de rota para o nome do asset de logo do Discord Rich Presence.
+ * Tem prioridade sobre o mapeamento por cor para garantir precisão por módulo.
+ */
+export const ROUTE_DISCORD_ASSET_MAP: Partial<Record<string, string>> = {
+  // Dashboard (azul)
+  dashboard: "aegis_azul",
+  // Produtividade (vermelho/amarelo/verde)
+  tasks: "aegis_vermelho",
+  pomodoro: "aegis_vermelho",
+  alarms: "aegis_vermelho",
+  calendar: "aegis_verde",
+  habits: "aegis_azul", 
+  // Conhecimento
+  notes: "aegis_laranja",
+  studies: "aegis_roxo",
+  grades: "aegis_verde",
+  reading: "aegis_roxo",
+  dictionary: "aegis_azul",
+  flashcards: "aegis_azul",
+  // Entretenimento
+  movies: "aegis_rosa",
+  sleep: "aegis_azul",
+  // Segurança & Sistema
+  passwords: "aegis_amarelo",
+  statistics: "aegis_roxo",
+  achievements: "aegis_amarelo",
+};
+
+/**
+ * Mapeamento de fallback da cor de identidade para o asset do Discord.
+ */
+export const COLOR_DISCORD_ASSET_MAP: Record<ThemeColorKey, string> = {
+  yellow: "aegis_amarelo",
+  amber: "aegis_amarelo",
+  lime: "aegis_limao",
+  green: "aegis_verde",
+  emerald: "aegis_verde",
+  teal: "aegis_azul",
+  blue: "aegis_azul",
+  sky: "aegis_azul",
+  cyan: "aegis_azul",
+  // indigo é azul visualmente no contexto do Aegis (Leitura)
+  indigo: "aegis_azul",
+  violet: "aegis_roxo",
+  purple: "aegis_roxo",
+  fuchsia: "aegis_rosa",
+  pink: "aegis_rosa",
+  rose: "aegis_rosa",
+  red: "aegis_vermelho",
+  orange: "aegis_laranja",
+  slate: "aegis_branco",
+  zinc: "aegis_branco",
+  neutral: "aegis_branco",
+  stone: "aegis_branco",
+  coffee: "aegis_branco",
+  carbon: "aegis_branco",
+};
+
+/**
+ * Retorna o nome do asset de logo do Discord correspondente ao módulo.
+ * Usa mapeamento direto por rota como prioridade, depois fallback por cor.
+ *
+ * @example
+ *   getModuleDiscordAsset("notes")    // "aegis_laranja"
+ *   getModuleDiscordAsset("studies")  // "aegis_roxo"
+ *   getModuleDiscordAsset("reading")  // "aegis_azul"
+ */
+export function getModuleDiscordAsset(route: string): string {
+  // Prioridade: mapeamento direto por rota
+  const directAsset = ROUTE_DISCORD_ASSET_MAP[route];
+  if (directAsset) return directAsset;
+  // Fallback: derivar a partir da cor do módulo
+  const color = getModuleColor(route);
+  return COLOR_DISCORD_ASSET_MAP[color] ?? "aegis_logo";
+}

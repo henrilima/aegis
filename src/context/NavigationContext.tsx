@@ -61,7 +61,7 @@ function getInitialRoute(): AppRoute {
   return parsePathname(window.location.pathname);
 }
 
-const SUB_MODULES = new Set<AppRoute>(["pomodoro", "dictionary"]);
+const SUB_MODULES = new Set<AppRoute>(["dictionary"]);
 
 interface NavigationContextType {
   route: AppRoute;

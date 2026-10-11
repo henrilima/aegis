@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { type ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
@@ -42,12 +43,7 @@ interface ModalShellProps {
  *  - Fecha ao pressionar ESC
  *  - NÃO fecha ao clicar fora (para evitar perda de dados)
  *  - Aplica body scroll lock automaticamente
- *  - Animação padrão: fade-in + zoom-in-95
- *
- * Uso:
- *   <ModalShell isOpen={show} onClose={onClose} size="lg">
- *     <div>...conteúdo...</div>
- *   </ModalShell>
+ *  - Animação de entrada suave com Framer Motion (escala e opacidade)
  */
 export function ModalShell({
   isOpen = true,
@@ -76,8 +72,7 @@ export function ModalShell({
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen, onClose, disableClose]);
 
-  if (!isOpen) return null;
-  if (!mounted) return null;
+  if (!isOpen || !mounted) return null;
 
   const isFull = size === "full";
 
@@ -99,10 +94,13 @@ export function ModalShell({
       role="dialog"
       aria-modal="true"
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ type: "spring", duration: 0.25, bounce: 0 }}
         className={cn(
-          "relative w-full bg-background border border-border rounded-xl",
-          "animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col",
+          "relative w-full bg-background border border-border rounded-2xl overflow-hidden flex flex-col",
           isFull
             ? "h-full max-h-none rounded-none border-none"
             : "max-h-[90vh]",
@@ -111,7 +109,7 @@ export function ModalShell({
         )}
       >
         {children}
-      </div>
+      </motion.div>
     </div>
   );
 

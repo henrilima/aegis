@@ -1,7 +1,67 @@
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce,
+};
+use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use tauri::AppHandle;
+
+const DIARY_SECRET_KEY_SEED: &[u8; 32] = b"aegis_secure_vault_diary_key_v1!";
+
+fn encrypt_diary_text(plain_text: &str) -> String {
+    if plain_text.is_empty() {
+        return String::new();
+    }
+    let cipher = match Aes256Gcm::new_from_slice(DIARY_SECRET_KEY_SEED) {
+        Ok(c) => c,
+        Err(_) => return plain_text.to_string(),
+    };
+    let nonce_bytes = rand::random::<[u8; 12]>();
+    let nonce = Nonce::from_slice(&nonce_bytes);
+    if let Ok(ciphertext) = cipher.encrypt(nonce, plain_text.as_bytes()) {
+        format!(
+            "ENC_DIARY:{}:{}",
+            general_purpose::STANDARD.encode(nonce_bytes),
+            general_purpose::STANDARD.encode(ciphertext)
+        )
+    } else {
+        plain_text.to_string()
+    }
+}
+
+fn decrypt_diary_text(cipher_text: &str) -> String {
+    if !cipher_text.starts_with("ENC_DIARY:") {
+        return cipher_text.to_string();
+    }
+    let parts: Vec<&str> = cipher_text.splitn(3, ':').collect();
+    if parts.len() != 3 {
+        return cipher_text.to_string();
+    }
+    let nonce_str = parts[1];
+    let data_str = parts[2];
+
+    let cipher = match Aes256Gcm::new_from_slice(DIARY_SECRET_KEY_SEED) {
+        Ok(c) => c,
+        Err(_) => return cipher_text.to_string(),
+    };
+    let nonce_bytes = match general_purpose::STANDARD.decode(nonce_str) {
+        Ok(b) => b,
+        Err(_) => return cipher_text.to_string(),
+    };
+    let ciphertext = match general_purpose::STANDARD.decode(data_str) {
+        Ok(b) => b,
+        Err(_) => return cipher_text.to_string(),
+    };
+    let nonce = Nonce::from_slice(&nonce_bytes);
+    if let Ok(plaintext) = cipher.decrypt(nonce, ciphertext.as_slice()) {
+        if let Ok(text) = String::from_utf8(plaintext) {
+            return text;
+        }
+    }
+    cipher_text.to_string()
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +74,8 @@ pub struct Note {
     pub pinned: bool,
     pub path: Option<String>, // Caminho relativo a partir de notes_dir
     pub color: Option<String>,
+    #[serde(default)]
+    pub is_diary: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -44,6 +106,8 @@ struct NoteMeta {
     pub pinned: bool,
     #[serde(default)]
     pub color: Option<String>,
+    #[serde(rename = "isDiary", alias = "is_diary", default)]
+    pub is_diary: Option<bool>,
 }
 
 pub struct NoteManager {
@@ -167,15 +231,24 @@ impl NoteManager {
                     .and_then(|p| p.parent())
                     .map(|p| p.to_string_lossy().to_string());
 
+                let decrypted_body = if meta.is_diary == Some(true)
+                    || stripped_body.trim().starts_with("ENC_DIARY:")
+                {
+                    decrypt_diary_text(stripped_body.trim())
+                } else {
+                    stripped_body.trim().to_string()
+                };
+
                 return Ok(Note {
                     id: Some(meta.id),
                     user_id: meta.user_id,
                     title,
-                    content: stripped_body.trim().to_string(),
+                    content: decrypted_body,
                     created_at: meta.created_at,
                     pinned: meta.pinned,
                     path: relative_path,
                     color: meta.color,
+                    is_diary: meta.is_diary,
                 });
             }
         }
@@ -198,14 +271,21 @@ impl NoteManager {
             created_at: note.created_at.clone(),
             pinned: note.pinned,
             color: note.color.clone(),
+            is_diary: note.is_diary,
         };
 
         let frontmatter = serde_yaml::to_string(&meta).unwrap_or_default();
+        let body_content = if note.is_diary == Some(true) {
+            encrypt_diary_text(&note.content)
+        } else {
+            note.content.clone()
+        };
+
         let content = format!(
             "---\n{}\n---\n# {}\n\n{}",
             frontmatter.trim(),
             note.title,
-            note.content
+            body_content
         );
 
         fs::write(&path, content).map_err(|e| e.to_string())?;

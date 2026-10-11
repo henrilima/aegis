@@ -177,12 +177,8 @@ export function evaluateVersionCheck(
     action = "upgrade-available";
     isUpgrade = true;
   } else if (semverDiff < 0) {
-    if (isCurrentPre || currentStageName !== "stable") {
-      action = "downgrade-available";
-      isDowngrade = true;
-    } else {
-      action = "up-to-date";
-    }
+    // Versão local é mais recente que a do GitHub (ex: 4.5.0 no app vs 4.4.0 no GitHub)
+    action = "beta-active";
   } else {
     // Semver principal igual (ex: 4.1.0 vs 4.1.0-beta)
     if (isCurrentPre && !isTargetPre) {
@@ -203,7 +199,7 @@ export function evaluateVersionCheck(
   }
 
   let title = "Sistema atualizado";
-  let description = "Você está utilizando a versão mais recente do Aegis.";
+  let description = `Você está utilizando a versão estável mais recente do Aegis (v${currentVerStr}).`;
   let actionButtonText = "Atualizar agora";
 
   if (isUpgrade) {
@@ -215,9 +211,9 @@ export function evaluateVersionCheck(
     description = `Você pode retornar da versão de testes para a versão ${targetStageDetails.label.toLowerCase()} (${targetVerStr}).`;
     actionButtonText = `Fazer downgrade (${targetStageDetails.label})`;
   } else if (action === "beta-active") {
-    title = "Versão experimental ativa";
-    description = "Você está em um canal de compilação de testes.";
-    actionButtonText = "Verificar releases";
+    title = "Versão em desenvolvimento (Beta)";
+    description = `Você está na v${currentVerStr}, à frente do lançamento público no GitHub (${targetVerStr}). Aproveite os novos recursos em primeira mão!`;
+    actionButtonText = "Ver no GitHub";
   }
 
   return {

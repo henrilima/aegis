@@ -116,97 +116,97 @@ export function AlarmsWidget({
               </Button>
             )}
           </div>
-          <div className="space-y-2">
-            {nextAlarm ? (
-              <div className="p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 text-left flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="divide-y divide-border/30">
+            {nextAlarm && (
+              <div className="py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 text-left flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
                     className={cn(
-                      "shrink-0 p-2 rounded-xl bg-rose-500/10 border border-rose-500/20",
+                      "shrink-0 w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center",
                       theme.text,
                     )}
                   >
-                    <Clock className="w-4 h-4" />
+                    <Clock className="w-4 h-4 text-rose-500" />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                    <span className="text-sm font-bold text-foreground truncate">
+                    <span className="text-xs font-bold text-foreground truncate">
                       {nextAlarm.title}
                     </span>
-                    <span className="text-[10px] font-bold text-muted-foreground">
+                    <span className="text-[10px] font-medium text-rose-500">
                       Próximo alerta
                     </span>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
+                  <div className="flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
                     <span>{nextAlarmSummary?.shortLabel}</span>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground min-w-10.5 text-right">
+                  <span className="text-[11px] font-medium text-muted-foreground min-w-10 text-right">
                     {nextAlarmSummary?.label.startsWith("Hoje")
                       ? "Hoje"
                       : "Amanhã"}
                   </span>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {alarms
+              .filter((a) => a.id !== nextAlarm?.id)
+              .slice(0, limit ?? 2)
+              .map((a) => (
+                <div
+                  key={`a-key${a.id}`}
+                  className={cn(
+                    "flex items-center justify-between py-2.5 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3 text-left",
+                    !a.enabled && "opacity-50",
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="shrink-0 w-8 h-8 rounded-xl bg-muted/40 border border-border/40 text-muted-foreground flex items-center justify-center">
+                      <Bell className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                      <span className="text-xs font-bold text-foreground truncate">
+                        {a.title}
+                      </span>
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {a.enabled ? "Alarme ativo" : "Desativado"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 px-2 py-0.2 rounded-full border text-[9px] font-bold shrink-0",
+                        a.enabled
+                          ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                          : "bg-muted/40 text-muted-foreground border-border/40",
+                      )}
+                    >
+                      <span>
+                        {a.alarmType === "fixed"
+                          ? a.time
+                          : `${a.intervalMinutes}m`}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground min-w-10 text-right">
+                      {a.alarmType === "fixed" ? "Fixo" : "Intervalo"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+            {!nextAlarm && alarms.length === 0 && (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <p className="text-xs text-neutral-600 font-bold">
-                  Sem Alarmes Ativos
+                <p className="text-xs text-foreground font-bold">
+                  Sem alarmes ativos
                 </p>
-                <p className="text-[10px] text-neutral-600 font-medium max-w-45 mt-1">
+                <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
                   Não há alarmes definidos para tocar no momento.
                 </p>
               </div>
             )}
-
-            <div className="mt-2 space-y-2">
-              {alarms
-                .filter((a) => a.id !== nextAlarm?.id)
-                .slice(0, limit ?? 2)
-                .map((a) => (
-                  <div
-                    key={`a-key${a.id}`}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 text-left",
-                      !a.enabled && "opacity-50",
-                    )}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="shrink-0 p-2 rounded-xl bg-muted/40 border border-border/40 text-muted-foreground">
-                        <Bell className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                        <span className="text-sm font-bold text-foreground truncate">
-                          {a.title}
-                        </span>
-                        <span className="text-[10px] font-bold text-muted-foreground">
-                          {a.enabled ? "Alarme ativo" : "Desativado"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 flex items-center gap-2">
-                      <div
-                        className={cn(
-                          "flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-bold capitalize shrink-0",
-                          a.enabled
-                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                            : "bg-muted/40 text-muted-foreground border-border/40",
-                        )}
-                      >
-                        <span>
-                          {a.alarmType === "fixed"
-                            ? a.time
-                            : `${a.intervalMinutes}m`}
-                        </span>
-                      </div>
-                      <span className="text-xs font-semibold text-muted-foreground min-w-10.5 text-right">
-                        {a.alarmType === "fixed" ? "Horário" : "Intervalo"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </div>
           </div>
         </div>
       </BaseWidget>

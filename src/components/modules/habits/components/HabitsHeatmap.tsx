@@ -1,12 +1,11 @@
 "use client";
 
-import { Activity } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { useMemo } from "react";
 import {
   ActivityHeatmap,
   type HeatmapItem,
 } from "@/components/global/ActivityHeatmap";
-import { formatDateLocal, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import type { Habit } from "../types";
 
@@ -15,81 +14,73 @@ interface HabitsHeatmapProps {
 }
 
 export function HabitsHeatmap({ habits }: HabitsHeatmapProps) {
-  const currentYear = new Date().getFullYear();
-  const moduleColor = getModuleColor("habits");
-  const theme = getColorTheme(moduleColor);
+  const { data, totalCompletions, currentStreak } = useMemo(() => {
+    const map: Record<string, HeatmapItem> = {};
+    let total = 0;
 
-  const positiveHabits = useMemo(
-    () => habits.filter((h) => h.habitType === "Positive" && !h.archived),
-    [habits],
-  );
-
-  const { activityData, totalCompletions, activeDays, maxRecord } =
-    useMemo(() => {
-      const map: Record<string, string[]> = {};
-      const activeSet = new Set<string>();
-      let totalDone = 0;
-      let maxDay = 0;
-
-      for (const habit of positiveHabits) {
-        if (habit.completedDates) {
-          for (const rawDate of habit.completedDates) {
-            const cleanDate = formatDateLocal(rawDate);
-            if (!cleanDate) continue;
-
-            if (cleanDate.startsWith(String(currentYear))) {
-              activeSet.add(cleanDate);
-            }
-
-            if (!map[cleanDate]) map[cleanDate] = [];
-            if (!map[cleanDate].includes(habit.name)) {
-              map[cleanDate].push(habit.name);
-            }
-          }
-        }
+    habits.forEach((habit) => {
+      if (habit.completedDates && Array.isArray(habit.completedDates)) {
+        habit.completedDates.forEach((dateStr) => {
+          const cleanDate = dateStr.slice(0, 10);
+          const currentCount = map[cleanDate]?.count || 0;
+          const nextCount = currentCount + 1;
+          map[cleanDate] = {
+            count: nextCount,
+            details: `${nextCount} ${nextCount === 1 ? "hábito concluído" : "hábitos concluídos"}`,
+          };
+          total += 1;
+        });
       }
+    });
 
-      const data: Record<string, HeatmapItem> = {};
-      for (const [dateStr, list] of Object.entries(map)) {
-        data[dateStr] = {
-          count: list.length,
-          details: `${list.length} ${list.length === 1 ? "hábito" : "hábitos"}: ${list.join(", ")}`,
-        };
-        if (dateStr.startsWith(String(currentYear))) {
-          totalDone += list.length;
-          maxDay = Math.max(maxDay, list.length);
-        }
+    // Calcula a sequência atual de dias consecutivos com pelo menos 1 hábito
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
+      if (map[dateStr]?.count > 0) {
+        streak += 1;
+      } else if (i === 0) {
+      } else {
+        break;
       }
+    }
 
-      return {
-        activityData: data,
-        totalCompletions: totalDone,
-        activeDays: activeSet.size,
-        maxRecord: maxDay,
-      };
-    }, [positiveHabits, currentYear]);
+    return {
+      data: map,
+      totalCompletions: total,
+      currentStreak: streak,
+    };
+  }, [habits]);
+
+  const stats = [
+    {
+      label: "Sequência atual",
+      value: `${currentStreak} dias`,
+      colorClass: "text-amber-500",
+    },
+    {
+      label: "Total concluído",
+      value: `${totalCompletions} hábitos`,
+      colorClass: "text-emerald-500",
+    },
+  ];
 
   return (
     <ActivityHeatmap
-      color={moduleColor}
-      title="Mapa de Constância"
-      subtitle="Frequência de hábitos concluídos por ano"
-      icon={Activity}
-      data={activityData}
+      color={getModuleColor("habits")}
+      title="Mapa de Consistência de Hábitos"
+      subtitle="Frequência diária de hábitos concluídos"
+      icon={Calendar}
+      data={data}
       unitLabel="hábitos"
-      stats={[
-        {
-          label: "Conclusões",
-          value: totalCompletions,
-          colorClass: theme.text,
-        },
-        { label: "Dias ativos", value: activeDays },
-        {
-          label: "Recorde diário",
-          value: `${maxRecord}`,
-          colorClass: "text-amber-400",
-        },
-      ]}
+      stats={stats}
     />
   );
 }

@@ -7,11 +7,13 @@ import {
   Image as ImageIcon,
   Plus,
   ShieldOff,
+  Target,
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ModuleHeader } from "@/components/global/ModuleHeader";
+import { HabitsGoalsTab } from "@/components/modules/habits/components/HabitsGoalsTab";
 import { HabitsReportsTab } from "@/components/modules/habits/components/HabitsReportsTab";
 import { EditHabitDialog } from "@/components/modules/habits/components/modals/editDialog";
 import { HabitCreateModal } from "@/components/modules/habits/components/modals/habitCreateModal";
@@ -28,7 +30,7 @@ import { HabitsWeeklyBoard } from "./components/weeklyBoard";
 import { HabitCard } from "./habitCard";
 import type { Habit } from "./types";
 
-type TabId = "positive" | "negative" | "report" | "guia";
+type TabId = "positive" | "negative" | "goals" | "report" | "guia";
 
 /**
  * Módulo de Hábitos: Monitoramento de comportamentos positivos e controle de vícios
@@ -234,6 +236,7 @@ export default function HabitsPage() {
   const HABIT_TABS = [
     { id: "positive", label: "Hábitos Diários", icon: Zap },
     { id: "negative", label: "Controle de Vício", icon: ShieldOff },
+    { id: "goals", label: "Metas de Longo Prazo", icon: Target },
     { id: "report", label: "Relatórios", icon: ImageIcon },
   ];
 
@@ -268,19 +271,23 @@ export default function HabitsPage() {
         ]}
       />
 
-      {/* Listagem / Relatório */}
+      {/* Listagem / Relatório / Metas */}
       {tab === "guia" ? (
         <HabitsGuidePanel onBack={() => setTab(preGuideTab)} />
       ) : tab === "report" ? (
         <HabitsReportsTab habits={habits} />
+      ) : tab === "goals" ? (
+        <HabitsGoalsTab userId={uid} />
       ) : tab === "positive" ? (
-        <HabitsWeeklyBoard
-          habits={positive}
-          onRefresh={fetchHabits}
-          onEdit={setEditingHabit}
-          onOpenHardResetDialog={setHardResetId}
-          onDelete={setDeleteId}
-        />
+        <div className="flex flex-col gap-6">
+          <HabitsWeeklyBoard
+            habits={positive}
+            onRefresh={fetchHabits}
+            onEdit={setEditingHabit}
+            onOpenHardResetDialog={setHardResetId}
+            onDelete={setDeleteId}
+          />
+        </div>
       ) : negative.length === 0 ? (
         <EmptyState
           icon={Activity}

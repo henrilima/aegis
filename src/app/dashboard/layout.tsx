@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { GlobalScheduler } from "@/components/GlobalScheduler";
 import { GlobalShortcuts } from "@/components/GlobalShortcuts";
+import { AppStatusBar } from "@/components/global/AppStatusBar";
 import { DictionaryQuickSearch } from "@/components/global/DictionaryQuickSearch";
 import { FeedbackDialog } from "@/components/global/FeedbackDialog";
 import { LevelUpParticles } from "@/components/global/LevelUpParticles";
@@ -12,6 +13,7 @@ import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { AppSidebar } from "@/components/sidebar/appSidebar";
 import { SidebarTrigger } from "@/components/sidebar/SidebarTrigger";
 import { useAuth } from "@/context/AuthContext";
+import { DiscordRpcProvider } from "@/context/DiscordRpcContext";
 import { NavigationProvider } from "@/context/NavigationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -86,78 +88,82 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <NavigationProvider>
-      <div
-        className="flex h-screen w-screen bg-background text-foreground overflow-hidden"
-        style={
-          {
-            "--sidebar-w": isSidebarVisible && isSidebarOpen ? "288px" : "0px",
-          } as CSSProperties
-        }
-      >
-        {!isWidget && (
-          <>
-            <GlobalScheduler />
-            <GlobalShortcuts />
-            <DictionaryQuickSearch />
-            <SettingsModal />
-            <LevelUpParticles />
-          </>
-        )}
-
-        {isSidebarVisible && <AppSidebar isOpen={isSidebarOpen} />}
-
-        {/* Gatilho flutuante (visível quando a barra lateral está fechada) */}
-        {isSidebarVisible && (
-          <SidebarTrigger
-            isOpen={isSidebarOpen}
-            onToggle={() => setIsSidebarOpen(true)}
-            floating
-          />
-        )}
-
-        {isSidebarVisible && isSidebarOpen && (
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden w-full h-full border-none cursor-default"
-            aria-label="Close sidebar"
-            type="button"
-          />
-        )}
-
-        <main
-          className={cn(
-            isWidget
-              ? "relative z-0 flex-1 flex flex-col w-screen h-screen overflow-hidden p-0 m-0 bg-card"
-              : "relative z-0 flex-1 h-full flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto px-6 md:px-10 pb-6 md:pb-10 pt-0 scrollbar-stable scroll-smooth",
-            isSidebarVisible && isSidebarOpen && !isWidget
-              ? "lg:ml-72"
-              : "ml-0",
-          )}
+      <DiscordRpcProvider>
+        <div
+          className="flex h-screen w-screen bg-background text-foreground overflow-hidden"
+          style={
+            {
+              "--sidebar-w":
+                isSidebarVisible && isSidebarOpen ? "288px" : "0px",
+            } as CSSProperties
+          }
         >
-          {children}
-        </main>
+          {!isWidget && (
+            <>
+              <GlobalScheduler />
+              <GlobalShortcuts />
+              <DictionaryQuickSearch />
+              <SettingsModal />
+              <LevelUpParticles />
+              <AppStatusBar />
+            </>
+          )}
 
-        {!isWidget && (
-          <>
-            <FeedbackDialog
-              isOpen={showFeedback}
-              onClose={() => setShowFeedback(false)}
-            />
+          {isSidebarVisible && <AppSidebar isOpen={isSidebarOpen} />}
 
-            <NotificationsPanel
-              notifications={notifications}
-              unreadCount={unreadCount}
-              isOpen={showNotifications}
-              onClose={() => setShowNotifications(false)}
-              onMarkRead={markRead}
-              onMarkUnread={markUnread}
-              onMarkAllRead={markAllRead}
-              onDelete={remove}
-              onClearRead={clearRead}
+          {/* Gatilho flutuante (visível quando a barra lateral está fechada) */}
+          {isSidebarVisible && (
+            <SidebarTrigger
+              isOpen={isSidebarOpen}
+              onToggle={() => setIsSidebarOpen(true)}
+              floating
             />
-          </>
-        )}
-      </div>
+          )}
+
+          {isSidebarVisible && isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden w-full h-full border-none cursor-default"
+              aria-label="Close sidebar"
+              type="button"
+            />
+          )}
+
+          <main
+            className={cn(
+              isWidget
+                ? "relative z-0 flex-1 flex flex-col w-screen h-screen overflow-hidden p-0 m-0 bg-card"
+                : "relative z-0 flex-1 h-full flex flex-col min-w-0 transition-all duration-300 ease-in-out overflow-y-auto px-6 md:px-10 pb-6 md:pb-10 pt-0 scrollbar-stable scroll-smooth",
+              isSidebarVisible && isSidebarOpen && !isWidget
+                ? "lg:ml-72"
+                : "ml-0",
+            )}
+          >
+            {children}
+          </main>
+
+          {!isWidget && (
+            <>
+              <FeedbackDialog
+                isOpen={showFeedback}
+                onClose={() => setShowFeedback(false)}
+              />
+
+              <NotificationsPanel
+                notifications={notifications}
+                unreadCount={unreadCount}
+                isOpen={showNotifications}
+                onClose={() => setShowNotifications(false)}
+                onMarkRead={markRead}
+                onMarkUnread={markUnread}
+                onMarkAllRead={markAllRead}
+                onDelete={remove}
+                onClearRead={clearRead}
+              />
+            </>
+          )}
+        </div>
+      </DiscordRpcProvider>
     </NavigationProvider>
   );
 }

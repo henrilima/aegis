@@ -44,6 +44,43 @@ pub struct SoberLog {
     pub notes: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitMilestone {
+    pub id: Option<i64>,
+    pub goal_id: Option<i64>,
+    pub title: String,
+    pub description: Option<String>,
+    pub completed: bool,
+    pub completed_at: Option<String>,
+    pub due_date: Option<String>,
+    pub order_index: i32,
+    pub task_id: Option<i32>,
+    pub task_title: Option<String>,
+    pub task_completed: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitGoal {
+    pub id: Option<i64>,
+    pub user_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub timeframe: String, // "annual", "quarterly", "semiannual"
+    pub period_label: String, // "2026", "Q1 2026", "S1 2026"
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub color: Option<String>,
+    pub status: String, // "in_progress", "completed", "paused"
+    pub created_at: String,
+    #[serde(default)]
+    pub milestones: Vec<HabitMilestone>,
+    #[serde(default)]
+    pub progress: f64,
+}
+
 pub struct HabitManager {
     db_path: PathBuf,
 }
@@ -130,6 +167,42 @@ impl HabitManager {
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN archived INTEGER DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE habits ADD COLUMN target_time TEXT", []);
 
+        // Tabela de Metas de Longo Prazo
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS habit_goals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                category TEXT,
+                timeframe TEXT NOT NULL,
+                period_label TEXT NOT NULL,
+                start_date TEXT,
+                end_date TEXT,
+                color TEXT,
+                status TEXT NOT NULL DEFAULT 'in_progress',
+                created_at TEXT NOT NULL
+            )",
+            [],
+        ).ok();
+
+        // Tabela de Marcos (Milestones) acionáveis das Metas
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS habit_milestones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                goal_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                completed INTEGER NOT NULL DEFAULT 0,
+                completed_at TEXT,
+                due_date TEXT,
+                order_index INTEGER NOT NULL DEFAULT 0,
+                task_id INTEGER,
+                FOREIGN KEY (goal_id) REFERENCES habit_goals(id) ON DELETE CASCADE
+            )",
+            [],
+        ).ok();
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_habit_milestones_goal_id ON habit_milestones(goal_id)", []).ok();
 
         Self { db_path }
     }
@@ -796,6 +869,252 @@ impl HabitManager {
         }
         Ok(count)
     }
+
+    pub fn list_goals(&self, user_id: &str) -> Vec<HabitGoal> {
+        let conn = self.get_connection();
+        let mut stmt = match conn.prepare(
+            "SELECT id, user_id, title, description, category, timeframe, period_label, start_date, end_date, color, status, created_at 
+             FROM habit_goals 
+             WHERE user_id = ?1 
+             ORDER BY created_at DESC"
+        ) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("[HabitManager] Erro ao preparar list_goals: {}", e);
+                return vec![];
+            }
+        };
+
+        let goals_res = stmt.query_map(params![user_id], |row| {
+            Ok(HabitGoal {
+                id: Some(row.get(0)?),
+                user_id: row.get(1)?,
+                title: row.get(2)?,
+                description: row.get(3)?,
+                category: row.get(4)?,
+                timeframe: row.get(5)?,
+                period_label: row.get(6)?,
+                start_date: row.get(7)?,
+                end_date: row.get(8)?,
+                color: row.get(9)?,
+                status: row.get(10)?,
+                created_at: row.get(11)?,
+                milestones: vec![],
+                progress: 0.0,
+            })
+        });
+
+        let mut goals: Vec<HabitGoal> = match goals_res {
+            Ok(mapped) => mapped.filter_map(Result::ok).collect(),
+            Err(e) => {
+                eprintln!("[HabitManager] Erro query_map list_goals: {}", e);
+                return vec![];
+            }
+        };
+
+        for goal in &mut goals {
+            if let Some(gid) = goal.id {
+                let mut m_stmt = match conn.prepare(
+                    "SELECT m.id, m.goal_id, m.title, m.description, m.completed, m.completed_at, m.due_date, m.order_index, m.task_id, t.title, t.completed
+                     FROM habit_milestones m
+                     LEFT JOIN tasks t ON m.task_id = t.id
+                     WHERE m.goal_id = ?1
+                     ORDER BY m.order_index ASC, m.id ASC"
+                ) {
+                    Ok(s) => s,
+                    Err(_) => continue,
+                };
+
+                let m_rows = m_stmt.query_map(params![gid], |row| {
+                    let task_id: Option<i32> = row.get(8)?;
+                    let task_title: Option<String> = row.get(9)?;
+                    let task_completed_val: Option<i32> = row.get(10)?;
+                    let task_completed = task_completed_val.map(|c| c != 0);
+
+                    let mut milestone_completed = row.get::<_, i32>(4)? != 0;
+                    if let Some(true) = task_completed {
+                        milestone_completed = true;
+                    }
+
+                    Ok(HabitMilestone {
+                        id: Some(row.get(0)?),
+                        goal_id: Some(row.get(1)?),
+                        title: row.get(2)?,
+                        description: row.get(3)?,
+                        completed: milestone_completed,
+                        completed_at: row.get(5)?,
+                        due_date: row.get(6)?,
+                        order_index: row.get(7)?,
+                        task_id,
+                        task_title,
+                        task_completed,
+                    })
+                });
+
+                if let Ok(mapped_m) = m_rows {
+                    let milestones: Vec<HabitMilestone> = mapped_m.filter_map(Result::ok).collect();
+                    let total = milestones.len();
+                    let completed = milestones.iter().filter(|m| m.completed).count();
+                    let progress = if total > 0 {
+                        (completed as f64 / total as f64) * 100.0
+                    } else {
+                        0.0
+                    };
+                    goal.progress = progress;
+                    goal.milestones = milestones;
+                }
+            }
+        }
+
+        goals
+    }
+
+    pub fn upsert_goal(&self, goal: HabitGoal) -> Result<i64, String> {
+        let mut conn = self.get_connection();
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+
+        let goal_id: i64 = if let Some(id) = goal.id {
+            tx.execute(
+                "UPDATE habit_goals SET title = ?1, description = ?2, category = ?3, timeframe = ?4, period_label = ?5, start_date = ?6, end_date = ?7, color = ?8, status = ?9 WHERE id = ?10",
+                params![goal.title, goal.description, goal.category, goal.timeframe, goal.period_label, goal.start_date, goal.end_date, goal.color, goal.status, id],
+            ).map_err(|e| e.to_string())?;
+            id
+        } else {
+            tx.execute(
+                "INSERT INTO habit_goals (user_id, title, description, category, timeframe, period_label, start_date, end_date, color, status, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                params![goal.user_id, goal.title, goal.description, goal.category, goal.timeframe, goal.period_label, goal.start_date, goal.end_date, goal.color, goal.status, goal.created_at],
+            ).map_err(|e| e.to_string())?;
+            tx.last_insert_rowid()
+        };
+
+        // Identifica milestones existentes no banco para remover os que foram excluídos
+        let mut existing_ids: Vec<i64> = Vec::new();
+        {
+            let mut stmt = tx.prepare("SELECT id FROM habit_milestones WHERE goal_id = ?1").map_err(|e| e.to_string())?;
+            let rows = stmt.query_map(params![goal_id], |row| row.get(0)).map_err(|e| e.to_string())?;
+            for r in rows.flatten() {
+                existing_ids.push(r);
+            }
+        }
+
+        let mut incoming_ids: Vec<i64> = Vec::new();
+
+        for (idx, m) in goal.milestones.iter().enumerate() {
+            let completed_int = if m.completed { 1 } else { 0 };
+            if let Some(mid) = m.id {
+                tx.execute(
+                    "UPDATE habit_milestones SET title = ?1, description = ?2, completed = ?3, completed_at = ?4, due_date = ?5, order_index = ?6, task_id = ?7 WHERE id = ?8 AND goal_id = ?9",
+                    params![m.title, m.description, completed_int, m.completed_at, m.due_date, idx as i32, m.task_id, mid, goal_id],
+                ).map_err(|e| e.to_string())?;
+                incoming_ids.push(mid);
+            } else {
+                tx.execute(
+                    "INSERT INTO habit_milestones (goal_id, title, description, completed, completed_at, due_date, order_index, task_id)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    params![goal_id, m.title, m.description, completed_int, m.completed_at, m.due_date, idx as i32, m.task_id],
+                ).map_err(|e| e.to_string())?;
+                incoming_ids.push(tx.last_insert_rowid());
+            }
+        }
+
+        // Deleta milestones que não vieram na lista
+        for old_id in existing_ids {
+            if !incoming_ids.contains(&old_id) {
+                let _ = tx.execute("DELETE FROM habit_milestones WHERE id = ?1", params![old_id]);
+            }
+        }
+
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(goal_id)
+    }
+
+    pub fn delete_goal(&self, id: i64) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute("DELETE FROM habit_milestones WHERE goal_id = ?1", params![id]).map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM habit_goals WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn toggle_milestone(&self, milestone_id: i64, completed: bool, today: Option<String>) -> Result<(), String> {
+        let conn = self.get_connection();
+        let completed_int = if completed { 1 } else { 0 };
+        let today_str = today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string());
+        let completed_at = if completed { Some(today_str.clone()) } else { None };
+
+        conn.execute(
+            "UPDATE habit_milestones SET completed = ?1, completed_at = ?2 WHERE id = ?3",
+            params![completed_int, completed_at, milestone_id],
+        ).map_err(|e| e.to_string())?;
+
+        // Sincroniza se estiver vinculado a uma tarefa
+        let mut stmt = conn.prepare("SELECT task_id FROM habit_milestones WHERE id = ?1").map_err(|e| e.to_string())?;
+        let task_id: Option<i32> = stmt.query_row(params![milestone_id], |row| row.get(0)).unwrap_or(None);
+
+        if let Some(tid) = task_id {
+            let status = if completed { "done" } else { "todo" };
+            let _ = conn.execute(
+                "UPDATE tasks SET completed = ?1,
+                 completed_at = CASE WHEN ?1 = 1 THEN ?2 ELSE NULL END,
+                 status = ?3
+                 WHERE id = ?4",
+                params![completed_int, today_str, status, tid],
+            );
+        }
+
+        Ok(())
+    }
+
+    pub fn link_milestone_task(&self, milestone_id: i64, task_id: Option<i32>) -> Result<(), String> {
+        let conn = self.get_connection();
+        conn.execute(
+            "UPDATE habit_milestones SET task_id = ?1 WHERE id = ?2",
+            params![task_id, milestone_id],
+        ).map_err(|e| e.to_string())?;
+
+        if let Some(tid) = task_id {
+            let mut stmt = conn.prepare("SELECT completed FROM tasks WHERE id = ?1").map_err(|e| e.to_string())?;
+            let task_completed: Option<i32> = stmt.query_row(params![tid], |row| row.get(0)).ok();
+            if let Some(comp) = task_completed {
+                if comp != 0 {
+                    let now_str = chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string();
+                    let _ = conn.execute(
+                        "UPDATE habit_milestones SET completed = 1, completed_at = ?1 WHERE id = ?2",
+                        params![now_str, milestone_id],
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn create_task_for_milestone(
+        &self,
+        milestone_id: i64,
+        user_id: &str,
+        task_title: &str,
+        due_date: Option<&str>,
+        today: Option<String>,
+    ) -> Result<i32, String> {
+        let conn = self.get_connection();
+        let now = today.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string());
+        
+        conn.execute(
+            "INSERT INTO tasks (user_id, title, description, completed, due_date, created_at, category, status)
+             VALUES (?1, ?2, ?3, 0, ?4, ?5, 'Metas de Longo Prazo', 'todo')",
+            params![user_id, task_title, "Marco vinculado do módulo de Hábitos", due_date, now],
+        ).map_err(|e| e.to_string())?;
+
+        let task_id = conn.last_insert_rowid() as i32;
+
+        conn.execute(
+            "UPDATE habit_milestones SET task_id = ?1 WHERE id = ?2",
+            params![task_id, milestone_id],
+        ).map_err(|e| e.to_string())?;
+
+        Ok(task_id)
+    }
 }
 
 #[tauri::command]
@@ -908,5 +1227,76 @@ pub async fn habit_export_habits_csv(state: tauri::State<'_, crate::AppState>, u
 #[tauri::command]
 pub async fn habit_import_habits_csv(state: tauri::State<'_, crate::AppState>, user_id: String, file_path: String) -> Result<usize, String> {
     state.habit.import_csv(&user_id, &file_path)
+}
+
+#[tauri::command]
+pub async fn habit_list_goals(
+    state: tauri::State<'_, crate::AppState>,
+    user_id: String,
+) -> Result<Vec<HabitGoal>, String> {
+    Ok(state.habit.list_goals(&user_id))
+}
+
+#[tauri::command]
+pub async fn habit_upsert_goal(
+    state: tauri::State<'_, crate::AppState>,
+    goal: HabitGoal,
+) -> Result<i64, String> {
+    state.habit.upsert_goal(goal)
+}
+
+#[tauri::command]
+pub async fn habit_delete_goal(
+    state: tauri::State<'_, crate::AppState>,
+    id: i64,
+) -> Result<(), String> {
+    state.habit.delete_goal(id)
+}
+
+#[tauri::command]
+pub async fn habit_toggle_milestone(
+    state: tauri::State<'_, crate::AppState>,
+    milestone_id: i64,
+    completed: bool,
+) -> Result<(), String> {
+    let today = state
+        .config
+        .get_now()
+        .with_timezone(&chrono::Local)
+        .format("%Y-%m-%dT%H:%M:%S")
+        .to_string();
+    state.habit.toggle_milestone(milestone_id, completed, Some(today))
+}
+
+#[tauri::command]
+pub async fn habit_link_milestone_task(
+    state: tauri::State<'_, crate::AppState>,
+    milestone_id: i64,
+    task_id: Option<i32>,
+) -> Result<(), String> {
+    state.habit.link_milestone_task(milestone_id, task_id)
+}
+
+#[tauri::command]
+pub async fn habit_create_task_for_milestone(
+    state: tauri::State<'_, crate::AppState>,
+    milestone_id: i64,
+    user_id: String,
+    task_title: String,
+    due_date: Option<String>,
+) -> Result<i32, String> {
+    let today = state
+        .config
+        .get_now()
+        .with_timezone(&chrono::Local)
+        .format("%Y-%m-%dT%H:%M:%S")
+        .to_string();
+    state.habit.create_task_for_milestone(
+        milestone_id,
+        &user_id,
+        &task_title,
+        due_date.as_deref(),
+        Some(today),
+    )
 }
 

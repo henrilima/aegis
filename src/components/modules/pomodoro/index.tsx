@@ -10,15 +10,20 @@ import { cn, getColorTheme } from "@/lib/utils";
 import { getModuleColor } from "@/modules.config";
 import { PomodoroGuidePanel } from "./PomodoroInfoModal";
 import { PomodoroLinkStudyModal } from "./PomodoroLinkStudyModal";
+import { PomodoroTaskSelector } from "./PomodoroTaskSelector";
 import { PomoHeader } from "./pomoHeader";
 import { PomoHistory } from "./pomoHistory";
+import { StopwatchUnit } from "./StopwatchUnit";
 import { usePomodoroLogic } from "./usePomodoroLogic";
 
 export default function PomodoroPage() {
-  const { state, history, formattedTime, loading, actions } =
+  const { state, history, formattedTime, loading, linkedTaskId, actions } =
     usePomodoroLogic();
   const color = getModuleColor("pomodoro");
   const theme = getColorTheme(color);
+  const [activeTab, setActiveTab] = useState<"pomodoro" | "stopwatch">(
+    "pomodoro",
+  );
   const [showInfo, setShowInfo] = useState(false);
   const [promptLinkData, setPromptLinkData] = useState<{
     cyclesCompleted: number;
@@ -55,6 +60,8 @@ export default function PomodoroPage() {
         <PomoHeader
           cyclesCompleted={state?.cyclesCompleted || 0}
           isWork={isWork}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
           onTitleClick={() => setShowInfo(true)}
           onDetach={handleDetach}
         />
@@ -69,6 +76,8 @@ export default function PomodoroPage() {
       <PomoHeader
         cyclesCompleted={state?.cyclesCompleted || 0}
         isWork={isWork}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         onTitleClick={() => setShowInfo(true)}
         onDetach={handleDetach}
       />
@@ -76,111 +85,135 @@ export default function PomodoroPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {/* Unidade Principal */}
         <div className="md:col-span-2 bg-card border border-border rounded-3xl p-12 flex flex-col items-center gap-10">
-          {/* Timer */}
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className={cn(
-                "text-8xl font-black font-outfit tabular-nums transition-all",
-                isWork ? theme.text : "text-muted-foreground",
-              )}
-            >
-              {formattedTime}
-            </div>
-            <span
-              className={cn(
-                "text-[10px] font-bold px-4 py-1.5 rounded-full border",
-                isWork
-                  ? cn(theme.bg, theme.border, theme.text)
-                  : "bg-muted border-border text-muted-foreground",
-              )}
-            >
-              {isWork ? "Momento de Foco" : "Pausa para Descanso"}
-            </span>
-          </div>
+          {activeTab === "stopwatch" ? (
+            <StopwatchUnit
+              linkedTaskId={linkedTaskId}
+              onSelectTask={(id) => actions.setLinkedTaskId(id)}
+              onSessionRecorded={actions.fetchHistory}
+            />
+          ) : (
+            <>
+              {/* Timer */}
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className={cn(
+                    "text-8xl font-black font-outfit tabular-nums transition-all",
+                    isWork ? theme.text : "text-muted-foreground",
+                  )}
+                >
+                  {formattedTime}
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-4 py-1.5 rounded-full border",
+                    isWork
+                      ? cn(theme.bg, theme.border, theme.text)
+                      : "bg-muted border-border text-muted-foreground",
+                  )}
+                >
+                  {isWork ? "Momento de Foco" : "Pausa para Descanso"}
+                </span>
+              </div>
 
-          {/* Controles */}
-          <div className="flex gap-4">
-            <Button
-              size="lg"
-              onClick={actions.toggleTimer}
-              className={cn(
-                "px-6 h-11 font-black transition-all rounded-xl text-sm font-outfit",
-                isWork
-                  ? cn(theme.solid, theme.solidHover, "text-white")
-                  : "bg-muted hover:bg-muted/80 text-foreground",
-              )}
-            >
-              {state?.isRunning ? (
-                <>
-                  <Pause className="w-5 h-5 mr-2.5 stroke-3" /> Pausar
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5 mr-2.5 stroke-3" /> Iniciar
-                </>
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={() =>
-                actions.stopTimer((cycles, workMins) => {
-                  setPromptLinkData({
-                    cyclesCompleted: cycles,
-                    workMinutes: workMins,
-                  });
-                })
-              }
-              disabled={!state?.isRunning && state?.cyclesCompleted === 0}
-              className="h-11 border border-border hover:bg-accent/50 font-bold px-6 rounded-xl transition-all text-muted-foreground disabled:opacity-30 text-sm"
-            >
-              <Square className="w-4 h-4 mr-2 fill-current" /> Parar
-            </Button>
-          </div>
+              {/* Controles */}
+              <div className="flex gap-4">
+                <Button
+                  size="lg"
+                  onClick={actions.toggleTimer}
+                  className={cn(
+                    "px-6 h-11 font-black transition-all rounded-xl text-sm font-outfit",
+                    isWork
+                      ? cn(theme.solid, theme.solidHover, "text-white")
+                      : "bg-muted hover:bg-muted/80 text-foreground",
+                  )}
+                >
+                  {state?.isRunning ? (
+                    <>
+                      <Pause className="w-5 h-5 mr-2.5 stroke-3" /> Pausar
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2.5 stroke-3" /> Iniciar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={() =>
+                    actions.stopTimer((cycles, workMins) => {
+                      setPromptLinkData({
+                        cyclesCompleted: cycles,
+                        workMinutes: workMins,
+                      });
+                    })
+                  }
+                  disabled={
+                    !state?.isRunning &&
+                    (state?.cyclesCompleted ?? 0) === 0 &&
+                    (state?.accumulatedSeconds ?? 0) === 0
+                  }
+                  className="h-11 border border-border hover:bg-accent/50 font-bold px-6 rounded-xl transition-all text-muted-foreground disabled:opacity-30 text-sm"
+                >
+                  <Square className="w-4 h-4 mr-2 fill-current" /> Parar
+                </Button>
+              </div>
 
-          {/* Calibração */}
-          <div className="w-full pt-10 border-t border-border/50">
-            <div className="flex gap-6 w-full max-w-sm mx-auto">
-              <div className="flex-1 space-y-2.5">
-                <p className="text-[10px] font-bold text-neutral-600 text-centerer">
-                  Minutos de Foco
-                </p>
-                <div className="relative group">
-                  <Input
-                    type="number"
-                    value={state?.workMinutes || 25}
-                    onChange={(e) =>
-                      actions.updateConfig("workMinutes", e.target.value)
-                    }
-                    disabled={state?.isRunning}
-                    className={cn(
-                      "bg-background h-11 border border-border text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50",
-                      theme.borderHover.replace("hover:", "focus:"),
-                    )}
-                  />
+              {/* Tarefa Vinculada para Foco */}
+              <PomodoroTaskSelector
+                linkedTaskId={linkedTaskId}
+                onSelectTask={(task) =>
+                  actions.setLinkedTaskId(task?.id ?? null)
+                }
+                isTimerRunning={!!state?.isRunning}
+                isWorkCycle={isWork}
+              />
+
+              {/* Calibração */}
+              <div className="w-full pt-8 border-t border-border/50">
+                <div className="flex gap-6 w-full max-w-sm mx-auto">
+                  <div className="flex-1 space-y-2.5">
+                    <p className="text-[10px] font-bold text-neutral-600 text-centerer">
+                      Minutos de Foco
+                    </p>
+                    <div className="relative group">
+                      <Input
+                        type="number"
+                        value={state?.workMinutes || 25}
+                        onChange={(e) =>
+                          actions.updateConfig("workMinutes", e.target.value)
+                        }
+                        disabled={state?.isRunning}
+                        className={cn(
+                          "bg-background h-11 border border-border text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50",
+                          theme.borderHover.replace("hover:", "focus:"),
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-2.5">
+                    <p className="text-[10px] font-bold text-neutral-600 text-centerer">
+                      Minutos de Pausa
+                    </p>
+                    <div className="relative group">
+                      <Input
+                        type="number"
+                        value={state?.breakMinutes || 5}
+                        onChange={(e) =>
+                          actions.updateConfig("breakMinutes", e.target.value)
+                        }
+                        disabled={state?.isRunning}
+                        className={cn(
+                          "bg-background h-11 border border-border text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50",
+                          theme.borderHover.replace("hover:", "focus:"),
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1 space-y-2.5">
-                <p className="text-[10px] font-bold text-neutral-600 text-centerer">
-                  Minutos de Pausa
-                </p>
-                <div className="relative group">
-                  <Input
-                    type="number"
-                    value={state?.breakMinutes || 5}
-                    onChange={(e) =>
-                      actions.updateConfig("breakMinutes", e.target.value)
-                    }
-                    disabled={state?.isRunning}
-                    className={cn(
-                      "bg-background h-11 border border-border text-lg font-black text-center rounded-xl transition-all font-outfit disabled:opacity-50",
-                      theme.borderHover.replace("hover:", "focus:"),
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Histórico */}

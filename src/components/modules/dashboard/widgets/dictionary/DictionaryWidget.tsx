@@ -76,32 +76,32 @@ export function DictionaryWidget({
 
         {!hasData ? (
           <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
-            <p className="text-xs text-neutral-600 font-bold">
-              Dicionário Vazio
+            <p className="text-xs text-foreground font-bold">
+              Dicionário vazio
             </p>
-            <p className="text-[10px] text-neutral-600 font-medium max-w-[180px] mt-1">
+            <p className="text-[10px] text-muted-foreground font-medium max-w-45 mt-0.5">
               Adicione palavras desconhecidas ou termos técnicos para construir
               seu vocabulário.
             </p>
           </div>
         ) : (
-          <div className="space-y-3 flex-1 overflow-hidden text-left">
-            <p className="text-[10px] font-bold text-muted-foreground px-1 text-left">
+          <div className="space-y-1 flex-1 overflow-hidden text-left">
+            <p className="text-[10px] font-bold text-muted-foreground px-1 text-left pb-1">
               Recém adicionadas
             </p>
-            <div className="grid grid-cols-1 gap-2 overflow-y-auto custom-scrollbar pr-1">
+            <div className="divide-y divide-border/30 overflow-y-auto custom-scrollbar">
               {recentWords.map((word) => (
                 <div
                   key={word.id}
-                  className="flex items-center justify-between p-3 rounded-xl border border-border bg-card transition-all hover:bg-muted/30 gap-4 text-left"
+                  className="flex items-center justify-between py-2 px-2 rounded-xl transition-colors hover:bg-muted/40 gap-3 text-left"
                 >
                   <div className="flex flex-col min-w-0 flex-1 gap-0.5">
                     <span
-                      className={cn("text-sm font-bold truncate", theme.text)}
+                      className={cn("text-xs font-bold truncate", theme.text)}
                     >
                       {word.word}
                     </span>
-                    <span className="text-[10px] text-muted-foreground line-clamp-1 italic font-medium mt-0.5 leading-normal">
+                    <span className="text-[10px] text-muted-foreground line-clamp-1 italic font-medium leading-normal">
                       {word.definition}
                     </span>
                   </div>

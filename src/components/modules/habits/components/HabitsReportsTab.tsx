@@ -21,12 +21,22 @@ interface HabitsReportsTabProps {
   habits: Habit[];
 }
 
+const REPORT_PERIODS = [
+  { id: 7, label: "7D" },
+  { id: 14, label: "14D" },
+  { id: 30, label: "30D" },
+  { id: 60, label: "60D" },
+  { id: 90, label: "90D" },
+] as const;
+
+type ReportPeriod = (typeof REPORT_PERIODS)[number]["id"];
+
 export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
   const { now: simulatedNow } = useTime();
   const color = getModuleColor("habits");
   const theme = getColorTheme(color);
   const [periodOffset, setPeriodOffset] = useState(0);
-  const [period, setPeriod] = useState<7 | 30 | 100>(30);
+  const [period, setPeriod] = useState<ReportPeriod>(30);
 
   // Consideramos apenas os hábitos ativos para métricas de progresso e ofensivas atuais.
   // Hábitos arquivados guardam histórico do passado e não poluem as métricas da rotina atual.
@@ -174,12 +184,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
   }, [activePositive.length, focusRate]);
 
   const reportText = useMemo(() => {
-    const periodLabel =
-      period === 7
-        ? "Últimos 7 dias"
-        : period === 30
-          ? "Últimos 30 dias"
-          : "Últimos 100 dias";
+    const periodLabel = `Últimos ${period} dias`;
     const rawDateStr = new Date(simulatedNow).toLocaleDateString("pt-BR", {
       month: "long",
       year: "numeric",
@@ -240,11 +245,11 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-background/50 border border-border rounded-xl p-1">
+        <div className="flex items-center gap-2 bg-card/60 border border-border rounded-xl p-1">
           <button
             type="button"
             onClick={() => setPeriodOffset(periodOffset - 1)}
-            className="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer text-muted-foreground"
+            className="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer text-foreground"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -254,7 +259,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
           <button
             type="button"
             onClick={() => setPeriodOffset(periodOffset + 1)}
-            className="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer text-muted-foreground"
+            className="p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer text-foreground"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -263,7 +268,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Canvas Section */}
-        <div className="lg:w-[400px] shrink-0">
+        <div className="lg:w-100 shrink-0">
           <HabitsReportCanvas
             habits={habits}
             focusRate={focusRate}
@@ -284,44 +289,23 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
                 </h3>
               </div>
               <div className="flex items-center gap-3">
-                {/* Seletor de Período */}
+                {/* Seletor de Período Padronizado */}
                 <div className="flex items-center gap-1 bg-background border border-border rounded-xl p-1">
-                  <button
-                    type="button"
-                    onClick={() => setPeriod(7)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                      period === 7
-                        ? cn(theme.solid, "text-white")
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    7D
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPeriod(30)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                      period === 30
-                        ? cn(theme.solid, "text-white")
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    30D
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPeriod(100)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                      period === 100
-                        ? cn(theme.solid, "text-white")
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    100D
-                  </button>
+                  {REPORT_PERIODS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPeriod(p.id)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                        period === p.id
+                          ? cn(theme.solid, "text-white")
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
 
                 <button
@@ -382,10 +366,10 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
           </div>
 
           <div className="w-full overflow-x-auto border border-border/60 rounded-xl bg-background/25">
-            <table className="w-full border-collapse text-left text-xs min-w-[700px]">
+            <table className="w-full border-collapse text-left text-xs min-w-175">
               <thead>
                 <tr className="border-b border-border/50 bg-background/40">
-                  <th className="py-3 px-4 font-bold text-muted-foreground w-[180px] text-xs">
+                  <th className="py-3 px-4 font-bold text-muted-foreground w-45 text-xs">
                     Nome
                   </th>
                   {individualRates.map((ir) => (
@@ -411,7 +395,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
                       key={ir.id || ir.name}
                       className="py-4 px-4 text-center border-l border-border/10"
                     >
-                      <div className="flex flex-col items-center gap-1.5 min-w-[100px]">
+                      <div className="flex flex-col items-center gap-1.5 min-w-25">
                         <span className="font-extrabold text-foreground">
                           {ir.rate}%
                         </span>
@@ -428,7 +412,7 @@ export function HabitsReportsTab({ habits }: HabitsReportsTabProps) {
                     </td>
                   ))}
                   <td className="py-4 px-4 text-center border-l border-border/30 bg-muted/15">
-                    <div className="flex flex-col items-center gap-1.5 min-w-[100px]">
+                    <div className="flex flex-col items-center gap-1.5 min-w-25">
                       <span className="font-extrabold text-foreground">
                         {focusRate}%
                       </span>
